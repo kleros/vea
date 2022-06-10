@@ -4,6 +4,7 @@
     "browser": true,
     "node": true
   },
+  "root": true,
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2020,
@@ -42,6 +43,7 @@
     },
     "import/resolver": {
       "parcel": {
+        "rootDir": "src",
         "extensions": [
           ".js",
           ".jsx",
@@ -54,8 +56,13 @@
       }
     }
   },
-  "root": true,
   "rules": {
+    "max-len": [
+      "warn",
+      {
+        "code": 80
+      }
+    ],
     "react/prop-types": 0,
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": [
@@ -76,9 +83,8 @@
         ]
       }
     ],
-    "@typescript-eslint/no-explicit-any": [
-      "off"
-    ],
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/no-explicit-any": "off",
     "security/detect-object-injection": "off",
     "security/detect-non-literal-fs-filename": "off",
     "import/extensions": [
@@ -91,8 +97,6 @@
         "tsx": "never"
       }
     ],
-    "import/no-unresolved": [
-      "off"
-    ]
+    "import/no-unresolved": "off"
   }
 }

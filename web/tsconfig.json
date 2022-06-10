@@ -8,20 +8,35 @@
       "src*": [
         "./src*"
       ],
-      "utils*": [
-        "./src/utils*"
-      ],
-      "svgs*": [
-        "./src/assets/svgs*"
-      ],
-      "hooks*": [
-        "./src/hooks*"
+      "assets*": [
+        "./src/assets*"
       ],
       "components*": [
         "./src/components*"
       ],
+      "context*": [
+        "./src/context*"
+      ],
+      "layout*": [
+        "./src/layout*"
+      ],
+      "consts*": [
+        "./src/consts*"
+      ],
+      "hooks*": [
+        "./src/hooks*"
+      ],
       "queries*": [
         "./src/hooks/queries*"
+      ],
+      "pages*": [
+        "./src/pages*"
+      ],
+      "styles*": [
+        "./src/styles*"
+      ],
+      "svgs*": [
+        "./src/assets/svgs*"
       ]
     },
     "experimentalDecorators": true,
@@ -49,8 +64,7 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "removeComments": true,
-    "isolatedModules": true,
-    "resolveJsonModule": true
+    "isolatedModules": true
   },
   "exclude": [
     "node_modules",
