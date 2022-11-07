@@ -1,10 +1,8 @@
 {
-  "name": "@kleros/kleros-v2-web",
+  "name": "@kleros/vea-web",
   "version": "0.1.0",
   "source": "src/index.html",
   "browserslist": "> 0.5%, not dead",
-  "repository": "",
-  "author": "",
   "license": "MIT",
   "alias": {
     "src": "./src",
@@ -57,8 +55,8 @@
     "@graphql-codegen/cli": "^2.13.11",
     "@graphql-codegen/typescript": "^2.7.3",
     "@graphql-codegen/typescript-operations": "^2.5.6",
-    "@kleros/kleros-v2-contracts": "workspace:^",
     "@kleros/ui-components-library": "^1.8.1",
+    "@kleros/vea-contracts": "workspace:^",
     "@types/react-modal": "^3.13.1",
     "@web3-react/core": "^6.1.9",
     "@web3-react/injected-connector": "^6.0.7",

@@ -1,10 +1,9 @@
 {
-  "name": "@kleros/kleros-v2-contracts",
-  "version": "0.1.1",
-  "description": "Smart contracts for Kleros version 2",
+  "name": "@kleros/vea-contracts",
+  "version": "0.1.0",
+  "description": "Smart contracts for Vea",
   "main": "typechain-types/index.ts",
-  "repository": "git@github.com:kleros/kleros-v2.git",
-  "author": "Kleros",
+  "repository": "git@github.com:kleros/vea.git",
   "license": "MIT",
   "packageManager": "yarn@3.1.0",
   "engines": {
