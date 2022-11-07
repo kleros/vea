@@ -1,28 +1,22 @@
 {
-  "name": "kleros-v2",
+  "name": "vea",
   "version": "0.1.0",
-  "description": "Kleros version 2",
+  "description": "Vea bridge",
   "main": "index.js",
-  "repository": "git@github.com:kleros/kleros-v2.git",
+  "repository": "git@github.com:kleros/vea.git",
   "author": {
     "name": "Kleros",
     "email": "contact@kleros.io",
     "url": "https://kleros.io"
   },
   "bugs": {
-    "url": "https://github.com/kleros/kleros-v2/issues",
-    "email": "contact@kleros.io"
+    "url": "https://github.com/kleros/vea/issues",
+    "email": "contact@vea.ninja"
   },
   "license": "MIT",
   "private": true,
   "workspaces": [
-    "bots",
-    "bot-pinner",
     "contracts",
-    "dynamic-script",
-    "evidence-display",
-    "klerosjs",
-    "subgraph",
     "subgraph-fastbridge",
     "web"
   ],

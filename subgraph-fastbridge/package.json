@@ -1,5 +1,5 @@
 {
-  "name": "@kleros/kleros-v2-subgraph-fastbridge",
+  "name": "@kleros/vea-subgraph-fastbridge",
   "license": "MIT",
   "scripts": {
     "codegen": "graph codegen",
