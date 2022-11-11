@@ -10,7 +10,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../../bridge/interfaces/IFastBridgeSender.sol";
+import "./IFastBridgeSender.sol";
 
 interface ISenderGateway {
     function fastBridgeSender() external view returns (IFastBridgeSender);

@@ -10,7 +10,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../../bridge/interfaces/IFastBridgeReceiver.sol";
+import "./IFastBridgeReceiver.sol";
 
 interface IReceiverGateway {
     function fastBridgeReceiver() external view returns (IFastBridgeReceiver);
