@@ -2,12 +2,12 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 
-const HOME_CHAIN_IDS = [42161, 421611, 421613, 31337]; // ArbOne, ArbRinkeby, ArbiGoerli, Hardhat
+const SENDER_CHAIN_IDS = [42161, 421613, 31337]; // ArbOne, ArbRinkeby, ArbiGoerli, Hardhat
 const epochPeriod = 86400; // 24 hours
 
 // TODO: use deterministic deployments
 
-const deployHomeGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
   const { deploy, execute } = deployments;
   const chainId = Number(await getChainId());
@@ -29,13 +29,13 @@ const deployHomeGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment)
     }); // nonce+0
 
     const klerosCore = await deployments.get("KlerosCore");
-    const foreignGateway = await deployments.get("ForeignGatewayOnEthereum");
-    const foreignChainId = 31337;
+    const receiverGateway = await deployments.get("ForeignGatewayOnEthereum");
+    const receiverChainId = 31337;
 
-    const homeGateway = await deploy("HomeGatewayToEthereum", {
+    const senderGateway = await deploy("HomeGatewayToEthereum", {
       from: deployer,
       contract: "HomeGateway",
-      args: [deployer, klerosCore.address, fastBridgeSender.address, foreignGateway.address, foreignChainId],
+      args: [deployer, klerosCore.address, fastBridgeSender.address, receiverGateway.address, receiverChainId],
       gasLimit: 4000000,
       log: true,
     }); // nonce+1
@@ -61,7 +61,7 @@ const deployHomeGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment)
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const fastBridgeReceiver = await hre.companionNetworks.foreign.deployments.get("FastBridgeReceiverOnEthereum");
+    const fastBridgeReceiver = await hre.companionNetworks.receiver.deployments.get("FastBridgeReceiverOnEthereum");
 
     const fastBridgeSender = await deploy("FastBridgeSender", {
       from: deployer,
@@ -71,12 +71,12 @@ const deployHomeGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment)
     }); // nonce+0
 
     const klerosCore = await deployments.get("KlerosCore");
-    const foreignGateway = await hre.companionNetworks.foreign.deployments.get("ForeignGatewayOnEthereum");
-    const foreignChainId = Number(await hre.companionNetworks.foreign.getChainId());
-    const homeGateway = await deploy("HomeGatewayToEthereum", {
+    const ReceiverGateway = await hre.companionNetworks.receiver.deployments.get("ForeignGatewayOnEthereum");
+    const ReceiverChainId = Number(await hre.companionNetworks.receiver.getChainId());
+    const senderGateway = await deploy("HomeGatewayToEthereum", {
       from: deployer,
       contract: "HomeGateway",
-      args: [deployer, klerosCore.address, fastBridgeSender.address, foreignGateway.address, foreignChainId],
+      args: [deployer, klerosCore.address, fastBridgeSender.address, ReceiverGateway.address, ReceiverChainId],
       log: true,
     }); // nonce+
   };
@@ -89,7 +89,7 @@ const deployHomeGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment)
   }
 };
 
-deployHomeGateway.tags = ["HomeChain", "HomeGateway"];
-deployHomeGateway.skip = async ({ getChainId }) => !HOME_CHAIN_IDS.includes(Number(await getChainId()));
+deploySenderGateway.tags = ["SenderChain", "SenderGateway"];
+deploySenderGateway.skip = async ({ getChainId }) => !SENDER_CHAIN_IDS.includes(Number(await getChainId()));
 
-export default deployHomeGateway;
+export default deploySenderGateway;

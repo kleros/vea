@@ -5,9 +5,8 @@ import { DeployFunction } from "hardhat-deploy/types";
 
 import getContractAddress from "../deploy-helpers/getContractAddress";
 
-enum ForeignChains {
+enum ReceiverChains {
   ETHEREUM_MAINNET = 1,
-  ETHEREUM_RINKEBY = 4,
   ETHEREUM_GOERLI = 5,
   HARDHAT = 31337,
 }
@@ -16,33 +15,26 @@ const paramsByChainId = {
     deposit: parseEther("0.1"),
     epochPeriod: 86400, // 24 hours
     challengePeriod: 14400, // 4 hours
-    homeChainId: 42161,
+    senderChainId: 42161,
     arbitrumInbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
-  },
-  4: {
-    deposit: parseEther("0.1"),
-    epochPeriod: 86400, // 24 hours
-    challengePeriod: 14400, // 4 hours
-    homeChainId: 421611,
-    arbitrumInbox: "0x578BAde599406A8fE3d24Fd7f7211c0911F5B29e",
   },
   5: {
     deposit: parseEther("0.1"),
     epochPeriod: 86400, // 24 hours
     challengePeriod: 14400, // 4 hours
-    homeChainId: 421613,
+    senderChainId: 421613,
     arbitrumInbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
   },
   31337: {
     deposit: parseEther("0.1"),
     epochPeriod: 86400, // 24 hours
     challengePeriod: 14400, // 4 hours
-    homeChainId: 31337,
+    senderChainId: 31337,
     arbitrumInbox: "0x00",
   },
 };
 
-const deployForeignGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { ethers, deployments, getNamedAccounts, getChainId, config } = hre;
   const { deploy } = deployments;
   const { providers } = ethers;
@@ -53,29 +45,28 @@ const deployForeignGateway: DeployFunction = async (hre: HardhatRuntimeEnvironme
   const chainId = Number(await getChainId());
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
-  const homeNetworks = {
+  const senderNetworks = {
     1: config.networks.arbitrum,
-    4: config.networks.arbitrumRinkeby,
     5: config.networks.arbitrumGoerli,
     31337: config.networks.localhost,
   };
 
-  // Hack to predict the deployment address on the home chain.
+  // Hack to predict the deployment address on the sender chain.
   // TODO: use deterministic deployments
   let nonce;
-  if (chainId === ForeignChains.HARDHAT) {
+  if (chainId === ReceiverChains.HARDHAT) {
     nonce = await ethers.provider.getTransactionCount(deployer);
-    nonce += 5; // HomeGatewayToEthereum deploy tx will be the 6th after this, same network for both home/foreign.
+    nonce += 5; // SenderGatewayToEthereum deploy tx will be the 6th after this, same network for both sender/receiver.
   } else {
-    const homeChainProvider = new providers.JsonRpcProvider(homeNetworks[chainId].url);
-    nonce = await homeChainProvider.getTransactionCount(deployer);
-    nonce += 1; // HomeGatewayToEthereum deploy tx will the third tx after this on its home network, so we add two to the current nonce.
+    const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[chainId].url);
+    nonce = await senderChainProvider.getTransactionCount(deployer);
+    nonce += 1; // SenderGatewayToEthereum deploy tx will the third tx after this on its sender network, so we add two to the current nonce.
   }
-  const { deposit, epochPeriod, challengePeriod, homeChainId, arbitrumInbox } = paramsByChainId[chainId];
-  const homeChainIdAsBytes32 = hexZeroPad(homeChainId, 32);
+  const { deposit, epochPeriod, challengePeriod, senderChainId, arbitrumInbox } = paramsByChainId[chainId];
+  const senderChainIdAsBytes32 = hexZeroPad(senderChainId, 32);
 
-  const homeGatewayAddress = getContractAddress(deployer, nonce);
-  console.log("calculated future HomeGatewayToEthereum address for nonce %d: %s", nonce, homeGatewayAddress);
+  const senderGatewayAddress = getContractAddress(deployer, nonce);
+  console.log("calculated future SenderGatewayToEthereum address for nonce %d: %s", nonce, senderGatewayAddress);
   nonce -= 1;
 
   const fastBridgeSenderAddress = getContractAddress(deployer, nonce);
@@ -83,7 +74,7 @@ const deployForeignGateway: DeployFunction = async (hre: HardhatRuntimeEnvironme
 
   nonce += 4;
 
-  const inboxAddress = chainId === ForeignChains.HARDHAT ? getContractAddress(deployer, nonce) : arbitrumInbox;
+  const inboxAddress = chainId === ReceiverChains.HARDHAT ? getContractAddress(deployer, nonce) : arbitrumInbox;
   console.log("calculated future inboxAddress for nonce %d: %s", nonce, inboxAddress);
 
   const fastBridgeReceiver = await deploy("FastBridgeReceiverOnEthereum", {
@@ -92,34 +83,25 @@ const deployForeignGateway: DeployFunction = async (hre: HardhatRuntimeEnvironme
     log: true,
   });
 
-  const foreignGateway = await deploy("ForeignGatewayOnEthereum", {
+  const ReceiverGateway = await deploy("ReceiverGatewayOnEthereum", {
     from: deployer,
-    contract: "ForeignGateway",
+    contract: "ReceiverGateway",
     args: [
       deployer,
       fastBridgeReceiver.address,
       [ethers.BigNumber.from(10).pow(17)],
-      homeGatewayAddress,
-      homeChainIdAsBytes32,
+      senderGatewayAddress,
+      senderChainIdAsBytes32,
     ],
     gasLimit: 4000000,
     log: true,
   });
-
-  const metaEvidenceUri =
-    "https://raw.githubusercontent.com/kleros/kleros-v2/master/contracts/deployments/rinkeby/MetaEvidence_ArbitrableExample.json";
-
-  await deploy("ArbitrableExample", {
-    from: deployer,
-    args: [foreignGateway.address, metaEvidenceUri],
-    log: true,
-  });
 };
 
-deployForeignGateway.tags = ["ForeignChain", "ForeignGateway"];
-deployForeignGateway.skip = async ({ getChainId }) => {
+deployReceiverGateway.tags = ["ReceiverChain", "ReceiverGateway"];
+deployReceiverGateway.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
-  return !ForeignChains[chainId];
+  return !ReceiverChains[chainId];
 };
 
-export default deployForeignGateway;
+export default deployReceiverGateway;
