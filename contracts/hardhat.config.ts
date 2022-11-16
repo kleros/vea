@@ -40,7 +40,7 @@ const config: HardhatUserConfig = {
       saveDeployments: true,
       tags: ["test", "local"],
       companionNetworks: {
-        foreign: "localhost",
+        receiver: "localhost",
       },
     },
     mainnetFork: {
@@ -54,47 +54,47 @@ const config: HardhatUserConfig = {
       saveDeployments: false,
       tags: ["test", "local"],
     },
-    arbitrumRinkebyFork: {
-      url: "https://rinkeby.arbitrum.io/rpc",
-      chainId: 421611,
-      forking: {
-        url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      },
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-      live: false,
-      saveDeployments: true,
-      tags: ["test", "local"],
-      companionNetworks: {
-        foreign: "rinkeby",
-      },
-    },
+    // arbitrumRinkebyFork: {
+    //   url: "https://rinkeby.arbitrum.io/rpc",
+    //   chainId: 421611,
+    //   forking: {
+    //     url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    //   },
+    //   accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    //   live: false,
+    //   saveDeployments: true,
+    //   tags: ["test", "local"],
+    //   companionNetworks: {
+    //     foreign: "rinkeby",
+    //   },
+    // },
 
     // Home chain ---------------------------------------------------------------------------------
-    arbitrumRinkeby: {
-      chainId: 421611,
-      url: "https://rinkeby.arbitrum.io/rpc",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-      live: true,
-      saveDeployments: true,
-      tags: ["staging", "home", "layer2"],
-      companionNetworks: {
-        foreign: "rinkeby",
-      },
-      verify: {
-        etherscan: {
-          apiKey: process.env.ARBISCAN_API_KEY,
-        },
-      },
-    },
+    // arbitrumRinkeby: {
+    //   chainId: 421611,
+    //   url: "https://rinkeby.arbitrum.io/rpc",
+    //   accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    //   live: true,
+    //   saveDeployments: true,
+    //   tags: ["staging", "home", "layer2"],
+    //   companionNetworks: {
+    //     foreign: "rinkeby",
+    //   },
+    //   verify: {
+    //     etherscan: {
+    //       apiKey: process.env.ARBISCAN_API_KEY,
+    //     },
+    //   },
+    // },
     arbitrumGoerli: {
       chainId: 421613,
       url: "https://goerli-rollup.arbitrum.io/rpc",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["staging", "home", "layer2"],
+      tags: ["staging", "sender", "layer2"],
       companionNetworks: {
-        foreign: "goerli",
+        receiver: "goerli",
       },
       verify: {
         etherscan: {
@@ -108,9 +108,9 @@ const config: HardhatUserConfig = {
       accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["production", "home", "layer2"],
+      tags: ["production", "sender", "layer2"],
       companionNetworks: {
-        foreign: "mainnet",
+        receiver: "mainnet",
       },
       verify: {
         etherscan: {
@@ -119,26 +119,26 @@ const config: HardhatUserConfig = {
       },
     },
     // Foreign chain ---------------------------------------------------------------------------------
-    rinkeby: {
-      chainId: 4,
-      url: `https://rpc.ankr.com/eth_rinkeby`,
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-      live: true,
-      saveDeployments: true,
-      tags: ["staging", "foreign", "layer1"],
-      companionNetworks: {
-        home: "arbitrumRinkeby",
-      },
-    },
+    // rinkeby: {
+    //   chainId: 4,
+    //   url: `https://rpc.ankr.com/eth_rinkeby`,
+    //   accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    //   live: true,
+    //   saveDeployments: true,
+    //   tags: ["staging", "foreign", "layer1"],
+    //   companionNetworks: {
+    //     home: "arbitrumRinkeby",
+    //   },
+    // },
     goerli: {
       chainId: 5,
       url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["staging", "foreign", "layer1"],
+      tags: ["staging", "receiver", "layer1"],
       companionNetworks: {
-        home: "arbitrumGoerli",
+        sender: "arbitrumGoerli",
       },
     },
     mainnet: {
@@ -147,9 +147,9 @@ const config: HardhatUserConfig = {
       accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["production", "foreign", "layer1"],
+      tags: ["production", "receiver", "layer1"],
       companionNetworks: {
-        home: "arbitrum",
+        sender: "arbitrum",
       },
     },
   },
