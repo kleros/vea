@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 
-const SENDER_CHAIN_IDS = [42161, 421613, 31337]; // ArbOne, ArbRinkeby, ArbiGoerli, Hardhat
+const SENDER_CHAIN_IDS = [42161, 421613, 31337]; // ArbOne, ArbiGoerli, Hardhat
 const epochPeriod = 86400; // 24 hours
 
 // TODO: use deterministic deployments
@@ -34,7 +34,7 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
 
     const senderGateway = await deploy("HomeGatewayToEthereum", {
       from: deployer,
-      contract: "HomeGateway",
+      contract: "HomeGatewayMock",
       args: [deployer, klerosCore.address, fastBridgeSender.address, receiverGateway.address, receiverChainId],
       gasLimit: 4000000,
       log: true,
@@ -75,7 +75,7 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
     const ReceiverChainId = Number(await hre.companionNetworks.receiver.getChainId());
     const senderGateway = await deploy("HomeGatewayToEthereum", {
       from: deployer,
-      contract: "HomeGateway",
+      contract: "HomeGatewayMock",
       args: [deployer, klerosCore.address, fastBridgeSender.address, ReceiverGateway.address, ReceiverChainId],
       log: true,
     }); // nonce+

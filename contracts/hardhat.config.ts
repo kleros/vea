@@ -54,38 +54,8 @@ const config: HardhatUserConfig = {
       saveDeployments: false,
       tags: ["test", "local"],
     },
-    // arbitrumRinkebyFork: {
-    //   url: "https://rinkeby.arbitrum.io/rpc",
-    //   chainId: 421611,
-    //   forking: {
-    //     url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   },
-    //   accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    //   live: false,
-    //   saveDeployments: true,
-    //   tags: ["test", "local"],
-    //   companionNetworks: {
-    //     foreign: "rinkeby",
-    //   },
-    // },
 
-    // Home chain ---------------------------------------------------------------------------------
-    // arbitrumRinkeby: {
-    //   chainId: 421611,
-    //   url: "https://rinkeby.arbitrum.io/rpc",
-    //   accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    //   live: true,
-    //   saveDeployments: true,
-    //   tags: ["staging", "home", "layer2"],
-    //   companionNetworks: {
-    //     foreign: "rinkeby",
-    //   },
-    //   verify: {
-    //     etherscan: {
-    //       apiKey: process.env.ARBISCAN_API_KEY,
-    //     },
-    //   },
-    // },
+    // Sender chain ---------------------------------------------------------------------------------
     arbitrumGoerli: {
       chainId: 421613,
       url: "https://goerli-rollup.arbitrum.io/rpc",
@@ -118,18 +88,7 @@ const config: HardhatUserConfig = {
         },
       },
     },
-    // Foreign chain ---------------------------------------------------------------------------------
-    // rinkeby: {
-    //   chainId: 4,
-    //   url: `https://rpc.ankr.com/eth_rinkeby`,
-    //   accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    //   live: true,
-    //   saveDeployments: true,
-    //   tags: ["staging", "foreign", "layer1"],
-    //   companionNetworks: {
-    //     home: "arbitrumRinkeby",
-    //   },
-    // },
+    // Receiver chain ---------------------------------------------------------------------------------
     goerli: {
       chainId: 5,
       url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
