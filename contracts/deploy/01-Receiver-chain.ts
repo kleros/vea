@@ -83,9 +83,9 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
     log: true,
   });
 
-  const ReceiverGateway = await deploy("ReceiverGatewayOnEthereum", {
+  const ReceiverGateway = await deploy("ForeignGatewayOnEthereum", {
     from: deployer,
-    contract: "ReceiverGateway",
+    contract: "ForeignGatewayMock",
     args: [
       deployer,
       fastBridgeReceiver.address,
