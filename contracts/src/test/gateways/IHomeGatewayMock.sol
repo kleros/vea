@@ -10,11 +10,9 @@
 
 pragma solidity ^0.8.0;
 
-import "./IArbitrable.sol";
-import "./IMetaEvidence.sol";
-import "./ISenderGatewayMock.sol";
+import "../../interfaces/ISenderGateway.sol";
 
-interface IHomeGateway is IArbitrable, IMetaEvidence, ISenderGatewayMock {
+interface IHomeGatewayMock is ISenderGateway {
     function relayCreateDispute(
         uint256 _originalChainID,
         bytes32 _originalBlockHash,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@jaybuidl, @shotaronowhere, @shalzz]
+ *  @authors: [@adi274]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -10,8 +10,6 @@
 
 pragma solidity ^0.8.0;
 
-import "./IArbitrator.sol";
-import "../../interfaces/IFastBridgeSender.sol";
 import "./IForeignGatewayMock.sol";
 import "./IHomeGatewayMock.sol";
 
@@ -19,56 +17,25 @@ import "./IHomeGatewayMock.sol";
  * Home Gateway
  * Counterpart of `ForeignGateway`
  */
-contract HomeGateway is IHomeGateway {
-    // ************************************* //
-    // *         Enums / Structs           * //
-    // ************************************* //
-
-    struct RelayedData {
-        uint256 arbitrationCost;
-        address relayer;
+contract HomeGatewayMock is IHomeGatewayMock {
+    function fastBridgeSender() external view override returns (IFastBridgeSender) {
+        revert("Not Implemented");
     }
 
-    // ************************************* //
-    // *             Storage               * //
-    // ************************************* //
-
-    address public governor;
-    IArbitrator public immutable arbitrator;
-    IFastBridgeSender public fastBridgeSender;
-    address public override receiverGateway;
-    uint256 public immutable override receiverChainID;
-    mapping(uint256 => bytes32) public disputeIDtoHash;
-    mapping(bytes32 => uint256) public disputeHashtoID;
-    mapping(bytes32 => RelayedData) public disputeHashtoRelayedData;
-
-    constructor(
-        address _governor,
-        IArbitrator _arbitrator,
-        IFastBridgeSender _fastBridgeSender,
-        address _receiverGateway,
-        uint256 _receiverChainID
-    ) {
-        governor = _governor;
-        arbitrator = _arbitrator;
-        fastBridgeSender = _fastBridgeSender;
-        receiverGateway = _receiverGateway;
-        receiverChainID = _receiverChainID;
-
-        emit MetaEvidence(0, "BRIDGE");
+    function receiverChainID() external view override returns (uint256) {
+        revert("Not Implemented");
     }
 
-    // ************************************* //
-    // *           Governance              * //
-    // ************************************* //
+    function receiverGateway() external view override returns (address) {
+        revert("Not Implemented");
+    }
 
     /**
      * @dev Changes the fastBridge, useful to increase the claim deposit.
      * @param _fastBridgeSender The address of the new fastBridge.
      */
     function changeFastbridge(IFastBridgeSender _fastBridgeSender) external {
-        require(governor == msg.sender, "Access not allowed: Governor only.");
-        fastBridgeSender = _fastBridgeSender;
+        revert("Not Implemented");
     }
 
     // ************************************* //
@@ -92,45 +59,14 @@ contract HomeGateway is IHomeGateway {
         bytes calldata _extraData,
         address _arbitrable
     ) external payable override {
-        bytes32 disputeHash = keccak256(
-            abi.encodePacked(
-                _originalChainID,
-                _originalBlockHash,
-                "createDispute",
-                _originalDisputeID,
-                _choices,
-                _extraData,
-                _arbitrable
-            )
-        );
-        RelayedData storage relayedData = disputeHashtoRelayedData[disputeHash];
-        require(relayedData.relayer == address(0), "Dispute already relayed");
-
-        // TODO: will mostly be replaced by the actual arbitrationCost paid on the foreignChain.
-        relayedData.arbitrationCost = arbitrator.arbitrationCost(_extraData);
-        require(msg.value >= relayedData.arbitrationCost, "Not enough arbitration cost paid");
-
-        uint256 disputeID = arbitrator.createDispute{value: msg.value}(_choices, _extraData);
-        disputeIDtoHash[disputeID] = disputeHash;
-        disputeHashtoID[disputeHash] = disputeID;
-        relayedData.relayer = msg.sender;
-
-        emit Dispute(arbitrator, disputeID, 0, 0);
+        revert("Not Implemented");
     }
 
-    function rule(uint256 _disputeID, uint256 _ruling) external override {
-        require(msg.sender == address(arbitrator), "Only Arbitrator");
-
-        bytes32 disputeHash = disputeIDtoHash[_disputeID];
-        RelayedData memory relayedData = disputeHashtoRelayedData[disputeHash];
-
-        bytes4 methodSelector = IForeignGatewayMock.relayRule.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, disputeHash, _ruling, relayedData.relayer);
-
-        fastBridgeSender.sendFast(receiverGateway, data);
+    function rule(uint256 _disputeID, uint256 _ruling) external {
+        revert("Not Implemented");
     }
 
     function disputeHashToHomeID(bytes32 _disputeHash) external view override returns (uint256) {
-        return disputeHashtoID[_disputeHash];
+        revert("Not Implemented");
     }
 }
