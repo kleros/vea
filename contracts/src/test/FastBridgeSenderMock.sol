@@ -151,13 +151,13 @@ contract FastBridgeSenderMock is IFastBridgeSender, ISafeBridgeSender {
         assembly {
             fastMessage := mload(0x40) // free memory pointer
             let lengthCalldata := mload(_calldata) // calldata length
-            let lengthFastMesssageCalldata := add(lengthCalldata, 0x20) // add msg.sender
-            let lengthEncodedMessage := add(lengthFastMesssageCalldata, 0x80) // 1 offsets, receiver, and lengthFastMesssageCalldata
+            let lengthFastMessageCalldata := add(lengthCalldata, 0x20) // add msg.sender
+            let lengthEncodedMessage := add(lengthFastMessageCalldata, 0x80) // 1 offsets, receiver, and lengthFastMessageCalldata
             mstore(fastMessage, lengthEncodedMessage) // bytes length
             mstore(add(fastMessage, 0x20), nonce) // nonce
             mstore(add(fastMessage, 0x4c), receiver) // receiver
             mstore(add(fastMessage, 0x60), 0x60) // offset
-            mstore(add(fastMessage, 0x80), lengthFastMesssageCalldata) // fast message length
+            mstore(add(fastMessage, 0x80), lengthFastMessageCalldata) // fast message length
             mstore(
                 add(fastMessage, 0xa0),
                 and(mload(add(_calldata, 0x20)), 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
