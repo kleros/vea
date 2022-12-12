@@ -83,16 +83,10 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
     log: true,
   });
 
-  const ReceiverGateway = await deploy("ForeignGatewayOnEthereum", {
+  const ReceiverGateway = await deploy("ReceiverGatewayOnEthereum", {
     from: deployer,
-    contract: "ForeignGatewayMock",
-    args: [
-      deployer,
-      fastBridgeReceiver.address,
-      [ethers.BigNumber.from(10).pow(17)],
-      senderGatewayAddress,
-      senderChainIdAsBytes32,
-    ],
+    contract: "ReceiverGatewayMock",
+    args: [fastBridgeReceiver.address, senderGatewayAddress, senderChainId],
     gasLimit: 4000000,
     log: true,
   });

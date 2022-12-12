@@ -28,14 +28,13 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
       log: true,
     }); // nonce+0
 
-    const klerosCore = await deployments.get("KlerosCore");
-    const receiverGateway = await deployments.get("ForeignGatewayOnEthereum");
+    const receiverGateway = await deployments.get("ReceiverGatewayOnEthereum");
     const receiverChainId = 31337;
 
-    const senderGateway = await deploy("HomeGatewayToEthereum", {
+    const senderGateway = await deploy("SenderGatewayToEthereum", {
       from: deployer,
-      contract: "HomeGatewayMock",
-      args: [deployer, klerosCore.address, fastBridgeSender.address, receiverGateway.address, receiverChainId],
+      contract: "SenderGatewayMock",
+      args: [fastBridgeSender.address, receiverGateway.address, receiverChainId],
       gasLimit: 4000000,
       log: true,
     }); // nonce+1
@@ -70,13 +69,13 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
       log: true,
     }); // nonce+0
 
-    const klerosCore = await deployments.get("KlerosCore");
-    const ReceiverGateway = await hre.companionNetworks.receiver.deployments.get("ForeignGatewayOnEthereum");
+    const ReceiverGateway = await hre.companionNetworks.receiver.deployments.get("ReceiverGatewayOnEthereum");
     const ReceiverChainId = Number(await hre.companionNetworks.receiver.getChainId());
-    const senderGateway = await deploy("HomeGatewayToEthereum", {
+    const senderGateway = await deploy("SenderGatewayToEthereum", {
       from: deployer,
-      contract: "HomeGatewayMock",
-      args: [deployer, klerosCore.address, fastBridgeSender.address, ReceiverGateway.address, ReceiverChainId],
+      contract: "SenderGatewayMock",
+      // klerosCore here is the arbitrator as per the HomeGateway.sol in V2 contracts
+      args: [fastBridgeSender.address, ReceiverGateway.address, ReceiverChainId],
       log: true,
     }); // nonce+
   };
