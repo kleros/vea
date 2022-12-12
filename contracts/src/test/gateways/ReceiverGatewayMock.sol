@@ -16,7 +16,7 @@ import "./IReceiverGatewayMock.sol";
  * Receiver Gateway Mock
  * Counterpart of `SenderGatewayMock`
  */
-contract ReceiverGatewayMock is IReceiverGateway {
+contract ReceiverGatewayMock is IReceiverGatewayMock {
     IFastBridgeReceiver public immutable fastBridgeReceiver;
     address public immutable override senderGateway;
     uint256 public immutable override senderChainID;

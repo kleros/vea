@@ -14,7 +14,7 @@ import "../../interfaces/IReceiverGateway.sol";
 
 interface IReceiverGatewayMock is IReceiverGateway {
     /**
-     * Receive the message from the home gateway.
+     * Receive the message from the sender gateway.
      */
     function receiveMessage(address _messageSender) external;
 }
