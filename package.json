@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "description": "Vea bridge",
   "main": "index.js",
-  "repository": "git@github.com:kleros/vea.git",
-  "author": {
-    "name": "Kleros",
-    "email": "contact@kleros.io",
-    "url": "https://kleros.io"
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/kleros/vea.git"
   },
+  "author": "Vea Team <hi@vea.ninja> (https://vea.ninja)",
   "bugs": {
     "url": "https://github.com/kleros/vea/issues",
     "email": "contact@vea.ninja"
   },
+  "homepage": "https://github.com/kleros/vea#readme",
   "license": "MIT",
   "private": true,
   "workspaces": [
