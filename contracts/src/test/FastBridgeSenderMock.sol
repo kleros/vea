@@ -10,53 +10,21 @@
 
 pragma solidity ^0.8.0;
 
-import "../interfaces/IFastBridgeSender.sol";
-import "../interfaces/ISafeBridgeSender.sol";
-import "../interfaces/ISafeBridgeReceiver.sol";
-import "../canonical/arbitrum/IArbSys.sol"; // Arbiturm sender specific
+import "../FastBridgeSender.sol";
 
 /**
  * Fast Bridge Sender
  * Counterpart of `FastReceiver`
  */
-contract FastBridgeSenderMock is IFastBridgeSender, ISafeBridgeSender {
+contract FastBridgeSenderOnArbitrum is FastBridgeSender {
+    IArbSys public immutable arbSys;
+
     // **************************************** //
-    // *                                      * //
     // *     Arbitrum Sender Specific         * //
-    // *                                      * //
     // **************************************** //
-
-    // ************************************* //
-    // *              Events               * //
-    // ************************************* //
-
-    event L2ToL1TxCreated(uint256 indexed ticketID);
-
-    // ************************************* //
-    // *             Storage               * //
-    // ************************************* //
-
-    IArbSys public constant ARB_SYS = IArbSys(address(100));
-    IArbSys public immutable arbsys;
-
-    /**
-     * @dev Sends the merkle root state for _epoch to Ethereum using the Safe Bridge, which relies on Arbitrum's canonical bridge. It is unnecessary during normal operations but essential only in case of challenge.
-     * @param _epoch The blocknumber of the batch
-     */
-    function sendSafeFallback(uint256 _epoch) external payable override {
-        bytes32 batchMerkleRoot = fastOutbox[_epoch];
-
-        // Safe Bridge message envelope
-        bytes4 methodSelector = ISafeBridgeReceiver.verifySafeBatch.selector;
-        bytes memory safeMessageData = abi.encodeWithSelector(methodSelector, _epoch, batchMerkleRoot);
-
-        _sendSafe(safeBridgeReceiver, safeMessageData);
-    }
 
     function _sendSafe(address _receiver, bytes memory _calldata) internal override returns (bytes32) {
-        uint256 ticketID = arbsys.sendTxToL1(_receiver, _calldata);
-
-        emit L2ToL1TxCreated(ticketID);
+        uint256 ticketID = arbSys.sendTxToL1(_receiver, _calldata);
         return bytes32(ticketID);
     }
 
@@ -64,10 +32,11 @@ contract FastBridgeSenderMock is IFastBridgeSender, ISafeBridgeSender {
      * @dev Constructor.
      * @param _epochPeriod The duration between epochs.
      * @param _safeBridgeReceiver The the Safe Bridge Router on Ethereum to the receiving chain.
-     * @param _arbsys The address of the mock ArbSys contract.
      */
     constructor(
+        IArbSys _arbSys,
         uint256 _epochPeriod,
+<<<<<<< HEAD
         address _safeBridgeReceiver,
         address _arbsys
     ) {
@@ -260,5 +229,10 @@ contract FastBridgeSenderMock is IFastBridgeSender, ISafeBridgeSender {
             height++;
         }
         return node;
+=======
+        address _safeBridgeReceiver
+    ) FastBridgeSender(_epochPeriod, _safeBridgeReceiver) {
+        arbSys = _arbSys;
+>>>>>>> ef95fdf (test: simplified FastBridgeSenderMock, just rely on ArbSysMock)
     }
 }

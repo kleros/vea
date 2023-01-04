@@ -48,9 +48,8 @@ contract FastBridgeSender is IFastBridgeSender, ISafeBridgeSender {
         emit SentSafe(_epoch, ticketID);
     }
 
-    function _sendSafe(address _receiver, bytes memory _calldata) internal override returns (bytes32) {
+    function _sendSafe(address _receiver, bytes memory _calldata) internal virtual override returns (bytes32) {
         uint256 ticketID = ARB_SYS.sendTxToL1(_receiver, _calldata);
-
         return bytes32(ticketID);
     }
 
