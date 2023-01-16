@@ -39,6 +39,10 @@ contract ReceiverGatewayMock is IReceiverGatewayMock {
         _;
     }
 
+    function receiveMessage(uint256 _data) external override onlyFromFastBridge {
+        _receiveMessage(_data);
+    }
+
     /**
      * Receive the message from the sender gateway.
      */

@@ -77,7 +77,7 @@ describe("Integration tests", async () => {
 
     const bridgerVerifyBatchTx = await fastBridgeReceiver.connect(bridger).verifyBatch(batchID);
 
-    // const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
+    const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
 
     const withdrawClaimDepositTx = await fastBridgeReceiver.withdrawClaimDeposit(batchID);
     await expect(fastBridgeReceiver.withdrawChallengeDeposit(batchID)).to.be.revertedWith("Challenge does not exist");
@@ -121,7 +121,7 @@ describe("Integration tests", async () => {
 
     const verifySafeBatchTx = await fastBridgeReceiver.connect(bridger).verifySafeBatch(batchID, batchMerkleRoot);
 
-    // const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
+    const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
 
     const withdrawClaimDepositTx = await fastBridgeReceiver.connect(relayer).withdrawClaimDeposit(batchID);
 
@@ -169,7 +169,7 @@ describe("Integration tests", async () => {
 
     const verifySafeBatchTx = await fastBridgeReceiver.connect(bridger).verifySafeBatch(batchID, batchMerkleRoot);
 
-    // const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
+    const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
 
     expect(fastBridgeReceiver.connect(relayer).withdrawClaimDeposit(batchID)).to.be.revertedWith("Claim failed.");
 
@@ -184,7 +184,3 @@ describe("Integration tests", async () => {
     }
   }
 });
-
-const logJurorBalance = async (result) => {
-  console.log("staked=%s, locked=%s", ethers.utils.formatUnits(result.staked), ethers.utils.formatUnits(result.locked));
-};

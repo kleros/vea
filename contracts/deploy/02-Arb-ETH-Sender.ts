@@ -25,7 +25,7 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
       contract: "FastBridgeSenderOnArbitrum",
       args: [arbSysMock.address, epochPeriod, fastBridgeReceiver.address],
       log: true,
-    }); // nonce+0
+    });
 
     const receiverGateway = await deployments.get("ReceiverGatewayOnEthereum");
     const receiverChainId = 31337;
@@ -36,7 +36,7 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
       args: [fastBridgeSender.address, receiverGateway.address, receiverChainId],
       gasLimit: 4000000,
       log: true,
-    }); // nonce+1
+    });
 
     const outbox = await deploy("OutboxMock", {
       from: deployer,
@@ -66,17 +66,16 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
       contract: "FastBridgeSender",
       args: [epochPeriod, fastBridgeReceiver.address],
       log: true,
-    }); // nonce+0
+    });
 
     const ReceiverGateway = await hre.companionNetworks.receiver.deployments.get("ReceiverGatewayOnEthereum");
     const ReceiverChainId = Number(await hre.companionNetworks.receiver.getChainId());
     const senderGateway = await deploy("SenderGatewayToEthereum", {
       from: deployer,
       contract: "SenderGatewayMock",
-      // klerosCore here is the arbitrator as per the HomeGateway.sol in V2 contracts
       args: [fastBridgeSender.address, ReceiverGateway.address, ReceiverChainId],
       log: true,
-    }); // nonce+
+    });
   };
 
   // ----------------------------------------------------------------------------------------------
