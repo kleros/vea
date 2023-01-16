@@ -117,7 +117,7 @@ contract FastBridgeReceiverOnEthereum is IFastBridgeReceiver, ISafeBridgeReceive
 
         uint256 epochNow = block.timestamp / epochPeriod;
         // allow claim about current or previous epoch
-        require(_epoch == epochNow || _epoch == epochNow + 1, "Invalid epoch.");
+        require(_epoch == epochNow || _epoch == epochNow - 1, "Invalid epoch.");
         require(claims[_epoch].bridger == address(0), "Claim already made for most recent finalized epoch.");
 
         claims[_epoch] = Claim({
@@ -331,16 +331,14 @@ contract FastBridgeReceiverOnEthereum is IFastBridgeReceiver, ISafeBridgeReceive
     // ************************ //
 
     function _checkReplayAndRelay(uint256 _epoch, bytes calldata _messageData) internal returns (bool success) {
-        // Decode the receiver address from the data encoded by the IFastBridgeSender
+        // Decode the receiver gateway address from the data encoded by the IFastBridgeSender
         (uint256 nonce, address receiver, bytes memory data) = abi.decode(_messageData, (uint256, address, bytes));
-
         uint256 index = nonce / 256;
         uint256 offset = nonce % 256;
         bytes32 replay = relayed[_epoch][index];
         require(((replay >> offset) & bytes32(uint256(1))) == 0, "Message already relayed");
         relayed[_epoch][index] = replay | bytes32(1 << offset);
         emit MessageRelayed(_epoch, nonce);
-
         (success, ) = receiver.call(data);
         // Checks-Effects-Interaction
     }

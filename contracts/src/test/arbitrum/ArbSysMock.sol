@@ -18,8 +18,7 @@ contract ArbSysMock {
         payable
         returns (uint256 _withdrawal_ID)
     {
-        bool success = true;
-        // (bool success, ) = address(destination).call(calldataForL1);
+        (bool success, ) = address(destination).call(calldataForL1);
         require(success, "Failed TxToL1");
         return _withdrawal_ID;
     }

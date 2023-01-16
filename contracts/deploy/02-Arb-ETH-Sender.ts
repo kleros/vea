@@ -6,7 +6,6 @@ const SENDER_CHAIN_IDS = [42161, 421613, 31337]; // ArbOne, ArbiGoerli, Hardhat
 const epochPeriod = 86400; // 24 hours
 
 // TODO: use deterministic deployments
-
 const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
   const { deploy, execute } = deployments;
@@ -23,8 +22,8 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
 
     const fastBridgeSender = await deploy("FastBridgeSenderMock", {
       from: deployer,
-      contract: "FastBridgeSenderMock",
-      args: [epochPeriod, fastBridgeReceiver.address, arbSysMock.address],
+      contract: "FastBridgeSenderOnArbitrum",
+      args: [arbSysMock.address, epochPeriod, fastBridgeReceiver.address],
       log: true,
     }); // nonce+0
 

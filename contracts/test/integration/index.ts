@@ -2,53 +2,42 @@ import { expect } from "chai";
 import { deployments, ethers, getNamedAccounts, network } from "hardhat";
 import { BigNumber, utils } from "ethers";
 import {
-  BlockHashRNG,
-  PNK,
-  KlerosCore,
   FastBridgeReceiverOnEthereum,
-  ForeignGatewayOnEthereum,
-  ArbitrableExample,
-  FastBridgeSenderMock,
-  HomeGatewayToEthereum,
-  DisputeKitClassic,
+  ReceiverGatewayMock,
+  FastBridgeSenderMock, // complete mock
+  FastBridgeSender, // what should be mocked
+  SenderGatewayMock,
   InboxMock,
+  FastBridgeReceiverOnEthereum__factory,
+  FastBridgeSender__factory,
 } from "../../typechain-types";
+
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-unused-expressions */ // https://github.com/standard/standard/issues/690#issuecomment-278533482
 
+const ONE_TENTH_ETH = BigNumber.from(10).pow(17);
+const ONE_ETH = BigNumber.from(10).pow(18);
+
+// let fastBridgeReceiver: MockContractFactory<FastBridgeReceiverOnEthereum__factory>;
+// let fastBridgeSender: MockContractFactory<FastBridgeSender__factory>;
+// let fastBridgeReceiver, fastBridgeSender, fastBridgeSenderSmock;
+// let homeGateway: SenderGatewayMock;
+// let inbox: InboxMock;
+
 describe("Integration tests", async () => {
-  const ONE_TENTH_ETH = BigNumber.from(10).pow(17);
-  const ONE_ETH = BigNumber.from(10).pow(18);
-  const ONE_HUNDRED_PNK = BigNumber.from(10).pow(20);
-  const ONE_THOUSAND_PNK = BigNumber.from(10).pow(21);
+  let [deployer, bridger, challenger, relayer]: SignerWithAddress[] = [];
+  let receiverGateway, fastBridgeSender, senderGateway, fastBridgeReceiver, inbox;
 
-  const enum Period {
-    evidence, // Evidence can be submitted. This is also when drawing has to take place.
-    commit, // Jurors commit a hashed vote. This is skipped for courts without hidden votes.
-    vote, // Jurors reveal/cast their vote depending on whether the court has hidden votes or not.
-    appeal, // The dispute can be appealed.
-    execution, // Tokens are redistributed and the ruling is executed.
-  }
+  // let fastBridgeReceiver, foreignGateway, fastBridgeSender, homeGateway, inbox;
 
-  const enum Phase {
-    staking, // Stake can be updated during this phase.
-    freezing, // Phase during which the dispute kits can undergo the drawing process. Staking is not allowed during this phase.
-  }
-
-  const enum DisputeKitPhase {
-    resolving, // No disputes that need drawing.
-    generating, // Waiting for a random number. Pass as soon as it is ready.
-    drawing, // Jurors can be drawn.
-  }
-
-  let deployer;
-  let rng, disputeKit, pnk, core, fastBridgeReceiver, foreignGateway, arbitrable, fastBridgeSender, homeGateway, inbox;
+  before("Initialize wallets", async () => {
+    [deployer, bridger, challenger, relayer] = await ethers.getSigners();
+  });
 
   beforeEach("Setup", async () => {
-    ({ deployer } = await getNamedAccounts());
-
-    console.log("deployer:%s", deployer);
+    console.log("deployer:%s", deployer.address);
     console.log("named accounts: %O", await getNamedAccounts());
 
     await deployments.fixture(["ReceiverGateway", "SenderGateway"], {
@@ -57,19 +46,18 @@ describe("Integration tests", async () => {
     });
 
     fastBridgeReceiver = (await ethers.getContract("FastBridgeReceiverOnEthereum")) as FastBridgeReceiverOnEthereum;
-    foreignGateway = (await ethers.getContract("ReceiverGatewayOnEthereum")) as ForeignGatewayOnEthereum;
+    receiverGateway = (await ethers.getContract("ReceiverGatewayOnEthereum")) as ReceiverGatewayOnEthereum;
     fastBridgeSender = (await ethers.getContract("FastBridgeSenderMock")) as FastBridgeSenderMock;
-    homeGateway = (await ethers.getContract("SenderGatewayToEthereum")) as HomeGatewayToEthereum;
+    senderGateway = (await ethers.getContract("SenderGatewayToEthereum")) as SenderGatewayToEthereum;
     inbox = (await ethers.getContract("InboxMock")) as InboxMock;
   });
 
   it("Honest Claim - No Challenge - Bridger paid", async () => {
-    const arbitrationCost = ONE_TENTH_ETH.mul(3);
     const [bridger, challenger, relayer] = await ethers.getSigners();
 
+    // sending sample data through the fast bridge
     const data = 1121;
-
-    const tx = await homeGateway.sendFastMessage(data);
+    const tx = await senderGateway.sendFastMessage(data);
 
     const MessageReceived = fastBridgeSender.filters.MessageReceived();
     const event = await fastBridgeSender.queryFilter(MessageReceived);
@@ -82,7 +70,7 @@ describe("Integration tests", async () => {
     const batchID = eventa[0].args.batchID;
     const batchMerkleRoot = eventa[0].args.batchMerkleRoot;
 
-    expect(
+    await expect(
       fastBridgeReceiver.connect(bridger).claim(batchID, ethers.constants.HashZero, { value: ONE_TENTH_ETH })
     ).to.be.revertedWith("Invalid claim.");
 
@@ -95,34 +83,30 @@ describe("Integration tests", async () => {
 
     const tx7a = await fastBridgeReceiver.connect(bridger).verifyBatch(batchID);
 
-    // const tx7 = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
+    const tx7 = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
 
     const tx8 = await fastBridgeReceiver.withdrawClaimDeposit(batchID);
-    expect(fastBridgeReceiver.withdrawChallengeDeposit(batchID)).to.be.revertedWith("Challenge does not exist");
+    await expect(fastBridgeReceiver.withdrawChallengeDeposit(batchID)).to.be.revertedWith("Challenge does not exist");
   });
 
   it("Honest Claim - Dishonest Challenge - Bridger paid, Challenger deposit forfeited", async () => {
-    const arbitrationCost = ONE_TENTH_ETH.mul(3);
     const [bridger, challenger, relayer] = await ethers.getSigners();
 
     const data = 1121;
 
-    const tx = await homeGateway.sendFastMessage(data);
+    const tx = await senderGateway.sendFastMessage(data);
 
     const MessageReceived = fastBridgeSender.filters.MessageReceived();
-    console.log("message received: ", MessageReceived);
     const event = await fastBridgeSender.queryFilter(MessageReceived);
-    console.log(event);
     const fastMessage = event[0].args.fastMessage;
 
     const txa = await fastBridgeSender.connect(bridger).sendBatch();
 
     const BatchOutgoing = fastBridgeSender.filters.BatchOutgoing();
     const event4a = await fastBridgeSender.queryFilter(BatchOutgoing);
+    console.log(event4a);
     const batchID = event4a[0].args.batchID;
     const batchMerkleRoot = event4a[0].args.batchMerkleRoot;
-
-    console.log("Executed ruling");
 
     // bridger tx starts - Honest Bridger
     const tx5 = await fastBridgeReceiver.connect(bridger).claim(batchID, batchMerkleRoot, { value: ONE_TENTH_ETH });
@@ -149,24 +133,20 @@ describe("Integration tests", async () => {
     // expect(tx8).to.emit(fastBridgeReceiver, "BatchSafeVerified").withArgs(batchID, true, false);
 
     // const tx9 = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(batchID, [], fastMessage);
-    // expect(tx9).to.emit(fastBridgeReceiver, "MessageRelayed").withArgs(batchID, 0);
-    // expect(tx9).to.emit(arbitrable, "Ruling");
 
     const tx10 = await fastBridgeReceiver.connect(relayer).withdrawClaimDeposit(batchID);
-    // expect(tx10).to.emit(fastBridgeReceiver, "ClaimDepositWithdrawn").withArgs(batchID, bridger.address);
 
-    await expect(fastBridgeReceiver.connect(relayer).withdrawChallengeDeposit(batchID)).to.be.revertedWith(
+    expect(fastBridgeReceiver.connect(relayer).withdrawChallengeDeposit(batchID)).to.be.revertedWith(
       "Challenge failed."
     );
   });
 
   it("Dishonest Claim - Honest Challenge - Bridger deposit forfeited, Challenger paid", async () => {
-    const arbitrationCost = ONE_TENTH_ETH.mul(3);
     const [bridger, challenger, relayer] = await ethers.getSigners();
 
     const data = 1121;
 
-    const tx = await homeGateway.sendFastMessage(data);
+    const tx = await senderGateway.sendFastMessage(data);
 
     const MessageReceived = fastBridgeSender.filters.MessageReceived();
     const event4 = await fastBridgeSender.queryFilter(MessageReceived);
