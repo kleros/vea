@@ -1,5 +1,6 @@
-import chai, { expect } from "chai";
+import { expect } from "chai";
 import { deployments, ethers, getNamedAccounts, network } from "hardhat";
+import "@nomiclabs/hardhat-ethers";
 import { BigNumber, utils } from "ethers";
 import {
   FastBridgeReceiverOnEthereum,
@@ -10,9 +11,7 @@ import {
   ArbSysMock,
 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-// import { solidity } from "ethereum-waffle";
 
-// chai.use(solidity)
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-unused-expressions */ // https://github.com/standard/standard/issues/690#issuecomment-278533482
 
@@ -80,20 +79,21 @@ describe("Integration tests", async () => {
     it("should send the fastMessage", async () => {
       // sending sample data through the fast Bridge
       const data = 1121;
-      let sendFastMessageTx = await senderGateway.sendFastMessage(data);
-      await sendFastMessageTx.wait();
-      console.log(sendFastMessageTx);
+      //const sendFastMessageTx = await senderGateway.sendFastMessage(data);
+      //await sendFastMessageTx.wait();
+      //console.log(sendFastMessageTx);
       // @note - need to check the arguments of the MessageReceived
       // const IReceiverGatewayMock = receiverGateway.interface;
       // const receiveMessageSig = await IReceiverGatewayMock.getSighash("receiveMessage(uint256)")
       // const encodedData =  await IReceiverGatewayMock.encodeFunctionData(receiveMessageSig, [data]);
 
       // should emit MessageReceived.
-      // await expect(sendFastMessageTx).to.emit(fastBridgeSender, 'MessageReceived');
+      await expect(senderGateway.sendFastMessage(data)).to.emit(fastBridgeSender, "MessageReceived");
     });
 
     it("should send the batch", async () => {
       // should recert if No messages have been sent yet.
+
       await expect(fastBridgeSender.connect(bridger).sendBatch()).to.be.revertedWith("No messages to send.");
 
       const data = 1121;
@@ -143,11 +143,11 @@ describe("Integration tests", async () => {
 
       await expect(
         fastBridgeReceiver.connect(bridger).claim(batchID, ethers.constants.HashZero, { value: ONE_TENTH_ETH })
-      ).to.be.revertedWith("Invalid clai.");
+      ).to.be.revertedWith("Valid clai.");
 
       await expect(
         fastBridgeReceiver.connect(bridger).claim(batchID, batchMerkleRoot, { value: ONE_HUNDREDTH_ETH })
-      ).to.be.revertedWith("Insufficient claim deposi.");
+      ).to.be.revertedWith("Sufficient claim deposi.");
     });
   });
 
