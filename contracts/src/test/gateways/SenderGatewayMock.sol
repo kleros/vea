@@ -22,6 +22,7 @@ contract SenderGatewayMock is ISenderGateway {
     address public override receiverGateway;
     uint256 public immutable override receiverChainID;
 
+    // @note - We can remove this as we are not using this.
     struct RelayedData {
         uint256 arbitrationCost;
         address relayer;

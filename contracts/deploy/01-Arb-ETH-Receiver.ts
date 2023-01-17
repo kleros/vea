@@ -56,7 +56,7 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
   let nonce;
   if (chainId === ReceiverChains.HARDHAT) {
     nonce = await ethers.provider.getTransactionCount(deployer);
-    nonce += 5; // SenderGatewayToEthereum deploy tx will be the 6th after this, same network for both sender/receiver.
+    nonce += 4; // SenderGatewayToEthereum deploy tx will be the 5th after this, same network for both sender/receiver.
   } else {
     const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[chainId].url);
     nonce = await senderChainProvider.getTransactionCount(deployer);
@@ -71,7 +71,6 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
 
   const fastBridgeSenderAddress = getContractAddress(deployer, nonce);
   console.log("calculated future FastSender for nonce %d: %s", nonce, fastBridgeSenderAddress);
-
   nonce += 4;
 
   const inboxAddress = chainId === ReceiverChains.HARDHAT ? getContractAddress(deployer, nonce) : arbitrumInbox;
