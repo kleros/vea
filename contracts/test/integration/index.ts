@@ -16,6 +16,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-unused-expressions */ // https://github.com/standard/standard/issues/690#issuecomment-278533482
 
+const ONE_HUNDREDTH_ETH = BigNumber.from(10).pow(16);
 const ONE_TENTH_ETH = BigNumber.from(10).pow(17);
 const ONE_ETH = BigNumber.from(10).pow(18);
 const HARDHAT_CHAIN_ID = 31337;
@@ -33,12 +34,11 @@ describe("Integration tests", async () => {
 
   before("Initialize wallets", async () => {
     [deployer, bridger, challenger, relayer] = await ethers.getSigners();
+    console.log("deployer:%s", deployer.address);
+    console.log("named accounts: %O", await getNamedAccounts());
   });
 
   beforeEach("Setup", async () => {
-    console.log("deployer:%s", deployer.address);
-    console.log("named accounts: %O", await getNamedAccounts());
-
     await deployments.fixture(["ReceiverGateway", "SenderGateway"], {
       fallbackToGlobal: true,
       keepExistingDeployments: false,
@@ -76,7 +76,7 @@ describe("Integration tests", async () => {
     expect(await receiverGateway.senderChainID()).to.equal(HARDHAT_CHAIN_ID);
   });
 
-  describe("Honest Claim - No Challenge - Bridger Paiddd", async () => {
+  describe("Honest Claim - No Challenge - Bridger Paid", async () => {
     it("should send the fastMessage", async () => {
       // sending sample data through the fast Bridge
       const data = 1121;
@@ -94,15 +94,15 @@ describe("Integration tests", async () => {
 
     it("should send the batch", async () => {
       // should recert if No messages have been sent yet.
-      // expect(await fastBridgeSender.connect(bridger).sendBatch())
-      // .to.be.revertedWith("N to send.")
+      await expect(fastBridgeSender.connect(bridger).sendBatch()).to.be.revertedWith("No messages to send.");
 
       const data = 1121;
       let sendFastMessageTx = await senderGateway.sendFastMessage(data);
+
       const MessageReceived = fastBridgeSender.filters.MessageReceived();
       const event = await fastBridgeSender.queryFilter(MessageReceived);
-      console.log(event);
       const fastMessage = event[0].args.fastMessage;
+
       const currentBlockNum = ethers.provider.getBlockNumber();
       const currentTimestamp = (await ethers.provider.getBlock(currentBlockNum)).timestamp;
 
@@ -124,6 +124,30 @@ describe("Integration tests", async () => {
       const batchMerkleRoot = eventa[0].args.batchMerkleRoot;
 
       expect(await fastBridgeSender.fastOutbox(Math.floor(currentTimestamp / EPOCH_PERIOD))).to.equal(batchMerkleRoot);
+    });
+
+    it("should be able to claim", async () => {
+      const data = 1121;
+      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+
+      const MessageReceived = fastBridgeSender.filters.MessageReceived();
+      const event = await fastBridgeSender.queryFilter(MessageReceived);
+      const fastMessage = event[0].args.fastMessage;
+
+      const sendBatchTx = await fastBridgeSender.connect(bridger).sendBatch();
+
+      const BatchOutgoing = fastBridgeSender.filters.BatchOutgoing();
+      const eventa = await fastBridgeSender.queryFilter(BatchOutgoing);
+      const batchID = eventa[0].args.batchID;
+      const batchMerkleRoot = eventa[0].args.batchMerkleRoot;
+
+      await expect(
+        fastBridgeReceiver.connect(bridger).claim(batchID, ethers.constants.HashZero, { value: ONE_TENTH_ETH })
+      ).to.be.revertedWith("Invalid clai.");
+
+      await expect(
+        fastBridgeReceiver.connect(bridger).claim(batchID, batchMerkleRoot, { value: ONE_HUNDREDTH_ETH })
+      ).to.be.revertedWith("Insufficient claim deposi.");
     });
   });
 
