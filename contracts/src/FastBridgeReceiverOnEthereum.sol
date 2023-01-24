@@ -177,7 +177,7 @@ contract FastBridgeReceiverOnEthereum is IFastBridgeReceiver, ISafeBridgeReceive
      * @param _batchMerkleRoot The true batch merkle root for the epoch.
      */
     function verifySafeBatch(uint256 _epoch, bytes32 _batchMerkleRoot) external override {
-        // require(isSentBySafeBridge(), "Access not allowed: SafeBridgeSender only.");
+        require(isSentBySafeBridge(), "Access not allowed: SafeBridgeSender only.");
 
         fastInbox[_epoch] = _batchMerkleRoot;
 
