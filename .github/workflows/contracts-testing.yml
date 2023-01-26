@@ -39,7 +39,7 @@ jobs:
              
     - name: Install contracts dependencies
       run: |
-        yarn workspace @kleros/kleros-v2-contracts install
+        yarn workspace @kleros/vea-contracts install
       
     - name: Compile
       run: |
