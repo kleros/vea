@@ -42,9 +42,8 @@
     "release:patch": "scripts/publish-dev-patch.sh"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^1.0.4",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.13",
-    "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@typechain/ethers-v5": "^10.1.1",
     "@typechain/hardhat": "^6.1.4",
     "@types/chai": "^4.3.4",
@@ -55,7 +54,6 @@
     "chai": "^4.3.7",
     "chai-ethers": "^0.0.1",
     "dotenv": "^16.0.3",
-    "ethereum-waffle": "^3.4.4",
     "ethereumjs-util": "^7.1.4",
     "ethers": "^5.7.2",
     "follow-redirects": "^1.15.0",
