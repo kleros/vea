@@ -46,7 +46,9 @@ describe("Integration tests", async () => {
       keepExistingDeployments: false,
     });
 
-    fastBridgeReceiver = (await ethers.getContract("FastBridgeReceiverOnEthereum")) as FastBridgeReceiverOnEthereum;
+    fastBridgeReceiver = (await ethers.getContract(
+      "FastBridgeReceiverOnEthereumMock"
+    )) as FastBridgeReceiverOnEthereumMock;
     receiverGateway = (await ethers.getContract("ReceiverGatewayOnEthereum")) as ReceiverGatewayMock;
     fastBridgeSender = (await ethers.getContract("FastBridgeSenderMock")) as FastBridgeSenderOnArbitrum;
     senderGateway = (await ethers.getContract("SenderGatewayToEthereum")) as SenderGatewayMock;
@@ -63,13 +65,13 @@ describe("Integration tests", async () => {
     // FastBridgeSender
     expect(await fastBridgeSender.arbSys()).to.equal(arbsysMock.address);
     expect(await fastBridgeSender.epochPeriod()).to.equal(EPOCH_PERIOD);
-    expect(await fastBridgeSender.safeBridgeReceiver()).to.equal(fastBridgeReceiver.address);
+    expect(await fastBridgeSender.fastBridgeReceiver()).to.equal(fastBridgeReceiver.address);
 
     // FastBridgeReceiver
     expect(await fastBridgeReceiver.deposit()).to.equal(ONE_TENTH_ETH);
     expect(await fastBridgeReceiver.epochPeriod()).to.equal(EPOCH_PERIOD);
     expect(await fastBridgeReceiver.challengePeriod()).to.equal(CHALLENGE_PERIOD);
-    expect(await fastBridgeReceiver.safeBridgeSender()).to.equal(fastBridgeSender.address);
+    expect(await fastBridgeReceiver.fastBridgeSender()).to.equal(fastBridgeSender.address);
     expect(await fastBridgeReceiver.inbox()).to.equal(inbox.address);
 
     // ReceiverGateway
@@ -88,8 +90,7 @@ describe("Integration tests", async () => {
     });
 
     it("should send the batch", async () => {
-      // should recert if No messages have been sent yet.
-
+      // should revert if No messages have been sent yet.
       await expect(fastBridgeSender.connect(bridger).sendBatch()).to.be.revertedWith("No messages to send.");
 
       const data = 1121;
@@ -152,8 +153,6 @@ describe("Integration tests", async () => {
       await expect(
         fastBridgeReceiver.connect(bridger).claim(epoch, ethers.constants.HashZero, { value: ONE_TENTH_ETH })
       ).to.be.revertedWith("Invalid claim.");
-
-      // @note - need to check for invalid epoch
 
       await expect(
         fastBridgeReceiver.connect(bridger).claim(invalidEpoch, batchMerkleRoot, { value: ONE_TENTH_ETH })

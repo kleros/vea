@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@shotaronowhere]
+ *  @authors: [@shotaronowhere, @adi274]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []

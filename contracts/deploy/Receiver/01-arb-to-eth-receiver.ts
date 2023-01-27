@@ -3,7 +3,7 @@ import { parseEther } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 
-import getContractAddress from "../deploy-helpers/getContractAddress";
+import getContractAddress from "../../deploy-helpers/getContractAddress";
 
 enum ReceiverChains {
   ETHEREUM_MAINNET = 1,
@@ -58,6 +58,7 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
     nonce = await ethers.provider.getTransactionCount(deployer);
     nonce += 4; // SenderGatewayToEthereum deploy tx will be the 5th after this, same network for both sender/receiver.
   } else {
+    console.log(config.networks);
     const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[chainId].url);
     nonce = await senderChainProvider.getTransactionCount(deployer);
     nonce += 1; // SenderGatewayToEthereum deploy tx will the third tx after this on its sender network, so we add two to the current nonce.
@@ -76,11 +77,22 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
   const inboxAddress = chainId === ReceiverChains.HARDHAT ? getContractAddress(deployer, nonce) : arbitrumInbox;
   console.log("calculated future inboxAddress for nonce %d: %s", nonce, inboxAddress);
 
-  const fastBridgeReceiver = await deploy("FastBridgeReceiverOnEthereum", {
-    from: deployer,
-    args: [deposit, epochPeriod, challengePeriod, fastBridgeSenderAddress, inboxAddress],
-    log: true,
-  });
+  let fastBridgeReceiver;
+  if (chainId == ReceiverChains.HARDHAT) {
+    fastBridgeReceiver = await deploy("FastBridgeReceiverOnEthereumMock", {
+      from: deployer,
+      args: [deposit, epochPeriod, challengePeriod, fastBridgeSenderAddress, inboxAddress],
+      log: true,
+    });
+  } else {
+    fastBridgeReceiver = await deploy("FastBridgeReceiverOnEthereum", {
+      from: deployer,
+      args: [deposit, epochPeriod, challengePeriod, fastBridgeSenderAddress, inboxAddress],
+      log: true,
+    });
+  }
+
+  console.log("Receiver: deployed", fastBridgeReceiver.address);
 
   const ReceiverGateway = await deploy("ReceiverGatewayOnEthereum", {
     from: deployer,
@@ -91,9 +103,10 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
   });
 };
 
-deployReceiverGateway.tags = ["ReceiverChain", "ReceiverGateway"];
+deployReceiverGateway.tags = ["ReceiverChain", "ReceiverGateway", "Arbitrum"];
 deployReceiverGateway.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
+  console.log(chainId);
   return !ReceiverChains[chainId];
 };
 

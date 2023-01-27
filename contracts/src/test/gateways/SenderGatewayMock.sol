@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@shotaronowhere]
+ *  @authors: [@shotaronowhere, @adi274]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -21,13 +21,6 @@ contract SenderGatewayMock is ISenderGateway {
     IFastBridgeSender public immutable fastBridgeSender;
     address public override receiverGateway;
     uint256 public immutable override receiverChainID;
-
-    // @note - We can remove this as we are not using this.
-    struct RelayedData {
-        uint256 arbitrationCost;
-        address relayer;
-    }
-    mapping(bytes32 => RelayedData) public disputeHashtoRelayedData;
 
     constructor(
         IFastBridgeSender _fastBridgeSender,

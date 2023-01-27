@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat]
+ *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat, @adi274]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -36,9 +36,9 @@ contract FastBridgeReceiverOnEthereum is IFastBridgeReceiver, ISafeBridgeReceive
     // *              Views                * //
     // ************************************* //
 
-    function isSentBySafeBridge() internal view override returns (bool) {
+    function isSentBySafeBridge() internal view virtual override returns (bool) {
         IOutbox outbox = IOutbox(inbox.bridge().activeOutbox());
-        return outbox.l2ToL1Sender() == safeBridgeSender;
+        return (msg.sender == address(outbox) && outbox.l2ToL1Sender() == fastBridgeSender);
     }
 
     /**
@@ -46,20 +46,20 @@ contract FastBridgeReceiverOnEthereum is IFastBridgeReceiver, ISafeBridgeReceive
      * @param _deposit The deposit amount to submit a claim in wei.
      * @param _epochPeriod The duration of each epoch.
      * @param _challengePeriod The duration of the period allowing to challenge a claim.
-     * @param _safeBridgeSender The address of the Safe Bridge Sender on the connecting chain.
+     * @param _fastBridgeSender The address of the Safe Bridge Sender on the connecting chain.
      * @param _inbox Ethereum receiver specific: The address of the inbox contract on Ethereum.
      */
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
         uint256 _challengePeriod,
-        address _safeBridgeSender,
+        address _fastBridgeSender,
         address _inbox // Ethereum receiver specific
     ) {
         deposit = _deposit;
         epochPeriod = _epochPeriod;
         challengePeriod = _challengePeriod;
-        safeBridgeSender = _safeBridgeSender;
+        fastBridgeSender = _fastBridgeSender;
         inbox = IInbox(_inbox); // Ethereum receiver specific
     }
 
@@ -95,7 +95,7 @@ contract FastBridgeReceiverOnEthereum is IFastBridgeReceiver, ISafeBridgeReceive
     uint256 public immutable deposit; // The deposit required to submit a claim or challenge
     uint256 public immutable override epochPeriod; // Epochs mark the period between potential batches of messages.
     uint256 public immutable override challengePeriod; // Epochs mark the period between potential batches of messages.
-    address public immutable safeBridgeSender; // The address of the Safe Bridge Sender on the connecting chain.
+    address public immutable fastBridgeSender; // The address of the Safe Bridge Sender on the connecting chain.
 
     mapping(uint256 => bytes32) public fastInbox; // epoch => validated batch merkle root(optimistically, or challenged and verified with the safe bridge)
     mapping(uint256 => Claim) public claims; // epoch => claim

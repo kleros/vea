@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 
 import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import "hardhat-deploy-tenderly";
 import "hardhat-gas-reporter";
@@ -64,7 +64,7 @@ const config: HardhatUserConfig = {
       saveDeployments: true,
       tags: ["staging", "sender", "layer2"],
       companionNetworks: {
-        receiver: "goerli",
+        receiver: "chiado",
       },
       verify: {
         etherscan: {
@@ -89,6 +89,17 @@ const config: HardhatUserConfig = {
       },
     },
     // Receiver chain ---------------------------------------------------------------------------------
+    chiado: {
+      chainId: 10200,
+      url: "https://rpc.chiadochain.net",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      live: true,
+      saveDeployments: true,
+      tags: ["staging", "receiver", "layer1"],
+      companionNetworks: {
+        sender: "arbitrumGoerli",
+      },
+    },
     goerli: {
       chainId: 5,
       url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,

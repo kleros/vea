@@ -17,7 +17,8 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
-    const fastBridgeReceiver = await deployments.get("FastBridgeReceiverOnEthereum");
+    const fastBridgeReceiver = await deployments.get("FastBridgeReceiverOnEthereumMock");
+    console.log(fastBridgeReceiver.address);
     const arbSysMock = await deploy("ArbSysMock", { from: deployer, log: true });
 
     const fastBridgeSender = await deploy("FastBridgeSenderMock", {
@@ -86,7 +87,8 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
   }
 };
 
-deploySenderGateway.tags = ["SenderChain", "SenderGateway"];
+deploySenderGateway.tags = ["SenderChain", "SenderGateway", "Ethereum"];
 deploySenderGateway.skip = async ({ getChainId }) => !SENDER_CHAIN_IDS.includes(Number(await getChainId()));
+deploySenderGateway.runAtTheEnd = true;
 
 export default deploySenderGateway;

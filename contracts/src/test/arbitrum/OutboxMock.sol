@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@hrishibhat]
+ *  @authors: [@hrishibhat, @adi274]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -13,14 +13,14 @@ pragma solidity ^0.8.0;
 import "../../canonical/arbitrum/IOutbox.sol";
 
 contract OutboxMock is IOutbox {
-    address public safeBridgeSender;
+    address public fastBridgeSender;
 
-    constructor(address _safeBridgeSender) {
-        safeBridgeSender = _safeBridgeSender;
+    constructor(address _fastBridgeSender) {
+        fastBridgeSender = _fastBridgeSender;
     }
 
     function l2ToL1Sender() external view returns (address) {
-        return address(safeBridgeSender);
+        return address(fastBridgeSender);
     }
 
     function l2ToL1Block() external view returns (uint256) {}

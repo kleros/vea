@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@shotaronowhere, @hrishibhat, @jaybuidl]
+ *  @authors: [@shotaronowhere, @hrishibhat, @jaybuidl, @adi274]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -24,24 +24,24 @@ contract SafeBridgeRouterToPolygon is ISafeBridgeRouter, FxBaseRootTunnel {
     // ************************************* //
 
     IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.
-    address public immutable safeBridgeSender; // The address of the Safe Bridge sender on Arbitrum.
+    address public immutable fastBridgeSender; // The address of the Safe Bridge sender on Arbitrum.
 
     /**
      * @dev Constructor.
      * @param _inbox The address of the inbox contract on Ethereum.
      * @param _fxRoot The address of the fxRoot contract in Ethereum.
-     * @param _safeBridgeSender The safe bridge sender on Arbitrum.
+     * @param _fastBridgeSender The safe bridge sender on Arbitrum.
      * @param _fastBridgeReceiverOnPolygon The fast bridge receiver on Polygon Chain.
      */
     constructor(
         IInbox _inbox,
         address _checkpointManager,
         address _fxRoot,
-        address _safeBridgeSender,
+        address _fastBridgeSender,
         address _fastBridgeReceiverOnPolygon
     ) FxBaseRootTunnel(_checkpointManager, _fxRoot) {
         inbox = _inbox;
-        safeBridgeSender = _safeBridgeSender;
+        fastBridgeSender = _fastBridgeSender;
         setFxChildTunnel(_fastBridgeReceiverOnPolygon);
     }
 
@@ -80,6 +80,6 @@ contract SafeBridgeRouterToPolygon is ISafeBridgeRouter, FxBaseRootTunnel {
 
     function isSentBySafeBridge() internal view override returns (bool) {
         IOutbox outbox = IOutbox(inbox.bridge().activeOutbox());
-        return outbox.l2ToL1Sender() == safeBridgeSender;
+        return outbox.l2ToL1Sender() == fastBridgeSender;
     }
 }

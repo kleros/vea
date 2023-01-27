@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat]
+ *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat, @adi274]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -36,7 +36,7 @@ contract FastBridgeReceiverOnGnosis is IFastBridgeReceiver, ISafeBridgeReceiver 
     // ************************************* //
 
     function isSentBySafeBridge() internal view override returns (bool) {
-        return (msg.sender == address(amb)) && (amb.messageSender() == safeBridgeSender);
+        return (msg.sender == address(amb)) && (amb.messageSender() == fastBridgeSender);
     }
 
     /**
@@ -44,20 +44,20 @@ contract FastBridgeReceiverOnGnosis is IFastBridgeReceiver, ISafeBridgeReceiver 
      * @param _deposit The deposit amount to submit a claim in wei.
      * @param _epochPeriod The duration of each epoch.
      * @param _challengePeriod The duration of the period allowing to challenge a claim.
-     * @param _safeBridgeSender The address of the Safe Bridge Sender on the connecting chain.
+     * @param _fastBridgeSender The address of the Safe Bridge Sender on the connecting chain.
      * @param _amb The AMB contract on Gnosis Chain.
      */
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
         uint256 _challengePeriod,
-        address _safeBridgeSender, // Gnosis receiver specific
+        address _fastBridgeSender, // Gnosis receiver specific
         address _amb // Gnosis receiver specific
     ) {
         deposit = _deposit;
         epochPeriod = _epochPeriod;
         challengePeriod = _challengePeriod;
-        safeBridgeSender = _safeBridgeSender;
+        fastBridgeSender = _fastBridgeSender;
         amb = IAMB(_amb); // Gnosis receiver specific
     }
 
@@ -93,7 +93,7 @@ contract FastBridgeReceiverOnGnosis is IFastBridgeReceiver, ISafeBridgeReceiver 
     uint256 public immutable deposit; // The deposit required to submit a claim or challenge
     uint256 public immutable override epochPeriod; // Epochs mark the period between potential batches of messages.
     uint256 public immutable override challengePeriod; // Epochs mark the period between potential batches of messages.
-    address public immutable safeBridgeSender; // The address of the Safe Bridge Sender on the connecting chain.
+    address public immutable fastBridgeSender; // The address of the Safe Bridge Sender on the connecting chain.
 
     mapping(uint256 => bytes32) public fastInbox; // epoch => validated batch merkle root(optimistically, or challenged and verified with the safe bridge)
     mapping(uint256 => Claim) public claims; // epoch => claim

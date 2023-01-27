@@ -1,0 +1,209 @@
+{
+  "address": "0xA1EcD2e86E9C674762aC68de90edfdb171c8e302",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IFastBridgeReceiver",
+          "name": "_fastBridgeReceiver",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_senderGateway",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_senderChainID",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "data",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "fastBridgeReceiver",
+      "outputs": [
+        {
+          "internalType": "contract IFastBridgeReceiver",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "messageCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_data",
+          "type": "uint256"
+        }
+      ],
+      "name": "receiveMessage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_messageSender",
+          "type": "address"
+        }
+      ],
+      "name": "receiveMessage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_messageSender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_data",
+          "type": "uint256"
+        }
+      ],
+      "name": "receiveMessage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "senderChainID",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "senderGateway",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xda97ae34ced39c8973eb9d1d2b4ccf848bde51dc6a1f8e7a4180d75358aa8632",
+  "receipt": {
+    "to": null,
+    "from": "0xf112347faDA222A95d84626b19b2af1DB6672C18",
+    "contractAddress": "0xA1EcD2e86E9C674762aC68de90edfdb171c8e302",
+    "transactionIndex": 1,
+    "gasUsed": "309499",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xd1ab1b8d738c6b1104e432252c5478762dfdb3f4fda6078ee38082804f64151c",
+    "transactionHash": "0xda97ae34ced39c8973eb9d1d2b4ccf848bde51dc6a1f8e7a4180d75358aa8632",
+    "logs": [],
+    "blockNumber": 2126471,
+    "cumulativeGasUsed": "4293601",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x8A5908020053119b0151bDE43c11a28eb4ed9a7c",
+    "0x42319536AA7eD5E0A6CBCAF3FaaDb5243d482C7A",
+    421613
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "d2b0f710adf6e1b001d6a1a8ff47f69c",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract IFastBridgeReceiver\",\"name\":\"_fastBridgeReceiver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_senderGateway\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_senderChainID\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"data\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"fastBridgeReceiver\",\"outputs\":[{\"internalType\":\"contract IFastBridgeReceiver\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"messageCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_data\",\"type\":\"uint256\"}],\"name\":\"receiveMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_messageSender\",\"type\":\"address\"}],\"name\":\"receiveMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_messageSender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_data\",\"type\":\"uint256\"}],\"name\":\"receiveMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"senderChainID\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"senderGateway\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"receiveMessage(address)\":{\"notice\":\"Receive the message from the sender gateway.\"},\"receiveMessage(address,uint256)\":{\"notice\":\"Receive the message from the sender gateway.\"},\"receiveMessage(uint256)\":{\"notice\":\"Receive the message from the sender gateway.\"}},\"notice\":\"Receiver Gateway Mock Counterpart of `SenderGatewayMock`\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/test/gateways/ReceiverGatewayMock.sol\":\"ReceiverGatewayMock\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/interfaces/IFastBridgeReceiver.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\ninterface IFastBridgeReceiver {\\n    // ************************************* //\\n    // *              Events               * //\\n    // ************************************* //\\n\\n    /**\\n     * @dev The Fast Bridge participants watch for these events to decide if a challenge should be submitted.\\n     * @param _epoch The epoch for which the the claim was made.\\n     * @param _batchMerkleRoot The timestamp of the claim creation.\\n     */\\n    event ClaimReceived(uint256 indexed _epoch, bytes32 indexed _batchMerkleRoot);\\n\\n    /**\\n     * @dev This event indicates that `sendSafeFallback()` should be called on the sending side.\\n     * @param _epoch The epoch associated with the challenged claim.\\n     */\\n    event ClaimChallenged(uint256 indexed _epoch);\\n\\n    /**\\n     * @dev This events indicates that optimistic verification has succeeded. The messages are ready to be relayed.\\n     * @param _epoch The epoch associated with the batch.\\n     * @param _success The success of the optimistic verification.\\n     */\\n    event BatchVerified(uint256 indexed _epoch, bool _success);\\n\\n    /**\\n     * @dev This event indicates that the batch has been received via the Safe Bridge.\\n     * @param _epoch The epoch associated with the batch.\\n     * @param _isBridgerHonest Whether the bridger made an honest claim.\\n     * @param _isChallengerHonest Whether the bridger made an honest challenge.\\n     */\\n    event BatchSafeVerified(uint256 indexed _epoch, bool _isBridgerHonest, bool _isChallengerHonest);\\n\\n    /**\\n     * @dev This event indicates that the claim deposit has been withdrawn.\\n     * @param _epoch The epoch associated with the batch.\\n     * @param _bridger The recipient of the claim deposit.\\n     */\\n    event ClaimDepositWithdrawn(uint256 indexed _epoch, address indexed _bridger);\\n\\n    /**\\n     * @dev This event indicates that the challenge deposit has been withdrawn.\\n     * @param _epoch The epoch associated with the batch.\\n     * @param _challenger The recipient of the challenge deposit.\\n     */\\n    event ChallengeDepositWithdrawn(uint256 indexed _epoch, address indexed _challenger);\\n\\n    /**\\n     * @dev This event indicates that a message has been relayed for the batch in this `_epoch`.\\n     * @param _epoch The epoch associated with the batch.\\n     * @param _nonce The nonce of the message that was relayed.\\n     */\\n    event MessageRelayed(uint256 indexed _epoch, uint256 indexed _nonce);\\n\\n    // ************************************* //\\n    // *        Function Modifiers         * //\\n    // ************************************* //\\n\\n    /**\\n     * @dev Submit a claim about the `_batchMerkleRoot` for the latests completed Fast bridge epoch and submit a deposit. The `_batchMerkleRoot` should match the one on the sending side otherwise the sender will lose his deposit.\\n     * @param _epoch The epoch of the claim to claim.\\n     * @param _batchMerkleRoot The hash claimed for the ticket.\\n     */\\n    function claim(uint256 _epoch, bytes32 _batchMerkleRoot) external payable;\\n\\n    /**\\n     * @dev Submit a challenge for the claim of the current epoch's Fast Bridge batch merkleroot state and submit a deposit. The `batchMerkleRoot` in the claim already made for the last finalized epoch should be different from the one on the sending side, otherwise the sender will lose his deposit.\\n     * @param _epoch The epoch of the claim to challenge.\\n     */\\n    function challenge(uint256 _epoch) external payable;\\n\\n    /**\\n     * @dev Resolves the optimistic claim for '_epoch'.\\n     * @param _epoch The epoch of the optimistic claim.\\n     */\\n    function verifyBatch(uint256 _epoch) external;\\n\\n    /**\\n     * @dev Verifies merkle proof for the given message and associated nonce for the most recent possible epoch and relays the message.\\n     * @param _epoch The epoch in which the message was batched by the bridge.\\n     * @param _proof The merkle proof to prove the membership of the message and nonce in the merkle tree for the epoch.\\n     * @param _message The data on the cross-domain chain for the message.\\n     */\\n    function verifyAndRelayMessage(\\n        uint256 _epoch,\\n        bytes32[] calldata _proof,\\n        bytes calldata _message\\n    ) external;\\n\\n    /**\\n     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\\n     * @param _epoch The epoch associated with the claim deposit to withraw.\\n     */\\n    function withdrawClaimDeposit(uint256 _epoch) external;\\n\\n    /**\\n     * @dev Sends the deposit back to the Challenger if his challenge is successful. Includes a portion of the Bridger's deposit.\\n     * @param _epoch The epoch associated with the challenge deposit to withraw.\\n     */\\n    function withdrawChallengeDeposit(uint256 _epoch) external;\\n\\n    // ************************************* //\\n    // *           Public Views            * //\\n    // ************************************* //\\n\\n    /**\\n     * @dev Returns the `start` and `end` time of challenge period for this `epoch`.\\n     * @param _epoch The epoch of the claim to request the challenge period.\\n     * @return start The start time of the challenge period.\\n     * @return end The end time of the challenge period.\\n     */\\n    function claimChallengePeriod(uint256 _epoch) external view returns (uint256 start, uint256 end);\\n\\n    /**\\n     * @dev Returns the epoch period.\\n     */\\n    function epochPeriod() external view returns (uint256 epochPeriod);\\n\\n    /**\\n     * @dev Returns the challenge period.\\n     */\\n    function challengePeriod() external view returns (uint256 challengePeriod);\\n}\\n\",\"keccak256\":\"0xff909a62e9a08540dafcd08c779a64917ed1e44be52d5a225ff9149ff95909e8\",\"license\":\"MIT\"},\"src/interfaces/IReceiverGateway.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@jaybuidl, @shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./IFastBridgeReceiver.sol\\\";\\n\\ninterface IReceiverGateway {\\n    function fastBridgeReceiver() external view returns (IFastBridgeReceiver);\\n\\n    function senderChainID() external view returns (uint256);\\n\\n    function senderGateway() external view returns (address);\\n}\\n\",\"keccak256\":\"0xfa82fbd575c462ad6dffa18c67eb097a4c5088715ae956a836726aafa4be0f90\",\"license\":\"MIT\"},\"src/test/gateways/IReceiverGatewayMock.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@jaybuidl, @shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../../interfaces/IReceiverGateway.sol\\\";\\n\\ninterface IReceiverGatewayMock is IReceiverGateway {\\n    /**\\n     * Receive the message from the sender gateway.\\n     */\\n    function receiveMessage(uint256 _data) external;\\n}\\n\",\"keccak256\":\"0x2a8ba1fe77096c16201a38fbaeaa40b83358b9a1cbd5fb9702f4a8fce3cab973\",\"license\":\"MIT\"},\"src/test/gateways/ReceiverGatewayMock.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./IReceiverGatewayMock.sol\\\";\\n\\n/**\\n * Receiver Gateway Mock\\n * Counterpart of `SenderGatewayMock`\\n */\\ncontract ReceiverGatewayMock is IReceiverGatewayMock {\\n    IFastBridgeReceiver public immutable fastBridgeReceiver;\\n    address public immutable override senderGateway;\\n    uint256 public immutable override senderChainID;\\n\\n    uint256 public messageCount;\\n    uint256 public data;\\n\\n    constructor(\\n        IFastBridgeReceiver _fastBridgeReceiver,\\n        address _senderGateway,\\n        uint256 _senderChainID\\n    ) {\\n        fastBridgeReceiver = _fastBridgeReceiver;\\n        senderGateway = _senderGateway;\\n        senderChainID = _senderChainID;\\n    }\\n\\n    modifier onlyFromFastBridge() {\\n        require(address(fastBridgeReceiver) == msg.sender, \\\"Fast Bridge only.\\\");\\n        _;\\n    }\\n\\n    function receiveMessage(uint256 _data) external override onlyFromFastBridge {\\n        _receiveMessage(_data);\\n    }\\n\\n    /**\\n     * Receive the message from the sender gateway.\\n     */\\n    function receiveMessage(address _messageSender) external onlyFromFastBridge {\\n        require(_messageSender == senderGateway, \\\"Only the sender gateway is allowed.\\\");\\n        _receiveMessage();\\n    }\\n\\n    /**\\n     * Receive the message from the sender gateway.\\n     */\\n    function receiveMessage(address _messageSender, uint256 _data) external onlyFromFastBridge {\\n        require(_messageSender == senderGateway, \\\"Only the sender gateway is allowed.\\\");\\n        _receiveMessage(_data);\\n    }\\n\\n    function _receiveMessage() internal {\\n        messageCount++;\\n    }\\n\\n    function _receiveMessage(uint256 _data) internal {\\n        messageCount++;\\n        data = _data;\\n    }\\n}\\n\",\"keccak256\":\"0xe2c6fb7b9c373f34d2bd94a1968a1a3ee5f3d85304add4957c57a1adf8f31c7b\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60e060405234801561001057600080fd5b5060405161059138038061059183398101604081905261002f91610062565b6001600160a01b03928316608052911660a05260c0526100a5565b6001600160a01b038116811461005f57600080fd5b50565b60008060006060848603121561007757600080fd5b83516100828161004a565b60208501519093506100938161004a565b80925050604084015190509250925092565b60805160a05160c05161049b6100f6600039600060c30152600081816101190152818161022101526102c20152600081816101580152818161017c015281816101d9015261027a015261049b6000f3fe608060405234801561001057600080fd5b50600436106100885760003560e01c80637596c3dd1161005b5780637596c3dd146100ee5780639e28b67414610101578063ce0aaf9514610114578063d96a36ca1461015357600080fd5b8063072ac8be1461008d5780633dbcc8d1146100a25780634def5455146100be57806373d4a13a146100e5575b600080fd5b6100a061009b36600461034d565b61017a565b005b6100ab60005481565b6040519081526020015b60405180910390f35b6100ab7f000000000000000000000000000000000000000000000000000000000000000081565b6100ab60015481565b6100a06100fc366004610382565b6101d7565b6100a061010f3660046103a4565b610278565b61013b7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020016100b5565b61013b7f000000000000000000000000000000000000000000000000000000000000000081565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031633146101cb5760405162461bcd60e51b81526004016101c2906103ce565b60405180910390fd5b6101d48161031e565b50565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316331461021f5760405162461bcd60e51b81526004016101c2906103ce565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b0316146102705760405162461bcd60e51b81526004016101c2906103f9565b6101d4610337565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031633146102c05760405162461bcd60e51b81526004016101c2906103ce565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b0316146103115760405162461bcd60e51b81526004016101c2906103f9565b61031a8161031e565b5050565b60008054908061032d8361043c565b9091555050600155565b6000805490806103468361043c565b9190505550565b60006020828403121561035f57600080fd5b5035919050565b80356001600160a01b038116811461037d57600080fd5b919050565b60006020828403121561039457600080fd5b61039d82610366565b9392505050565b600080604083850312156103b757600080fd5b6103c083610366565b946020939093013593505050565b6020808252601190820152702330b9ba10213934b233b29037b7363c9760791b604082015260600190565b60208082526023908201527f4f6e6c79207468652073656e646572206761746577617920697320616c6c6f7760408201526232b21760e91b606082015260800190565b600060001982141561045e57634e487b7160e01b600052601160045260246000fd5b506001019056fea2646970667358221220e1312824e0fa3552f295df8d53b4341108bcb2cd109ca2367174754921449b6c64736f6c63430008090033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100885760003560e01c80637596c3dd1161005b5780637596c3dd146100ee5780639e28b67414610101578063ce0aaf9514610114578063d96a36ca1461015357600080fd5b8063072ac8be1461008d5780633dbcc8d1146100a25780634def5455146100be57806373d4a13a146100e5575b600080fd5b6100a061009b36600461034d565b61017a565b005b6100ab60005481565b6040519081526020015b60405180910390f35b6100ab7f000000000000000000000000000000000000000000000000000000000000000081565b6100ab60015481565b6100a06100fc366004610382565b6101d7565b6100a061010f3660046103a4565b610278565b61013b7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020016100b5565b61013b7f000000000000000000000000000000000000000000000000000000000000000081565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031633146101cb5760405162461bcd60e51b81526004016101c2906103ce565b60405180910390fd5b6101d48161031e565b50565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316331461021f5760405162461bcd60e51b81526004016101c2906103ce565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b0316146102705760405162461bcd60e51b81526004016101c2906103f9565b6101d4610337565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031633146102c05760405162461bcd60e51b81526004016101c2906103ce565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b0316146103115760405162461bcd60e51b81526004016101c2906103f9565b61031a8161031e565b5050565b60008054908061032d8361043c565b9091555050600155565b6000805490806103468361043c565b9190505550565b60006020828403121561035f57600080fd5b5035919050565b80356001600160a01b038116811461037d57600080fd5b919050565b60006020828403121561039457600080fd5b61039d82610366565b9392505050565b600080604083850312156103b757600080fd5b6103c083610366565b946020939093013593505050565b6020808252601190820152702330b9ba10213934b233b29037b7363c9760791b604082015260600190565b60208082526023908201527f4f6e6c79207468652073656e646572206761746577617920697320616c6c6f7760408201526232b21760e91b606082015260800190565b600060001982141561045e57634e487b7160e01b600052601160045260246000fd5b506001019056fea2646970667358221220e1312824e0fa3552f295df8d53b4341108bcb2cd109ca2367174754921449b6c64736f6c63430008090033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "receiveMessage(address)": {
+        "notice": "Receive the message from the sender gateway."
+      },
+      "receiveMessage(address,uint256)": {
+        "notice": "Receive the message from the sender gateway."
+      },
+      "receiveMessage(uint256)": {
+        "notice": "Receive the message from the sender gateway."
+      }
+    },
+    "notice": "Receiver Gateway Mock Counterpart of `SenderGatewayMock`",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 165,
+        "contract": "src/test/gateways/ReceiverGatewayMock.sol:ReceiverGatewayMock",
+        "label": "messageCount",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 167,
+        "contract": "src/test/gateways/ReceiverGatewayMock.sol:ReceiverGatewayMock",
+        "label": "data",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_uint256"
+      }
+    ],
+    "types": {
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
