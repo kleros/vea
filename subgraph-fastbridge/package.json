@@ -10,8 +10,7 @@
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/fastbridge-arbitrum-rinkeby"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "^0.35.0",
-    "@graphprotocol/graph-ts": "^0.28.1"
+    "@graphprotocol/graph-ts": "^0.29.2"
   },
   "packageManager": "yarn@3.1.1",
   "engines": {
@@ -20,5 +19,8 @@
   "volta": {
     "node": "16.15.1",
     "yarn": "3.1.1"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.37.7"
   }
 }
