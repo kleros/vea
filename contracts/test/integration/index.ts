@@ -94,7 +94,7 @@ describe("Integration tests", async () => {
       await expect(fastBridgeSender.connect(bridger).sendBatch()).to.be.revertedWith("No messages to send.");
 
       const data = 1121;
-      let sendFastMessageTx = await senderGateway.sendFastMessage(data);
+      const sendFastMessageTx = await senderGateway.sendFastMessage(data);
 
       const MessageReceived = fastBridgeSender.filters.MessageReceived();
       const MessageReceivedEvent = await fastBridgeSender.queryFilter(MessageReceived);
@@ -123,7 +123,6 @@ describe("Integration tests", async () => {
 
       const BatchOutgoing = fastBridgeSender.filters.BatchOutgoing();
       const batchOutGoingEvent = await fastBridgeSender.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
       const batchMerkleRoot = batchOutGoingEvent[0].args.batchMerkleRoot;
 
       expect(await fastBridgeSender.fastOutbox(Math.floor(currentTimestamp / EPOCH_PERIOD))).to.equal(batchMerkleRoot);
@@ -555,6 +554,122 @@ describe("Integration tests", async () => {
       await expect(fastBridgeReceiver.connect(relayer).withdrawChallengeDeposit(epoch))
         .to.emit(fastBridgeReceiver, "ChallengeDepositWithdrawn")
         .withArgs(epoch, challenger.address);
+    });
+  });
+
+  describe("Should Handle Multiple messages in single epoch", async () => {
+    it("should send multiple fast messges", async () => {
+      const data = 1121;
+      const data2 = 5643;
+      const data3 = 8976;
+      // const sampleString = "Something just like this";
+      // const sampleArray = [1 ,11 ,111];
+      // const sampleObject = {
+      //   intKey: sampleInt,
+      //   stringKey : sampleString,
+      //   arrayKey: sampleArray
+      // }
+
+      await expect(senderGateway.sendFastMessage(data)).to.emit(fastBridgeSender, "MessageReceived");
+
+      // let MessageReceived = fastBridgeSender.filters.MessageReceived();
+      // let MessageReceivedEvent = await fastBridgeSender.queryFilter(MessageReceived);
+      // const fastSampleInt = MessageReceivedEvent[0].args.fastMessage;
+      await expect(senderGateway.sendFastMessage(data2)).to.emit(fastBridgeSender, "MessageReceived");
+
+      await expect(senderGateway.sendFastMessage(data3)).to.emit(fastBridgeSender, "MessageReceived");
+    });
+
+    it("should send multiple messages in a single batch", async () => {
+      const data = 1121;
+      const data2 = 5643;
+      const data3 = 8976;
+
+      const sendFastMessageTx = await senderGateway.sendFastMessage(data);
+      const sendFastMessageTx2 = await senderGateway.sendFastMessage(data2);
+      const sendFastMessageTx3 = await senderGateway.sendFastMessage(data3);
+
+      const currentBlockNum = ethers.provider.getBlockNumber();
+      const currentTimestamp = (await ethers.provider.getBlock(currentBlockNum)).timestamp;
+      const currentEpoch = Math.floor(currentTimestamp / EPOCH_PERIOD);
+      const calculatedEpoch = currentEpoch - 1;
+
+      await expect(fastBridgeSender.connect(bridger).sendBatch())
+        .to.emit(fastBridgeSender, "BatchOutgoing")
+        .withArgs(
+          calculatedEpoch,
+          3,
+          currentEpoch,
+          "0x62bb3a811c226ed043e3f8ddf56b68f42fb97271ccb6fb1fd7792988569d30eb"
+        );
+
+      expect(await fastBridgeSender.currentBatchID()).to.equal(Math.floor(currentTimestamp / EPOCH_PERIOD));
+      expect(await fastBridgeSender.batchSize()).to.equal(0);
+
+      const BatchOutgoing = fastBridgeSender.filters.BatchOutgoing();
+      const batchOutGoingEvent = await fastBridgeSender.queryFilter(BatchOutgoing);
+      const batchMerkleRoot = batchOutGoingEvent[0].args.batchMerkleRoot;
+
+      expect(await fastBridgeSender.fastOutbox(Math.floor(currentTimestamp / EPOCH_PERIOD))).to.equal(batchMerkleRoot);
+    });
+
+    it("should be able to claim batch containing multiple messages", async () => {
+      const data = 1121;
+      const data2 = 5643;
+      const data3 = 8976;
+
+      const sendFastMessageTx = await senderGateway.sendFastMessage(data);
+      const sendFastMessageTx2 = await senderGateway.sendFastMessage(data2);
+      const sendFastMessageTx3 = await senderGateway.sendFastMessage(data3);
+
+      const currentBlockNum = ethers.provider.getBlockNumber();
+      const currentTimestamp = (await ethers.provider.getBlock(currentBlockNum)).timestamp;
+      const currentEpoch = Math.floor(currentTimestamp / EPOCH_PERIOD);
+      const calculatedEpoch = currentEpoch - 1;
+
+      const sendBatchTx = await fastBridgeSender.connect(bridger).sendBatch();
+
+      const BatchOutgoing = fastBridgeSender.filters.BatchOutgoing();
+      const batchOutGoingEvent = await fastBridgeSender.queryFilter(BatchOutgoing);
+      const batchMerkleRoot = batchOutGoingEvent[0].args.batchMerkleRoot;
+
+      const bridgerClaimTx = await fastBridgeReceiver
+        .connect(bridger)
+        .claim(currentEpoch, batchMerkleRoot, { value: ONE_TENTH_ETH });
+
+      await expect(bridgerClaimTx).to.emit(fastBridgeReceiver, "ClaimReceived");
+    });
+
+    it("should be able verify and relay message", async () => {
+      const data = 1121;
+      const data2 = 5643;
+      const data3 = 8976;
+
+      const sendFastMessageTx = await senderGateway.sendFastMessage(data);
+      const sendFastMessageTx2 = await senderGateway.sendFastMessage(data2);
+      const sendFastMessageTx3 = await senderGateway.sendFastMessage(data3);
+
+      const currentBlockNum = ethers.provider.getBlockNumber();
+      const currentTimestamp = (await ethers.provider.getBlock(currentBlockNum)).timestamp;
+      const currentEpoch = Math.floor(currentTimestamp / EPOCH_PERIOD);
+      const calculatedEpoch = currentEpoch - 1;
+
+      const sendBatchTx = await fastBridgeSender.connect(bridger).sendBatch();
+
+      const BatchOutgoing = fastBridgeSender.filters.BatchOutgoing();
+      const batchOutGoingEvent = await fastBridgeSender.queryFilter(BatchOutgoing);
+      const batchMerkleRoot = batchOutGoingEvent[0].args.batchMerkleRoot;
+
+      const bridgerClaimTx = await fastBridgeReceiver
+        .connect(bridger)
+        .claim(currentEpoch, batchMerkleRoot, { value: ONE_TENTH_ETH });
+
+      await network.provider.send("evm_increaseTime", [86400]);
+      await network.provider.send("evm_mine");
+
+      const bridgerVerifyBatchTx = await fastBridgeReceiver.connect(bridger).verifyBatch(currentEpoch);
+
+      // const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(currentEpoch, [], )
     });
   });
 });
