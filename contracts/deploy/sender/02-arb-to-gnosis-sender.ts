@@ -16,7 +16,7 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
 
   // ----------------------------------------------------------------------------------------------
 
-  const fastBridgeReceiver = await hre.companionNetworks.receiver.deployments.get("FastBridgeReceiverOnGnosis");
+  const fastBridgeReceiver = await hre.companionNetworks.receiver_gnosis.deployments.get("FastBridgeReceiverOnGnosis");
 
   const fastBridgeSender = await deploy("FastBridgeSender", {
     from: deployer,
@@ -25,8 +25,8 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
     log: true,
   });
 
-  const ReceiverGateway = await hre.companionNetworks.receiver.deployments.get("ReceiverGatewayOnGnosis");
-  const ReceiverChainId = Number(await hre.companionNetworks.receiver.getChainId());
+  const ReceiverGateway = await hre.companionNetworks.receiver_gnosis.deployments.get("ReceiverGatewayOnGnosis");
+  const ReceiverChainId = Number(await hre.companionNetworks.receiver_gnosis.getChainId());
   const senderGateway = await deploy("SenderGatewayToGnosis", {
     from: deployer,
     contract: "SenderGatewayMock",

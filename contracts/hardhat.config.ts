@@ -64,7 +64,8 @@ const config: HardhatUserConfig = {
       saveDeployments: true,
       tags: ["staging", "sender", "layer2"],
       companionNetworks: {
-        receiver: "chiado",
+        receiver_gnosis: "chiado",
+        receiver_eth: "goerli",
       },
       verify: {
         etherscan: {

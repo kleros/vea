@@ -60,7 +60,7 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const fastBridgeReceiver = await hre.companionNetworks.receiver.deployments.get("FastBridgeReceiverOnEthereum");
+    const fastBridgeReceiver = await hre.companionNetworks.receiver_eth.deployments.get("FastBridgeReceiverOnEthereum");
 
     const fastBridgeSender = await deploy("FastBridgeSender", {
       from: deployer,
@@ -69,8 +69,8 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
       log: true,
     });
 
-    const ReceiverGateway = await hre.companionNetworks.receiver.deployments.get("ReceiverGatewayOnEthereum");
-    const ReceiverChainId = Number(await hre.companionNetworks.receiver.getChainId());
+    const ReceiverGateway = await hre.companionNetworks.receiver_eth.deployments.get("ReceiverGatewayOnEthereum");
+    const ReceiverChainId = Number(await hre.companionNetworks.receiver_eth.getChainId());
     const senderGateway = await deploy("SenderGatewayToEthereum", {
       from: deployer,
       contract: "SenderGatewayMock",
