@@ -11,21 +11,15 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 #### Goerli
 
 - [FastBridgeReceiverOnEthereum](https://goerli.etherscan.io/address/0x87142b7E9C7D026776499120D902AF8896C07894)
-- [ForeignGatewayOnEthereum](https://goerli.etherscan.io/address/0xf08273e2B35E78509B027f6FAa32485844EA7cCA)
 
 #### Arbitrum Goerli
 
-- [FastBridgeSender](https://goerli.arbiscan.io/address/0x6b575B3af80aDca9E5ABE1764Ae9dE439e85DEb7)
-- [HomeGatewayToEthereum](https://goerli.arbiscan.io/address/0xc7e3BF90299f6BD9FA7c3703837A9CAbB5743636)
-- [SenderGatewayToEthereum](https://goerli.arbiscan.io/address/0x6B43B4DA9ad839dc806e696A248731A65F61f5d9)
-- [SenderGatewayToGnosis](https://goerli.arbiscan.io/address/0x42319536AA7eD5E0A6CBCAF3FaaDb5243d482C7A)
+- [FastBridgeSenderToGnosis](https://goerli.arbiscan.io/address/0x642B66C5D0F8c620C35264F2d2899A0E209D68d9)
 
 #### Chiado
 
 - [FastBridgeReceiverOnEthereum](https://blockscout.chiadochain.net/address/0xa1711e979d7F9ae5f4c5Fe57D5fF7d6F5Ae3d418)
-- [FastBridgeReceiverOnGnosis](https://blockscout.chiadochain.net/address/0x730Ec040763bf5C4Abac1d66d7c757f6033a3A20)
-- [ReceiverGatewayOnEthereum](https://blockscout.chiadochain.net/address/0xD986380c607350762D802646AAad4eea809219Df)
-- [ReceiverGatewayOnGnosis](https://blockscout.chiadochain.net/address/0xA1EcD2e86E9C674762aC68de90edfdb171c8e302)
+- [FastBridgeReceiverOnGnosis](https://blockscout.chiadochain.net/address/0x26858D60FE92b50b34e236B46874e02724344275)
 
 ## Getting Started
 

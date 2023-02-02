@@ -11,6 +11,7 @@ import "hardhat-deploy-ethers";
 import "hardhat-watcher";
 import "hardhat-docgen";
 import "hardhat-contract-sizer";
+import "hardhat-tracer";
 
 dotenv.config();
 
@@ -98,6 +99,11 @@ const config: HardhatUserConfig = {
       tags: ["staging", "receiver", "layer1"],
       companionNetworks: {
         sender: "arbitrumGoerli",
+      },
+      verify: {
+        etherscan: {
+          apiUrl: "https://blockscout.com/gnosis/chiado",
+        },
       },
     },
     goerli: {
