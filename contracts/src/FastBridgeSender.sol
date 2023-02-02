@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@jaybuidl, @shotaronowhere, @adi274]
+ *  @authors: [@jaybuidl, @shotaronowhere]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -44,7 +44,7 @@ contract FastBridgeSender is IFastBridgeSender, ISafeBridgeSender {
         bytes4 methodSelector = ISafeBridgeReceiver.verifySafeBatch.selector;
         bytes memory safeMessageData = abi.encodeWithSelector(methodSelector, _epoch, batchMerkleRoot);
 
-        bytes32 ticketID = _sendSafe(fastBridgeReceiver, safeMessageData);
+        bytes32 ticketID = _sendSafe(safeBridgeReceiver, safeMessageData);
         emit SentSafe(_epoch, ticketID);
     }
 
@@ -56,11 +56,11 @@ contract FastBridgeSender is IFastBridgeSender, ISafeBridgeSender {
     /**
      * @dev Constructor.
      * @param _epochPeriod The duration between epochs.
-     * @param _fastBridgeReceiver The the Safe Bridge Router on Ethereum to the receiving chain.
+     * @param _safeBridgeReceiver The the Safe Bridge Router on Ethereum to the receiving chain.
      */
-    constructor(uint256 _epochPeriod, address _fastBridgeReceiver) {
+    constructor(uint256 _epochPeriod, address _safeBridgeReceiver) {
         epochPeriod = _epochPeriod;
-        fastBridgeReceiver = _fastBridgeReceiver;
+        safeBridgeReceiver = _safeBridgeReceiver;
         unchecked {
             currentBatchID = block.timestamp / _epochPeriod - 1;
         }
@@ -79,7 +79,7 @@ contract FastBridgeSender is IFastBridgeSender, ISafeBridgeSender {
     uint256 public immutable epochPeriod; // Epochs mark the period between potential batches of messages.
     uint256 public currentBatchID;
     mapping(uint256 => bytes32) public fastOutbox; // epoch count => merkle root of batched messages
-    address public immutable fastBridgeReceiver;
+    address public immutable safeBridgeReceiver;
 
     // merkle tree representation of a batch of messages
     // supports 2^64 messages.

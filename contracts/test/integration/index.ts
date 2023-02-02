@@ -65,13 +65,13 @@ describe("Integration tests", async () => {
     // FastBridgeSender
     expect(await fastBridgeSender.arbSys()).to.equal(arbsysMock.address);
     expect(await fastBridgeSender.epochPeriod()).to.equal(EPOCH_PERIOD);
-    expect(await fastBridgeSender.fastBridgeReceiver()).to.equal(fastBridgeReceiver.address);
+    expect(await fastBridgeSender.safeBridgeReceiver()).to.equal(fastBridgeReceiver.address);
 
     // FastBridgeReceiver
     expect(await fastBridgeReceiver.deposit()).to.equal(ONE_TENTH_ETH);
     expect(await fastBridgeReceiver.epochPeriod()).to.equal(EPOCH_PERIOD);
     expect(await fastBridgeReceiver.challengePeriod()).to.equal(CHALLENGE_PERIOD);
-    expect(await fastBridgeReceiver.fastBridgeSender()).to.equal(fastBridgeSender.address);
+    expect(await fastBridgeReceiver.safeBridgeSender()).to.equal(fastBridgeSender.address);
     expect(await fastBridgeReceiver.inbox()).to.equal(inbox.address);
 
     // ReceiverGateway

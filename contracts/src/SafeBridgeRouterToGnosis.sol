@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@shotaronowhere, @jaybuidl, @adi274]
+ *  @authors: [@shotaronowhere, @jaybuidl]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -25,25 +25,25 @@ contract SafeBridgeRouter is ISafeBridgeRouter {
 
     IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.
     IAMB public immutable amb; // The address of the AMB contract on Ethereum.
-    address public immutable fastBridgeSender; // The address of the Fast Bridge sender on Arbitrum.
+    address public immutable safeBridgeSender; // The address of the Safe Bridge sender on Arbitrum.
     address public immutable fastBridgeReceiverOnGnosisChain; // The address of the Fast Bridge Receiver on Gnosis Chain.
 
     /**
      * @dev Constructor.
      * @param _inbox The address of the inbox contract on Ethereum.
      * @param _amb The address of the AMB contract on Ethereum.
-     * @param _fastBridgeSender The fast bridge sender on Arbitrum.
+     * @param _safeBridgeSender The safe bridge sender on Arbitrum.
      * @param _fastBridgeReceiverOnGnosisChain The fast bridge receiver on Gnosis Chain.
      */
     constructor(
         IInbox _inbox,
         IAMB _amb,
-        address _fastBridgeSender,
+        address _safeBridgeSender,
         address _fastBridgeReceiverOnGnosisChain
     ) {
         inbox = _inbox;
         amb = _amb;
-        fastBridgeSender = _fastBridgeSender;
+        safeBridgeSender = _safeBridgeSender;
         fastBridgeReceiverOnGnosisChain = _fastBridgeReceiverOnGnosisChain;
     }
 
@@ -74,6 +74,6 @@ contract SafeBridgeRouter is ISafeBridgeRouter {
 
     function isSentBySafeBridge() internal view override returns (bool) {
         IOutbox outbox = IOutbox(inbox.bridge().activeOutbox());
-        return outbox.l2ToL1Sender() == fastBridgeSender;
+        return outbox.l2ToL1Sender() == safeBridgeSender;
     }
 }
