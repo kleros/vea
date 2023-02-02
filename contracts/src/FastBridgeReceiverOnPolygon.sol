@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat, @adi274]
+ *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -38,21 +38,21 @@ contract FastBridgeReceiverOnPolygon is FxBaseChildTunnel, IFastBridgeReceiver, 
      * @param _deposit The deposit amount to submit a claim in wei.
      * @param _epochPeriod The duration of each epoch.
      * @param _challengePeriod The duration of the period allowing to challenge a claim.
-     * @param _fastBridgeSender The address of the Safe Bridge Sender on the connecting chain. fxRootTunnel contract in ethereum
+     * @param _safeBridgeSender The address of the Safe Bridge Sender on the connecting chain. fxRootTunnel contract in ethereum
      * @param _fxChild The the fxChild contract on Polygon Chain.
      */
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
         uint256 _challengePeriod,
-        address _fastBridgeSender, // Polygon receiver specific
+        address _safeBridgeSender, // Polygon receiver specific
         address _fxChild // Polygon receiver specific
     ) FxBaseChildTunnel(_fxChild) {
         deposit = _deposit;
         epochPeriod = _epochPeriod;
         challengePeriod = _challengePeriod;
-        fastBridgeSender = _fastBridgeSender;
-        setFxRootTunnel(_fastBridgeSender);
+        safeBridgeSender = _safeBridgeSender;
+        setFxRootTunnel(_safeBridgeSender);
     }
 
     // ************************************** //
@@ -87,7 +87,7 @@ contract FastBridgeReceiverOnPolygon is FxBaseChildTunnel, IFastBridgeReceiver, 
     uint256 public immutable deposit; // The deposit required to submit a claim or challenge
     uint256 public immutable override epochPeriod; // Epochs mark the period between potential batches of messages.
     uint256 public immutable override challengePeriod; // Epochs mark the period between potential batches of messages.
-    address public immutable fastBridgeSender; // The address of the Safe Bridge Sender on the connecting chain.
+    address public immutable safeBridgeSender; // The address of the Safe Bridge Sender on the connecting chain.
 
     mapping(uint256 => bytes32) public fastInbox; // epoch => validated batch merkle root(optimistically, or challenged and verified with the safe bridge)
     mapping(uint256 => Claim) public claims; // epoch => claim
