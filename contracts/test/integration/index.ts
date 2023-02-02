@@ -496,10 +496,10 @@ describe("Integration tests", async () => {
         .withArgs(epoch, false);
 
       expect(await (await fastBridgeReceiver.challenges(epoch)).honest).to.equal(false);
+      // sendSafeFallback internally calls the verifySafeBatch via the mocks
       const sendSafeFallbackTx = await fastBridgeSender.connect(bridger).sendSafeFallback(epoch, { gasLimit: 1000000 });
       expect(await (await fastBridgeReceiver.challenges(epoch)).honest).to.equal(false);
 
-      const verifySafeBatchTx = await fastBridgeReceiver.connect(bridger).verifySafeBatch(epoch, batchMerkleRoot);
       const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(epoch, [], fastMessage);
       const withdrawClaimDepositTx = await fastBridgeReceiver.withdrawClaimDeposit(epoch);
 
@@ -541,11 +541,8 @@ describe("Integration tests", async () => {
         .to.emit(fastBridgeReceiver, "BatchVerified")
         .withArgs(epoch, false);
 
-      // sendSafeFallback internally calls the verifySafeBatch, so explicitly
+      // sendSafeFallback internally calls the verifySafeBatch via the mocks
       const sendSafeFallbackTx = await fastBridgeSender.connect(bridger).sendSafeFallback(epoch, { gasLimit: 1000000 });
-
-      const verifySafeBatchTx = await fastBridgeReceiver.connect(bridger).verifySafeBatch(epoch, batchMerkleRoot);
-
       const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(epoch, [], fastMessage);
 
       expect(fastBridgeReceiver.connect(relayer).withdrawClaimDeposit(epoch)).to.be.revertedWith("Claim failed.");

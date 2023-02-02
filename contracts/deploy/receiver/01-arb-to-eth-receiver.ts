@@ -64,11 +64,14 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
     nonce += 1; // SenderGatewayToEthereum deploy tx will the third tx after this on its sender network, so we add two to the current nonce.
   }
   const { deposit, epochPeriod, challengePeriod, senderChainId, arbitrumInbox } = paramsByChainId[chainId];
-  const senderChainIdAsBytes32 = hexZeroPad(senderChainId, 32);
 
   const senderGatewayAddress = getContractAddress(deployer, nonce);
   console.log("calculated future SenderGatewayToEthereum address for nonce %d: %s", nonce, senderGatewayAddress);
-  nonce -= 1;
+  nonce -= 2;
+
+  const arbSysAddress = getContractAddress(deployer, nonce);
+  console.log("calculated future arbSysAddress address for nonce %d: %s", nonce, arbSysAddress);
+  nonce += 1;
 
   const fastBridgeSenderAddress = getContractAddress(deployer, nonce);
   console.log("calculated future FastSender for nonce %d: %s", nonce, fastBridgeSenderAddress);
@@ -79,7 +82,8 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
 
   const fastBridgeReceiver = await deploy("FastBridgeReceiverOnEthereum", {
     from: deployer,
-    args: [deposit, epochPeriod, challengePeriod, fastBridgeSenderAddress, inboxAddress],
+    contract: "FastBridgeReceiverOnEthereumMock",
+    args: [arbSysAddress, deposit, epochPeriod, challengePeriod, fastBridgeSenderAddress, inboxAddress],
     log: true,
   });
 
