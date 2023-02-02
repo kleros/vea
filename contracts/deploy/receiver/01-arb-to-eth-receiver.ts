@@ -77,20 +77,11 @@ const deployReceiverGateway: DeployFunction = async (hre: HardhatRuntimeEnvironm
   const inboxAddress = chainId === ReceiverChains.HARDHAT ? getContractAddress(deployer, nonce) : arbitrumInbox;
   console.log("calculated future inboxAddress for nonce %d: %s", nonce, inboxAddress);
 
-  let fastBridgeReceiver;
-  if (chainId == ReceiverChains.HARDHAT) {
-    fastBridgeReceiver = await deploy("FastBridgeReceiverOnEthereumMock", {
-      from: deployer,
-      args: [deposit, epochPeriod, challengePeriod, fastBridgeSenderAddress, inboxAddress],
-      log: true,
-    });
-  } else {
-    fastBridgeReceiver = await deploy("FastBridgeReceiverOnEthereum", {
-      from: deployer,
-      args: [deposit, epochPeriod, challengePeriod, fastBridgeSenderAddress, inboxAddress],
-      log: true,
-    });
-  }
+  const fastBridgeReceiver = await deploy("FastBridgeReceiverOnEthereum", {
+    from: deployer,
+    args: [deposit, epochPeriod, challengePeriod, fastBridgeSenderAddress, inboxAddress],
+    log: true,
+  });
 
   console.log("Receiver: deployed", fastBridgeReceiver.address);
 

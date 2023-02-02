@@ -46,9 +46,7 @@ describe("Integration tests", async () => {
       keepExistingDeployments: false,
     });
 
-    fastBridgeReceiver = (await ethers.getContract(
-      "FastBridgeReceiverOnEthereumMock"
-    )) as FastBridgeReceiverOnEthereumMock;
+    fastBridgeReceiver = (await ethers.getContract("FastBridgeReceiverOnEthereum")) as FastBridgeReceiverOnEthereum;
     receiverGateway = (await ethers.getContract("ReceiverGatewayOnEthereum")) as ReceiverGatewayMock;
     fastBridgeSender = (await ethers.getContract("FastBridgeSenderMock")) as FastBridgeSenderOnArbitrum;
     senderGateway = (await ethers.getContract("SenderGatewayToEthereum")) as SenderGatewayMock;
