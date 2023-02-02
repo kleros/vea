@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat]
+ *  @authors: [@jaybuidl, @shotaronowhere, @hrishibhat, @adi274]
  *  @reviewers: []
  *  @auditors: []
  *  @bounties: []
@@ -36,9 +36,9 @@ contract FastBridgeReceiverOnEthereum is IFastBridgeReceiver, ISafeBridgeReceive
     // *              Views                * //
     // ************************************* //
 
-    function isSentBySafeBridge() internal view override returns (bool) {
+    function isSentBySafeBridge() internal view virtual override returns (bool) {
         IOutbox outbox = IOutbox(inbox.bridge().activeOutbox());
-        return outbox.l2ToL1Sender() == safeBridgeSender;
+        return msg.sender == address(outbox) && outbox.l2ToL1Sender() == safeBridgeSender;
     }
 
     /**
