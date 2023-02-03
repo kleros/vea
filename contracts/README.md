@@ -8,18 +8,13 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 ### Current version
 
-#### Goerli
-
-- [FastBridgeReceiverOnEthereum](https://goerli.etherscan.io/address/0x87142b7E9C7D026776499120D902AF8896C07894)
-
 #### Arbitrum Goerli
 
 - [FastBridgeSenderToGnosis](https://goerli.arbiscan.io/address/0x642B66C5D0F8c620C35264F2d2899A0E209D68d9)
 
 #### Chiado
 
-- [FastBridgeReceiverOnEthereum](https://blockscout.chiadochain.net/address/0xa1711e979d7F9ae5f4c5Fe57D5fF7d6F5Ae3d418)
-- [FastBridgeReceiverOnGnosis](https://blockscout.chiadochain.net/address/0x26858D60FE92b50b34e236B46874e02724344275)
+- [FastBridgeReceiverOnGnosis](https://blockscout.com/gnosis/chiado/address/0x26858D60FE92b50b34e236B46874e02724344275)
 
 ## Getting Started
 
