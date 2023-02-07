@@ -1,9 +1,22 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers } from "hardhat";
 
-const SENDER_CHAIN_IDS = [42161, 421613]; // ArbOne, ArbiGoerli
-const epochPeriod = 86400; // 24 hours
+enum SenderChains {
+  ARBITRUM = 42161,
+  ARBITRUM_GOERLI = 421613,
+  HARDHAT = 31337,
+}
+const paramsByChainId = {
+  ARBITRUM: {
+    epochPeriod: 86400, // 24 hours
+  },
+  ARBITRUM_GOERLI: {
+    epochPeriod: 120, // 2 minutes
+  },
+  HARDHAT: {
+    epochPeriod: 86400, // 2 minutes
+  },
+};
 
 // TODO: use deterministic deployments
 const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
@@ -13,6 +26,8 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const deployer = (await getNamedAccounts()).deployer;
   console.log("deployer: %s", deployer);
+
+  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
 
@@ -27,7 +42,11 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 };
 
 deploySender.tags = ["ArbToGnosisSender"];
-deploySender.skip = async ({ getChainId }) => !SENDER_CHAIN_IDS.includes(Number(await getChainId()));
+deploySender.skip = async ({ getChainId }) => {
+  const chainId = Number(await getChainId());
+  console.log(chainId);
+  return !SenderChains[chainId];
+};
 deploySender.runAtTheEnd = true;
 
 export default deploySender;

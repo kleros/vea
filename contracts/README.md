@@ -10,7 +10,7 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 #### Arbitrum Goerli
 
-- [FastBridgeSenderToGnosis](https://goerli.arbiscan.io/address/0x642B66C5D0F8c620C35264F2d2899A0E209D68d9)
+- [FastBridgeSenderToGnosis](https://goerli.arbiscan.io/address/0xd599f19e8e2b5CE6ad94328be138B11bA97A7F21)
 
 #### Chiado
 
