@@ -1,12 +1,25 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers } from "hardhat";
 
-const SENDER_CHAIN_IDS = [42161, 421613, 31337]; // ArbOne, ArbiGoerli, Hardhat
-const epochPeriod = 86400; // 24 hours
+enum SenderChains {
+  ARBITRUM = 42161,
+  ARBITRUM_GOERLI = 421613,
+  HARDHAT = 31337,
+}
+const paramsByChainId = {
+  ARBITRUM: {
+    epochPeriod: 86400, // 24 hours
+  },
+  ARBITRUM_GOERLI: {
+    epochPeriod: 120, // 2 minutes
+  },
+  HARDHAT: {
+    epochPeriod: 86400, // 2 minutes
+  },
+};
 
 // TODO: use deterministic deployments
-const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
   const { deploy, execute } = deployments;
   const chainId = Number(await getChainId());
@@ -15,23 +28,24 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
   const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
   console.log("deployer: %s", deployer);
 
+  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
+
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
-    const fastBridgeReceiver = await deployments.get("FastBridgeReceiverOnEthereumMock");
-    console.log(fastBridgeReceiver.address);
+    const fastBridgeReceiver = await deployments.get("FastBridgeReceiverOnEthereum");
+
     const arbSysMock = await deploy("ArbSysMock", { from: deployer, log: true });
 
-    const fastBridgeSender = await deploy("FastBridgeSenderMock", {
+    const fastBridgeSender = await deploy("FastBridgeSender", {
       from: deployer,
-      contract: "FastBridgeSenderOnArbitrum",
+      contract: "FastBridgeSenderOnArbitrumMock",
       args: [arbSysMock.address, epochPeriod, fastBridgeReceiver.address],
-      log: true,
     });
 
-    const receiverGateway = await deployments.get("ReceiverGatewayOnEthereum");
+    const receiverGateway = await deployments.get("ReceiverGateway");
     const receiverChainId = 31337;
 
-    const senderGateway = await deploy("SenderGatewayToEthereum", {
+    const senderGateway = await deploy("SenderGateway", {
       from: deployer,
       contract: "SenderGatewayMock",
       args: [fastBridgeSender.address, receiverGateway.address, receiverChainId],
@@ -62,19 +76,10 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
   const liveDeployer = async () => {
     const fastBridgeReceiver = await hre.companionNetworks.receiver.deployments.get("FastBridgeReceiverOnEthereum");
 
-    const fastBridgeSender = await deploy("FastBridgeSender", {
+    await deploy("FastBridgeSenderToEthereum", {
       from: deployer,
       contract: "FastBridgeSender",
       args: [epochPeriod, fastBridgeReceiver.address],
-      log: true,
-    });
-
-    const ReceiverGateway = await hre.companionNetworks.receiver.deployments.get("ReceiverGatewayOnEthereum");
-    const ReceiverChainId = Number(await hre.companionNetworks.receiver.getChainId());
-    const senderGateway = await deploy("SenderGatewayToEthereum", {
-      from: deployer,
-      contract: "SenderGatewayMock",
-      args: [fastBridgeSender.address, ReceiverGateway.address, ReceiverChainId],
       log: true,
     });
   };
@@ -87,8 +92,12 @@ const deploySenderGateway: DeployFunction = async (hre: HardhatRuntimeEnvironmen
   }
 };
 
-deploySenderGateway.tags = ["SenderChain", "SenderGateway", "Ethereum"];
-deploySenderGateway.skip = async ({ getChainId }) => !SENDER_CHAIN_IDS.includes(Number(await getChainId()));
-deploySenderGateway.runAtTheEnd = true;
+deploySender.tags = ["ArbToEthSender"];
+deploySender.skip = async ({ getChainId }) => {
+  const chainId = Number(await getChainId());
+  console.log(chainId);
+  return !SenderChains[chainId];
+};
+deploySender.runAtTheEnd = true;
 
-export default deploySenderGateway;
+export default deploySender;

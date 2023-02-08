@@ -22,5 +22,5 @@ generate "$SCRIPT_DIR/../deployments/arbitrumGoerli" "https://goerli.arbiscan.io
 echo
 echo "#### Chiado"
 echo
-generate "$SCRIPT_DIR/../deployments/chiado" "https://blockscout.chiadochain.net/address/"
+generate "$SCRIPT_DIR/../deployments/chiado" "https://blockscout.com/gnosis/chiado/address/"
 echo

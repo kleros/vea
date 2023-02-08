@@ -12,11 +12,7 @@ pragma solidity ^0.8.0;
 
 import "../FastBridgeSender.sol";
 
-/**
- * Fast Bridge Sender
- * Counterpart of `FastReceiver`
- */
-contract FastBridgeSenderOnArbitrum is FastBridgeSender {
+contract FastBridgeSenderOnArbitrumMock is FastBridgeSender {
     IArbSys public immutable arbSys;
 
     // **************************************** //
@@ -30,6 +26,7 @@ contract FastBridgeSenderOnArbitrum is FastBridgeSender {
 
     /**
      * @dev Constructor.
+     * @param _arbSys The mocked IArbSys.
      * @param _epochPeriod The duration between epochs.
      * @param _fastBridgeReceiver The the Safe Bridge Router on Ethereum to the receiving chain.
      */

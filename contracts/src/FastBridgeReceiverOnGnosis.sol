@@ -35,7 +35,7 @@ contract FastBridgeReceiverOnGnosis is IFastBridgeReceiver, ISafeBridgeReceiver 
     // *              Views                * //
     // ************************************* //
 
-    function isSentBySafeBridge() internal view override returns (bool) {
+    function isSentBySafeBridge() internal view virtual override returns (bool) {
         return (msg.sender == address(amb)) && (amb.messageSender() == safeBridgeSender);
     }
 

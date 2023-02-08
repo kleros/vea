@@ -5,9 +5,9 @@ import { BigNumber, utils } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 
 import {
-  FastBridgeReceiverOnEthereum,
+  FastBridgeReceiverOnEthereumMock,
   ReceiverGatewayMock,
-  FastBridgeSenderOnArbitrum,
+  FastBridgeSenderOnArbitrumMock,
   SenderGatewayMock,
   InboxMock,
   ArbSysMock,
@@ -28,9 +28,9 @@ const CHALLENGE_PERIOD = 14400;
 describe("Integration tests", async () => {
   let [deployer, bridger, challenger, relayer]: SignerWithAddress[] = [];
   let receiverGateway: ReceiverGatewayMock;
-  let fastBridgeSender: FastBridgeSenderOnArbitrum;
+  let fastBridgeSender: FastBridgeReceiverOnEthereumMock;
   let senderGateway: SenderGatewayMock;
-  let fastBridgeReceiver: FastBridgeReceiverOnEthereum;
+  let fastBridgeReceiver: FastBridgeSenderOnArbitrumMock;
   let inbox: InboxMock;
   let arbsysMock: ArbSysMock;
 
@@ -41,17 +41,15 @@ describe("Integration tests", async () => {
   });
 
   beforeEach("Setup", async () => {
-    await deployments.fixture(["ReceiverGateway", "SenderGateway"], {
+    await deployments.fixture(["ArbToEthReceiver", "ArbToEthSender"], {
       fallbackToGlobal: true,
       keepExistingDeployments: false,
     });
 
-    fastBridgeReceiver = (await ethers.getContract(
-      "FastBridgeReceiverOnEthereumMock"
-    )) as FastBridgeReceiverOnEthereumMock;
-    receiverGateway = (await ethers.getContract("ReceiverGatewayOnEthereum")) as ReceiverGatewayMock;
-    fastBridgeSender = (await ethers.getContract("FastBridgeSenderMock")) as FastBridgeSenderOnArbitrum;
-    senderGateway = (await ethers.getContract("SenderGatewayToEthereum")) as SenderGatewayMock;
+    fastBridgeReceiver = (await ethers.getContract("FastBridgeReceiverOnEthereum")) as FastBridgeReceiverOnEthereumMock;
+    receiverGateway = (await ethers.getContract("ReceiverGateway")) as ReceiverGatewayMock;
+    fastBridgeSender = (await ethers.getContract("FastBridgeSender")) as FastBridgeSenderOnArbitrumMock;
+    senderGateway = (await ethers.getContract("SenderGateway")) as SenderGatewayMock;
     inbox = (await ethers.getContract("InboxMock")) as InboxMock;
     arbsysMock = (await ethers.getContract("ArbSysMock")) as ArbSysMock;
   });
@@ -343,11 +341,9 @@ describe("Integration tests", async () => {
       await network.provider.send("evm_mine");
 
       const bridgerVerifyBatchTx = await fastBridgeReceiver.connect(bridger).verifyBatch(epoch);
-
       const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(epoch, [], fastMessage);
 
       const withdrawClaimDepositTx = await fastBridgeReceiver.withdrawClaimDeposit(epoch);
-
       await expect(fastBridgeReceiver.withdrawChallengeDeposit(epoch)).to.be.revertedWith("Challenge does not exist");
     });
   });
@@ -500,8 +496,6 @@ describe("Integration tests", async () => {
       expect(await (await fastBridgeReceiver.challenges(epoch)).honest).to.equal(false);
       const sendSafeFallbackTx = await fastBridgeSender.connect(bridger).sendSafeFallback(epoch, { gasLimit: 1000000 });
       expect(await (await fastBridgeReceiver.challenges(epoch)).honest).to.equal(false);
-
-      const verifySafeBatchTx = await fastBridgeReceiver.connect(bridger).verifySafeBatch(epoch, batchMerkleRoot);
       const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(epoch, [], fastMessage);
       const withdrawClaimDepositTx = await fastBridgeReceiver.withdrawClaimDeposit(epoch);
 
@@ -543,13 +537,9 @@ describe("Integration tests", async () => {
         .to.emit(fastBridgeReceiver, "BatchVerified")
         .withArgs(epoch, false);
 
-      // sendSafeFallback internally calls the verifySafeBatch, so explicitly
+      // sendSafeFallback internally calls the verifySafeBatch
       const sendSafeFallbackTx = await fastBridgeSender.connect(bridger).sendSafeFallback(epoch, { gasLimit: 1000000 });
-
-      const verifySafeBatchTx = await fastBridgeReceiver.connect(bridger).verifySafeBatch(epoch, batchMerkleRoot);
-
       const verifyAndRelayTx = await fastBridgeReceiver.connect(relayer).verifyAndRelayMessage(epoch, [], fastMessage);
-
       expect(fastBridgeReceiver.connect(relayer).withdrawClaimDeposit(epoch)).to.be.revertedWith("Claim failed.");
 
       await expect(fastBridgeReceiver.connect(relayer).withdrawChallengeDeposit(epoch))
