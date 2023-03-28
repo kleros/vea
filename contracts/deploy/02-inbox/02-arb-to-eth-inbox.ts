@@ -8,13 +8,13 @@ enum SenderChains {
 }
 const paramsByChainId = {
   ARBITRUM: {
-    epochPeriod: 86400, // 24 hours
+    epochPeriod: 43200, // 12 hours
   },
   ARBITRUM_GOERLI: {
-    epochPeriod: 120, // 2 minutes
+    epochPeriod: 1800, // 30 minutes
   },
   HARDHAT: {
-    epochPeriod: 86400, // 2 minutes
+    epochPeriod: 1800, // 30 minutes
   },
 };
 
@@ -32,14 +32,14 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
-    const fastBridgeReceiver = await deployments.get("FastBridgeReceiverOnEthereum");
+    const veaOutbox = await deployments.get("VeaOutbox");
 
     const arbSysMock = await deploy("ArbSysMock", { from: deployer, log: true });
 
-    const fastBridgeSender = await deploy("FastBridgeSender", {
+    const veaInbox = await deploy("VeaInbox", {
       from: deployer,
-      contract: "FastBridgeSenderOnArbitrumMock",
-      args: [arbSysMock.address, epochPeriod, fastBridgeReceiver.address],
+      contract: "VeaInboxMock",
+      args: [arbSysMock.address, epochPeriod, veaOutbox.address],
     });
 
     const receiverGateway = await deployments.get("ReceiverGateway");
@@ -48,14 +48,14 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const senderGateway = await deploy("SenderGateway", {
       from: deployer,
       contract: "SenderGatewayMock",
-      args: [fastBridgeSender.address, receiverGateway.address, receiverChainId],
+      args: [veaInbox.address, receiverGateway.address, receiverChainId],
       gasLimit: 4000000,
       log: true,
     });
 
     const outbox = await deploy("OutboxMock", {
       from: deployer,
-      args: [fastBridgeSender.address],
+      args: [veaInbox.address],
       log: true,
     });
 
@@ -74,12 +74,12 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const fastBridgeReceiver = await hre.companionNetworks.receiver.deployments.get("FastBridgeReceiverOnEthereum");
+    const veaOutbox = await hre.companionNetworks.receiver.deployments.get("VeaOutbox");
 
-    await deploy("FastBridgeSenderToEthereum", {
+    await deploy("VeaInbox", {
       from: deployer,
-      contract: "FastBridgeSender",
-      args: [epochPeriod, fastBridgeReceiver.address],
+      contract: "VeaInbox",
+      args: [epochPeriod, veaOutbox.address],
       log: true,
     });
   };
@@ -92,7 +92,7 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deploySender.tags = ["ArbToEthSender"];
+deploySender.tags = ["ArbToEthInbox"];
 deploySender.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

@@ -10,18 +10,30 @@
 
 pragma solidity ^0.8.0;
 
-import "../FastBridgeSender.sol";
+import "../VeaInbox.sol";
 
-contract FastBridgeSenderOnArbitrumMock is FastBridgeSender {
+contract VeaInboxMock is VeaInbox {
     IArbSys public immutable arbSys;
 
     // **************************************** //
     // *     Arbitrum Sender Specific         * //
     // **************************************** //
 
-    function _sendSafe(address _receiver, bytes memory _calldata) internal override returns (bytes32) {
-        uint256 ticketID = arbSys.sendTxToL1(_receiver, _calldata);
-        return bytes32(ticketID);
+    /**
+     * @dev Sends the state root using Arbitrum's canonical bridge.
+     */
+    function sendStaterootSnapshot(uint256 _epochSnapshot) external override {
+        uint256 epoch = block.timestamp / epochPeriod;
+        require(_epochSnapshot <= epoch, "Epoch in the future.");
+        bytes memory data = abi.encodeWithSelector(
+            IVeaOutbox.resolveChallenge.selector,
+            _epochSnapshot,
+            stateRootSnapshots[_epochSnapshot]
+        );
+
+        bytes32 ticketID = bytes32(arbSys.sendTxToL1(receiver, data));
+
+        emit StaterootSent(_epochSnapshot, ticketID);
     }
 
     /**
@@ -34,7 +46,7 @@ contract FastBridgeSenderOnArbitrumMock is FastBridgeSender {
         IArbSys _arbSys,
         uint256 _epochPeriod,
         address _fastBridgeReceiver
-    ) FastBridgeSender(_epochPeriod, _fastBridgeReceiver) {
+    ) VeaInbox(_epochPeriod, _fastBridgeReceiver) {
         arbSys = _arbSys;
     }
 }

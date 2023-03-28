@@ -18,16 +18,16 @@ import "../../interfaces/ISenderGateway.sol";
  * Counterpart of `ReceiverGatewayMock`
  */
 contract SenderGatewayMock is ISenderGateway {
-    IFastBridgeSender public immutable fastBridgeSender;
+    IVeaInbox public immutable veaInbox;
     address public override receiverGateway;
     uint256 public immutable override receiverChainID;
 
     constructor(
-        IFastBridgeSender _fastBridgeSender,
+        IVeaInbox _veaInbox,
         address _receiverGateway,
         uint256 _receiverChainID
     ) {
-        fastBridgeSender = _fastBridgeSender;
+        veaInbox = _veaInbox;
         receiverGateway = _receiverGateway;
         receiverChainID = _receiverChainID;
     }
@@ -35,7 +35,6 @@ contract SenderGatewayMock is ISenderGateway {
     function sendFastMessage(uint256 _data) external {
         bytes4 methodSelector = IReceiverGatewayMock.receiveMessage.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _data);
-
-        fastBridgeSender.sendFast(receiverGateway, data);
+        veaInbox.sendMsg(receiverGateway, data);
     }
 }

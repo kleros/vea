@@ -17,7 +17,7 @@ import "./IReceiverGatewayMock.sol";
  * Counterpart of `SenderGatewayMock`
  */
 contract ReceiverGatewayMock is IReceiverGatewayMock {
-    IFastBridgeReceiver public immutable fastBridgeReceiver;
+    IVeaOutbox public immutable veaOutbox;
     address public immutable override senderGateway;
     uint256 public immutable override senderChainID;
 
@@ -25,17 +25,17 @@ contract ReceiverGatewayMock is IReceiverGatewayMock {
     uint256 public data;
 
     constructor(
-        IFastBridgeReceiver _fastBridgeReceiver,
+        IVeaOutbox _veaOutbox,
         address _senderGateway,
         uint256 _senderChainID
     ) {
-        fastBridgeReceiver = _fastBridgeReceiver;
+        veaOutbox = _veaOutbox;
         senderGateway = _senderGateway;
         senderChainID = _senderChainID;
     }
 
     modifier onlyFromFastBridge() {
-        require(address(fastBridgeReceiver) == msg.sender, "Fast Bridge only.");
+        require(address(veaOutbox) == msg.sender, "Fast Bridge only.");
         _;
     }
 

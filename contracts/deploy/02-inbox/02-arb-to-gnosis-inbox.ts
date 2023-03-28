@@ -8,13 +8,13 @@ enum SenderChains {
 }
 const paramsByChainId = {
   ARBITRUM: {
-    epochPeriod: 86400, // 24 hours
+    epochPeriod: 43200, // 12 hours
   },
   ARBITRUM_GOERLI: {
-    epochPeriod: 120, // 2 minutes
+    epochPeriod: 1800, // 30 minutes
   },
   HARDHAT: {
-    epochPeriod: 86400, // 2 minutes
+    epochPeriod: 1800, // 30 minutes
   },
 };
 
@@ -31,12 +31,12 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
 
-  const fastBridgeReceiver = await hre.companionNetworks.receiver.deployments.get("FastBridgeReceiverOnGnosis");
+  const veaOutboxGnosis = await hre.companionNetworks.receiver.deployments.get("VeaOutboxGnosis");
 
-  await deploy("FastBridgeSenderToGnosis", {
+  await deploy("VeaInbox", {
     from: deployer,
-    contract: "FastBridgeSender",
-    args: [epochPeriod, fastBridgeReceiver.address],
+    contract: "VeaInbox",
+    args: [epochPeriod, veaOutboxGnosis.address],
     log: true,
   });
 };

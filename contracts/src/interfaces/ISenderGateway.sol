@@ -10,10 +10,10 @@
 
 pragma solidity ^0.8.0;
 
-import "./IFastBridgeSender.sol";
+import "./IVeaInbox.sol";
 
 interface ISenderGateway {
-    function fastBridgeSender() external view returns (IFastBridgeSender);
+    function veaInbox() external view returns (IVeaInbox);
 
     function receiverChainID() external view returns (uint256);
 
