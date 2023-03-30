@@ -114,23 +114,14 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     console.log(config.networks);
     const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
-    nonce += 1; // SenderGatewayToEthereum deploy tx will the third tx after this on its sender network, so we add two to the current nonce.
-
-    const senderGatewayAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future SenderGatewayToEthereum address for nonce %d: %s", nonce, senderGatewayAddress);
-    nonce -= 1;
 
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
-    nonce += 4;
 
-    const inboxAddress = arbitrumInbox;
-    console.log("calculated future inboxAddress for nonce %d: %s", nonce, inboxAddress);
-
-    const veaOutbox = await deploy("VeaOutbox", {
+    await deploy("VeaOutbox", {
       from: deployer,
       contract: "VeaOutbox",
-      args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, veaInboxAddress, inboxAddress],
+      args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, veaInboxAddress, arbitrumInbox],
       log: true,
     });
   };

@@ -101,11 +101,6 @@ yarn hardhat deploy --network localhost --tags HomeChain
 yarn hardhat deploy --network arbitrumGoerli --tags Arbitration
 yarn hardhat deploy --network goerli --tags ForeignChain
 yarn hardhat deploy --network arbitrumGoerli --tags HomeChain
-
-# Rinkeby
-yarn hardhat deploy --network arbitrumRinkeby --tags Arbitration
-yarn hardhat deploy --network rinkeby --tags ForeignChain
-yarn hardhat deploy --network arbitrumRinkeby --tags HomeChain
 ```
 
 The deployed addresses should be output to the screen after the deployment is complete.
@@ -124,7 +119,7 @@ yarn hardhat node --tags Arbitration,ForeignGateway,HomeGateway
 **Shell 2: the test script**
 
 ```bash
-yarn hardhat test --network localhost test/pre-alpha1/index.ts
+yarn hardhat test --network localhost
 ```
 
 #### 4. Verify the Source Code for Contracts
@@ -132,5 +127,5 @@ yarn hardhat test --network localhost test/pre-alpha1/index.ts
 This must be done for each network separately.
 
 ```bash
-yarn hardhat --network <arbitrumGoerli|arbitrumRinkeby|arbitrum|goerli|rinkeby|mainnet> etherscan-verify
+yarn hardhat --network <arbitrumGoerli|arbitrum|goerli|mainnet> etherscan-verify
 ```
