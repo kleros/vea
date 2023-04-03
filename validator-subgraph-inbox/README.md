@@ -2,7 +2,7 @@
 
 ## Deployments
 
-- [kleros/fastbridge-arbitrum-rinkeby](https://thegraph.com/hosted-service/subgraph/kleros/fastbridge-arbitrum-rinkeby)
+- [kleros/vea-validator-inbox-arbitrumgoerli](https://thegraph.com/hosted-service/subgraph/kleros/vea-validator-inbox-arbitrumgoerli)
 
 ## Build
 

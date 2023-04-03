@@ -1,12 +1,12 @@
 specVersion: 0.0.4
-description: Fast Bridge Sender on Arbitrum Rinkeby.
+description: Fast Bridge Sender on Arbitrum Goerli.
 repository: https://github.com/kleros/kleros-v2/tree/master/subgraph-fastbridge
 schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
     name: FastBridgeSender
-    network: arbitrum-rinkeby
+    network: arbitrum-goerli
     source:
       address: "0xf8A4a85e7153374A1b9BDA763a84252eC286843b"
       abi: FastBridgeSender

@@ -1,0 +1,21 @@
+{
+  "name": "@kleros/vea-validator-cli",
+  "license": "MIT",
+  "packageManager": "yarn@3.3.1",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "volta": {
+    "node": "16.20.0",
+    "yarn": "3.3.1"
+  },
+  "scripts": {
+    "start": "npx ts-node ./src/watcher.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "pm2": "^5.2.2",
+    "typescript": "^4.9.5",
+    "web3": "^1.8.2"
+  }
+}

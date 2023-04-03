@@ -1,0 +1,26 @@
+{
+  "name": "@kleros/veascan-subgraph-inbox",
+  "license": "MIT",
+  "packageManager": "yarn@3.3.1",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "volta": {
+    "node": "16.20.0",
+    "yarn": "3.3.1"
+  },
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ kleros/veascan-inbox-arbitrumgoerli",
+    "create-local": "graph create --node http://localhost:8020/ kleros/veascan-inbox",
+    "remove-local": "graph remove --node http://localhost:8020/ kleros/veascan-inbox",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/veascan-inbox"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-ts": "^0.29.3"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.44.0"
+  }
+}
