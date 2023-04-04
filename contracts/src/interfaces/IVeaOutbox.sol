@@ -10,19 +10,28 @@
 
 pragma solidity ^0.8.0;
 
-interface IVeaOutbox {
+import "./IChallengeResolver.sol";
+
+interface IVeaOutbox is IChallengeResolver {
     /**
-     * @dev Verifies merkle proof for the given message and associated nonce for the epoch and relays the message.
-     * @param _proof The merkle proof to prove the membership of the message and nonce in the merkle tree for the epoch.
-     * @param _message The data of the message.
+     * @dev Verifies and relays the message.
+     * @param proof The merkle proof to prove the message.
+     * @param index The index of the message in the merkle tree.
+     * @param msgSender The address of the message sender.
+     * @param to The address of the message receiver.
+     * @param data The data of the message.
      */
-    function verifyAndRelayMessage(bytes32[] calldata _proof, bytes calldata _message) external;
+    function verifyAndRelayMessage(
+        bytes32[] calldata proof,
+        uint64 index,
+        address msgSender,
+        address to,
+        bytes calldata data
+    ) external;
 
     /**
-     * Note: Access restricted to arbitrum canonical bridge.
-     * @dev Resolves any challenge of the optimistic claim for '_epoch'.
-     * @param _epoch The epoch to verify.
-     * @param _stateRoot The true state root for the epoch.
+     * @dev The message sender of a relayed message.
+     * @return messageSender The address of the message sender.
      */
-    function resolveChallenge(uint256 _epoch, bytes32 _stateRoot) external;
+    function messageSender() external returns (address messageSender);
 }

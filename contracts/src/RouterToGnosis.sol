@@ -13,12 +13,12 @@ pragma solidity ^0.8.0;
 import "./canonical/gnosis-chain/IAMB.sol";
 import "./canonical/arbitrum/IInbox.sol";
 import "./canonical/arbitrum/IOutbox.sol";
-import "./interfaces/IVeaOutbox.sol";
+import "./interfaces/IChallengeResolver.sol";
 
 /**
  * Router on Ethereum from Arbitrum to Gnosis Chain.
  */
-contract RouterGC {
+contract RouterToGnosis is IChallengeResolver {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
@@ -34,9 +34,10 @@ contract RouterGC {
 
     /**
      * @dev Event emitted when a message is relayed to another Safe Bridge.
-     * @param _ticketID The unique identifier provided by the underlying canonical bridge.
+     * @param epoch The epoch of the batch requested to send.
+     * @param ticketID The unique identifier provided by the underlying canonical bridge.
      */
-    event Routed(uint256 indexed _epoch, bytes32 _ticketID);
+    event Routed(uint64 indexed epoch, bytes32 ticketID);
 
     /**
      * @dev Constructor.
@@ -60,18 +61,18 @@ contract RouterGC {
     /**
      * Note: Access restricted to arbitrum canonical bridge.
      * @dev Resolves any challenge of the optimistic claim for '_epoch'.
-     * @param _epoch The epoch to verify.
-     * @param _stateroot The true batch merkle root for the epoch.
+     * @param epoch The epoch to verify.
+     * @param stateroot The true batch merkle root for the epoch.
      */
-    function resolveChallenge(uint256 _epoch, bytes32 _stateroot) external {
+    function resolveChallenge(uint64 epoch, bytes32 stateroot) external {
         IBridge bridge = inbox.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
 
-        bytes memory _data = abi.encodeWithSelector(IVeaOutbox.resolveChallenge.selector, _epoch, _stateroot);
+        bytes memory data = abi.encodeWithSelector(IChallengeResolver.resolveChallenge.selector, epoch, stateroot);
 
         // replace maxGasPerTx with safe level for production deployment
-        bytes32 ticketID = amb.requireToPassMessage(receiver, _data, amb.maxGasPerTx());
-        emit Routed(_epoch, ticketID);
+        bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());
+        emit Routed(epoch, ticketID);
     }
 }

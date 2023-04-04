@@ -22,11 +22,11 @@ contract VeaInboxMock is VeaInbox {
     /**
      * @dev Sends the state root using Arbitrum's canonical bridge.
      */
-    function sendStaterootSnapshot(uint256 _epochSnapshot) external override {
-        uint256 epoch = block.timestamp / epochPeriod;
+    function sendStaterootSnapshot(uint64 _epochSnapshot) external override {
+        uint64 epoch = uint64(block.timestamp) / epochPeriod;
         require(_epochSnapshot <= epoch, "Epoch in the future.");
         bytes memory data = abi.encodeWithSelector(
-            IVeaOutbox.resolveChallenge.selector,
+            IChallengeResolver.resolveChallenge.selector,
             _epochSnapshot,
             stateRootSnapshots[_epochSnapshot]
         );
@@ -40,13 +40,13 @@ contract VeaInboxMock is VeaInbox {
      * @dev Constructor.
      * @param _arbSys The mocked IArbSys.
      * @param _epochPeriod The duration between epochs.
-     * @param _fastBridgeReceiver The the Safe Bridge Router on Ethereum to the receiving chain.
+     * @param _veaOutbox The vea outbox on Ethereum to the receiving chain.
      */
     constructor(
         IArbSys _arbSys,
-        uint256 _epochPeriod,
-        address _fastBridgeReceiver
-    ) VeaInbox(_epochPeriod, _fastBridgeReceiver) {
+        uint64 _epochPeriod,
+        address _veaOutbox
+    ) VeaInbox(_epochPeriod, _veaOutbox) {
         arbSys = _arbSys;
     }
 }

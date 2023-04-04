@@ -4,7 +4,6 @@ import { soliditySha3, Mixed } from "web3-utils";
 import { ethers } from "hardhat";
 import { soliditySha256 } from "ethers/lib/utils";
 
-
 const isNil = (value: unknown): boolean => value === null || value === undefined;
 
 // Merkle tree called with 32 byte hex values
@@ -30,8 +29,14 @@ export class MerkleTree {
    * @param data The data to be transformed into a node.
    * @return node The `sha3` (A.K.A. `keccak256`) hash of `first, ...params` as a 32-byte hex string.
    */
-  public static makeLeafNode(data: string): string {
-    const result = ethers.utils.sha256(data);
+  public static makeLeafNode(first: Mixed, ...rest: Mixed[]): string {
+    const singleHash = soliditySha3(first, ...rest);
+
+    if (!singleHash) {
+      throw new Error("Leaf node must not be empty");
+    }
+
+    const result = ethers.utils.keccak256(singleHash);
 
     if (!result) {
       throw new Error("Leaf node must not be empty");

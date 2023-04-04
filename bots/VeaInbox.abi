@@ -1,6 +1,4 @@
-{
-  "address": "0xf8A4a85e7153374A1b9BDA763a84252eC286843b",
-  "abi": [
+[
     {
       "inputs": [
         {
@@ -10,7 +8,7 @@
         },
         {
           "internalType": "address",
-          "name": "_safeBridgeReceiver",
+          "name": "_receiver",
           "type": "address"
         }
       ],
@@ -21,50 +19,13 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "batchID",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "batchSize",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "epoch",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "bytes32",
-          "name": "batchMerkleRoot",
-          "type": "bytes32"
-        }
-      ],
-      "name": "BatchOutgoing",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
           "indexed": false,
           "internalType": "bytes",
           "name": "fastMessage",
           "type": "bytes"
-        },
-        {
-          "indexed": false,
-          "internalType": "bytes32",
-          "name": "fastMessageHash",
-          "type": "bytes32"
         }
       ],
-      "name": "MessageReceived",
+      "name": "MessageSent",
       "type": "event"
     },
     {
@@ -79,11 +40,30 @@
         {
           "indexed": false,
           "internalType": "bytes32",
-          "name": "canonicalBridgeMessageID",
+          "name": "stateRoot",
           "type": "bytes32"
         }
       ],
-      "name": "SentSafe",
+      "name": "SnapshotSaved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "stateRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "StaterootSent",
       "type": "event"
     },
     {
@@ -94,51 +74,6 @@
           "internalType": "contract IArbSys",
           "name": "",
           "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "batch",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "batchSize",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "currentBatchID",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -165,7 +100,7 @@
           "type": "uint256"
         }
       ],
-      "name": "fastOutbox",
+      "name": "inbox",
       "outputs": [
         {
           "internalType": "bytes32",
@@ -178,7 +113,7 @@
     },
     {
       "inputs": [],
-      "name": "safeBridgeReceiver",
+      "name": "receiver",
       "outputs": [
         {
           "internalType": "address",
@@ -191,7 +126,7 @@
     },
     {
       "inputs": [],
-      "name": "sendBatch",
+      "name": "saveStateRootSnapshot",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -200,16 +135,35 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_receiver",
+          "name": "_to",
           "type": "address"
         },
         {
           "internalType": "bytes",
-          "name": "_calldata",
+          "name": "_data",
           "type": "bytes"
         }
       ],
-      "name": "sendFast",
+      "name": "sendMsg",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "msgId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epochSnapshot",
+          "type": "uint256"
+        }
+      ],
+      "name": "sendStaterootSnapshot",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -218,14 +172,19 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "_epoch",
+          "name": "",
           "type": "uint256"
         }
       ],
-      "name": "sendSafeFallback",
-      "outputs": [],
-      "stateMutability": "payable",
+      "name": "stateRootSnapshots",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     }
   ]
-}

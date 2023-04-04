@@ -1,0 +1,47 @@
+type MessageSent @entity(immutable: true) {
+  id: Bytes!
+  nonce: BigInt! # uint64
+  to: Receiver! # address
+  msgSender: Sender! # address
+  data: Bytes! # bytes
+  epoch: BigInt! # uint64
+  node: Node! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Node @entity(immutable: false) {
+  id: Bytes! # bytes32
+  parent: Node
+  left: Node
+  right: Node
+}
+
+type Receiver @entity(immutable: true) {
+  id: Bytes!
+  messages: [MessageSent!]! @derivedFrom(field: "to")
+}
+
+type Sender @entity(immutable: true) {
+  id: Bytes!
+  messages: [MessageSent!]! @derivedFrom(field: "msgSender")
+}
+
+type SnapshotSaved @entity(immutable: true) {
+  id: Bytes!
+  epoch: BigInt! # uint64
+  stateRoot: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type StaterootSent @entity(immutable: true) {
+  id: Bytes!
+  epoch: BigInt! # uint64
+  stateRoot: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

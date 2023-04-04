@@ -2,6 +2,7 @@
   "name": "watcher",
   "packageManager": "yarn@3.1.1",
   "dependencies": {
+    "@typechain/ethers-v5": "^10.2.0",
     "dotenv": "^16.0.3",
     "pm2": "^5.2.2",
     "typescript": "^4.9.5",

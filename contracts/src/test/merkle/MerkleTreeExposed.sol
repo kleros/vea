@@ -19,7 +19,7 @@ import "../../merkle/MerkleTree.sol";
  */
 contract MerkleTreeExposed is MerkleTree {
     function appendMessage(bytes memory _leaf) public {
-        _appendMessage(sha256(_leaf));
+        _appendMessage(keccak256(abi.encodePacked(keccak256(_leaf))));
     }
 
     function getMerkleRoot() public view returns (bytes32 merkleroot) {

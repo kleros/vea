@@ -17,7 +17,7 @@
   "private": true,
   "workspaces": [
     "contracts",
-    "subgraph-fastbridge",
+    "subgraph",
     "bots"
   ],
   "packageManager": "yarn@3.1.1",

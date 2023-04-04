@@ -1,0 +1,20 @@
+{
+  "name": "subgraph",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ shotaronowhere/vea-inbox-arbitrum",
+    "create-local": "graph create --node http://localhost:8020/ shotaronowhere/vea-inbox-arbitrum",
+    "remove-local": "graph remove --node http://localhost:8020/ shotaronowhere/vea-inbox-arbitrum",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 shotaronowhere/vea-inbox-arbitrum",
+    "test": "graph test"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.44.0",
+    "@graphprotocol/graph-ts": "0.29.1"
+  },
+  "devDependencies": {
+    "matchstick-as": "0.5.0"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "arbitrum-goerli": {
+    "VeaInbox": {
+      "address": "0x9c528cFcE634b39fbD77b6EEA30C69f3A9Bf33Ff",
+      "startBlock": 14966340
+    }
+  }
+}

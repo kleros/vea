@@ -13,14 +13,14 @@ pragma solidity ^0.8.0;
 import "../../canonical/arbitrum/IOutbox.sol";
 
 contract OutboxMock is IOutbox {
-    address public fastBridgeSender;
+    address public veaInbox;
 
-    constructor(address _fastBridgeSender) {
-        fastBridgeSender = _fastBridgeSender;
+    constructor(address _veaInbox) {
+        veaInbox = _veaInbox;
     }
 
     function l2ToL1Sender() external view returns (address) {
-        return address(fastBridgeSender);
+        return address(veaInbox);
     }
 
     function l2ToL1Block() external view returns (uint256) {}

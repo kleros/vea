@@ -103,7 +103,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     await deploy("ReceiverGateway", {
       from: deployer,
       contract: "ReceiverGatewayMock",
-      args: [veaOutbox.address, senderGatewayAddress, senderChainId],
+      args: [veaOutbox.address, senderGatewayAddress],
       gasLimit: 4000000,
       log: true,
     });

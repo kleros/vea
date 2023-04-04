@@ -22,7 +22,7 @@ contract VeaOutboxMock is VeaOutbox {
      * @param _epoch The epoch to verify.
      * @param _stateRoot The true state root for the epoch.
      */
-    function resolveChallenge(uint256 _epoch, bytes32 _stateRoot) external override {
+    function resolveChallenge(uint64 _epoch, bytes32 _stateRoot) external override {
         require(msg.sender == address(arbSys), "Not from bridge.");
 
         if (_epoch > latestVerifiedEpoch) {
@@ -31,7 +31,7 @@ contract VeaOutboxMock is VeaOutbox {
         }
 
         if (claims[_epoch].bridger != address(0)) {
-            if (_stateRoot == claims[_epoch].stateroot) {
+            if (_stateRoot == claims[_epoch].stateRoot) {
                 claims[_epoch].honest = true;
             } else {
                 challenges[_epoch].honest = true;
@@ -55,10 +55,10 @@ contract VeaOutboxMock is VeaOutbox {
     constructor(
         IArbSys _arbSys,
         uint256 _deposit,
-        uint256 _epochPeriod,
-        uint256 _challengePeriod,
-        uint256 _numEpochTimeout,
-        uint256 _epochClaimWindow,
+        uint64 _epochPeriod,
+        uint64 _challengePeriod,
+        uint64 _numEpochTimeout,
+        uint64 _epochClaimWindow,
         address _sender,
         address _inbox // Ethereum receiver specific
     ) VeaOutbox(_deposit, _epochPeriod, _challengePeriod, _numEpochTimeout, _epochClaimWindow, _sender, _inbox) {

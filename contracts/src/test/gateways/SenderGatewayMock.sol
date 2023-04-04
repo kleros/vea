@@ -20,16 +20,10 @@ import "../../interfaces/ISenderGateway.sol";
 contract SenderGatewayMock is ISenderGateway {
     IVeaInbox public immutable veaInbox;
     address public override receiverGateway;
-    uint256 public immutable override receiverChainID;
 
-    constructor(
-        IVeaInbox _veaInbox,
-        address _receiverGateway,
-        uint256 _receiverChainID
-    ) {
+    constructor(IVeaInbox _veaInbox, address _receiverGateway) {
         veaInbox = _veaInbox;
         receiverGateway = _receiverGateway;
-        receiverChainID = _receiverChainID;
     }
 
     function sendFastMessage(uint256 _data) external {
