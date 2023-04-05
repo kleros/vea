@@ -2,7 +2,7 @@
 
 ## Deployments
 
-- [kleros/vea-validator-inbox-arbitrumgoerli](https://thegraph.com/hosted-service/subgraph/kleros/vea-validator-inbox-arbitrumgoerli)
+- https://thegraph.com/hosted-service/subgraph/shotaronowhere/vea-inbox-arbitrum
 
 ## Build
 
