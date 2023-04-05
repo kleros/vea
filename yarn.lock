@@ -3524,6 +3524,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@kleros/vea-validator-cli@workspace:validator-cli"
   dependencies:
+    "@kleros/vea-contracts": "workspace:^"
     "@typechain/ethers-v5": ^10.2.0
     dotenv: ^16.0.3
     pm2: ^5.2.2
