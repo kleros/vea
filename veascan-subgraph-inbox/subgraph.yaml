@@ -14,10 +14,9 @@ dataSources:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-      - Epoch
       - Snapshot
-      - SnapshotDetails
-      - Transaction
+      - Message
+      - Refs
       abis:
         - name: VeaInbox
           file: ../contracts/deployments/arbitrumGoerli/VeaInbox.json

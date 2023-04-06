@@ -1,31 +1,27 @@
-scalar DateTime @graphql-scalars(dateTime)
-
-type Epoch @entity {
+type Message @entity {
   id: ID!
-}
-
-type Transaction @entity {
-  id: ID!
-  chain: String!
-  transactionId: String!
-  timestamp: DateTime!
-  caller: String!
-  stateRoot: Bytes!
+  txHash: Bytes!
+  timestamp: BigInt!
+  from: Bytes!
+  to: Bytes!
+  snapshot: Snapshot!
+  data: Bytes!
 }
 
 type Snapshot @entity {
   id: ID!
-  epoch: Epoch!
-  timestamp: DateTime!
-  fromChain: String!
-  inboxAddress: String!
-  toChain: String!
-  outboxAddress: String!
-  status: String!
-  snapshotDetails: SnapshotDetails
+  epoch: BigInt
+  txHash: Bytes
+  timestamp: BigInt
+  stateRoot: Bytes
+  messages: [Message!]! @derivedFrom(field: "snapshot")
+  numberMessages: BigInt!
+  taken: Boolean!
+  resolving: Boolean!
 }
 
-type SnapshotDetails @entity {
+type Refs @entity {
   id: ID!
-  transaction: Transaction
+  currentSnapshotIndex: BigInt!
+  nextMessageIndex: BigInt!
 }

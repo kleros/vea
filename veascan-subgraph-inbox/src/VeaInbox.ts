@@ -1,138 +1,60 @@
-import { BigInt, Bytes } from '@graphprotocol/graph-ts';
-import { Epoch, Snapshot, SnapshotDetails, Transaction } from '../generated/schema';
-import { MessageSent, SnapshotSaved, StaterootSent } from '../generated/VeaInbox/VeaInbox';
+import { BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { Snapshot, Message, Refs } from "../generated/schema";
+import {
+  MessageSent,
+  SnapshotSaved,
+  StaterootSent,
+} from "../generated/VeaInbox/VeaInbox";
 
-export const handleMessageSent = (event: MessageSent): void => {
-  let epochId = event.params.msgData[0].toHexString();
-  let snapshot = Snapshot.load(epochId);
-
-  if (snapshot == null) {
-    snapshot = new Snapshot(epochId);
-    snapshot.timestamp = event.block.timestamp;
-    snapshot.fromChain = 'unknown';
-    snapshot.inboxAddress = event.address.toHex();
-    snapshot.toChain = 'unknown';
-    snapshot.outboxAddress = 'unknown';
-    snapshot.status = 'Invalid';
-
-    let snapshotDetails = new SnapshotDetails(snapshot.id + '-details');
-    snapshotDetails.transaction = null;
-
-    snapshot.snapshotDetails = snapshotDetails.id;
-
-    snapshot.save();
-    snapshotDetails.save();
-  }
-
-  let snapshotDetails = SnapshotDetails.load(snapshot.snapshotDetails);
-
-  if (snapshotDetails == null) {
-    snapshotDetails = new SnapshotDetails(snapshot.id + '-details');
-    snapshotDetails.transaction = null;
-    snapshotDetails.save();
-  }
-}
-
-export const handleSnapshotSaved = (event: SnapshotSaved): void => {
-  let epochId = event.params.epoch.toHex();
-  let snapshot = Snapshot.load(epochId);
-
-  if (snapshot == null) {
-    snapshot = new Snapshot(epochId);
-    snapshot.timestamp = event.block.timestamp;
-    snapshot.fromChain = 'unknown';
-    snapshot.inboxAddress = event.address.toHex();
-    snapshot.toChain = 'unknown';
-    snapshot.outboxAddress = 'unknown';
-    snapshot.status = 'Invalid';
-
-    let snapshotDetails = new SnapshotDetails(snapshot.id + '-details');
-    snapshotDetails.transaction = null;
-
-    snapshot.snapshotDetails = snapshotDetails.id;
-
-    snapshot.save();
-    snapshotDetails.save();
-  }
-
-  let snapshotDetails = SnapshotDetails.load(snapshot.snapshotDetails);
-
-  if (snapshotDetails == null) {
-    snapshotDetails = new SnapshotDetails(snapshot.id + '-details');
-    snapshotDetails.transaction = null;
-    snapshotDetails.save();
-  }
-
-  let transaction = new Transaction(event.transaction.hash.toHex() + '-' + event.logIndex.toString());
-
-  transaction.chain = 'arbitrum goerli';
-  transaction.transactionId = event.params.stateRoot.toHex();
-  transaction.timestamp = event.block.timestamp;
-  transaction.caller = event.transaction.from.toHex();
-  transaction.stateRoot = event.params.stateRoot;
-
-  transaction.save();
-
-  snapshotDetails.transaction = transaction.id;
-  snapshotDetails.save();
-
-  snapshot.status = 'Taken'; // update status to "Taken"
+export function handleMessageSent(event: MessageSent): void {
+  const snapshot = getCurrentSnapshot();
+  snapshot.numberMessages = snapshot.numberMessages.plus(BigInt.fromI32(1));
   snapshot.save();
+
+  const messageIndex = useNextMessageIndex();
+  const message = new Message(messageIndex.toString());
+  message.snapshot = snapshot.id;
+  const msgData = event.params.msgData.toHexString();
+  message.txHash = event.transaction.hash;
+  message.from = Bytes.fromHexString(msgData.substring(18, 58));
+  message.to = Bytes.fromHexString(msgData.substring(58, 98));
+  message.data = Bytes.fromHexString(msgData.substring(98));
+  message.timestamp = event.block.timestamp;
+  message.save();
 }
 
-export const handleStaterootSent = (event: StaterootSent): void => {
-  let epochId = event.params.epoch.toHex();
-  let snapshot = Snapshot.load(epochId);
-
-  if (snapshot == null) {
-    snapshot = new Snapshot(epochId);
-    snapshot.timestamp = event.block.timestamp;
-    snapshot.fromChain = 'unknown';
-    snapshot.inboxAddress = event.address.toHex();
-    snapshot.toChain = 'unknown';
-    snapshot.outboxAddress = 'unknown';
-    snapshot.status = 'unknown';
-
-    let snapshotDetails = new SnapshotDetails(snapshot.id + '-details');
-    snapshotDetails.transaction = null;
-
-    snapshot.snapshotDetails = snapshotDetails.id;
-
+function getCurrentSnapshot(): Snapshot {
+  let refs = Refs.load("0");
+  if (!refs) {
+    refs = new Refs("0");
+    refs.currentSnapshotIndex = BigInt.fromI32(0);
+    refs.nextMessageIndex = BigInt.fromI32(0);
+    refs.save();
+    const snapshot = new Snapshot("0");
+    snapshot.numberMessages = BigInt.fromI32(0);
+    snapshot.taken = false;
+    snapshot.resolving = false;
     snapshot.save();
-    snapshotDetails.save();
+    return snapshot;
   }
-
-  let snapshotDetails = SnapshotDetails.load(snapshot.snapshotDetails);
-
-  if (snapshotDetails == null) {
-    snapshotDetails = new SnapshotDetails(snapshot.id + '-details');
-    snapshotDetails.transaction = null;
-    snapshotDetails.save();
-  }
-
-  let transaction = new Transaction(event.transaction.hash.toHex() + '-' + event.logIndex.toString());
-
-  transaction.chain = 'ethereum';
-  transaction.transactionId = event.params.stateRoot.toHex();
-  transaction.timestamp = event.block.timestamp;
-  transaction.caller = event.transaction.from.toHex();
-  transaction.stateRoot = event.params.stateRoot;
-
-  transaction.save();
-
-  snapshot.status = 'Taken';
-
-  let toChainId = event.params.destinationChainId.toHex();
-  let toChain = Chain.load(toChainId);
-
-  if (toChain == null) {
-    toChain = new Chain(toChainId);
-    toChain.name = 'unknown';
-    toChain.save();
-  }
-
-  snapshot.toChain = toChain.id;
-  snapshot.outboxAddress = event.params.outbox.toHex();
-
-  snapshot.save();
+  return Snapshot.load(refs.currentSnapshotIndex.toString())!;
 }
+
+function useNextMessageIndex(): BigInt {
+  let refs = Refs.load("0");
+  if (!refs) {
+    refs = new Refs("0");
+    refs.currentSnapshotIndex = BigInt.fromI32(0);
+    refs.nextMessageIndex = BigInt.fromI32(1);
+    refs.save();
+    return BigInt.fromI32(0);
+  }
+  const messageIndex = refs.nextMessageIndex;
+  refs.nextMessageIndex = refs.nextMessageIndex.plus(BigInt.fromI32(1));
+  refs.save();
+  return messageIndex;
+}
+
+export function handleSnapshotSaved(event: SnapshotSaved): void {}
+
+export function handleStaterootSent(event: StaterootSent): void {}
