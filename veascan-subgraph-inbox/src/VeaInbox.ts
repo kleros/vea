@@ -55,6 +55,22 @@ function useNextMessageIndex(): BigInt {
   return messageIndex;
 }
 
-export function handleSnapshotSaved(event: SnapshotSaved): void {}
+export function handleSnapshotSaved(event: SnapshotSaved): void {
+  const snapshot = getCurrentSnapshot();
+  snapshot.taken = true;
+  snapshot.epoch = event.params.epoch;
+  snapshot.stateRoot = event.params.stateRoot;
+  snapshot.timestamp = event.block.timestamp;
+  snapshot.txHash = event.transaction.hash;
+  snapshot.save();
+}
 
-export function handleStaterootSent(event: StaterootSent): void {}
+export function handleStaterootSent(event: StaterootSent): void {
+  const snapshot = getCurrentSnapshot();
+  snapshot.resolving = true;
+  snapshot.epoch = event.params.epoch;
+  snapshot.stateRoot = event.params.stateRoot;
+  snapshot.timestamp = event.block.timestamp;
+  snapshot.txHash = event.transaction.hash;
+  snapshot.save();
+}
