@@ -10,15 +10,16 @@
 
 pragma solidity ^0.8.0;
 
-import "./canonical/gnosis-chain/IAMB.sol";
-import "./canonical/arbitrum/IInbox.sol";
-import "./canonical/arbitrum/IOutbox.sol";
-import "./interfaces/IChallengeResolver.sol";
+import "../canonical/gnosis-chain/IAMB.sol";
+import "../canonical/arbitrum/IInbox.sol";
+import "../canonical/arbitrum/IOutbox.sol";
+import "../interfaces/IRouter.sol";
+import "../interfaces/IVeaOutbox.sol";
 
 /**
  * Router on Ethereum from Arbitrum to Gnosis Chain.
  */
-contract RouterToGnosis is IChallengeResolver {
+contract RouterArbToGnosis is IRouter {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
@@ -37,7 +38,7 @@ contract RouterToGnosis is IChallengeResolver {
      * @param epoch The epoch of the batch requested to send.
      * @param ticketID The unique identifier provided by the underlying canonical bridge.
      */
-    event Routed(uint64 indexed epoch, bytes32 ticketID);
+    event Routed(uint256 indexed epoch, bytes32 ticketID);
 
     /**
      * @dev Constructor.
@@ -46,12 +47,7 @@ contract RouterToGnosis is IChallengeResolver {
      * @param _sender The safe bridge sender on Arbitrum.
      * @param _receiver The fast bridge receiver on Gnosis Chain.
      */
-    constructor(
-        IInbox _inbox,
-        IAMB _amb,
-        address _sender,
-        address _receiver
-    ) {
+    constructor(IInbox _inbox, IAMB _amb, address _sender, address _receiver) {
         inbox = _inbox;
         amb = _amb;
         sender = _sender;
@@ -64,15 +60,17 @@ contract RouterToGnosis is IChallengeResolver {
      * @param epoch The epoch to verify.
      * @param stateroot The true batch merkle root for the epoch.
      */
-    function resolveChallenge(uint64 epoch, bytes32 stateroot) external {
+    function route(uint256 epoch, bytes32 stateroot) external {
         IBridge bridge = inbox.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
 
-        bytes memory data = abi.encodeWithSelector(IChallengeResolver.resolveChallenge.selector, epoch, stateroot);
+        bytes memory data = abi.encodeWithSelector(IVeaOutbox.resolveDisputedClaim.selector, epoch, stateroot);
 
         // replace maxGasPerTx with safe level for production deployment
         bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());
         emit Routed(epoch, ticketID);
     }
+
+    // TODO Route heartbeat
 }

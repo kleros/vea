@@ -5,9 +5,9 @@ import { BigNumber, utils } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 
 import {
-  VeaOutboxMock,
+  VeaOutboxMockArbToEth as VeaOutboxMock,
   ReceiverGatewayMock,
-  VeaInboxMock,
+  VeaInboxMockArbToEth as VeaInboxMock,
   SenderGatewayMock,
   InboxMock,
   ArbSysMock,
@@ -64,7 +64,7 @@ describe("Integration tests", async () => {
     // veaInbox
     expect(await veaInbox.arbSys()).to.equal(arbsysMock.address);
     expect(await veaInbox.epochPeriod()).to.equal(EPOCH_PERIOD);
-    expect(await veaInbox.receiver()).to.equal(veaOutbox.address);
+    expect(await veaInbox.veaOutbox()).to.equal(veaOutbox.address);
 
     // veaOutbox
     expect(await veaOutbox.deposit()).to.equal(TEN_ETH);
@@ -95,25 +95,29 @@ describe("Integration tests", async () => {
       const currentTimestamp = (await ethers.provider.getBlock(currentBlockNum)).timestamp;
       const currentEpoch = Math.floor(currentTimestamp / EPOCH_PERIOD);
 
-      await veaInbox.connect(bridger).saveStateRootSnapshot();
+      await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
-      expect(await veaInbox.stateRootSnapshots(epoch)).equal(batchMerkleRoot);
+      expect(await veaInbox.snapshots(epoch)).equal(batchMerkleRoot);
     });
 
     it("should be able to claim", async () => {
       const data = 1121;
       const sendFastMessagetx = await senderGateway.sendFastMessage(data);
 
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
       const invalidEpoch = BigNumber.from(2).add(epoch);
@@ -144,7 +148,7 @@ describe("Integration tests", async () => {
 
     it("should be able to verify batch", async () => {
       // should fail for invalid epochs
-      await expect(veaOutbox.connect(bridger).verifyStateroot(0)).to.be.revertedWith(
+      await expect(veaOutbox.connect(bridger).validateSnapshot(0)).to.be.revertedWith(
         "Invalid epoch, no claim to verify."
       );
 
@@ -152,18 +156,20 @@ describe("Integration tests", async () => {
       const data = 1121;
       const sendFastMessagetx = await senderGateway.sendFastMessage(data);
 
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
 
       // should revert as the challenge period has not passed
-      await expect(veaOutbox.connect(bridger).verifyStateroot(epoch)).to.be.revertedWith(
+      await expect(veaOutbox.connect(bridger).validateSnapshot(epoch)).to.be.revertedWith(
         "Challenge period has not yet elapsed."
       );
 
@@ -171,7 +177,7 @@ describe("Integration tests", async () => {
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).verifyStateroot(epoch);
+      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch);
       await expect(bridgerVerifyBatchTx).to.emit(veaOutbox, "Verified").withArgs(epoch);
 
       expect(await veaOutbox.stateRoot()).to.equal(batchMerkleRoot);
@@ -183,34 +189,30 @@ describe("Integration tests", async () => {
       const data = 1121;
       const sendFastMessagetx = await senderGateway.sendFastMessage(data);
       const inboxsnapshot = await veaInbox.inbox(0);
-      console.log("leaf:");
-      console.log(inboxsnapshot);
+
       const sendFastMessagetx2 = await senderGateway.sendFastMessage(data);
       const inboxsnapshot2 = await veaInbox.inbox(0);
-      console.log("leaf:");
-      console.log(inboxsnapshot2);
 
       await expect(sendFastMessagetx).to.emit(veaInbox, "MessageSent");
       const MessageReceived = veaInbox.filters.MessageSent();
       const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
       const msg = MessageReceivedEvent[0].args.msgData;
+      const index = MessageReceivedEvent[0].args.msgId;
+      const to = MessageReceivedEvent[0].args.to;
       const msg2 = MessageReceivedEvent[1].args.msgData;
-      const nonce = "0x" + msg.slice(2, 18); //18+40
-      const msgSender = "0x" + msg.slice(18, 58);
-      const to = "0x" + msg.slice(58, 98);
-      const msgdata = "0x" + msg.slice(98);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(msg));
-      nodes.push(MerkleTree.makeLeafNode(msg2));
+      nodes.push(MerkleTree.makeLeafNode("0x0000000000000000", to, msg));
+      nodes.push(MerkleTree.makeLeafNode("0x0000000000000001", to, msg2));
 
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
-
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
 
@@ -218,28 +220,18 @@ describe("Integration tests", async () => {
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).verifyStateroot(epoch);
+      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch);
 
       const mt = new MerkleTree(nodes);
-      const invalidMessage = "0x0101";
-
-      await expect(
-        veaOutbox.connect(relayer).verifyAndRelayMessage([], nonce, msgSender, to, invalidMessage)
-      ).to.be.revertedWith("Invalid proof.");
-
+      await expect(veaOutbox.connect(relayer).sendMessage([], index, to, msg)).to.be.revertedWith("Invalid proof.");
       const proof = mt.getHexProof(nodes[0]);
-      console.log("PROOF:");
-      console.log(proof);
-      console.log(nodes);
 
-      const verifyAndRelayTx = await veaOutbox
-        .connect(relayer)
-        .verifyAndRelayMessage(proof, nonce, msgSender, to, msgdata);
-      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(nonce);
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, index, to, msg);
+      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
-      await expect(
-        veaOutbox.connect(relayer).verifyAndRelayMessage(proof, nonce, msgSender, to, msgdata)
-      ).to.be.revertedWith("Message already relayed");
+      await expect(veaOutbox.connect(relayer).sendMessage(proof, index, to, msg)).to.be.revertedWith(
+        "Message already relayed"
+      );
     });
 
     it("should allow bridger to claim deposit", async () => {
@@ -251,20 +243,21 @@ describe("Integration tests", async () => {
       const MessageReceived = veaInbox.filters.MessageSent();
       const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
       const msg = MessageReceivedEvent[0].args.msgData;
-      const nonce = "0x" + msg.slice(2, 18); //18+40
-      const msgSender = "0x" + msg.slice(18, 58);
-      const to = "0x" + msg.slice(58, 98);
-      const msgdata = "0x" + msg.slice(98);
+      const to = MessageReceivedEvent[0].args.to;
+
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(msg));
+      nodes.push(MerkleTree.makeLeafNode("0x0000000000000000", to, msg));
+
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
 
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
       // Honest Bridger
@@ -274,15 +267,10 @@ describe("Integration tests", async () => {
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).verifyStateroot(epoch);
+      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch);
 
-      const verifyAndRelayTx = await veaOutbox
-        .connect(relayer)
-        .verifyAndRelayMessage(proof, nonce, msgSender, to, msgdata);
-      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(nonce);
-
-      // should revert for invalid epoch
-      await expect(veaOutbox.connect(bridger).withdrawClaimDeposit(0)).to.be.revertedWith("Claim does not exist");
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msg);
+      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
       const withdrawClaimDepositTx = await veaOutbox.connect(bridger).withdrawClaimDeposit(epoch);
       await expect(withdrawClaimDepositTx).to.emit(veaOutbox, "ClaimDepositWithdrawn").withArgs(epoch, bridger.address);
@@ -297,20 +285,21 @@ describe("Integration tests", async () => {
       const MessageReceived = veaInbox.filters.MessageSent();
       const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
       const msg = MessageReceivedEvent[0].args.msgData;
-      const nonce = "0x" + msg.slice(2, 18); //18+40
-      const msgSender = "0x" + msg.slice(18, 58);
-      const to = "0x" + msg.slice(58, 98);
-      const msgdata = "0x" + msg.slice(98);
+      const to = MessageReceivedEvent[0].args.to;
+
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(msg));
+      nodes.push(MerkleTree.makeLeafNode("0x0000000000000000", to, msg));
+
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
 
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
       // Honest Bridger
@@ -320,14 +309,12 @@ describe("Integration tests", async () => {
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).verifyStateroot(epoch);
-      const verifyAndRelayTx = await veaOutbox
-        .connect(relayer)
-        .verifyAndRelayMessage(proof, nonce, msgSender, to, msgdata);
-      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(nonce);
+      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch);
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msg);
+      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
       const withdrawClaimDepositTx = await veaOutbox.withdrawClaimDeposit(epoch);
-      await expect(veaOutbox.withdrawChallengeDeposit(epoch)).to.be.revertedWith("Challenge does not exist");
+      await expect(veaOutbox.withdrawChallengeDeposit(epoch)).to.be.revertedWith("Challenge failed.");
     });
   });
 
@@ -344,11 +331,13 @@ describe("Integration tests", async () => {
       const data = 1121;
 
       const sendFastMessagetx = await senderGateway.sendFastMessage(data);
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
       // bridger tx starts - Honest Bridger
@@ -357,7 +346,7 @@ describe("Integration tests", async () => {
       // should revert if deposit is less than claim deposit
       // @note - if challenger deposits more than deposit then only the deposit will be returned
       await expect(veaOutbox.connect(challenger).challenge(epoch, { value: ONE_HUNDREDTH_ETH })).to.be.revertedWith(
-        "Not enough claim deposit"
+        "Insufficient challenge deposit."
       );
 
       // wait for challenge period (and epoch) to pass
@@ -373,11 +362,13 @@ describe("Integration tests", async () => {
       const data = 1121;
 
       const sendFastMessagetx = await senderGateway.sendFastMessage(data);
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
       // bridger tx starts - Honest Bridger
@@ -391,11 +382,13 @@ describe("Integration tests", async () => {
       const data = 1121;
 
       const sendFastMessagetx = await senderGateway.sendFastMessage(data);
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
       // bridger tx starts - Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
@@ -406,11 +399,11 @@ describe("Integration tests", async () => {
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      await expect(veaOutbox.connect(relayer).verifyStateroot(epoch)).to.be.revertedWith("Claim is challenged.");
+      await expect(veaOutbox.connect(relayer).validateSnapshot(epoch)).to.be.revertedWith("Claim is challenged.");
 
-      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendStaterootSnapshot(epoch, { gasLimit: 1000000 });
+      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(epoch, { gasLimit: 1000000 });
       await expect(sendSafeFallbackTx)
-        .to.emit(veaInbox, "StaterootSent")
+        .to.emit(veaInbox, "SnapshotSent")
         .withArgs(epoch, ethers.utils.formatBytes32String("")); // ticketId is always 0x00..0
     });
 
@@ -423,20 +416,21 @@ describe("Integration tests", async () => {
       const MessageReceived = veaInbox.filters.MessageSent();
       const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
       const msg = MessageReceivedEvent[0].args.msgData;
-      const nonce = "0x" + msg.slice(2, 18); //18+40
-      const msgSender = "0x" + msg.slice(18, 58);
-      const to = "0x" + msg.slice(58, 98);
-      const msgdata = "0x" + msg.slice(98);
+      const to = MessageReceivedEvent[0].args.to;
+
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(msg));
+      nodes.push(MerkleTree.makeLeafNode("0x0000000000000000", to, msg));
+
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
 
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
       // bridger tx starts - Honest Bridger
@@ -444,31 +438,28 @@ describe("Integration tests", async () => {
 
       // withdraw challenge deposit should revert for invalid epoch
       await expect(veaOutbox.connect(challenger).withdrawChallengeDeposit(epoch)).to.be.revertedWith(
-        "Challenge does not exist"
+        "Challenge failed."
       );
 
       // Challenger tx starts
       const challengeTx = await veaOutbox.connect(challenger).challenge(epoch, { value: TEN_ETH });
-
+      await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch);
       // wait for challenge period (and epoch) to pass
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      await expect(veaOutbox.connect(relayer).verifyStateroot(epoch)).revertedWith("Claim is challenged.");
+      await expect(veaOutbox.connect(relayer).validateSnapshot(epoch)).revertedWith("Claim is challenged.");
 
       expect(await (await veaOutbox.challenges(epoch)).honest).to.equal(false);
-      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendStaterootSnapshot(epoch, { gasLimit: 1000000 });
+      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(epoch, { gasLimit: 1000000 });
       await expect(sendSafeFallbackTx).to.emit(veaOutbox, "Verified").withArgs(epoch); // ticketId is always 0x00..0
       expect(await (await veaOutbox.challenges(epoch)).honest).to.equal(false);
       expect(await (await veaOutbox.claims(epoch)).honest).to.equal(true);
-      const verifyAndRelayTx = await veaOutbox
-        .connect(relayer)
-        .verifyAndRelayMessage(proof, nonce, msgSender, to, msgdata);
-      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(nonce);
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msg);
+      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
+      await expect(veaOutbox.withdrawChallengeDeposit(epoch)).to.be.revertedWith("Challenge failed.");
 
       const withdrawClaimDepositTx = await veaOutbox.withdrawClaimDeposit(epoch);
-
-      await expect(veaOutbox.withdrawChallengeDeposit(epoch)).to.be.revertedWith("Challenge failed.");
     });
   });
 
@@ -482,20 +473,21 @@ describe("Integration tests", async () => {
       const MessageReceived = veaInbox.filters.MessageSent();
       const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
       const msg = MessageReceivedEvent[0].args.msgData;
-      const nonce = "0x" + msg.slice(2, 18); //18+40
-      const msgSender = "0x" + msg.slice(18, 58);
-      const to = "0x" + msg.slice(58, 98);
-      const msgdata = "0x" + msg.slice(98);
+      const to = MessageReceivedEvent[0].args.to;
+
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(msg));
+      nodes.push(MerkleTree.makeLeafNode("0x0000000000000000", to, msg));
+
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
 
-      const sendBatchTx = await veaInbox.connect(bridger).saveStateRootSnapshot();
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = batchOutGoingEvent[0].args.epoch;
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+      );
       const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
 
       // bridger tx starts - bridger creates fakeData & fakeHash
@@ -511,14 +503,12 @@ describe("Integration tests", async () => {
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      await expect(veaOutbox.connect(relayer).verifyStateroot(epoch)).to.revertedWith("Claim is challenged.");
+      await expect(veaOutbox.connect(relayer).validateSnapshot(epoch)).to.revertedWith("Claim is challenged.");
 
       // sendSafeFallback internally calls the verifySafeBatch
-      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendStaterootSnapshot(epoch, { gasLimit: 1000000 });
-      const verifyAndRelayTx = await veaOutbox
-        .connect(relayer)
-        .verifyAndRelayMessage(proof, nonce, msgSender, to, msgdata);
-      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(nonce);
+      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(epoch, { gasLimit: 1000000 });
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msg);
+      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
       expect(veaOutbox.connect(relayer).withdrawClaimDeposit(epoch)).to.be.revertedWith("Claim failed.");
 
       await expect(veaOutbox.connect(relayer).withdrawChallengeDeposit(epoch))

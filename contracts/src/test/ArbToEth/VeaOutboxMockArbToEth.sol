@@ -10,10 +10,10 @@
 
 pragma solidity ^0.8.0;
 
-import "../VeaOutbox.sol";
-import "../canonical/arbitrum/IArbSys.sol";
+import "../../ArbToEth/VeaOutboxArbToEth.sol";
+import "../../canonical/arbitrum/IArbSys.sol";
 
-contract VeaOutboxMock is VeaOutbox {
+contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
     IArbSys public immutable arbSys;
 
     /**
@@ -22,11 +22,11 @@ contract VeaOutboxMock is VeaOutbox {
      * @param _epoch The epoch to verify.
      * @param _stateRoot The true state root for the epoch.
      */
-    function resolveChallenge(uint64 _epoch, bytes32 _stateRoot) external override {
+    function resolveDisputedClaim(uint256 _epoch, bytes32 _stateRoot) external override {
         require(msg.sender == address(arbSys), "Not from bridge.");
 
-        if (_epoch > latestVerifiedEpoch) {
-            latestVerifiedEpoch = _epoch;
+        if (_epoch > veaOutboxInfo.latestVerifiedEpoch) {
+            veaOutboxInfo.latestVerifiedEpoch = uint32(_epoch);
             stateRoot = _stateRoot;
         }
 
@@ -60,8 +60,18 @@ contract VeaOutboxMock is VeaOutbox {
         uint64 _numEpochTimeout,
         uint64 _epochClaimWindow,
         address _sender,
-        address _inbox // Ethereum receiver specific
-    ) VeaOutbox(_deposit, _epochPeriod, _challengePeriod, _numEpochTimeout, _epochClaimWindow, _sender, _inbox) {
+        address _inbox
+    )
+        VeaOutboxArbToEth(
+            _deposit,
+            _epochPeriod,
+            _challengePeriod,
+            _numEpochTimeout,
+            _epochClaimWindow,
+            _sender,
+            _inbox
+        )
+    {
         arbSys = _arbSys;
     }
 }

@@ -88,7 +88,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
-    await deploy("VeaOutboxGnosis", {
+    await deploy("VeaOutboxArbToGnosis", {
       from: deployer,
       args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, veaInboxAddress, amb],
       log: true,

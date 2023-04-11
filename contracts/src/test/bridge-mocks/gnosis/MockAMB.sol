@@ -2,8 +2,8 @@
 // https://github.com/poanetwork/tokenbridge-contracts/blob/master/contracts/mocks/AMBMock.sol
 pragma solidity ^0.8.0;
 
-import "../../canonical/gnosis-chain/IAMB.sol";
-import "../../libraries/gnosis-chain/Bytes.sol";
+import "../../../canonical/gnosis-chain/IAMB.sol";
+import "../../../libraries/gnosis-chain/Bytes.sol";
 
 contract MockAMB is IAMB {
     event MockedEvent(bytes32 indexed messageId, bytes encodedData);
@@ -50,19 +50,11 @@ contract MockAMB is IAMB {
         }
     }
 
-    function requireToPassMessage(
-        address _contract,
-        bytes memory _data,
-        uint256 _gas
-    ) external returns (bytes32) {
+    function requireToPassMessage(address _contract, bytes memory _data, uint256 _gas) external returns (bytes32) {
         return _sendMessage(_contract, _data, _gas, 0x00);
     }
 
-    function requireToConfirmMessage(
-        address _contract,
-        bytes memory _data,
-        uint256 _gas
-    ) external returns (bytes32) {
+    function requireToConfirmMessage(address _contract, bytes memory _data, uint256 _gas) external returns (bytes32) {
         return _sendMessage(_contract, _data, _gas, 0x80);
     }
 

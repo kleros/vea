@@ -10,12 +10,12 @@
 
 pragma solidity ^0.8.0;
 
-interface IChallengeResolver {
+interface IRouter {
     /**
-     * Note: Access restricted to arbitrum canonical bridge.
-     * @dev Resolves any challenge of the optimistic claim for '_epoch'.
+     * Note: Access restricted to canonical bridge.
+     * @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.
      * @param epoch The epoch to verify.
      * @param stateRoot The true state root for the epoch.
      */
-    function resolveChallenge(uint64 epoch, bytes32 stateRoot) external;
+    function route(uint256 epoch, bytes32 stateRoot) external;
 }

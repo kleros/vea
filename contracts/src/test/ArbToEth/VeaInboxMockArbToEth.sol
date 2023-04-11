@@ -10,9 +10,9 @@
 
 pragma solidity ^0.8.0;
 
-import "../VeaInbox.sol";
+import "../../ArbToEth/VeaInboxArbToEth.sol";
 
-contract VeaInboxMock is VeaInbox {
+contract VeaInboxMockArbToEth is VeaInboxArbToEth {
     IArbSys public immutable arbSys;
 
     // **************************************** //
@@ -22,18 +22,18 @@ contract VeaInboxMock is VeaInbox {
     /**
      * @dev Sends the state root using Arbitrum's canonical bridge.
      */
-    function sendStaterootSnapshot(uint64 _epochSnapshot) external override {
-        uint64 epoch = uint64(block.timestamp) / epochPeriod;
+    function sendSnapshot(uint256 _epochSnapshot) external override {
+        uint256 epoch = uint256(block.timestamp) / epochPeriod;
         require(_epochSnapshot <= epoch, "Epoch in the future.");
         bytes memory data = abi.encodeWithSelector(
-            IChallengeResolver.resolveChallenge.selector,
+            IVeaOutbox.resolveDisputedClaim.selector,
             _epochSnapshot,
-            stateRootSnapshots[_epochSnapshot]
+            snapshots[_epochSnapshot]
         );
 
-        bytes32 ticketID = bytes32(arbSys.sendTxToL1(receiver, data));
+        bytes32 ticketID = bytes32(arbSys.sendTxToL1(veaOutbox, data));
 
-        emit StaterootSent(_epochSnapshot, ticketID);
+        emit SnapshotSent(_epochSnapshot, ticketID);
     }
 
     /**
@@ -42,11 +42,7 @@ contract VeaInboxMock is VeaInbox {
      * @param _epochPeriod The duration between epochs.
      * @param _veaOutbox The vea outbox on Ethereum to the receiving chain.
      */
-    constructor(
-        IArbSys _arbSys,
-        uint64 _epochPeriod,
-        address _veaOutbox
-    ) VeaInbox(_epochPeriod, _veaOutbox) {
+    constructor(IArbSys _arbSys, uint256 _epochPeriod, address _veaOutbox) VeaInboxArbToEth(_epochPeriod, _veaOutbox) {
         arbSys = _arbSys;
     }
 }

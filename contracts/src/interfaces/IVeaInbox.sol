@@ -12,11 +12,11 @@ pragma solidity ^0.8.0;
 
 interface IVeaInbox {
     /**
-     * Note: Calls authenticated by receiving gateway checking the sender argument.
      * @dev Sends an arbitrary message to Ethereum.
      * @param to The cross-domain contract address which receives the calldata.
-     * @param data The message calldata, abi.encodeWithSelector(...)
+     * @param fnSelection The function selector of the receiving contract.
+     * @param data The message calldata, abi.encode(...)
      * @return msgId The index of the message in the inbox, as a message Id, needed to relay the message.
      */
-    function sendMsg(address to, bytes memory data) external returns (uint64 msgId);
+    function sendMessage(address to, bytes4 fnSelection, bytes memory data) external returns (uint64 msgId);
 }
