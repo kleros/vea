@@ -1,0 +1,45 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: VeaOutbox
+    network: goerli
+    source:
+      address: "0x8C1935dbBB87C42e7ED4E94BE3e8FA61B8b3a025"
+      abi: VeaOutbox
+      startBlock: 8769763
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ChallengeDepositWithdrawn
+        - ChallengeDepositWithdrawnTimeout
+        - Challenged
+        - ClaimDepositWithdrawn
+        - ClaimDepositWithdrawnTimeout
+        - Claimed
+        - MessageRelayed
+        - Verified
+      abis:
+        - name: VeaOutbox
+          file: ../contracts/deployments/goerli/VeaOutbox.json
+      eventHandlers:
+        - event: ChallengeDepositWithdrawn(indexed uint64,indexed address)
+          handler: handleChallengeDepositWithdrawn
+        - event: ChallengeDepositWithdrawnTimeout(indexed uint64,indexed address)
+          handler: handleChallengeDepositWithdrawnTimeout
+        - event: Challenged(indexed uint64)
+          handler: handleChallenged
+        - event: ClaimDepositWithdrawn(indexed uint64,indexed address)
+          handler: handleClaimDepositWithdrawn
+        - event: ClaimDepositWithdrawnTimeout(indexed uint64,indexed address)
+          handler: handleClaimDepositWithdrawnTimeout
+        - event: Claimed(indexed uint64,bytes32)
+          handler: handleClaimed
+        - event: MessageRelayed(indexed uint64)
+          handler: handleMessageRelayed
+        - event: Verified(indexed uint64)
+          handler: handleVerified
+      file: ./src/VeaOutbox.ts
