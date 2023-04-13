@@ -56,7 +56,7 @@ const MenuContainer = styled.div<{ isOpen: boolean }>`
   background-color: #200f47;
   border: 1px solid ${({ theme }) => theme.color.grey};
   box-shadow: 0px 2px 3px ${({ theme }) => theme.color.black + "03"};
-  border-radius: 3px;
+  border-color: #42498f;
   display: ${({ isOpen }) => (isOpen ? "flex" : "none")};
   flex-direction: column;
   gap: 24px;
