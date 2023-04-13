@@ -59,7 +59,7 @@
     "@graphql-codegen/cli": "^3.2.1",
     "@graphql-codegen/typescript": "^2.8.1",
     "@graphql-codegen/typescript-operations": "^2.5.6",
-    "@kleros/ui-components-library": "^1.9.2",
+    "@kleros/ui-components-library": "^2.0.1",
     "@kleros/vea-contracts": "workspace:^",
     "@sentry/react": "^7.37.2",
     "@sentry/tracing": "^7.37.2",

@@ -1,4 +1,7 @@
+import { veaTheme } from "@kleros/ui-components-library";
+
 export const theme = {
+  ...veaTheme,
   color: {
     pink: "#FAD3F1",
     light: "#FFFDF5",
