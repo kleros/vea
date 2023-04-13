@@ -14,11 +14,7 @@ dataSources:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - ChallengeDepositWithdrawn
-        - ChallengeDepositWithdrawnTimeout
         - Challenged
-        - ClaimDepositWithdrawn
-        - ClaimDepositWithdrawnTimeout
         - Claimed
         - MessageRelayed
         - Verified
@@ -26,20 +22,12 @@ dataSources:
         - name: VeaOutbox
           file: ../contracts/deployments/goerli/VeaOutbox.json
       eventHandlers:
-        - event: ChallengeDepositWithdrawn(indexed uint64,indexed address)
-          handler: handleChallengeDepositWithdrawn
-        - event: ChallengeDepositWithdrawnTimeout(indexed uint64,indexed address)
-          handler: handleChallengeDepositWithdrawnTimeout
-        - event: Challenged(indexed uint64)
+        - event: Challenged(indexed uint256)
           handler: handleChallenged
-        - event: ClaimDepositWithdrawn(indexed uint64,indexed address)
-          handler: handleClaimDepositWithdrawn
-        - event: ClaimDepositWithdrawnTimeout(indexed uint64,indexed address)
-          handler: handleClaimDepositWithdrawnTimeout
-        - event: Claimed(indexed uint64,bytes32)
+        - event: Claimed(indexed uint256,bytes32)
           handler: handleClaimed
-        - event: MessageRelayed(indexed uint64)
+        - event: MessageRelayed(indexed uint256)
           handler: handleMessageRelayed
-        - event: Verified(indexed uint64)
+        - event: Verified(indexed uint256)
           handler: handleVerified
       file: ./src/VeaOutbox.ts

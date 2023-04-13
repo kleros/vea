@@ -1,29 +1,20 @@
-scalar Bytes32
-
-enum Status {
-  Claimed
-  Challenged
-  Verified
-  Resolved
-}
-
 type Claim @entity {
   id: ID!
-  stateroot: Bytes32!
+  epoch: BigInt!
+  stateroot: Bytes!
   bridger: Bytes!
   timestamp: BigInt!
   challenged: Boolean!
   challenge: Challenge @derivedFrom(field: "claim")
   honest: Boolean!
-  depositAndRewardWithdrawn: Boolean!
 }
 
 type Challenge @entity {
   id: ID!
   claim: Claim
-  honest: Boolean!
+  timestamp: BigInt!
   challenger: Bytes!
-  depositAndRewardWithdrawn: Boolean!
+  honest: Boolean!
 }
 
 type Message @entity {
@@ -36,6 +27,7 @@ type Message @entity {
 
 type Refs @entity {
   id: ID!
-  numberOfMessages: BigInt
-  numberOfChallenges: BigInt
+  totalClaims: BigInt!
+  totalMessages: BigInt!
+  totalChallenges: BigInt!
 }

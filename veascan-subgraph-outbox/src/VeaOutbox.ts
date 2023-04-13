@@ -1,136 +1,106 @@
-import { BigInt } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
-  ChallengeDepositWithdrawn,
-  ChallengeDepositWithdrawnTimeout,
   Challenged,
-  ClaimDepositWithdrawn,
-  ClaimDepositWithdrawnTimeout,
   Claimed,
   MessageRelayed,
   Verified,
 } from "../generated/VeaOutbox/VeaOutbox";
 import { Challenge, Claim, Message, Refs } from "../generated/schema";
 
-export function handleChallengeDepositWithdrawn(
-  event: ChallengeDepositWithdrawn
-): void {
-  const claim = getCurrentClaim(event.params.epoch);
-  claim.id = event.params.epoch;
-  claim.depositAndRewardWithdrawn = true;
-  claim.challenged = true;
-  claim.honest = true;
+export function handleClaimed(event: Claimed): void {
+  const claim = getNextClaim();
+  claim.epoch = event.params._epoch;
+  claim.stateroot = event.params._batchMerkleRoot;
+  claim.timestamp = event.block.timestamp;
+  claim.bridger = event.transaction.from;
+  claim.challenged = false;
+  claim.honest = false;
   claim.save();
-
-  const numberOfChallenges = useNumberOfChallenges();
-  const challenge = new Challenge(numberOfChallenges.toString());
-  challenge.honest = true;
-  challenge.challenger = event.params._challenger;
-  challenge.depositAndRewardWithdrawn = true;
-  challenge.save();
 }
-
-// this does seem to have same info with handleChallengeDepositWithdrawn
-export function handleChallengeDepositWithdrawnTimeout(
-  event: ChallengeDepositWithdrawnTimeout
-): void {}
 
 export function handleChallenged(event: Challenged): void {
-  const claim = getCurrentClaim(event.params.epoch);
-  claim.id = event.params.epoch;
-  claim.challenged = true;
-  claim.timestamp = event.block.timestamp;
-  claim.save();
+  const refs = getRefs();
+  let outterClaim: Claim | null = null;
+  for (
+    let i = refs.totalClaims;
+    i.ge(BigInt.fromI32(0));
+    i.minus(BigInt.fromI32(1))
+  ) {
+    const claim = Claim.load(i.toString());
+    if (!claim) continue;
+    if (claim.epoch.equals(event.params._epoch)) {
+      outterClaim = claim;
+      break;
+    }
+  }
 
-  const numberOfChallenges = useNumberOfChallenges();
-  const challenge = new Challenge(numberOfChallenges.toString());
-  challenge.claim = claim.id;
-  challenge.honest = true;
-  challenge.depositAndRewardWithdrawn = false;
-  challenge.save();
-}
-
-export function handleClaimDepositWithdrawn(
-  event: ClaimDepositWithdrawn
-): void {
-  const claim = getCurrentClaim(event.params.epoch);
-  claim.id = event.params.epoch;
-  claim.depositAndRewardWithdrawn = true;
-  // claim.challenged = true;
-  claim.bridger = event.params._bridger;
-  claim.honest = true;
-  claim.save();
-}
-
-// this does seem to have same info with handleClaimDepositWithdrawn
-export function handleClaimDepositWithdrawnTimeout(
-  event: ClaimDepositWithdrawnTimeout
-): void {}
-
-export function handleMessageRelayed(event: MessageRelayed): void {
-  const message = new Message("0");
-  message.id = event.params.msgId;
-  message.save();
-}
-export function handleClaimed(event: Claimed): void {
-  const claim = getCurrentClaim(event.params.epoch);
-  claim.id = event.params.epoch;
-  claim.stateroot = event.params.claimedStateRoot;
-
-  claim.timestamp = event.block.timestamp;
-
-  claim.save();
+  if (outterClaim) {
+    outterClaim.challenged = true;
+    outterClaim.save();
+    const challengeIndex = useChallengeIndex();
+    const challenge = new Challenge(challengeIndex.toString());
+    challenge.claim = outterClaim.id;
+    challenge.challenger = event.transaction.from;
+    challenge.timestamp = event.block.timestamp;
+    challenge.honest = false;
+    challenge.save();
+  }
 }
 
 export function handleVerified(event: Verified): void {
-  const claim = getCurrentClaim(event.params.epoch);
-  claim.epoch = event.params.epoch;
-  claim.blockTimestamp = event.block.timestamp;
-
-  claim.save();
+  const refs = getRefs();
+  for (
+    let i = refs.totalClaims;
+    i.ge(BigInt.fromI32(0));
+    i.minus(BigInt.fromI32(1))
+  ) {
+    const claim = Claim.load(i.toString());
+    if (!claim) continue;
+    if (claim.honest) break;
+    if (claim.epoch.le(event.params._epoch)) {
+      claim.honest = true;
+      claim.save();
+    }
+  }
 }
 
-function getCurrentClaim(epoch: BigInt): Claim {
-  let refs = Refs.load("0");
-  if (!refs) {
-    refs = new Refs("0");
-    refs.numberOfMessages = BigInt.fromI32(0);
-    refs.numberOfChallenges = BigInt.fromI32(0);
-    refs.save();
-    const claim = new Claim("0");
-    claim.honest = true;
-    claim.challenged = false;
-    claim.save();
-    return claim;
-  }
-  return Claim.load(epoch.toString())!;
+export function handleMessageRelayed(event: MessageRelayed): void {
+  const message = new Message(event.params._nonce.toString());
+  message.timestamp = event.block.timestamp;
+  message.txHash = event.transaction.hash;
+  message.relayer = event.transaction.from;
+  message.proof = Bytes.fromI32(0);
+  message.save();
 }
 
-// function getChallenge(): Challenge {
-//   let refs = Refs.load("0");
-//   if (!refs) {
-//     refs = new Refs("0");
-//     refs.numberOfMessages = BigInt.fromI32(0);
-//     refs.numberOfChallenges = BigInt.fromI32(1);
-//     refs.save();
-//     const challenge = new Challenge("0");
-//     challenge.honest = false;
-//     challenge.depositAndRewardWithdrawn = false;
-//     challenge.save();
-//     return challenge;
-//   }
-//   return Challenge.load(refs.numberOfChallenges.toString())!;
-// }
+function getNextClaim(): Claim {
+  const claimIndex = getNextClaimIndex();
+  return new Claim(claimIndex.toString());
+}
 
-function useNumberOfChallenges(): BigInt {
+function getNextClaimIndex(): BigInt {
+  const refs = getRefs();
+  const claimIndex = refs.totalClaims;
+  refs.totalClaims = refs.totalClaims.plus(BigInt.fromI32(1));
+  return claimIndex;
+}
+
+function useChallengeIndex(): BigInt {
+  const refs = getRefs();
+  const challengeIndex = refs.totalChallenges;
+  refs.totalChallenges = refs.totalChallenges.plus(BigInt.fromI32(1));
+  return challengeIndex;
+}
+
+function getRefs(): Refs {
   let refs = Refs.load("0");
-  if (!refs) {
+  if (refs) return refs;
+  else {
     refs = new Refs("0");
-    refs.numberOfChallenges = BigInt.fromI32(1);
+    refs.totalClaims = BigInt.fromI32(0);
+    refs.totalMessages = BigInt.fromI32(0);
+    refs.totalChallenges = BigInt.fromI32(0);
     refs.save();
-    return BigInt.fromI32(0);
+    return refs;
   }
-  const numberOfChallenges = refs.numberOfChallenges;
-  refs.numberOfChallenges = refs.numberOfChallenges.plus(BigInt.fromI32(1));
-  refs.save();
-  return numberOfChallenges;
 }
