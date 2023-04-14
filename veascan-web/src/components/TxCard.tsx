@@ -1,8 +1,15 @@
 import React from "react";
 import styled from "styled-components";
-import Copy from "tsx:../../public/tx-info/Copy.svg";
-import ArbitrumLogo from "tsx:../assets/svgs/tx-info/ArbitrumLogo.svg";
-import EthereumLogo from "tsx:../assets/svgs/tx-info/EthereumLogo.svg";
+import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
+import Ethereum from "tsx:svgs/chains/ethereum.svg";
+import Copy from "tsx:svgs/icons/copy.svg";
+
+interface Field {
+  key: string;
+  value: string;
+  isCopy: boolean;
+  url?: string;
+}
 
 interface TxCardProps {
   title: string;
@@ -10,9 +17,7 @@ interface TxCardProps {
   txHash: string;
   timestamp: string;
   caller: string;
-  extraFields?: {
-    [key: string]: string;
-  };
+  extraFields?: Field[];
 }
 
 const StyledDiv = styled.div`
@@ -24,25 +29,9 @@ const StyledDiv = styled.div`
     fill: none;
     cursor: pointer;
   }
-
-  .tx-header {
-    font-size: 16px;
-    line-height: 20px;
-    font-weight: 600;
-    font-family: "Oxanium";
-    margin: 36px 0px 24px;
-    color: ${({ theme }) => theme.color.pink} !important;
-    width: fit-content;
-  }
-  .tx-info-text {
-    font-size: 16px;
-    line-height: 20px;
-    font-weight: 400;
-    font-family: "Oxanium";
-    width: fit-content;
-  }
   .tx-info-copyable {
-    color: #6cc5ff !important;
+    color: ${({ theme }) => theme.klerosUIComponentsPrimaryBlue} !important;
+    text-decoration: none;
   }
   .tx-info {
     display: grid;
@@ -65,21 +54,30 @@ const StyledDiv = styled.div`
   }
   .border {
     margin: 24px 0px;
-    background-color: "#42498F";
-    border: 1px solid #42498f;
+    border: 1px solid ${({ theme }) => theme.klerosUIComponentsStroke};
     height: 0px;
   }
 `;
 
-const ChainTag = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-`;
-const CopyDiv = styled.div`
+const ValueDiv = styled.div`
   display: flex;
   align-items: center;
   gap: 9px;
+  &.chain-info {
+    gap: 4px;
+  }
+`;
+
+const Icon = styled.svg`
+  width: 16px;
+  height: 16px;
+  fill: none;
+`;
+
+const Header = styled.label`
+  margin: 36px 0px 24px;
+  width: fit-content;
+  display: block;
 `;
 
 export const TxCard: React.FC<TxCardProps> = ({
@@ -90,50 +88,81 @@ export const TxCard: React.FC<TxCardProps> = ({
   caller,
   extraFields,
 }) => {
+  const fields = [
+    {
+      key: "Chain",
+      value: chain,
+      isCopy: false,
+    },
+    {
+      key: "Transaction ID",
+      value: txHash,
+      isCopy: true,
+      url: `https://etherscan.io/tx/${txHash}`,
+    },
+    {
+      key: "Timestamp",
+      value: timestamp,
+      isCopy: false,
+    },
+    {
+      key: "Caller",
+      value: caller,
+      isCopy: true,
+      url: `https://etherscan.io/address/${caller}`,
+    },
+  ].concat(extraFields ?? []);
+
   return (
     <StyledDiv>
-      <h2 className="tx-header">{title}</h2>
+      <Header>{title}</Header>
       <div className="tx-info">
         <div className="tx-info-titles">
-          <h3 className="tx-info-text">Chain</h3>
-          <h3 className="tx-info-text">Transaction ID</h3>
-          <h3 className="tx-info-text">Timestamp</h3>
-          <h3 className="tx-info-text">Caller</h3>
-          {extraFields &&
-            Object.keys(extraFields).map((key) => (
-              <h3 className="tx-info-text" key={key}>
-                {key}
-              </h3>
-            ))}
+          {fields.map((section, index) => (
+            <small key={index}>{section.key}</small>
+          ))}
         </div>
         <div className="tx-info-data">
-          <ChainTag>
-            {chain === "Ethereum" ? (
-              <EthereumLogo className="icon" />
-            ) : (
-              <ArbitrumLogo className="icon" />
-            )}
-            <h2 className="tx-info-text">{chain}</h2>
-          </ChainTag>
-          <CopyDiv>
-            <h3 className="tx-info-text tx-info-copyable">{txHash}</h3>
-            <Copy className="icon" />
-          </CopyDiv>
-          <h3 className="tx-info-text">{timestamp}</h3>
-          <CopyDiv>
-            <p className="tx-info-text tx-info-copyable">{caller}</p>
-            <Copy className="icon" />
-          </CopyDiv>
-
-          {extraFields &&
-            Object.values(extraFields).map((value) => (
-              <CopyDiv>
-                <h3 className="tx-info-text" key={value}>
-                  {value}
-                </h3>
-                <Copy className="icon" />
-              </CopyDiv>
-            ))}
+          {fields.map((section, index) => {
+            if (section.key === "Chain") {
+              return (
+                <ValueDiv className="chain-info" key={index}>
+                  <Icon
+                    as={section.value === "Ethereum" ? Ethereum : Arbitrum}
+                  />
+                  <small>{section.value}</small>
+                </ValueDiv>
+              );
+            } else if (!section.isCopy) {
+              return <small key={index}>{section.value}</small>;
+            } else {
+              return (
+                <ValueDiv key={index}>
+                  {section.url ? (
+                    <a
+                      href={section.url}
+                      target="_blank"
+                      style={{ textDecoration: "none" }}
+                    >
+                      <small className="tx-info-copyable">
+                        {section.value}
+                      </small>
+                    </a>
+                  ) : (
+                    <small>{section.value}</small>
+                  )}
+                  <button>
+                    <Icon
+                      as={Copy}
+                      onClick={() => {
+                        navigator.clipboard.writeText(section.value!);
+                      }}
+                    />
+                  </button>
+                </ValueDiv>
+              );
+            }
+          })}
         </div>
       </div>
       <hr className="border" />
