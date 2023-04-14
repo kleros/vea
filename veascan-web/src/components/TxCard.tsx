@@ -140,6 +140,3 @@ export const TxCard: React.FC<TxCardProps> = ({
     </StyledDiv>
   );
 };
-
-// lightBlue: "#6CC5FF",
-// darkBlue: "#42498F",
