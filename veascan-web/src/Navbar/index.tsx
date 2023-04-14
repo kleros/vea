@@ -5,11 +5,11 @@ import Menu from "./Menu";
 import SearchBar from "./SearchBar";
 
 const Container = styled.div`
-  height: 64px;
+  height: 68px;
   position: sticky;
   top: 0px;
   z-index: 2;
-  background-color: #200f47;
+  background-color: ${({ theme }) => theme.color.secondaryPurple};
   ${smallScreenStyle(css`
     height: calc(32px + (64 - 32) * (100vw - 300px) / (1250 - 300));
   `)}
@@ -30,13 +30,17 @@ const Container = styled.div`
 
 const StyledTitle = styled.h5`
   width: 70.72px;
-  font-size: 28px;
+  font-size: 31.5px;
+  margin-top: 20px;
+  margin-bottom: 20px;
 `;
 
 const StyledSubtitle = styled.h5`
-  color: #becce5;
-  font-size: 14px;
-  padding-left: 4px;
+  color: ${({ theme }) => theme.color.lightBlue};
+  font-size: 15.5px;
+  padding-left: 14px;
+  margin-top: 26.5px;
+  margin-bottom: 24px;
 `;
 
 const StyledLogo = styled.div`

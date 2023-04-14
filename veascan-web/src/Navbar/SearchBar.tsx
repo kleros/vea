@@ -10,7 +10,7 @@ const Container = styled.div`
   width: 540px;
   display: flex;
   background-color: transparent;
-  color: #becce5;
+  color: ${({ theme }) => theme.color.lightBlue};
   border: 1px solid #42498f;
   border-radius: 3px;
 
@@ -19,14 +19,14 @@ const Container = styled.div`
   `)}
 
   ::placeholder {
-    color: #becce5;
+    color: ${({ theme }) => theme.color.lightBlue};
   }
 `;
 
 const StyledInput = styled.input`
   position: relative;
   background-color: transparent;
-  color: #becce5;
+  color: ${({ theme }) => theme.color.lightBlue};
   border: none;
   width: 540px;
   padding: 0px;
@@ -37,7 +37,7 @@ const StyledInput = styled.input`
   font-size: 16px;
 
   ::placeholder {
-    color: #becce5;
+    color: ${({ theme }) => theme.color.lightBlue};
   }
 
   :focus {

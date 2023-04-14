@@ -11,5 +11,8 @@ export const theme = {
     blue: "#69C3FC",
     purple: "#1F0847",
     grey: "#E5E5E5",
+    lightBlue: "#BECCE5",
+    secondaryBlue: "#42498F",
+    secondaryPurple: "#200F47",
   },
 };

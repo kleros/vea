@@ -53,10 +53,10 @@ const MenuContainer = styled.div<{ isOpen: boolean }>`
   top: calc(100% + 8px);
   right: 0;
   z-index: 1;
-  background-color: #200f47;
+  background-color: ${({ theme }) => theme.color.secondaryPurple};
   border: 1px solid ${({ theme }) => theme.color.grey};
   box-shadow: 0px 2px 3px ${({ theme }) => theme.color.black + "03"};
-  border-color: #42498f;
+  border-color: ${({ theme }) => theme.color.secondaryBlue};
   display: ${({ isOpen }) => (isOpen ? "flex" : "none")};
   flex-direction: column;
   gap: 24px;
@@ -69,6 +69,8 @@ const StyledQuestion = styled(QuestionIcon)`
 
   :hover {
     cursor: pointer;
+    transform: scale(1.07);
+    fill: ${({ theme }) => theme.color.blue};
   }
 `;
 

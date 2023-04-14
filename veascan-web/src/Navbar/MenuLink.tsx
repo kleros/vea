@@ -4,12 +4,23 @@ import styled from "styled-components";
 const Container = styled.a`
   display: block;
   font-family: "Open Sans";
-  color: #becce5;
+  color: ${({ theme }) => theme.color.lightBlue};
   text-decoration: none;
   svg {
     max-height: 16px;
     max-width: 16px;
     margin-right: 8px;
+    fill: ${({ theme }) => theme.color.lightBlue};
+  }
+
+  :hover {
+    cursor: pointer;
+    color: ${({ theme }) => theme.color.blue};
+    text-decoration: underline;
+
+    svg {
+      fill: ${({ theme }) => theme.color.blue};
+    }
   }
 `;
 
