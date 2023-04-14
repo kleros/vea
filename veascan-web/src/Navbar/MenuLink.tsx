@@ -16,7 +16,7 @@ const Container = styled.a`
   :hover {
     cursor: pointer;
     color: ${({ theme }) => theme.color.blue};
-    text-decoration: underline;
+    transform: scale(1.001);
 
     svg {
       fill: ${({ theme }) => theme.color.blue};
