@@ -3,12 +3,13 @@ import { createRoot } from "react-dom/client";
 import { ThemeProvider } from "styled-components";
 import { GlobalStyle } from "styles/global-style";
 import { theme } from "styles/themes";
+import App from "./App";
 
-const App = () => (
+const WebApp = () => (
   <React.StrictMode>
     <ThemeProvider {...{ theme }}>
       <GlobalStyle />
-      <h1>Hey</h1>
+      <App />
     </ThemeProvider>
   </React.StrictMode>
 );
@@ -16,5 +17,5 @@ const App = () => (
 const container = document.getElementById("app");
 if (container) {
   const root = createRoot(container);
-  root.render(<App />);
+  root.render(<WebApp />);
 }
