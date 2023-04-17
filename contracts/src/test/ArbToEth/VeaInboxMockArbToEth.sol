@@ -10,7 +10,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../../ArbToEth/VeaInboxArbToEth.sol";
+import "../../arbitrumToEthereum/VeaInboxArbToEth.sol";
 
 contract VeaInboxMockArbToEth is VeaInboxArbToEth {
     IArbSys public immutable arbSys;

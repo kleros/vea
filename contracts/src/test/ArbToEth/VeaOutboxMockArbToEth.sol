@@ -10,7 +10,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../../ArbToEth/VeaOutboxArbToEth.sol";
+import "../../arbitrumToEthereum/VeaOutboxArbToEth.sol";
 import "../../canonical/arbitrum/IArbSys.sol";
 
 contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
