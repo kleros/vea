@@ -178,10 +178,6 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
               BigInt.fromU64(oldCount).toString(),
           ]);
           return;
-        } else {
-          log.error("Node  foun1d!!! {}", [
-            index.toString() + "," + BigInt.fromU64(oldCount).toString(),
-          ]);
         }
         nodeHash = node.hash;
       } else {
@@ -198,10 +194,6 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
             height.toString(),
           ]);
           return;
-        } else {
-          log.error("Node  foun2d!!! {}", [
-            index.toString() + "," + BigInt.fromU64(upperIndex).toString(),
-          ]);
         }
         let sibling = node.hash;
         nodeHash = Bytes.fromByteArray(
