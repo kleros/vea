@@ -3511,6 +3511,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@kleros/vea-relayer-subgraph-inbox@workspace:relayer-subgraph-inbox":
+  version: 0.0.0-use.local
+  resolution: "@kleros/vea-relayer-subgraph-inbox@workspace:relayer-subgraph-inbox"
+  dependencies:
+    "@graphprotocol/graph-cli": ^0.44.0
+    "@graphprotocol/graph-ts": ^0.29.3
+    gluegun: ^5.1.2
+    matchstick-as: 0.5.0
+  languageName: unknown
+  linkType: soft
+
 "@kleros/vea-validator-cli@workspace:validator-cli":
   version: 0.0.0-use.local
   resolution: "@kleros/vea-validator-cli@workspace:validator-cli"
@@ -3521,17 +3532,6 @@ __metadata:
     pm2: ^5.2.2
     typescript: ^4.9.5
     web3: ^1.8.2
-  languageName: unknown
-  linkType: soft
-
-"@kleros/vea-validator-subgraph-inbox@workspace:validator-subgraph-inbox":
-  version: 0.0.0-use.local
-  resolution: "@kleros/vea-validator-subgraph-inbox@workspace:validator-subgraph-inbox"
-  dependencies:
-    "@graphprotocol/graph-cli": ^0.44.0
-    "@graphprotocol/graph-ts": ^0.29.3
-    gluegun: ^5.1.2
-    matchstick-as: 0.5.0
   languageName: unknown
   linkType: soft
 

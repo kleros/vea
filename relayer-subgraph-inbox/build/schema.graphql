@@ -1,0 +1,53 @@
+type Hearbeat @entity(immutable: true) {
+  id: Bytes!
+  ticketId: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MessageSent @entity(immutable: true) {
+  id: Bytes!
+  nonce: BigInt! # uint64
+  to: Receiver! # address
+  msgSender: Sender! # address
+  data: Bytes! # bytes
+  epoch: BigInt! # uint64
+  node: Node! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Node @entity(immutable: true) {
+  id: ID!
+  hash: Bytes! # bytes32
+}
+
+type Receiver @entity(immutable: true) {
+  id: Bytes!
+  messages: [MessageSent!]! @derivedFrom(field: "to")
+}
+
+type Sender @entity(immutable: true) {
+  id: Bytes!
+  messages: [MessageSent!]! @derivedFrom(field: "msgSender")
+}
+
+type SnapshotSaved @entity(immutable: true) {
+  id: Bytes!
+  stateRoot: Bytes! # bytes32
+  epoch: BigInt! # uint64
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type SnapshotSent @entity(immutable: true) {
+  id: Bytes!
+  epochSent: BigInt! # uint256
+  ticketId: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

@@ -1,5 +1,5 @@
 {
-  "name": "@kleros/vea-validator-subgraph-inbox",
+  "name": "@kleros/vea-relayer-subgraph-inbox",
   "license": "MIT",
   "packageManager": "yarn@3.3.1",
   "engines": {
