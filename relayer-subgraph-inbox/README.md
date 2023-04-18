@@ -2,11 +2,7 @@
 
 ## Deployments
 
-<<<<<<<< HEAD:validator-subgraph-inbox/README.md
-
-- # [kleros/vea-validator-inbox-arbitrumgoerli](https://thegraph.com/hosted-service/subgraph/kleros/vea-validator-inbox-arbitrumgoerli)
 - https://thegraph.com/hosted-service/subgraph/shotaronowhere/vea-inbox-arbitrum
-  > > > > > > > > feat(web)/veascan-data-querying:relayer-subgraph-inbox/README.md
 
 ## Build
 
