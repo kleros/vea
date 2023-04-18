@@ -8,12 +8,9 @@ const config: CodegenConfig = {
   ],
   documents: "src/hooks/queries/*.ts",
   generates: {
-    "src/gql/": {
+    "./src/gql/": {
       preset: "client",
       plugins: [],
-    },
-    "generated/graphql.schema.json": {
-      plugins: ["introspection"],
     },
   },
 };
