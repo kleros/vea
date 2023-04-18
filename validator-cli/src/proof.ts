@@ -2,6 +2,27 @@ import request from "graphql-request";
 
 const relay = async (arbProvider, arbSigner, ethProvider, ethSigner) => {};
 
+const getMessageDataToRelay = async (nonce: number) => {
+  try {
+    const result = await request(
+      "https://api.thegraph.com/subgraphs/name/shotaronowhere/vea-inbox-arbitrum",
+      `{
+                messageSents(first: 5, where: {nonce: ${nonce}}) {
+                nonce
+                to {
+                    id
+                }
+                data
+                }
+            }`
+    );
+
+    return [result[`messageSents`][0].to.id, result[`messageSents`][0].data];
+  } catch (e) {
+    console.log(e);
+  }
+};
+
 const getProof = async (nonce: number) => {
   try {
     const result = await request(
@@ -68,4 +89,10 @@ const getProofIndices = (nonce: number, count: number) => {
   return proof;
 };
 
-export { getProof, getProofAtCount };
+(async () => {
+  console.log(getProofIndices(6, 7));
+  console.log(await getProof(6));
+  console.log(await getMessageDataToRelay(6));
+})();
+
+export { getProof, getProofAtCount, getMessageDataToRelay };
