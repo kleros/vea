@@ -200,3 +200,6 @@ tags
 # subgraph
 subgraph/generated/*
 subgraph/build/*
+
+veascan-web/src/gql/*
+veascan-web/generated/*

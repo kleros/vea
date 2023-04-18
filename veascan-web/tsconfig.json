@@ -8,6 +8,12 @@
       "src*": [
         "./src*"
       ],
+      "hooks*": [
+        "./src/hooks*"
+      ],
+      "consts*": [
+        "./src/consts*"
+      ],
       "styles*": [
         "./src/styles*"
       ],
