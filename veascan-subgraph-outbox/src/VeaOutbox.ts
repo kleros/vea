@@ -9,8 +9,8 @@ import { Challenge, Claim, Message, Refs } from "../generated/schema";
 
 export function handleClaimed(event: Claimed): void {
   const claim = getNextClaim();
-  claim.epoch = event.params._epoch;
-  claim.stateroot = event.params._batchMerkleRoot;
+  claim.epoch = event.params.epoch;
+  claim.stateroot = event.params.claimedStateRoot;
   claim.timestamp = event.block.timestamp;
   claim.bridger = event.transaction.from;
   claim.challenged = false;
@@ -28,7 +28,7 @@ export function handleChallenged(event: Challenged): void {
   ) {
     const claim = Claim.load(i.toString());
     if (!claim) continue;
-    if (claim.epoch.equals(event.params._epoch)) {
+    if (claim.epoch.equals(event.params.epoch)) {
       outterClaim = claim;
       break;
     }
@@ -57,7 +57,7 @@ export function handleVerified(event: Verified): void {
     const claim = Claim.load(i.toString());
     if (!claim) continue;
     if (claim.honest) break;
-    if (claim.epoch.le(event.params._epoch)) {
+    if (claim.epoch.le(event.params.epoch)) {
       claim.honest = true;
       claim.save();
     }
@@ -65,7 +65,7 @@ export function handleVerified(event: Verified): void {
 }
 
 export function handleMessageRelayed(event: MessageRelayed): void {
-  const message = new Message(event.params._nonce.toString());
+  const message = new Message(event.params.msgId.toString());
   message.timestamp = event.block.timestamp;
   message.txHash = event.transaction.hash;
   message.relayer = event.transaction.from;
