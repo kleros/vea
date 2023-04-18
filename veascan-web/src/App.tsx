@@ -1,8 +1,9 @@
 import React from "react";
-import Navbar from "./Navbar";
 import Footer from "./Footer";
 import styled from "styled-components";
 import SnapshotAccordion from "./components/SnapshotAccordion/SnapshotAccordion";
+import Navbar from "./Navbar";
+import { FilterDropdown } from "./components/FilterDropdown";
 
 const MiddleContent = styled.div`
   display: flex;
@@ -96,6 +97,7 @@ const App = () => (
       />
     </MiddleContent>
     <Footer />
+    <FilterDropdown />
   </div>
 );
 
