@@ -11,7 +11,7 @@ interface Field {
   url?: string;
 }
 
-interface TxCardProps {
+export interface TxCardProps {
   title: string;
   chain: string;
   txHash: string;
@@ -80,7 +80,7 @@ const Header = styled.label`
   display: block;
 `;
 
-export const TxCard: React.FC<TxCardProps> = ({
+const TxCard: React.FC<TxCardProps> = ({
   title,
   chain,
   txHash,
@@ -143,6 +143,7 @@ export const TxCard: React.FC<TxCardProps> = ({
                       href={section.url}
                       target="_blank"
                       style={{ textDecoration: "none" }}
+                      rel="noreferrer"
                     >
                       <small className="tx-info-copyable">
                         {section.value}
@@ -169,3 +170,5 @@ export const TxCard: React.FC<TxCardProps> = ({
     </StyledDiv>
   );
 };
+
+export default TxCard;
