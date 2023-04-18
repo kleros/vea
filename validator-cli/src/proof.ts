@@ -89,10 +89,4 @@ const getProofIndices = (nonce: number, count: number) => {
   return proof;
 };
 
-(async () => {
-  console.log(getProofIndices(6, 7));
-  console.log(await getProof(6));
-  console.log(await getMessageDataToRelay(6));
-})();
-
 export { getProof, getProofAtCount, getMessageDataToRelay };
