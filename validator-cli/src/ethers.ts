@@ -1,6 +1,6 @@
 import { Wallet } from "@ethersproject/wallet";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { VeaOutbox__factory, VeaInbox__factory } from "../../contracts/typechain-types";
+import { VeaOutbox__factory, VeaInbox__factory } from "@kleros/vea-contracts/typechain-types";
 
 function getWallet(privateKey: string, web3ProviderURL: string) {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));

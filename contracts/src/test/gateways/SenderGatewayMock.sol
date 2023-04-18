@@ -28,7 +28,7 @@ contract SenderGatewayMock is ISenderGateway {
 
     function sendFastMessage(uint256 _data) external {
         bytes4 methodSelector = IReceiverGatewayMock.receiveMessage.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, _data);
-        veaInbox.sendMsg(receiverGateway, data);
+        bytes memory data = abi.encode(_data);
+        veaInbox.sendMessage(receiverGateway, methodSelector, data);
     }
 }

@@ -21,38 +21,25 @@ contract MerkleProof {
      *  @param leaf The leaf to validate membership in merkle tree.
      *  @param merkleRoot The root of the merkle tree.
      */
-    function _validateProof(
-        bytes32[] memory proof,
-        bytes32 leaf,
-        bytes32 merkleRoot
-    ) internal pure returns (bool) {
-        return (merkleRoot == _calculateRoot(proof, leaf));
-    }
-
-    /** @dev Calculates merkle root from proof.
-     *  @param proof The merkle proof.
-     *  @param leaf The leaf to validate membership in merkle tree..
-     */
-    function _calculateRoot(bytes32[] memory proof, bytes32 leaf) private pure returns (bytes32) {
-        uint256 proofLength = proof.length;
-        require(proofLength <= 32, "Invalid Proof");
-        bytes32 h = leaf;
-        for (uint256 i = 0; i < proofLength; i++) {
-            bytes32 proofElement = proof[i];
-            // effecient hash
-            if (proofElement > h)
-                assembly {
-                    mstore(0x00, h)
-                    mstore(0x20, proofElement)
-                    h := keccak256(0x00, 0x40)
-                }
-            else
-                assembly {
-                    mstore(0x00, proofElement)
-                    mstore(0x20, h)
-                    h := keccak256(0x00, 0x40)
-                }
+    function _validateProof(bytes32[] memory proof, bytes32 leaf, bytes32 merkleRoot) internal pure returns (bool) {
+        unchecked {
+            for (uint256 i = 0; i < proof.length; i++) {
+                bytes32 proofElement = proof[i];
+                // sort sibling hashes as a convention for efficient proof validation
+                if (proofElement > leaf)
+                    assembly {
+                        mstore(0x00, leaf)
+                        mstore(0x20, proofElement)
+                        leaf := keccak256(0x00, 0x40)
+                    }
+                else
+                    assembly {
+                        mstore(0x00, proofElement)
+                        mstore(0x20, leaf)
+                        leaf := keccak256(0x00, 0x40)
+                    }
+            }
         }
-        return h;
+        return merkleRoot == leaf;
     }
 }

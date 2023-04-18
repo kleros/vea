@@ -19,7 +19,7 @@ dataSources:
         - StaterootSent
       abis:
         - name: VeaInbox
-          file: ./abis/VeaInbox.json
+          file: ../contracts/deployments/arbitrumGoerli/VeaInbox.json
       eventHandlers:
         - event: MessageSent(bytes)
           handler: handleMessageSent

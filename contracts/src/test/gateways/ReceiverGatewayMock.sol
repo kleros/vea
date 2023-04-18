@@ -36,16 +36,16 @@ contract ReceiverGatewayMock is IReceiverGatewayMock {
     /**
      * Receive the message from the sender gateway.
      */
-    function receiveMessage() external onlyFromBridge {
-        require(veaOutbox.messageSender() == senderGateway, "Only the sender gateway is allowed.");
+    function receiveMessage(address messageSender) external onlyFromBridge {
+        require(messageSender == senderGateway, "Only the sender gateway is allowed.");
         _receiveMessage();
     }
 
     /**
      * Receive the message from the sender gateway.
      */
-    function receiveMessage(uint256 _data) external onlyFromBridge {
-        require(veaOutbox.messageSender() == senderGateway, "Only the sender gateway is allowed.");
+    function receiveMessage(address messageSender, uint256 _data) external onlyFromBridge {
+        require(messageSender == senderGateway, "Only the sender gateway is allowed.");
         _receiveMessage(_data);
     }
 

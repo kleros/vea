@@ -16,5 +16,5 @@ interface IReceiverGatewayMock is IReceiverGateway {
     /**
      * Receive the message from the sender gateway.
      */
-    function receiveMessage(uint256 _data) external;
+    function receiveMessage(address msgSender, uint256 _data) external;
 }
