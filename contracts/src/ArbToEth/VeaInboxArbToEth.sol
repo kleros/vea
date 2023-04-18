@@ -20,11 +20,9 @@ import "../interfaces/IVeaOutbox.sol";
 contract VeaInboxArbToEth is IVeaInbox {
     /**
      * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
-     * @param msgId The zero based index of the message in the inbox.
-     * @param to The address to call.
-     * @param msgData The message to relay. eg to.call(msgData)
+     * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, data), outbox relays to.call(data)
      */
-    event MessageSent(uint64 msgId, address to, bytes msgData);
+    event MessageSent(bytes nodeData);
 
     /**
      * The bridgers watch this event to claim the stateRoot on the veaOutbox.
@@ -76,14 +74,22 @@ contract VeaInboxArbToEth is IVeaInbox {
      * @param data The message calldata, abi.encode(param1, param2, ...)
      * @return msgId The zero based index of the message in the inbox.
      */
-    function sendMessage(address to, bytes4 fnSelector, bytes calldata data) external override returns (uint64) {
+    function sendMessage(address to, bytes4 fnSelector, bytes memory data) external override returns (uint64) {
         uint256 oldCount = count;
 
-        // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
-        bytes memory msgData = abi.encodePacked(fnSelector, bytes32(uint256(uint160(msg.sender))), data);
+        bytes memory nodeData = abi.encodePacked(
+            uint64(oldCount),
+            to,
+            // data for outbox relay
+            abi.encodePacked( // abi.encodeWithSelector(fnSelector, msg.sender, data)
+                fnSelector,
+                bytes32(uint256(uint160(msg.sender))), // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
+                data
+            )
+        );
 
         // single hashed leaf
-        bytes32 newInboxNode = keccak256(abi.encodePacked(uint64(oldCount), to, msgData));
+        bytes32 newInboxNode = keccak256(nodeData);
 
         // double hashed leaf
         // avoids second order preimage attacks
@@ -114,7 +120,7 @@ contract VeaInboxArbToEth is IVeaInbox {
             count = oldCount + 1;
         }
 
-        emit MessageSent(uint64(oldCount), to, msgData);
+        emit MessageSent(nodeData);
 
         // old count is the zero indexed leaf position in the tree, acts as a msgId
         // gateways should index these msgIds to later relay proofs
@@ -162,7 +168,6 @@ contract VeaInboxArbToEth is IVeaInbox {
                     // sort sibling hashes as a convention for efficient proof validation
                     stateRoot = sortConcatAndHash(inboxHash, stateRoot);
                 }
-                height++;
             }
         }
 
