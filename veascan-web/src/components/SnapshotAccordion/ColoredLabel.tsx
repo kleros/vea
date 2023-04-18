@@ -18,7 +18,7 @@ const ColorTag = styled(Tag)<{ backgroundColor: string }>`
   }
 `;
 
-const variantColors = {
+export const variantColors = {
   Invalid: "lightRed",
   Taken: "lightYellow",
   Claimed: "turqoise",

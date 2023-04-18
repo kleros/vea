@@ -19,8 +19,8 @@ const App = () => (
         items={[
           {
             titleProps: {
-              epoch: "514512",
-              timestamp: "Apr 18, 2023 10:00:00am",
+              epoch: "810212",
+              timestamp: "Apr 18, 2023 99:00:00am",
               fromChain: "Arbitrum",
               fromAddress: "0x123456789abcdef",
               toChain: "Ethereum",
@@ -44,13 +44,13 @@ const App = () => (
           },
           {
             titleProps: {
-              epoch: "514512",
-              timestamp: "Apr 18, 2023 10:00:00am",
+              epoch: "999999",
+              timestamp: "Jun 20, 2020 09:00:00pm",
               fromChain: "Arbitrum",
               fromAddress: "0x123456789abcdef",
               toChain: "Ethereum",
               toAddress: "0x987654321fedcba",
-              status: "Resolved",
+              status: "Taken",
             },
             txCardProps: {
               title: "Verifier",
@@ -69,13 +69,13 @@ const App = () => (
           },
           {
             titleProps: {
-              epoch: "514512",
-              timestamp: "Apr 18, 2023 10:00:00am",
-              fromChain: "Arbitrum",
+              epoch: "111111",
+              timestamp: "Dec 18, 2023 8:00:00am",
+              fromChain: "Ethereum",
               fromAddress: "0x123456789abcdef",
-              toChain: "Ethereum",
+              toChain: "Arbitrum",
               toAddress: "0x987654321fedcba",
-              status: "Resolved",
+              status: "Resolving",
             },
             txCardProps: {
               title: "Verifier",

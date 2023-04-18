@@ -3,24 +3,24 @@ import styled from "styled-components";
 import ArbitrumLogo from "tsx:svgs/chains/arbitrum.svg";
 import EthereumLogo from "tsx:svgs/chains/ethereum.svg";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
-import ColoredLabel from "./ColoredLabel";
+import ColoredLabel, { variantColors } from "./ColoredLabel";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
-  & > * {
-    margin-right: 32px;
-  }
   align-items: center;
   height: 40px;
 `;
 
 const StyledEpoch = styled.div`
   color: ${({ theme }) => theme.color.blue};
+  width: 60px;
+  margin-right: 32px;
 `;
 
 const StyledTimestamp = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
-  padding-right: 32px;
+  width: 220px;
+  margin-right: 32px;
 `;
 
 const StyledChainsAndAddressesContainer = styled.div`
@@ -28,6 +28,8 @@ const StyledChainsAndAddressesContainer = styled.div`
   display: flex;
   color: ${({ theme }) => theme.color.blue};
   padding-right: 308.5px;
+  margin-right: 32px;
+  width: 590px;
 `;
 
 const StyledChainAndAddress = styled.div`
@@ -43,12 +45,6 @@ const ArrowContainer = styled.div`
   padding-left: 18px;
   padding-right: 10px;
   padding-top: 3.5px;
-`;
-
-const StyledStatus = styled.div`
-  position: relative;
-  display: flex;
-  justify-content: end;
 `;
 
 const ChainIcon = styled.svg`
@@ -70,6 +66,10 @@ const StyledRightArrowIcon = styled.svg`
 const StyledTruncatedAddress = styled.div`
   display: flex;
   padding-top: 3.5px;
+`;
+
+const StyledColoredLabelContainer = styled.div`
+  margin-right: 32px;
 `;
 
 export interface AccordionTitleProps {
@@ -116,8 +116,12 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
         </StyledChainAndAddress>
       </StyledChainsAndAddressesContainer>
 
-      {/* <ColoredLabel text={p.status} variantColors={p.status} /> */}
-      <StyledStatus>{p.status}</StyledStatus>
+      <StyledColoredLabelContainer>
+        <ColoredLabel
+          text={p.status}
+          variant={p.status as keyof typeof variantColors}
+        />
+      </StyledColoredLabelContainer>
     </StyledSnapshotAccordionTitle>
   );
 };
