@@ -204,6 +204,3 @@ veascan-subgraph-inbox/generated/*
 veascan-subgraph-inbox/build/*
 validator-subgraph-inbox/generated/*
 validator-subgraph-inbox/build/*
-
-veascan-web/src/gql/*
-veascan-web/generated/*
