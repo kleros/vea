@@ -12,6 +12,7 @@ const Container = styled.a`
     margin-right: 8px;
     fill: ${({ theme }) => theme.color.lightBlue};
   }
+  transition: fill 0.25s ease;
 
   :hover {
     cursor: pointer;
