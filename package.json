@@ -17,7 +17,7 @@
   "private": true,
   "workspaces": [
     "contracts",
-    "validator-subgraph-inbox",
+    "relayer-subgraph-inbox",
     "validator-cli",
     "veascan-web",
     "veascan-subgraph-inbox",
@@ -32,7 +32,6 @@
     "@commitlint/cli": "^17.2.0",
     "@commitlint/config-conventional": "^17.2.0",
     "conventional-changelog-cli": "^2.1.1",
-    "depcheck": "^1.4.2",
     "eslint": "^8.27.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-config-standard": "^17.0.0",
@@ -42,10 +41,10 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^5.1.1",
     "eslint-utils": "^3.0.0",
-    "husky": "^8.0.1",
-    "lint-staged": "^11.0.0",
-    "prettier": "^2.4.1",
-    "prettier-plugin-solidity": "^1.0.0-beta.15",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.1",
+    "prettier": "^2.8.7",
+    "prettier-plugin-solidity": "^1.1.3",
     "solhint-plugin-prettier": "^0.0.5"
   },
   "resolutions": {
@@ -59,10 +58,10 @@
     "minimatch@npm:^3.0.4": "^3.0.8",
     "nanoid^3.3.1": "^3.3.4",
     "node-fetch": "^2.6.7",
-    "underscore@npm^3.0.4": "^1.12.1"
+    "underscore@npm^3.0.4": "^1.12.1",
+    "@graphprotocol/graph-ts": "^0.29.3"
   },
   "scripts": {
-    "depcheck": "depcheck .",
     "changelog": "conventional-changelog --infile CHANGELOG.md --same-file --release-count 0 && prettier --write CHANGELOG.md",
     "postinstall": "husky install",
     "reinstall": "YARN_CHECKSUM_BEHAVIOR=update yarn install --no-immutable"

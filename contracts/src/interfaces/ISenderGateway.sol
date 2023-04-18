@@ -15,7 +15,5 @@ import "./IVeaInbox.sol";
 interface ISenderGateway {
     function veaInbox() external view returns (IVeaInbox);
 
-    function receiverChainID() external view returns (uint256);
-
     function receiverGateway() external view returns (address);
 }

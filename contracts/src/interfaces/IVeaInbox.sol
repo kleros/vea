@@ -14,8 +14,10 @@ interface IVeaInbox {
     /**
      * Note: Calls authenticated by receiving gateway checking the sender argument.
      * @dev Sends an arbitrary message to Ethereum.
-     * @param _to The cross-domain contract address which receives the calldata.
-     * @param _data The encoded message data.
+     * @param to The cross-domain contract address which receives the calldata.
+     * @param fnSelection The function selector of the receiving contract.
+     * @param data The message calldata, abi.encode(...)
+     * @return msgId The index of the message in the inbox, as a message Id, needed to relay the message.
      */
-    function sendMsg(address _to, bytes memory _data) external returns (uint256 msgId);
+    function sendMessage(address to, bytes4 fnSelection, bytes memory data) external returns (uint64 msgId);
 }

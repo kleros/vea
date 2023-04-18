@@ -11,23 +11,41 @@ enum ReceiverChains {
 }
 const paramsByChainId = {
   ETHEREUM_MAINNET: {
-    deposit: parseEther("100"), // 2000 ETH budget to start, enough for 10 days till timeout
+    deposit: parseEther("100"), // 2800 ETH budget to start, enough for 14 days till timeout
     // Average happy path wait time is 31 hours
     epochPeriod: 43200, // 12 hours
     challengePeriod: 90000, // 24 hours (sequencer backdating) + 1 hour buffer
-    numEpochTimeout: 20, // 10 days
-    epochClaimWindow: 3, // 24 hours (sequencer backdating) + 1 hour buffer
+    // if maxTimeVariation on seuqencer is 4 hours. . .
+    // Average happy path wait time is 6 hours
+    // epochPeriod: 7200, // 2 hours
+    // challengePeriod: 90000, // 4 hours (sequencer backdating) + 1 hour buffer (resync time)
+    numEpochTimeout: 1209600, // 10 days
+    maxMissingBlocks: 4, // 4 in 225 slots
+    epochClaimWindow: 3, // 24 hours (sequencer backdating) + 1 hour buffer (resync time )
     senderChainId: 42161,
     arbitrumInbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
   },
+  /*
+  // if maxTimeVariation on seuqencer is 4 hours. . .
+  ETHEREUM_MAINNET: {
+    deposit: parseEther("16"), // 2000 ETH budget to start, enough for 10 days till timeout
+    // Average happy path wait time is 6 hours
+    epochPeriod: 7200, // 2 hours
+    challengePeriod: 18000, // 4 hours (sequencer backdating) + 1 hour buffer (resync time)
+    numEpochTimeout: 120, // 10 days
+    epochClaimWindow: 3, // 4 hours (sequencer backdating) + 1 hour buffer (resync time )
+    senderChainId: ...,
+    arbitrumInbox: "...",
+  },*/
   ETHEREUM_GOERLI: {
     deposit: parseEther("10"), // 120 eth budget for timeout
     // Average happy path wait time is 45 mins, assume no censorship
     epochPeriod: 1800, // 30 min
     challengePeriod: 1800, // 30 min (assume no sequencer backdating)
-    numEpochTimeout: 12, // 6 hours
+    numEpochTimeout: 21600, // 6 hours
     epochClaimWindow: 2,
     senderChainId: 421613,
+    maxMissingBlocks: 0,
     arbitrumInbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
   },
   HARDHAT: {
@@ -35,9 +53,10 @@ const paramsByChainId = {
     // Average happy path wait time is 45 mins, assume no censorship
     epochPeriod: 1800, // 30 min
     challengePeriod: 1800, // 30 min (assume no sequencer backdating)
-    numEpochTimeout: 12, // 6 hours
+    numEpochTimeout: 21600, // 6 hours
     epochClaimWindow: 2,
     senderChainId: 31337,
+    maxMissingBlocks: 0,
     arbitrumInbox: ethers.constants.AddressZero,
   },
 };
@@ -58,7 +77,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, senderChainId, arbitrumInbox } =
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, maxMissingBlocks, arbitrumInbox } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -86,7 +105,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     const veaOutbox = await deploy("VeaOutbox", {
       from: deployer,
-      contract: "VeaOutboxMock",
+      contract: "VeaOutboxMockArbToEth",
       args: [
         arbSysAddress,
         deposit,
@@ -103,7 +122,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     await deploy("ReceiverGateway", {
       from: deployer,
       contract: "ReceiverGatewayMock",
-      args: [veaOutbox.address, senderGatewayAddress, senderChainId],
+      args: [veaOutbox.address, senderGatewayAddress],
       gasLimit: 4000000,
       log: true,
     });
@@ -120,7 +139,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     await deploy("VeaOutbox", {
       from: deployer,
-      contract: "VeaOutbox",
+      contract: "VeaOutboxArbToEth",
       args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, veaInboxAddress, arbitrumInbox],
       log: true,
     });

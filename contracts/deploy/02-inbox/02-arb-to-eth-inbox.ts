@@ -38,7 +38,7 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     const veaInbox = await deploy("VeaInbox", {
       from: deployer,
-      contract: "VeaInboxMock",
+      contract: "VeaInboxMockArbToEth",
       args: [arbSysMock.address, epochPeriod, veaOutbox.address],
     });
 
@@ -48,7 +48,7 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const senderGateway = await deploy("SenderGateway", {
       from: deployer,
       contract: "SenderGatewayMock",
-      args: [veaInbox.address, receiverGateway.address, receiverChainId],
+      args: [veaInbox.address, receiverGateway.address],
       gasLimit: 4000000,
       log: true,
     });
@@ -78,7 +78,7 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     await deploy("VeaInbox", {
       from: deployer,
-      contract: "VeaInbox",
+      contract: "VeaInboxArbToEth",
       args: [epochPeriod, veaOutbox.address],
       log: true,
     });

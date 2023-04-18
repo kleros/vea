@@ -68,6 +68,20 @@ export const GlobalStyle = createGlobalStyle`
     font-weight: 300;
     color: ${({ theme }) => theme.color.white};
   }
+  small {
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 400;
+    font-family: "Oxanium";
+    color: ${({ theme }) => theme.color.white};
+  }
+  label{
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  font-family: "Oxanium";
+  color: ${({ theme }) => theme.color.pink} !important;
+  }
   button {
     all: unset;
     box-sizing: border-box;
