@@ -1,11 +1,11 @@
-import { BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
 import { Snapshot, Message, Refs } from "../generated/schema";
 import {
   MessageSent,
   SnapshotSaved,
   SnapshotSent,
-  VeaInboxArbToGnosis,
-} from "../generated/VeaInboxArbToGnosis/VeaInboxArbToGnosis";
+  VeaInbox,
+} from "../generated/VeaInboxArbToGnosis/VeaInbox";
 
 export function handleMessageSent(event: MessageSent): void {
   const snapshot = getCurrentSnapshot();
@@ -15,12 +15,22 @@ export function handleMessageSent(event: MessageSent): void {
   const messageIndex = useNextMessageIndex();
   const message = new Message(messageIndex.toString());
   message.snapshot = snapshot.id;
-  const msgData = event.params.msgData.toHexString();
   message.txHash = event.transaction.hash;
-  message.from = Bytes.fromHexString(msgData.substring(18, 58));
-  message.to = Bytes.fromHexString(msgData.substring(58, 98));
-  message.data = Bytes.fromHexString(msgData.substring(98));
   message.timestamp = event.block.timestamp;
+  const msgData = event.params.nodeData;
+  const _to = new ByteArray(20);
+  for (let i = 0; i < 20; i++) _to[i] = msgData[i + 8];
+
+  const dataLength = msgData.length - 28;
+  const _data = new ByteArray(dataLength);
+  for (let i = 0; i < dataLength; i++) _data[i] = msgData[i + 28];
+
+  const _msgSender = new ByteArray(20);
+  for (let i = 0; i < 20; i++) _msgSender[i] = _data[i + 16];
+
+  message.from = Bytes.fromByteArray(_msgSender);
+  message.to = Bytes.fromByteArray(_to);
+  message.data = Bytes.fromByteArray(_data);
   message.save();
 }
 
@@ -63,7 +73,7 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
   currentSnapshot.timestamp = event.block.timestamp;
   currentSnapshot.txHash = event.transaction.hash;
   //Get the epochPeriod from the public variable of the deployed contract
-  const veaInboxContract = VeaInboxArbToGnosis.bind(event.address);
+  const veaInboxContract = VeaInbox.bind(event.address);
   const epochPeriod = veaInboxContract.epochPeriod();
   const epoch = event.block.timestamp.div(epochPeriod);
   currentSnapshot.epoch = epoch;
