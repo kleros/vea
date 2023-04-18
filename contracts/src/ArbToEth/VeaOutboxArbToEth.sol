@@ -39,9 +39,9 @@ contract VeaOutboxArbToEth is IVeaOutbox {
     address public immutable veaInbox; // The address of the veaInbox on arbitrum.
 
     uint256 public immutable deposit; // The deposit required to submit a claim or challenge
-    uint256 public immutable burn; // The amount of wei to burn. deposit / 2
-    uint256 public immutable depositPlusReward; // 2 * deposit - burn
-    address public constant burnAddress = address(0x0000000000000000000000000000000000000000);
+    uint256 internal immutable burn; // The amount of wei to burn. deposit / 2
+    uint256 internal immutable depositPlusReward; // 2 * deposit - burn
+    address internal constant burnAddress = address(0x0000000000000000000000000000000000000000);
 
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable challengePeriod; // Claim challenge timewindow.
@@ -272,7 +272,6 @@ contract VeaOutboxArbToEth is IVeaOutbox {
      */
     function sendMessage(bytes32[] calldata proof, uint64 msgId, address to, bytes calldata message) external {
         require(proof.length < 64, "Proof too long.");
-        require(uint256(msgId) < 2 ** proof.length, "Path not minimal.");
 
         bytes32 nodeHash = keccak256(abi.encodePacked(msgId, to, message));
 

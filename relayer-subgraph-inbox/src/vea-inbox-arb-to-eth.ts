@@ -139,7 +139,7 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
   let contract = VeaInbox.bind(event.address);
   entity.epoch = event.block.timestamp.div(contract.epochPeriod());
   entity.stateRoot = event.params.stateRoot;
-
+  entity.count = contract.count();
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
