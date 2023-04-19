@@ -27,6 +27,6 @@ export const useSnapshots = (lastTimestamp: string) => {
         ).then((result) => result.claims[0]);
         return [snapshot, claim];
       })
-    ).then((result) => result.flat());
+    );
   });
 };
