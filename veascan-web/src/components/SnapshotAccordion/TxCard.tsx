@@ -1,3 +1,4 @@
+import { arbitrumGoerli, goerli } from "@wagmi/chains";
 import React from "react";
 import styled from "styled-components";
 import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
@@ -13,7 +14,7 @@ interface Field {
 
 export interface TxCardProps {
   title: string;
-  chain: string;
+  chain: number;
   txHash: string;
   timestamp: string;
   caller: string;
@@ -80,6 +81,9 @@ const Header = styled.label`
   display: block;
 `;
 
+const arbitrumExplorer = arbitrumGoerli.blockExplorers.etherscan.url;
+const goerliExplorer = goerli.blockExplorers.etherscan.url;
+
 const TxCard: React.FC<TxCardProps> = ({
   title,
   chain,
@@ -91,14 +95,16 @@ const TxCard: React.FC<TxCardProps> = ({
   const fields = [
     {
       key: "Chain",
-      value: chain,
+      value: chain === arbitrumGoerli.id ? "Arbitrum" : "Ethereum",
       isCopy: false,
     },
     {
       key: "Transaction ID",
       value: txHash,
       isCopy: true,
-      url: `https://etherscan.io/tx/${txHash}`,
+      url: `${
+        chain === arbitrumGoerli.id ? arbitrumExplorer : goerliExplorer
+      }tx/${txHash}`,
     },
     {
       key: "Timestamp",
@@ -109,7 +115,9 @@ const TxCard: React.FC<TxCardProps> = ({
       key: "Caller",
       value: caller,
       isCopy: true,
-      url: `https://etherscan.io/address/${caller}`,
+      url: `${
+        chain === arbitrumGoerli.id ? arbitrumExplorer : goerliExplorer
+      }address/${caller}`,
     },
   ].concat(extraFields ?? []);
 
