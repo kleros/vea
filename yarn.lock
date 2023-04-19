@@ -2141,9 +2141,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kleros/ui-components-library@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "@kleros/ui-components-library@npm:2.0.1"
+"@kleros/ui-components-library@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "@kleros/ui-components-library@npm:2.1.0"
   dependencies:
     "@datepicker-react/hooks": ^2.8.4
     "@swc/helpers": ^0.3.2
@@ -2159,7 +2159,7 @@ __metadata:
     react-dom: ^18.0.0
     react-is: ^18.0.0
     styled-components: ^5.3.3
-  checksum: 905827560b6d7e5a4b88115ae9ed8c63748fae90df07438dbd68488f8bbbae9235d0b3e491b8967bb933f8abee7843798b018fc82f28e0c79f96135770c2ad0b
+  checksum: 17c03d79f7fdfd2f099768f6c76e36baed50fdf02c2219ce94c66e193fb536a3fc8d4e9822d0ae9f2bc520d575cdec18815f338c3ca9c71ac952519a5fd3a32b
   languageName: node
   linkType: hard
 
@@ -2254,7 +2254,7 @@ __metadata:
     "@graphql-codegen/cli": ^3.2.1
     "@graphql-codegen/typescript": ^2.8.1
     "@graphql-codegen/typescript-operations": ^2.5.6
-    "@kleros/ui-components-library": ^2.0.1
+    "@kleros/ui-components-library": ^2.1.0
     "@kleros/vea-contracts": "workspace:^"
     "@parcel/transformer-svg-react": ~2.7.0
     "@parcel/watcher": ~2.0.0
