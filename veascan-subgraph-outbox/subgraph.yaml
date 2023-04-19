@@ -1,0 +1,33 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: VeaOutbox
+    network: goerli
+    source:
+      address: "0xD035Ccf1FC71A879d9F6E10215c5297489A40B46"
+      abi: VeaOutbox
+      startBlock: 8823379
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Challenged
+        - Claimed
+        - MessageRelayed
+        - Verified
+      abis:
+        - name: VeaOutbox
+          file: ../contracts/deployments/goerli/VeaOutbox.json
+      eventHandlers:
+        - event: Challenged(indexed uint256)
+          handler: handleChallenged
+        - event: Claimed(indexed uint256,bytes32)
+          handler: handleClaimed
+        - event: MessageRelayed(indexed uint64)
+          handler: handleMessageRelayed
+        - event: Verified(indexed uint256)
+          handler: handleVerified
+      file: ./src/VeaOutbox.ts

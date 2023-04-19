@@ -1,5 +1,5 @@
 {
-  "address": "0x8C1935dbBB87C42e7ED4E94BE3e8FA61B8b3a025",
+  "address": "0xD035Ccf1FC71A879d9F6E10215c5297489A40B46",
   "abi": [
     {
       "inputs": [
@@ -9,24 +9,24 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "_epochPeriod",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "_challengePeriod",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "internalType": "uint64",
-          "name": "_numEpochTimeout",
-          "type": "uint64"
+          "internalType": "uint256",
+          "name": "_timeout",
+          "type": "uint256"
         },
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "_epochClaimWindow",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
           "internalType": "address",
@@ -47,12 +47,12 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "epoch",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "indexed": true,
+          "indexed": false,
           "internalType": "address",
           "name": "challenger",
           "type": "address"
@@ -66,12 +66,12 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "epoch",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "indexed": true,
+          "indexed": false,
           "internalType": "address",
           "name": "challenger",
           "type": "address"
@@ -85,9 +85,9 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "epoch",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "name": "Challenged",
@@ -98,12 +98,12 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "epoch",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "indexed": true,
+          "indexed": false,
           "internalType": "address",
           "name": "bridger",
           "type": "address"
@@ -117,12 +117,12 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "epoch",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "indexed": true,
+          "indexed": false,
           "internalType": "address",
           "name": "bridger",
           "type": "address"
@@ -136,9 +136,9 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "epoch",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
           "indexed": false,
@@ -156,7 +156,7 @@
         {
           "indexed": true,
           "internalType": "uint64",
-          "name": "nonce",
+          "name": "msgId",
           "type": "uint64"
         }
       ],
@@ -168,20 +168,46 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "epoch",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "name": "Verified",
       "type": "event"
     },
     {
+      "inputs": [],
+      "name": "burn",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "burnAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
-          "internalType": "uint64",
-          "name": "_epoch",
-          "type": "uint64"
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
         }
       ],
       "name": "challenge",
@@ -194,9 +220,9 @@
       "name": "challengePeriod",
       "outputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -205,9 +231,9 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "name": "challenges",
@@ -221,11 +247,6 @@
           "internalType": "bool",
           "name": "honest",
           "type": "bool"
-        },
-        {
-          "internalType": "bool",
-          "name": "depositAndRewardWithdrawn",
-          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -234,9 +255,9 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "_epoch",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
           "internalType": "bytes32",
@@ -252,9 +273,9 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "name": "claims",
@@ -278,11 +299,6 @@
           "internalType": "bool",
           "name": "honest",
           "type": "bool"
-        },
-        {
-          "internalType": "bool",
-          "name": "depositAndRewardWithdrawn",
-          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -303,12 +319,38 @@
     },
     {
       "inputs": [],
+      "name": "depositMinusOne",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "depositPlusReward",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "epochClaimWindow",
       "outputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -319,12 +361,25 @@
       "name": "epochPeriod",
       "outputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "heartbeat",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -341,50 +396,11 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "latestVerifiedEpoch",
-      "outputs": [
-        {
-          "internalType": "uint64",
-          "name": "",
-          "type": "uint64"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "messageSender",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "numEpochTimeout",
-      "outputs": [
-        {
-          "internalType": "uint64",
-          "name": "",
-          "type": "uint64"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "name": "relayed",
@@ -401,9 +417,9 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "_epoch",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
           "internalType": "bytes32",
@@ -411,7 +427,35 @@
           "type": "bytes32"
         }
       ],
-      "name": "resolveChallenge",
+      "name": "resolveDisputedClaim",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "proof",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "uint64",
+          "name": "msgId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "message",
+          "type": "bytes"
+        }
+      ],
+      "name": "sendMessage",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -431,6 +475,32 @@
     },
     {
       "inputs": [],
+      "name": "timeout",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "validateSnapshot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "veaInbox",
       "outputs": [
         {
@@ -443,57 +513,29 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "bytes32[]",
-          "name": "proof",
-          "type": "bytes32[]"
-        },
+      "inputs": [],
+      "name": "veaOutboxInfo",
+      "outputs": [
         {
           "internalType": "uint64",
-          "name": "index",
+          "name": "latestVerifiedEpoch",
           "type": "uint64"
         },
         {
-          "internalType": "address",
-          "name": "msgSender",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "internalType": "bytes",
-          "name": "data",
-          "type": "bytes"
+          "internalType": "uint64",
+          "name": "latestHeartbeatTimestamp",
+          "type": "uint64"
         }
       ],
-      "name": "verifyAndRelayMessage",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
       "inputs": [
         {
-          "internalType": "uint64",
-          "name": "_epoch",
-          "type": "uint64"
-        }
-      ],
-      "name": "verifyStateroot",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint64",
-          "name": "_epoch",
-          "type": "uint64"
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
         }
       ],
       "name": "withdrawChallengeDeposit",
@@ -504,9 +546,9 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
-          "name": "_epoch",
-          "type": "uint64"
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
         }
       ],
       "name": "withdrawChallengeDepositTimeout",
@@ -517,9 +559,9 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
-          "name": "_epoch",
-          "type": "uint64"
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
         }
       ],
       "name": "withdrawClaimDeposit",
@@ -530,9 +572,9 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
-          "name": "_epoch",
-          "type": "uint64"
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
         }
       ],
       "name": "withdrawClaimDepositTimeout",
@@ -541,101 +583,101 @@
       "type": "function"
     }
   ],
-  "transactionHash": "0x87976d113a9662e216502a653764815f20a80530a450b99bc102041bd7ce9ad4",
+  "transactionHash": "0xc66a4f1dd1aabc4dcdc86f1931008baf935d1c74c2d1e4f51176382a5aa0d2ec",
   "receipt": {
     "to": null,
     "from": "0x209469C921db9d5Bd77084370e80B63d5cdD63C1",
-    "contractAddress": "0x8C1935dbBB87C42e7ED4E94BE3e8FA61B8b3a025",
-    "transactionIndex": 56,
-    "gasUsed": "1915064",
+    "contractAddress": "0xD035Ccf1FC71A879d9F6E10215c5297489A40B46",
+    "transactionIndex": 81,
+    "gasUsed": "1965085",
     "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-    "blockHash": "0xced42fe992dd75c95807e08d1eed157decd951a6f5a3738f438053d586ea6752",
-    "transactionHash": "0x87976d113a9662e216502a653764815f20a80530a450b99bc102041bd7ce9ad4",
+    "blockHash": "0xa740c13f31377f711699d5092b4f7d57396be350e30f24a3e8eb77729c2d5a08",
+    "transactionHash": "0xc66a4f1dd1aabc4dcdc86f1931008baf935d1c74c2d1e4f51176382a5aa0d2ec",
     "logs": [],
-    "blockNumber": 8769763,
-    "cumulativeGasUsed": "15156066",
+    "blockNumber": 8823379,
+    "cumulativeGasUsed": "19634626",
     "status": 1,
     "byzantium": true
   },
   "args": [
-    "10000000000000000",
+    "10000000000000000000",
     1800,
     1800,
-    12,
+    21600,
     2,
-    "0x9c528cFcE634b39fbD77b6EEA30C69f3A9Bf33Ff",
+    "0xD2d4174A971b2AE58F23F7d4F5e4DE9d97bDda31",
     "0x6BEbC4925716945D46F0Ec336D5C2564F419682C"
   ],
-  "numDeployments": 2,
-  "solcInputHash": "4f20c87db03013ad37c14b515a07c604",
-  "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_deposit\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"_epochPeriod\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"_challengePeriod\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"_numEpochTimeout\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"_epochClaimWindow\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"_veaInbox\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_inbox\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"epoch\",\"type\":\"uint64\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"name\":\"ChallengeDepositWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"epoch\",\"type\":\"uint64\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"name\":\"ChallengeDepositWithdrawnTimeout\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"epoch\",\"type\":\"uint64\"}],\"name\":\"Challenged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"epoch\",\"type\":\"uint64\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"bridger\",\"type\":\"address\"}],\"name\":\"ClaimDepositWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"epoch\",\"type\":\"uint64\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"bridger\",\"type\":\"address\"}],\"name\":\"ClaimDepositWithdrawnTimeout\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"epoch\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"claimedStateRoot\",\"type\":\"bytes32\"}],\"name\":\"Claimed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"nonce\",\"type\":\"uint64\"}],\"name\":\"MessageRelayed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"epoch\",\"type\":\"uint64\"}],\"name\":\"Verified\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_epoch\",\"type\":\"uint64\"}],\"name\":\"challenge\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"challengePeriod\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"challenges\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"honest\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"depositAndRewardWithdrawn\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_epoch\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"_stateRoot\",\"type\":\"bytes32\"}],\"name\":\"claim\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"claims\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"bridger\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"},{\"internalType\":\"bool\",\"name\":\"honest\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"depositAndRewardWithdrawn\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochClaimWindow\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochPeriod\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"inbox\",\"outputs\":[{\"internalType\":\"contract IInbox\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestVerifiedEpoch\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"messageSender\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"numEpochTimeout\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"relayed\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_epoch\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"_stateRoot\",\"type\":\"bytes32\"}],\"name\":\"resolveChallenge\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"stateRoot\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"veaInbox\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"proof\",\"type\":\"bytes32[]\"},{\"internalType\":\"uint64\",\"name\":\"index\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"msgSender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"verifyAndRelayMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_epoch\",\"type\":\"uint64\"}],\"name\":\"verifyStateroot\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_epoch\",\"type\":\"uint64\"}],\"name\":\"withdrawChallengeDeposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_epoch\",\"type\":\"uint64\"}],\"name\":\"withdrawChallengeDepositTimeout\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_epoch\",\"type\":\"uint64\"}],\"name\":\"withdrawClaimDeposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"_epoch\",\"type\":\"uint64\"}],\"name\":\"withdrawClaimDepositTimeout\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"events\":{\"ChallengeDepositWithdrawn(uint64,address)\":{\"details\":\"This event indicates that the challenge deposit has been withdrawn.\",\"params\":{\"challenger\":\"The recipient of the challenge deposit.\",\"epoch\":\"The epoch associated with the batch.\"}},\"ChallengeDepositWithdrawnTimeout(uint64,address)\":{\"details\":\"This event indicates that the challenge deposit has been withdrawn.\",\"params\":{\"challenger\":\"The recipient of the challenge deposit.\",\"epoch\":\"The epoch associated with the batch.\"}},\"Challenged(uint64)\":{\"details\":\"This event indicates that `sendSafeFallback()` should be called on the sending side.\",\"params\":{\"epoch\":\"The epoch associated with the challenged claim.\"}},\"ClaimDepositWithdrawn(uint64,address)\":{\"details\":\"This event indicates that the claim deposit has been withdrawn.\",\"params\":{\"bridger\":\"The recipient of the claim deposit.\",\"epoch\":\"The epoch associated with the batch.\"}},\"ClaimDepositWithdrawnTimeout(uint64,address)\":{\"details\":\"This event indicates that the claim deposit has been withdrawn.\",\"params\":{\"bridger\":\"The recipient of the claim deposit.\",\"epoch\":\"The epoch associated with the batch.\"}},\"Claimed(uint64,bytes32)\":{\"details\":\"The Fast Bridge participants watch for these events to decide if a challenge should be submitted.\",\"params\":{\"claimedStateRoot\":\"The claimed state root of the batched messages.\",\"epoch\":\"The epoch for which the the claim was made.\"}},\"MessageRelayed(uint64)\":{\"details\":\"This event indicates that a message has been relayed for the batch in this `_epoch`.\",\"params\":{\"nonce\":\"The nonce of the message that was relayed.\"}},\"Verified(uint64)\":{\"details\":\"This events indicates that optimistic verification has succeeded. The messages are ready to be relayed.\",\"params\":{\"epoch\":\"The epoch associated with the batch.\"}}},\"kind\":\"dev\",\"methods\":{\"challenge(uint64)\":{\"details\":\"Submit a challenge for the claim of the current epoch's Fast Bridge batch merkleroot state and submit a deposit. The `batchMerkleRoot` in the claim already made for the last finalized epoch should be different from the one on the sending side, otherwise the sender will lose his deposit.\",\"params\":{\"_epoch\":\"The epoch of the claim to challenge.\"}},\"claim(uint64,bytes32)\":{\"details\":\"Submit a claim about the the _stateRoot at _epoch and submit a deposit.\",\"params\":{\"_epoch\":\"The epoch for which the claim is made.\",\"_stateRoot\":\"The state root to claim.\"}},\"constructor\":{\"details\":\"Constructor.\",\"params\":{\"_challengePeriod\":\"The duration of the period allowing to challenge a claim.\",\"_deposit\":\"The deposit amount to submit a claim in wei.\",\"_epochClaimWindow\":\"The number of epochs a claim can be submitted for.\",\"_epochPeriod\":\"The duration of each epoch.\",\"_inbox\":\"The address of the inbox contract on Ethereum.\",\"_numEpochTimeout\":\"The number of epochs after which the bridge is considered to be frozen.\",\"_veaInbox\":\"The address of the inbox contract on Ethereum.\"}},\"resolveChallenge(uint64,bytes32)\":{\"details\":\"Resolves any challenge of the optimistic claim for '_epoch'.\",\"params\":{\"_epoch\":\"The epoch to verify.\",\"_stateRoot\":\"The true state root for the epoch.\"}},\"verifyAndRelayMessage(bytes32[],uint64,address,address,bytes)\":{\"details\":\"Verifies and relays the message.\",\"params\":{\"data\":\"The data of the message.\",\"index\":\"The index of the message in the merkle tree.\",\"msgSender\":\"The address of the message sender.\",\"proof\":\"The merkle proof to prove the message.\",\"to\":\"The address of the message receiver.\"}},\"verifyStateroot(uint64)\":{\"details\":\"Resolves the optimistic claim for '_epoch'.\",\"params\":{\"_epoch\":\"The epoch of the optimistic claim.\"}},\"withdrawChallengeDeposit(uint64)\":{\"details\":\"Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.\",\"params\":{\"_epoch\":\"The epoch associated with the challenge deposit to withraw.\"}},\"withdrawChallengeDepositTimeout(uint64)\":{\"details\":\"Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.\",\"params\":{\"_epoch\":\"The epoch associated with the challenge deposit to withraw.\"}},\"withdrawClaimDeposit(uint64)\":{\"details\":\"Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\",\"params\":{\"_epoch\":\"The epoch associated with the claim deposit to withraw.\"}},\"withdrawClaimDepositTimeout(uint64)\":{\"details\":\"Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\",\"params\":{\"_epoch\":\"The epoch associated with the claim deposit to withraw.\"}}},\"stateVariables\":{\"messageSender\":{\"details\":\"The message sender of a relayed message.\",\"return\":\"messageSender The address of the message sender.\",\"returns\":{\"_0\":\"messageSender The address of the message sender.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"resolveChallenge(uint64,bytes32)\":{\"notice\":\"Note: Access restricted to arbitrum canonical bridge.\"}},\"notice\":\"Vea Bridge Outbox On L1 Ethereum\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/VeaOutbox.sol\":\"VeaOutbox\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/VeaOutbox.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@jaybuidl, @shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./canonical/arbitrum/IInbox.sol\\\";\\nimport \\\"./canonical/arbitrum/IOutbox.sol\\\";\\nimport \\\"./interfaces/IVeaOutbox.sol\\\";\\n\\n/**\\n * Vea Bridge Outbox On L1 Ethereum\\n */\\ncontract VeaOutbox is IVeaOutbox {\\n    \\n    struct Claim {\\n        bytes32 stateRoot;\\n        address bridger;\\n        uint64 timestamp;\\n        bool honest;\\n        bool depositAndRewardWithdrawn;\\n    }\\n\\n    struct Challenge {\\n        address challenger;\\n        bool honest;\\n        bool depositAndRewardWithdrawn;\\n    }\\n\\n    IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.\\n    uint256 public immutable deposit; // The deposit required to submit a claim or challenge\\n    uint64 public immutable numEpochTimeout; // The number unresolved epochs before the bridge is considered to be timed out\\n    uint64 public immutable epochClaimWindow; // The number of epochs a claim can be submitted for\\n    uint64 public immutable epochPeriod; // Epochs mark the period between potential batches of messages.\\n    uint64 public immutable challengePeriod; // Claim challenge timewindow.\\n    address public immutable veaInbox; // The address of the veaInbox on ethereum.\\n    \\n    bytes32 public stateRoot;\\n    uint64 public latestVerifiedEpoch;\\n    address public messageSender;\\n\\n    mapping(uint64 => Claim) public claims; // epoch => claim\\n    mapping(uint64 => Challenge) public challenges; // epoch => challenge\\n    mapping(uint64 => bytes32) public relayed; // nonce/256 => packed replay bitmap\\n\\n    /**\\n     * @dev The Fast Bridge participants watch for these events to decide if a challenge should be submitted.\\n     * @param epoch The epoch for which the the claim was made.\\n     * @param claimedStateRoot The claimed state root of the batched messages.\\n     */\\n    event Claimed(uint64 indexed epoch, bytes32 claimedStateRoot);\\n\\n    /**\\n     * @dev This event indicates that `sendSafeFallback()` should be called on the sending side.\\n     * @param epoch The epoch associated with the challenged claim.\\n     */\\n    event Challenged(uint64 indexed epoch);\\n\\n    /**\\n     * @dev This events indicates that optimistic verification has succeeded. The messages are ready to be relayed.\\n     * @param epoch The epoch associated with the batch.\\n     */\\n    event Verified(uint64 indexed epoch);\\n\\n    /**\\n     * @dev This event indicates that the claim deposit has been withdrawn.\\n     * @param epoch The epoch associated with the batch.\\n     * @param bridger The recipient of the claim deposit.\\n     */\\n    event ClaimDepositWithdrawn(uint64 indexed epoch, address indexed bridger);\\n\\n    /**\\n     * @dev This event indicates that the claim deposit has been withdrawn.\\n     * @param epoch The epoch associated with the batch.\\n     * @param bridger The recipient of the claim deposit.\\n     */\\n    event ClaimDepositWithdrawnTimeout(uint64 indexed epoch, address indexed bridger);\\n\\n    /**\\n     * @dev This event indicates that the challenge deposit has been withdrawn.\\n     * @param epoch The epoch associated with the batch.\\n     * @param challenger The recipient of the challenge deposit.\\n     */\\n    event ChallengeDepositWithdrawn(uint64 indexed epoch, address indexed challenger);\\n\\n    /**\\n     * @dev This event indicates that the challenge deposit has been withdrawn.\\n     * @param epoch The epoch associated with the batch.\\n     * @param challenger The recipient of the challenge deposit.\\n     */\\n    event ChallengeDepositWithdrawnTimeout(uint64 indexed epoch, address indexed challenger);\\n\\n    /**\\n     * @dev This event indicates that a message has been relayed for the batch in this `_epoch`.\\n     * @param nonce The nonce of the message that was relayed.\\n     */\\n    event MessageRelayed(uint64 indexed nonce);\\n\\n    /**\\n     * @dev Constructor.\\n     * @param _deposit The deposit amount to submit a claim in wei.\\n     * @param _epochPeriod The duration of each epoch.\\n     * @param _challengePeriod The duration of the period allowing to challenge a claim.\\n     * @param _numEpochTimeout The number of epochs after which the bridge is considered to be frozen.\\n     * @param _epochClaimWindow The number of epochs a claim can be submitted for.\\n     * @param _veaInbox The address of the inbox contract on Ethereum.\\n     * @param _inbox The address of the inbox contract on Ethereum.\\n     */\\n    constructor(\\n        uint256 _deposit,\\n        uint64 _epochPeriod,\\n        uint64 _challengePeriod,\\n        uint64 _numEpochTimeout,\\n        uint64 _epochClaimWindow,\\n        address _veaInbox,\\n        address _inbox\\n    ) {\\n        deposit = _deposit;\\n        epochPeriod = _epochPeriod;\\n        challengePeriod = _challengePeriod;\\n        numEpochTimeout = _numEpochTimeout;\\n        epochClaimWindow = _epochClaimWindow;\\n        veaInbox = _veaInbox;\\n        inbox = IInbox(_inbox);\\n        latestVerifiedEpoch = uint64(block.timestamp) / epochPeriod - 1;\\n        // default value instead of zero, to save on storage refunds\\n        messageSender = address(type(uint160).max);\\n    }\\n\\n    modifier OnlyBridgeRunning() {\\n        require(uint64(block.timestamp) / epochPeriod < latestVerifiedEpoch + numEpochTimeout, \\\"Bridge Shutdown.\\\");\\n        _;\\n    }\\n\\n    modifier OnlyBridgeShutdown() {\\n        require(uint64(block.timestamp) / epochPeriod > latestVerifiedEpoch + numEpochTimeout, \\\"Bridge Running.\\\");\\n        _;\\n    }\\n\\n    // ************************************* //\\n    // *         State Modifiers           * //\\n    // ************************************* //\\n\\n    /**\\n     * @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.\\n     * @param _epoch The epoch for which the claim is made.\\n     * @param _stateRoot The state root to claim.\\n     */\\n    function claim(uint64 _epoch, bytes32 _stateRoot) external payable OnlyBridgeRunning {\\n        require(msg.value >= deposit, \\\"Insufficient claim deposit.\\\");\\n        uint64 epochNow = uint64(block.timestamp) / epochPeriod;\\n        require(_epoch >= epochNow - epochClaimWindow && _epoch <= epochNow, \\\"Invalid epoch.\\\");\\n        require(_stateRoot != bytes32(0), \\\"Invalid claim.\\\");\\n        require(claims[_epoch].bridger == address(0), \\\"Claim already made.\\\");\\n\\n        claims[_epoch] = Claim({\\n            stateRoot: _stateRoot,\\n            bridger: msg.sender,\\n            timestamp: uint64(block.timestamp),\\n            honest: false,\\n            depositAndRewardWithdrawn: false\\n        });\\n        emit Claimed(_epoch, _stateRoot);\\n    }\\n\\n    /**\\n     * @dev Submit a challenge for the claim of the current epoch's Fast Bridge batch merkleroot state and submit a deposit. The `batchMerkleRoot` in the claim already made for the last finalized epoch should be different from the one on the sending side, otherwise the sender will lose his deposit.\\n     * @param _epoch The epoch of the claim to challenge.\\n     */\\n    function challenge(uint64 _epoch) external payable {\\n        require(msg.value >= deposit, \\\"Not enough claim deposit\\\");\\n\\n        // Can only challenge the only active claim, about the previous epoch\\n        require(claims[_epoch].bridger != address(0), \\\"No claim to challenge.\\\");\\n        require(challenges[_epoch].challenger == address(0), \\\"Claim already challenged.\\\");\\n        require(block.timestamp < uint256(claims[_epoch].timestamp) + challengePeriod, \\\"Challenge period elapsed.\\\");\\n\\n        challenges[_epoch] = Challenge({\\n            challenger: msg.sender, \\n            honest: false, \\n            depositAndRewardWithdrawn: false\\n        });\\n\\n        emit Challenged(_epoch);\\n    }\\n\\n    /**\\n     * @dev Resolves the optimistic claim for '_epoch'.\\n     * @param _epoch The epoch of the optimistic claim.\\n     */\\n    function verifyStateroot(uint64 _epoch) external {\\n        Claim storage claim = claims[_epoch];\\n        require(claim.bridger != address(0), \\\"Invalid epoch, no claim to verify.\\\");\\n        require(\\n            block.timestamp > uint64(claim.timestamp) + challengePeriod,\\n            \\\"Challenge period has not yet elapsed.\\\"\\n        );\\n        require(challenges[_epoch].challenger == address(0), \\\"Claim is challenged.\\\");\\n\\n        if (_epoch > latestVerifiedEpoch) {\\n            latestVerifiedEpoch = _epoch;\\n            stateRoot = claim.stateRoot;\\n        }\\n        \\n        claim.honest = true;\\n\\n        emit Verified(_epoch);\\n    }\\n\\n    /**\\n     * Note: Access restricted to arbitrum canonical bridge.\\n     * @dev Resolves any challenge of the optimistic claim for '_epoch'.\\n     * @param _epoch The epoch to verify.\\n     * @param _stateRoot The true state root for the epoch.\\n     */\\n    function resolveChallenge(uint64 _epoch, bytes32 _stateRoot) external virtual {\\n        IBridge bridge = inbox.bridge();\\n        require(msg.sender == address(bridge), \\\"Not from bridge.\\\");\\n        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, \\\"Sender only.\\\");\\n\\n        if (_epoch > latestVerifiedEpoch) {\\n            latestVerifiedEpoch = _epoch;\\n            stateRoot = _stateRoot;\\n        }\\n\\n        Claim storage claim = claims[_epoch];\\n        Challenge storage challenge = challenges[_epoch];\\n\\n        if (claim.bridger != address(0) && claim.stateRoot == _stateRoot) {\\n            claim.honest = true;\\n        } else if (challenge.challenger != address(0)){\\n            challenge.honest = true;\\n        }\\n\\n        emit Verified(_epoch);\\n    }\\n\\n    /**\\n     * @dev Verifies and relays the message.\\n     * @param proof The merkle proof to prove the message.\\n     * @param index The index of the message in the merkle tree.\\n     * @param msgSender The address of the message sender.\\n     * @param to The address of the message receiver.\\n     * @param data The data of the message.\\n     */\\n    function verifyAndRelayMessage(\\n        bytes32[] calldata proof, \\n        uint64 index, \\n        address msgSender,\\n        address to,\\n        bytes calldata data) external{\\n\\n        // double hashed leaf\\n\\n        bytes32 msgHash = keccak256(\\n            abi.encodePacked(\\n                keccak256(\\n                    abi.encode(\\n                        index, \\n                        msgSender, \\n                        to, \\n                        data\\n                    )\\n                )\\n            )\\n        );\\n\\n        require(stateRoot == calculateRoot(proof, msgHash), \\\"Invalid proof.\\\");\\n\\n        uint64 relayIndex = index/256;\\n        uint64 offset = index % 256;\\n        bytes32 replay = relayed[relayIndex];\\n        require(((replay >> offset) & bytes32(uint256(1))) == bytes32(0), \\\"Message already relayed\\\");\\n        relayed[relayIndex] = replay | bytes32(1 << offset);\\n\\n        address oldMessageSender = messageSender;\\n        messageSender = msgSender;\\n\\n        (bool success, ) = to.call(data);\\n        require(success, \\\"Failed to call contract\\\");\\n\\n        messageSender = oldMessageSender;\\n\\n        emit MessageRelayed(index);\\n    }\\n\\n    /**\\n     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\\n     * @param _epoch The epoch associated with the claim deposit to withraw.\\n     */\\n    function withdrawClaimDeposit(uint64 _epoch) external {\\n        Claim storage claim = claims[_epoch];\\n\\n        require(claim.bridger != address(0), \\\"Claim does not exist\\\");\\n        require(claim.honest == true, \\\"Claim failed.\\\");\\n        require(claim.depositAndRewardWithdrawn == false, \\\"Claim deposit and any rewards already withdrawn.\\\");\\n\\n        claim.depositAndRewardWithdrawn = true;\\n\\n        uint256 amount = deposit;\\n\\n        if (challenges[_epoch].challenger != address(0)) {\\n            uint256 burn = deposit / 2;\\n            amount += deposit - burn;\\n            payable(address(0x000000000000000000000000000000000000dEaD)).send(burn); // half burnt\\n        }\\n\\n        address bridger = claim.bridger;\\n        payable(bridger).send(amount); // Use of send to prevent reverting fallback. User is responsibility for accepting ETH.\\n        // Checks-Effects-Interaction\\n\\n        emit ClaimDepositWithdrawn(_epoch, bridger);\\n    }\\n\\n    /**\\n     * @dev Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.\\n     * @param _epoch The epoch associated with the challenge deposit to withraw.\\n     */\\n    function withdrawChallengeDeposit(uint64 _epoch) external {\\n        Challenge storage challenge = challenges[_epoch];\\n\\n        require(challenge.challenger != address(0), \\\"Challenge does not exist\\\");\\n        require(challenge.honest == true, \\\"Challenge failed.\\\");\\n        require(challenge.depositAndRewardWithdrawn == false, \\\"Challenge deposit and rewards already withdrawn.\\\");\\n\\n        challenge.depositAndRewardWithdrawn = true;\\n\\n        uint256 burn = deposit / 2;\\n        payable(address(0x000000000000000000000000000000000000dEaD)).send(burn); // half burnt\\n\\n        uint256 amount = deposit + deposit - burn;\\n        address challenger = challenge.challenger;\\n        payable(challenger).send(amount - burn); // Use of send to prevent reverting fallback. User is responsibility for accepting ETH.\\n\\n        emit ChallengeDepositWithdrawn(_epoch, challenger);\\n        // Checks-Effects-Interaction\\n    }\\n\\n    /**\\n     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\\n     * @param _epoch The epoch associated with the claim deposit to withraw.\\n     */\\n    function withdrawClaimDepositTimeout(uint64 _epoch) external OnlyBridgeShutdown {\\n        require(_epoch > latestVerifiedEpoch, \\\"Claim not made in timeout period\\\");\\n\\n        Claim storage claim = claims[_epoch];\\n\\n        require(claim.bridger != address(0), \\\"Claim does not exist\\\");\\n\\n        address bridger = claim.bridger;\\n        delete claims[_epoch];\\n\\n        payable(bridger).send(deposit); // Use of send to prevent reverting fallback. User is responsibility for accepting ETH.\\n        // Checks-Effects-Interaction\\n\\n        emit ClaimDepositWithdrawnTimeout(_epoch, claim.bridger);\\n    }\\n\\n    /**\\n     * @dev Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.\\n     * @param _epoch The epoch associated with the challenge deposit to withraw.\\n     */\\n    function withdrawChallengeDepositTimeout(uint64 _epoch) external OnlyBridgeShutdown {\\n        require(_epoch > latestVerifiedEpoch, \\\"Claim not made in timeout period\\\");\\n\\n        Challenge storage challenge = challenges[_epoch];\\n\\n        require(challenge.challenger != address(0), \\\"Challenge does not exist\\\");\\n\\n        address challenger = challenge.challenger;\\n        delete challenges[_epoch];\\n\\n        payable(challenger).send(deposit); // Use of send to prevent reverting fallback. User is responsibility for accepting ETH.\\n\\n        emit ChallengeDepositWithdrawnTimeout(_epoch, challenger);\\n        // Checks-Effects-Interaction\\n    }\\n\\n    /**\\n     * @dev Calculates merkle root from proof.\\n     * @param proof The merkle proof.\\n     * @param leaf The leaf to validate membership in merkle tree.\\n     */\\n    function calculateRoot(bytes32[] memory proof, bytes32 leaf) internal pure returns (bytes32) {\\n        uint256 proofLength = proof.length;\\n        require(proofLength < 64, \\\"Invalid Proof\\\");\\n        bytes32 h = leaf;\\n        for (uint256 i = 0; i < proofLength; i++) {\\n            bytes32 proofElement = proof[i];\\n            if (proofElement > h)\\n                assembly {\\n                    mstore(0x00, h)\\n                    mstore(0x20, proofElement)\\n                    h := keccak256(0x00, 0x40)\\n                }\\n            else\\n                assembly {\\n                    mstore(0x00, proofElement)\\n                    mstore(0x20, h)\\n                    h := keccak256(0x00, 0x40)\\n                }\\n        }\\n        return h;\\n    }\\n}\\n\",\"keccak256\":\"0xa3c33c5ef534b5eb51b29e1e5b8939a62537483586e37c6cdece3a65c6c5f8d7\",\"license\":\"MIT\"},\"src/canonical/arbitrum/IInbox.sol\":{\"content\":\"// SPDX-License-Identifier: Apache-2.0\\n\\n/*\\n * Copyright 2019-2021, Offchain Labs, Inc.\\n *\\n * Licensed under the Apache License, Version 2.0 (the \\\"License\\\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *    http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \\\"AS IS\\\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\n\\npragma solidity >=0.7.0;\\n\\ninterface IInbox {\\n    function sendL2Message(bytes calldata messageData) external returns (uint256);\\n\\n    function sendUnsignedTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        uint256 nonce,\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (uint256);\\n\\n    function sendContractTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (uint256);\\n\\n    function sendL1FundedUnsignedTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        uint256 nonce,\\n        address destAddr,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function sendL1FundedContractTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        address destAddr,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function createRetryableTicket(\\n        address destAddr,\\n        uint256 arbTxCallValue,\\n        uint256 maxSubmissionCost,\\n        address submissionRefundAddress,\\n        address valueRefundAddress,\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function depositEth(uint256 maxSubmissionCost) external payable returns (uint256);\\n\\n    function bridge() external view returns (IBridge);\\n}\\n\\ninterface IBridge {\\n    event MessageDelivered(\\n        uint256 indexed messageIndex,\\n        bytes32 indexed beforeInboxAcc,\\n        address inbox,\\n        uint8 kind,\\n        address sender,\\n        bytes32 messageDataHash\\n    );\\n\\n    function deliverMessageToInbox(\\n        uint8 kind,\\n        address sender,\\n        bytes32 messageDataHash\\n    ) external payable returns (uint256);\\n\\n    function executeCall(\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (bool success, bytes memory returnData);\\n\\n    // These are only callable by the admin\\n    function setInbox(address inbox, bool enabled) external;\\n\\n    function setOutbox(address inbox, bool enabled) external;\\n\\n    // View functions\\n\\n    function activeOutbox() external view returns (address);\\n\\n    function allowedInboxes(address inbox) external view returns (bool);\\n\\n    function allowedOutboxes(address outbox) external view returns (bool);\\n\\n    function inboxAccs(uint256 index) external view returns (bytes32);\\n\\n    function messageCount() external view returns (uint256);\\n}\\n\\ninterface IMessageProvider {\\n    event InboxMessageDelivered(uint256 indexed messageNum, bytes data);\\n\\n    event InboxMessageDeliveredFromOrigin(uint256 indexed messageNum);\\n}\\n\",\"keccak256\":\"0xb567e54805f44ea8405231284583880a38e8a22bfe619528a4f8ec7550f11d1b\",\"license\":\"Apache-2.0\"},\"src/canonical/arbitrum/IOutbox.sol\":{\"content\":\"// SPDX-License-Identifier: Apache-2.0\\n\\n/*\\n * Copyright 2021, Offchain Labs, Inc.\\n *\\n * Licensed under the Apache License, Version 2.0 (the \\\"License\\\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *    http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \\\"AS IS\\\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\n\\npragma solidity >=0.7.0;\\n\\ninterface IOutbox {\\n    event OutboxEntryCreated(uint256 indexed batchNum, uint256 outboxIndex, bytes32 outputRoot, uint256 numInBatch);\\n\\n    function l2ToL1Sender() external view returns (address);\\n\\n    function l2ToL1Block() external view returns (uint256);\\n\\n    function l2ToL1EthBlock() external view returns (uint256);\\n\\n    function l2ToL1Timestamp() external view returns (uint256);\\n\\n    function processOutgoingMessages(bytes calldata sendsData, uint256[] calldata sendLengths) external;\\n}\\n\",\"keccak256\":\"0xdc4952b5238d6c6282595b2eab4058c86d2d232b99a2d67556c02d6c11eea94f\",\"license\":\"Apache-2.0\"},\"src/interfaces/IChallengeResolver.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\ninterface IChallengeResolver {\\n    /**\\n     * Note: Access restricted to arbitrum canonical bridge.\\n     * @dev Resolves any challenge of the optimistic claim for '_epoch'.\\n     * @param epoch The epoch to verify.\\n     * @param stateRoot The true state root for the epoch.\\n     */\\n    function resolveChallenge(uint64 epoch, bytes32 stateRoot) external;\\n}\\n\",\"keccak256\":\"0x8cf17495e0404576844db673e62719031b267a162cf2a2d49f2615d023cc64a8\",\"license\":\"MIT\"},\"src/interfaces/IVeaOutbox.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@jaybuidl, @shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./IChallengeResolver.sol\\\";\\n\\ninterface IVeaOutbox is IChallengeResolver{\\n    /**\\n     * @dev Verifies and relays the message.\\n     * @param proof The merkle proof to prove the message.\\n     * @param index The index of the message in the merkle tree.\\n     * @param msgSender The address of the message sender.\\n     * @param to The address of the message receiver.\\n     * @param data The data of the message.\\n     */\\n    function verifyAndRelayMessage(\\n        bytes32[] calldata proof, \\n        uint64 index, \\n        address msgSender,\\n        address to,\\n        bytes calldata data) external;\\n\\n    /**\\n     * @dev The message sender of a relayed message.\\n     * @return messageSender The address of the message sender.\\n     */\\n    function messageSender() external returns (address messageSender);\\n}\\n\",\"keccak256\":\"0x1aceae7996cd84e20b551b47d7f4e8f533910f7c96b3a411b327bc4e99d53146\",\"license\":\"MIT\"}},\"version\":1}",
-  "bytecode": "0x6101606040523480156200001257600080fd5b5060405162002420380380620024208339810160408190526200003591620000fc565b60a08790526001600160401b038087166101008190528682166101205285821660c05290841660e0526001600160a01b0380841661014052821660805260019062000081904262000188565b6200008d9190620001bd565b600180546001600160e01b0319166001600160401b039290921691909117600160401b600160e01b0317905550620001f495505050505050565b80516001600160401b0381168114620000df57600080fd5b919050565b80516001600160a01b0381168114620000df57600080fd5b600080600080600080600060e0888a0312156200011857600080fd5b875196506200012a60208901620000c7565b95506200013a60408901620000c7565b94506200014a60608901620000c7565b93506200015a60808901620000c7565b92506200016a60a08901620000e4565b91506200017a60c08901620000e4565b905092959891949750929550565b60006001600160401b0383811680620001b157634e487b7160e01b600052601260045260246000fd5b92169190910492915050565b60006001600160401b0383811690831681811015620001ec57634e487b7160e01b600052601160045260246000fd5b039392505050565b60805160a05160c05160e051610100516101205161014051612137620002e96000396000818161014c0152610f9501526000818161053c01528181610ace0152611bc00152600081816103c00152818161085f015281816114db015281816115c0015261185c01526000818161019d01526115ec0152600081816104f5015281816108230152818161149f015261182001526000818161049a015281816106f40152818161072b01528181610757015281816109ce01528181610d9b01528181610de601528181610e070152818161154b015281816119d50152611a560152600081816105700152610eb701526121376000f3fe6080604052600436106101355760003560e01c8063aecc3561116100ab578063d0e30db01161006f578063d0e30db014610488578063d67bdd25146104bc578063dbad86e2146104e3578063eff6fc1214610517578063f3f480d91461052a578063fb0e722b1461055e57600080fd5b8063aecc35611461038e578063b5b7a184146103ae578063b9d01620146103e2578063c29c903d146103f5578063c7ab20391461041557600080fd5b8063300ce23b116100fd578063300ce23b146102bd57806351c4725a146102f857806353fa2cf31461031857806354195bbd146103385780636a91b06d146103585780639588eca21461037857600080fd5b806302d3e2361461013a57806324ab8c171461018b57806325ba8229146101d757806327adb7d7146101f957806327ee6bdd1461029d575b600080fd5b34801561014657600080fd5b5061016e7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b34801561019757600080fd5b506101bf7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160401b039091168152602001610182565b3480156101e357600080fd5b506101f76101f2366004611db0565b610592565b005b34801561020557600080fd5b5061025d610214366004611db0565b600260205260009081526040902080546001909101546001600160a01b038116906001600160401b03600160a01b8204169060ff600160e01b8204811691600160e81b90041685565b604080519586526001600160a01b0390941660208601526001600160401b039092169284019290925290151560608301521515608082015260a001610182565b3480156102a957600080fd5b506001546101bf906001600160401b031681565b3480156102c957600080fd5b506102ea6102d8366004611db0565b60046020526000908152604090205481565b604051908152602001610182565b34801561030457600080fd5b506101f7610313366004611db0565b61081a565b34801561032457600080fd5b506101f7610333366004611db0565b610a46565b34801561034457600080fd5b506101f7610353366004611db0565b610c54565b34801561036457600080fd5b506101f7610373366004611dd2565b610eb3565b34801561038457600080fd5b506102ea60005481565b34801561039a57600080fd5b506101f76103a9366004611e67565b6111d7565b3480156103ba57600080fd5b506101bf7f000000000000000000000000000000000000000000000000000000000000000081565b6101f76103f0366004611dd2565b611496565b34801561040157600080fd5b506101f7610410366004611db0565b611817565b34801561042157600080fd5b50610461610430366004611db0565b6003602052600090815260409020546001600160a01b0381169060ff600160a01b8204811691600160a81b90041683565b604080516001600160a01b0390941684529115156020840152151590820152606001610182565b34801561049457600080fd5b506102ea7f000000000000000000000000000000000000000000000000000000000000000081565b3480156104c857600080fd5b5060015461016e90600160401b90046001600160a01b031681565b3480156104ef57600080fd5b506101bf7f000000000000000000000000000000000000000000000000000000000000000081565b6101f7610525366004611db0565b611a54565b34801561053657600080fd5b506101bf7f000000000000000000000000000000000000000000000000000000000000000081565b34801561056a57600080fd5b5061016e7f000000000000000000000000000000000000000000000000000000000000000081565b6001600160401b038116600090815260026020526040902060018101546001600160a01b03166106005760405162461bcd60e51b815260206004820152601460248201527310db185a5b48191bd95cc81b9bdd08195e1a5cdd60621b60448201526064015b60405180910390fd5b600181810154600160e01b900460ff1615151461064f5760405162461bcd60e51b815260206004820152600d60248201526c21b630b4b6903330b4b632b21760991b60448201526064016105f7565b6001810154600160e81b900460ff16156106c45760405162461bcd60e51b815260206004820152603060248201527f436c61696d206465706f73697420616e6420616e79207265776172647320616c60448201526f3932b0b23c903bb4ba34323930bbb71760811b60648201526084016105f7565b60018101805460ff60e81b1916600160e81b1790556001600160401b0382166000908152600360205260409020547f0000000000000000000000000000000000000000000000000000000000000000906001600160a01b0316156107a857600061074f60027f0000000000000000000000000000000000000000000000000000000000000000611f65565b905061077b817f0000000000000000000000000000000000000000000000000000000000000000611f79565b6107859083611f90565b60405190925061dead9082156108fc029083906000818181858888f15050505050505b60018201546040516001600160a01b0390911690819083156108fc029084906000818181858888f150506040516001600160a01b03851693506001600160401b03881692507fe253a0a351357d324e7f0c6c51bba258f2d03dfa9f4b881fc249dc84a1dc102b9150600090a350505050565b600154610851907f0000000000000000000000000000000000000000000000000000000000000000906001600160401b0316611fa8565b6001600160401b03166108847f000000000000000000000000000000000000000000000000000000000000000042611fd3565b6001600160401b0316116108cc5760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b60448201526064016105f7565b6001546001600160401b039081169082161161092a5760405162461bcd60e51b815260206004820181905260248201527f436c61696d206e6f74206d61646520696e2074696d656f757420706572696f6460448201526064016105f7565b6001600160401b038116600090815260036020526040902080546001600160a01b03166109945760405162461bcd60e51b815260206004820152601860248201527710da185b1b195b99d948191bd95cc81b9bdd08195e1a5cdd60421b60448201526064016105f7565b80546001600160401b03831660009081526003602052604080822080546001600160b01b0319169055516001600160a01b039092169182917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150506040516001600160a01b03851693506001600160401b03871692507f020e151dc0ae41d6c8128cd9d00fa1bfe750a7048759e78e94d572e50145c0ce9150600090a3505050565b6001600160401b038116600090815260026020526040902060018101546001600160a01b0316610ac35760405162461bcd60e51b815260206004820152602260248201527f496e76616c69642065706f63682c206e6f20636c61696d20746f2076657269666044820152613c9760f11b60648201526084016105f7565b6001810154610b03907f000000000000000000000000000000000000000000000000000000000000000090600160a01b90046001600160401b0316611fa8565b6001600160401b03164211610b685760405162461bcd60e51b815260206004820152602560248201527f4368616c6c656e676520706572696f6420686173206e6f742079657420656c616044820152643839b2b21760d91b60648201526084016105f7565b6001600160401b0382166000908152600360205260409020546001600160a01b031615610bce5760405162461bcd60e51b815260206004820152601460248201527321b630b4b69034b99031b430b63632b733b2b21760611b60448201526064016105f7565b6001546001600160401b039081169083161115610c07576001805467ffffffffffffffff19166001600160401b03841617905580546000555b60018101805460ff60e01b1916600160e01b1790556040516001600160401b038316907f701523238d5af3a654701f72f118b993c898d2993c98ad880672c1511ee23fd390600090a25050565b6001600160401b038116600090815260036020526040902080546001600160a01b0316610cbe5760405162461bcd60e51b815260206004820152601860248201527710da185b1b195b99d948191bd95cc81b9bdd08195e1a5cdd60421b60448201526064016105f7565b8054600160a01b900460ff161515600114610d0f5760405162461bcd60e51b815260206004820152601160248201527021b430b63632b733b2903330b4b632b21760791b60448201526064016105f7565b8054600160a81b900460ff1615610d815760405162461bcd60e51b815260206004820152603060248201527f4368616c6c656e6765206465706f73697420616e64207265776172647320616c60448201526f3932b0b23c903bb4ba34323930bbb71760811b60648201526084016105f7565b805460ff60a81b1916600160a81b1781556000610dbf60027f0000000000000000000000000000000000000000000000000000000000000000611f65565b60405190915061dead9082156108fc029083906000818181858888f19350505050506000817f00000000000000000000000000000000000000000000000000000000000000007f0000000000000000000000000000000000000000000000000000000000000000610e309190611f90565b610e3a9190611f79565b83549091506001600160a01b0316806108fc610e568585611f79565b6040518115909202916000818181858888f150506040516001600160a01b03851693506001600160401b03891692507f9c932fa54c653abdadc30673ee29cdf20c15702000eaddb1f5d96668b66fad6f9150600090a35050505050565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663e78cea926040518163ffffffff1660e01b815260040160206040518083038186803b158015610f0e57600080fd5b505afa158015610f22573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610f469190611ff9565b9050336001600160a01b03821614610f935760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b60448201526064016105f7565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663ab5d89436040518163ffffffff1660e01b815260040160206040518083038186803b158015610ff657600080fd5b505afa15801561100a573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061102e9190611ff9565b6001600160a01b03166380648b026040518163ffffffff1660e01b815260040160206040518083038186803b15801561106657600080fd5b505afa15801561107a573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061109e9190611ff9565b6001600160a01b0316146110e35760405162461bcd60e51b815260206004820152600c60248201526b29b2b73232b91037b7363c9760a11b60448201526064016105f7565b6001546001600160401b03908116908416111561111c576001805467ffffffffffffffff19166001600160401b03851617905560008290555b6001600160401b0383166000908152600260209081526040808320600390925290912060018201546001600160a01b03161580159061115b5750815484145b1561117a5760018201805460ff60e01b1916600160e01b17905561119c565b80546001600160a01b03161561119c57805460ff60a01b1916600160a01b1781555b6040516001600160401b038616907f701523238d5af3a654701f72f118b993c898d2993c98ad880672c1511ee23fd390600090a25050505050565b600085858585856040516020016111f2959493929190612016565b60408051601f1981840301815282825280516020918201209083015201604051602081830303815290604052805190602001209050611265888880806020026020016040519081016040528093929190818152602001838360200280828437600092019190915250859250611cdd915050565b600054146112a65760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b210383937b7b31760911b60448201526064016105f7565b60006112b461010088611fd3565b905060006112c461010089612072565b6001600160401b03808416600090815260046020526040902054919250821681901c600116156113365760405162461bcd60e51b815260206004820152601760248201527f4d65737361676520616c72656164792072656c6179656400000000000000000060448201526064016105f7565b6001600160401b03838116600090815260046020526040808220600193861684901b8517905582546001600160a01b038c8116600160401b908102600160401b600160e01b03198416179095559151939004811692908a169061139c908a908a90612098565b6000604051808303816000865af19150503d80600081146113d9576040519150601f19603f3d011682016040523d82523d6000602084013e6113de565b606091505b505090508061142f5760405162461bcd60e51b815260206004820152601760248201527f4661696c656420746f2063616c6c20636f6e747261637400000000000000000060448201526064016105f7565b60018054600160401b600160e01b031916600160401b6001600160a01b038516021790556040516001600160401b038c16907f54303fab361bc52c2f1f56ace7351189582264f74ce47a6e7c3f478d64c4294390600090a250505050505050505050505050565b6001546114cd907f0000000000000000000000000000000000000000000000000000000000000000906001600160401b0316611fa8565b6001600160401b03166115007f000000000000000000000000000000000000000000000000000000000000000042611fd3565b6001600160401b0316106115495760405162461bcd60e51b815260206004820152601060248201526f213934b233b29029b43aba3237bbb71760811b60448201526064016105f7565b7f00000000000000000000000000000000000000000000000000000000000000003410156115b95760405162461bcd60e51b815260206004820152601b60248201527f496e73756666696369656e7420636c61696d206465706f7369742e000000000060448201526064016105f7565b60006115e57f000000000000000000000000000000000000000000000000000000000000000042611fd3565b90506116117f0000000000000000000000000000000000000000000000000000000000000000826120a8565b6001600160401b0316836001600160401b0316101580156116445750806001600160401b0316836001600160401b031611155b6116815760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b21032b837b1b41760911b60448201526064016105f7565b816116bf5760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b21031b630b4b69760911b60448201526064016105f7565b6001600160401b0383166000908152600260205260409020600101546001600160a01b0316156117275760405162461bcd60e51b815260206004820152601360248201527221b630b4b69030b63932b0b23c9036b0b2329760691b60448201526064016105f7565b6040805160a0810182528381523360208083019182526001600160401b03428116848601908152600060608601818152608087018281528b851680845260029096529188902096518755945160019690960180549251955191511515600160e81b0260ff60e81b19921515600160e01b029290921661ffff60e01b1996909416600160a01b026001600160e01b03199093166001600160a01b0397909716969096179190911793909316179190911790915590517fe4f94f54402abd5809eda421851bbb851c1728ceedfa6977ce3301ce25fb0ddd9061180a9085815260200190565b60405180910390a2505050565b60015461184e907f0000000000000000000000000000000000000000000000000000000000000000906001600160401b0316611fa8565b6001600160401b03166118817f000000000000000000000000000000000000000000000000000000000000000042611fd3565b6001600160401b0316116118c95760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b60448201526064016105f7565b6001546001600160401b03908116908216116119275760405162461bcd60e51b815260206004820181905260248201527f436c61696d206e6f74206d61646520696e2074696d656f757420706572696f6460448201526064016105f7565b6001600160401b038116600090815260026020526040902060018101546001600160a01b03166119905760405162461bcd60e51b815260206004820152601460248201527310db185a5b48191bd95cc81b9bdd08195e1a5cdd60621b60448201526064016105f7565b6001808201546001600160401b03841660009081526002602052604080822082815590930180546001600160f01b031916905591516001600160a01b039091169182917f000000000000000000000000000000000000000000000000000000000000000080156108fc0292909190818181858888f150505060018401546040516001600160a01b0390911692506001600160401b03861691507f23c13795a54713c168a0ad10fa11716fbfc1b86faf28c32cb2817518e89440df90600090a3505050565b7f0000000000000000000000000000000000000000000000000000000000000000341015611ac45760405162461bcd60e51b815260206004820152601860248201527f4e6f7420656e6f75676820636c61696d206465706f736974000000000000000060448201526064016105f7565b6001600160401b0381166000908152600260205260409020600101546001600160a01b0316611b2e5760405162461bcd60e51b815260206004820152601660248201527527379031b630b4b6903a379031b430b63632b733b29760511b60448201526064016105f7565b6001600160401b0381166000908152600360205260409020546001600160a01b031615611b9d5760405162461bcd60e51b815260206004820152601960248201527f436c61696d20616c7265616479206368616c6c656e6765642e0000000000000060448201526064016105f7565b6001600160401b03818116600090815260026020526040902060010154611bef917f0000000000000000000000000000000000000000000000000000000000000000811691600160a01b900416611f90565b4210611c3d5760405162461bcd60e51b815260206004820152601960248201527f4368616c6c656e676520706572696f6420656c61707365642e0000000000000060448201526064016105f7565b60408051606081018252338152600060208083018281528385018381526001600160401b038716808552600390935285842094518554925191511515600160a81b0260ff60a81b19921515600160a01b026001600160a81b03199094166001600160a01b039290921691909117929092171617909255915190917feb56d9da2626be6529d610fc090914456855b5c1a8e642f71e88f4b8b4556d3e91a250565b815160009060408110611d225760405162461bcd60e51b815260206004820152600d60248201526c24b73b30b634b210283937b7b360991b60448201526064016105f7565b8260005b82811015611d8b576000868281518110611d4257611d426120d0565b6020026020010151905082811115611d6857826000528060205260406000209250611d78565b8060005282602052604060002092505b5080611d83816120e6565b915050611d26565b50949350505050565b80356001600160401b0381168114611dab57600080fd5b919050565b600060208284031215611dc257600080fd5b611dcb82611d94565b9392505050565b60008060408385031215611de557600080fd5b611dee83611d94565b946020939093013593505050565b6001600160a01b0381168114611e1157600080fd5b50565b8035611dab81611dfc565b60008083601f840112611e3157600080fd5b5081356001600160401b03811115611e4857600080fd5b602083019150836020828501011115611e6057600080fd5b9250929050565b600080600080600080600060a0888a031215611e8257600080fd5b87356001600160401b0380821115611e9957600080fd5b818a0191508a601f830112611ead57600080fd5b813581811115611ebc57600080fd5b8b60208260051b8501011115611ed157600080fd5b60208301995080985050611ee760208b01611d94565b9650611ef560408b01611e14565b9550611f0360608b01611e14565b945060808a0135915080821115611f1957600080fd5b50611f268a828b01611e1f565b989b979a50959850939692959293505050565b634e487b7160e01b600052601260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b600082611f7457611f74611f39565b500490565b600082821015611f8b57611f8b611f4f565b500390565b60008219821115611fa357611fa3611f4f565b500190565b60006001600160401b03808316818516808303821115611fca57611fca611f4f565b01949350505050565b60006001600160401b0380841680611fed57611fed611f39565b92169190910492915050565b60006020828403121561200b57600080fd5b8151611dcb81611dfc565b6001600160401b03861681526001600160a01b0385811660208301528416604082015260806060820181905281018290526000828460a0840137600060a0848401015260a0601f19601f85011683010190509695505050505050565b60006001600160401b038084168061208c5761208c611f39565b92169190910692915050565b8183823760009101908152919050565b60006001600160401b03838116908316818110156120c8576120c8611f4f565b039392505050565b634e487b7160e01b600052603260045260246000fd5b60006000198214156120fa576120fa611f4f565b506001019056fea26469706673582212206d3e031399decc4fda3cabfd8d904c6be238b3c9044cff971cd4b45b06afd44b64736f6c63430008090033",
-  "deployedBytecode": "0x6080604052600436106101355760003560e01c8063aecc3561116100ab578063d0e30db01161006f578063d0e30db014610488578063d67bdd25146104bc578063dbad86e2146104e3578063eff6fc1214610517578063f3f480d91461052a578063fb0e722b1461055e57600080fd5b8063aecc35611461038e578063b5b7a184146103ae578063b9d01620146103e2578063c29c903d146103f5578063c7ab20391461041557600080fd5b8063300ce23b116100fd578063300ce23b146102bd57806351c4725a146102f857806353fa2cf31461031857806354195bbd146103385780636a91b06d146103585780639588eca21461037857600080fd5b806302d3e2361461013a57806324ab8c171461018b57806325ba8229146101d757806327adb7d7146101f957806327ee6bdd1461029d575b600080fd5b34801561014657600080fd5b5061016e7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b34801561019757600080fd5b506101bf7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160401b039091168152602001610182565b3480156101e357600080fd5b506101f76101f2366004611db0565b610592565b005b34801561020557600080fd5b5061025d610214366004611db0565b600260205260009081526040902080546001909101546001600160a01b038116906001600160401b03600160a01b8204169060ff600160e01b8204811691600160e81b90041685565b604080519586526001600160a01b0390941660208601526001600160401b039092169284019290925290151560608301521515608082015260a001610182565b3480156102a957600080fd5b506001546101bf906001600160401b031681565b3480156102c957600080fd5b506102ea6102d8366004611db0565b60046020526000908152604090205481565b604051908152602001610182565b34801561030457600080fd5b506101f7610313366004611db0565b61081a565b34801561032457600080fd5b506101f7610333366004611db0565b610a46565b34801561034457600080fd5b506101f7610353366004611db0565b610c54565b34801561036457600080fd5b506101f7610373366004611dd2565b610eb3565b34801561038457600080fd5b506102ea60005481565b34801561039a57600080fd5b506101f76103a9366004611e67565b6111d7565b3480156103ba57600080fd5b506101bf7f000000000000000000000000000000000000000000000000000000000000000081565b6101f76103f0366004611dd2565b611496565b34801561040157600080fd5b506101f7610410366004611db0565b611817565b34801561042157600080fd5b50610461610430366004611db0565b6003602052600090815260409020546001600160a01b0381169060ff600160a01b8204811691600160a81b90041683565b604080516001600160a01b0390941684529115156020840152151590820152606001610182565b34801561049457600080fd5b506102ea7f000000000000000000000000000000000000000000000000000000000000000081565b3480156104c857600080fd5b5060015461016e90600160401b90046001600160a01b031681565b3480156104ef57600080fd5b506101bf7f000000000000000000000000000000000000000000000000000000000000000081565b6101f7610525366004611db0565b611a54565b34801561053657600080fd5b506101bf7f000000000000000000000000000000000000000000000000000000000000000081565b34801561056a57600080fd5b5061016e7f000000000000000000000000000000000000000000000000000000000000000081565b6001600160401b038116600090815260026020526040902060018101546001600160a01b03166106005760405162461bcd60e51b815260206004820152601460248201527310db185a5b48191bd95cc81b9bdd08195e1a5cdd60621b60448201526064015b60405180910390fd5b600181810154600160e01b900460ff1615151461064f5760405162461bcd60e51b815260206004820152600d60248201526c21b630b4b6903330b4b632b21760991b60448201526064016105f7565b6001810154600160e81b900460ff16156106c45760405162461bcd60e51b815260206004820152603060248201527f436c61696d206465706f73697420616e6420616e79207265776172647320616c60448201526f3932b0b23c903bb4ba34323930bbb71760811b60648201526084016105f7565b60018101805460ff60e81b1916600160e81b1790556001600160401b0382166000908152600360205260409020547f0000000000000000000000000000000000000000000000000000000000000000906001600160a01b0316156107a857600061074f60027f0000000000000000000000000000000000000000000000000000000000000000611f65565b905061077b817f0000000000000000000000000000000000000000000000000000000000000000611f79565b6107859083611f90565b60405190925061dead9082156108fc029083906000818181858888f15050505050505b60018201546040516001600160a01b0390911690819083156108fc029084906000818181858888f150506040516001600160a01b03851693506001600160401b03881692507fe253a0a351357d324e7f0c6c51bba258f2d03dfa9f4b881fc249dc84a1dc102b9150600090a350505050565b600154610851907f0000000000000000000000000000000000000000000000000000000000000000906001600160401b0316611fa8565b6001600160401b03166108847f000000000000000000000000000000000000000000000000000000000000000042611fd3565b6001600160401b0316116108cc5760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b60448201526064016105f7565b6001546001600160401b039081169082161161092a5760405162461bcd60e51b815260206004820181905260248201527f436c61696d206e6f74206d61646520696e2074696d656f757420706572696f6460448201526064016105f7565b6001600160401b038116600090815260036020526040902080546001600160a01b03166109945760405162461bcd60e51b815260206004820152601860248201527710da185b1b195b99d948191bd95cc81b9bdd08195e1a5cdd60421b60448201526064016105f7565b80546001600160401b03831660009081526003602052604080822080546001600160b01b0319169055516001600160a01b039092169182917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150506040516001600160a01b03851693506001600160401b03871692507f020e151dc0ae41d6c8128cd9d00fa1bfe750a7048759e78e94d572e50145c0ce9150600090a3505050565b6001600160401b038116600090815260026020526040902060018101546001600160a01b0316610ac35760405162461bcd60e51b815260206004820152602260248201527f496e76616c69642065706f63682c206e6f20636c61696d20746f2076657269666044820152613c9760f11b60648201526084016105f7565b6001810154610b03907f000000000000000000000000000000000000000000000000000000000000000090600160a01b90046001600160401b0316611fa8565b6001600160401b03164211610b685760405162461bcd60e51b815260206004820152602560248201527f4368616c6c656e676520706572696f6420686173206e6f742079657420656c616044820152643839b2b21760d91b60648201526084016105f7565b6001600160401b0382166000908152600360205260409020546001600160a01b031615610bce5760405162461bcd60e51b815260206004820152601460248201527321b630b4b69034b99031b430b63632b733b2b21760611b60448201526064016105f7565b6001546001600160401b039081169083161115610c07576001805467ffffffffffffffff19166001600160401b03841617905580546000555b60018101805460ff60e01b1916600160e01b1790556040516001600160401b038316907f701523238d5af3a654701f72f118b993c898d2993c98ad880672c1511ee23fd390600090a25050565b6001600160401b038116600090815260036020526040902080546001600160a01b0316610cbe5760405162461bcd60e51b815260206004820152601860248201527710da185b1b195b99d948191bd95cc81b9bdd08195e1a5cdd60421b60448201526064016105f7565b8054600160a01b900460ff161515600114610d0f5760405162461bcd60e51b815260206004820152601160248201527021b430b63632b733b2903330b4b632b21760791b60448201526064016105f7565b8054600160a81b900460ff1615610d815760405162461bcd60e51b815260206004820152603060248201527f4368616c6c656e6765206465706f73697420616e64207265776172647320616c60448201526f3932b0b23c903bb4ba34323930bbb71760811b60648201526084016105f7565b805460ff60a81b1916600160a81b1781556000610dbf60027f0000000000000000000000000000000000000000000000000000000000000000611f65565b60405190915061dead9082156108fc029083906000818181858888f19350505050506000817f00000000000000000000000000000000000000000000000000000000000000007f0000000000000000000000000000000000000000000000000000000000000000610e309190611f90565b610e3a9190611f79565b83549091506001600160a01b0316806108fc610e568585611f79565b6040518115909202916000818181858888f150506040516001600160a01b03851693506001600160401b03891692507f9c932fa54c653abdadc30673ee29cdf20c15702000eaddb1f5d96668b66fad6f9150600090a35050505050565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663e78cea926040518163ffffffff1660e01b815260040160206040518083038186803b158015610f0e57600080fd5b505afa158015610f22573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610f469190611ff9565b9050336001600160a01b03821614610f935760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b60448201526064016105f7565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663ab5d89436040518163ffffffff1660e01b815260040160206040518083038186803b158015610ff657600080fd5b505afa15801561100a573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061102e9190611ff9565b6001600160a01b03166380648b026040518163ffffffff1660e01b815260040160206040518083038186803b15801561106657600080fd5b505afa15801561107a573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061109e9190611ff9565b6001600160a01b0316146110e35760405162461bcd60e51b815260206004820152600c60248201526b29b2b73232b91037b7363c9760a11b60448201526064016105f7565b6001546001600160401b03908116908416111561111c576001805467ffffffffffffffff19166001600160401b03851617905560008290555b6001600160401b0383166000908152600260209081526040808320600390925290912060018201546001600160a01b03161580159061115b5750815484145b1561117a5760018201805460ff60e01b1916600160e01b17905561119c565b80546001600160a01b03161561119c57805460ff60a01b1916600160a01b1781555b6040516001600160401b038616907f701523238d5af3a654701f72f118b993c898d2993c98ad880672c1511ee23fd390600090a25050505050565b600085858585856040516020016111f2959493929190612016565b60408051601f1981840301815282825280516020918201209083015201604051602081830303815290604052805190602001209050611265888880806020026020016040519081016040528093929190818152602001838360200280828437600092019190915250859250611cdd915050565b600054146112a65760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b210383937b7b31760911b60448201526064016105f7565b60006112b461010088611fd3565b905060006112c461010089612072565b6001600160401b03808416600090815260046020526040902054919250821681901c600116156113365760405162461bcd60e51b815260206004820152601760248201527f4d65737361676520616c72656164792072656c6179656400000000000000000060448201526064016105f7565b6001600160401b03838116600090815260046020526040808220600193861684901b8517905582546001600160a01b038c8116600160401b908102600160401b600160e01b03198416179095559151939004811692908a169061139c908a908a90612098565b6000604051808303816000865af19150503d80600081146113d9576040519150601f19603f3d011682016040523d82523d6000602084013e6113de565b606091505b505090508061142f5760405162461bcd60e51b815260206004820152601760248201527f4661696c656420746f2063616c6c20636f6e747261637400000000000000000060448201526064016105f7565b60018054600160401b600160e01b031916600160401b6001600160a01b038516021790556040516001600160401b038c16907f54303fab361bc52c2f1f56ace7351189582264f74ce47a6e7c3f478d64c4294390600090a250505050505050505050505050565b6001546114cd907f0000000000000000000000000000000000000000000000000000000000000000906001600160401b0316611fa8565b6001600160401b03166115007f000000000000000000000000000000000000000000000000000000000000000042611fd3565b6001600160401b0316106115495760405162461bcd60e51b815260206004820152601060248201526f213934b233b29029b43aba3237bbb71760811b60448201526064016105f7565b7f00000000000000000000000000000000000000000000000000000000000000003410156115b95760405162461bcd60e51b815260206004820152601b60248201527f496e73756666696369656e7420636c61696d206465706f7369742e000000000060448201526064016105f7565b60006115e57f000000000000000000000000000000000000000000000000000000000000000042611fd3565b90506116117f0000000000000000000000000000000000000000000000000000000000000000826120a8565b6001600160401b0316836001600160401b0316101580156116445750806001600160401b0316836001600160401b031611155b6116815760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b21032b837b1b41760911b60448201526064016105f7565b816116bf5760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b21031b630b4b69760911b60448201526064016105f7565b6001600160401b0383166000908152600260205260409020600101546001600160a01b0316156117275760405162461bcd60e51b815260206004820152601360248201527221b630b4b69030b63932b0b23c9036b0b2329760691b60448201526064016105f7565b6040805160a0810182528381523360208083019182526001600160401b03428116848601908152600060608601818152608087018281528b851680845260029096529188902096518755945160019690960180549251955191511515600160e81b0260ff60e81b19921515600160e01b029290921661ffff60e01b1996909416600160a01b026001600160e01b03199093166001600160a01b0397909716969096179190911793909316179190911790915590517fe4f94f54402abd5809eda421851bbb851c1728ceedfa6977ce3301ce25fb0ddd9061180a9085815260200190565b60405180910390a2505050565b60015461184e907f0000000000000000000000000000000000000000000000000000000000000000906001600160401b0316611fa8565b6001600160401b03166118817f000000000000000000000000000000000000000000000000000000000000000042611fd3565b6001600160401b0316116118c95760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b60448201526064016105f7565b6001546001600160401b03908116908216116119275760405162461bcd60e51b815260206004820181905260248201527f436c61696d206e6f74206d61646520696e2074696d656f757420706572696f6460448201526064016105f7565b6001600160401b038116600090815260026020526040902060018101546001600160a01b03166119905760405162461bcd60e51b815260206004820152601460248201527310db185a5b48191bd95cc81b9bdd08195e1a5cdd60621b60448201526064016105f7565b6001808201546001600160401b03841660009081526002602052604080822082815590930180546001600160f01b031916905591516001600160a01b039091169182917f000000000000000000000000000000000000000000000000000000000000000080156108fc0292909190818181858888f150505060018401546040516001600160a01b0390911692506001600160401b03861691507f23c13795a54713c168a0ad10fa11716fbfc1b86faf28c32cb2817518e89440df90600090a3505050565b7f0000000000000000000000000000000000000000000000000000000000000000341015611ac45760405162461bcd60e51b815260206004820152601860248201527f4e6f7420656e6f75676820636c61696d206465706f736974000000000000000060448201526064016105f7565b6001600160401b0381166000908152600260205260409020600101546001600160a01b0316611b2e5760405162461bcd60e51b815260206004820152601660248201527527379031b630b4b6903a379031b430b63632b733b29760511b60448201526064016105f7565b6001600160401b0381166000908152600360205260409020546001600160a01b031615611b9d5760405162461bcd60e51b815260206004820152601960248201527f436c61696d20616c7265616479206368616c6c656e6765642e0000000000000060448201526064016105f7565b6001600160401b03818116600090815260026020526040902060010154611bef917f0000000000000000000000000000000000000000000000000000000000000000811691600160a01b900416611f90565b4210611c3d5760405162461bcd60e51b815260206004820152601960248201527f4368616c6c656e676520706572696f6420656c61707365642e0000000000000060448201526064016105f7565b60408051606081018252338152600060208083018281528385018381526001600160401b038716808552600390935285842094518554925191511515600160a81b0260ff60a81b19921515600160a01b026001600160a81b03199094166001600160a01b039290921691909117929092171617909255915190917feb56d9da2626be6529d610fc090914456855b5c1a8e642f71e88f4b8b4556d3e91a250565b815160009060408110611d225760405162461bcd60e51b815260206004820152600d60248201526c24b73b30b634b210283937b7b360991b60448201526064016105f7565b8260005b82811015611d8b576000868281518110611d4257611d426120d0565b6020026020010151905082811115611d6857826000528060205260406000209250611d78565b8060005282602052604060002092505b5080611d83816120e6565b915050611d26565b50949350505050565b80356001600160401b0381168114611dab57600080fd5b919050565b600060208284031215611dc257600080fd5b611dcb82611d94565b9392505050565b60008060408385031215611de557600080fd5b611dee83611d94565b946020939093013593505050565b6001600160a01b0381168114611e1157600080fd5b50565b8035611dab81611dfc565b60008083601f840112611e3157600080fd5b5081356001600160401b03811115611e4857600080fd5b602083019150836020828501011115611e6057600080fd5b9250929050565b600080600080600080600060a0888a031215611e8257600080fd5b87356001600160401b0380821115611e9957600080fd5b818a0191508a601f830112611ead57600080fd5b813581811115611ebc57600080fd5b8b60208260051b8501011115611ed157600080fd5b60208301995080985050611ee760208b01611d94565b9650611ef560408b01611e14565b9550611f0360608b01611e14565b945060808a0135915080821115611f1957600080fd5b50611f268a828b01611e1f565b989b979a50959850939692959293505050565b634e487b7160e01b600052601260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b600082611f7457611f74611f39565b500490565b600082821015611f8b57611f8b611f4f565b500390565b60008219821115611fa357611fa3611f4f565b500190565b60006001600160401b03808316818516808303821115611fca57611fca611f4f565b01949350505050565b60006001600160401b0380841680611fed57611fed611f39565b92169190910492915050565b60006020828403121561200b57600080fd5b8151611dcb81611dfc565b6001600160401b03861681526001600160a01b0385811660208301528416604082015260806060820181905281018290526000828460a0840137600060a0848401015260a0601f19601f85011683010190509695505050505050565b60006001600160401b038084168061208c5761208c611f39565b92169190910692915050565b8183823760009101908152919050565b60006001600160401b03838116908316818110156120c8576120c8611f4f565b039392505050565b634e487b7160e01b600052603260045260246000fd5b60006000198214156120fa576120fa611f4f565b506001019056fea26469706673582212206d3e031399decc4fda3cabfd8d904c6be238b3c9044cff971cd4b45b06afd44b64736f6c63430008090033",
+  "numDeployments": 5,
+  "solcInputHash": "e81e406ef20ae74df36acf20ccfdbd2a",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_deposit\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_epochPeriod\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_challengePeriod\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_timeout\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_epochClaimWindow\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_veaInbox\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_inbox\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"name\":\"ChallengeDepositWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"name\":\"ChallengeDepositWithdrawnTimeout\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"Challenged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bridger\",\"type\":\"address\"}],\"name\":\"ClaimDepositWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bridger\",\"type\":\"address\"}],\"name\":\"ClaimDepositWithdrawnTimeout\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"claimedStateRoot\",\"type\":\"bytes32\"}],\"name\":\"Claimed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint64\",\"name\":\"msgId\",\"type\":\"uint64\"}],\"name\":\"MessageRelayed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"Verified\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"burn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"burnAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"challenge\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"challengePeriod\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"challenges\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"honest\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"_stateRoot\",\"type\":\"bytes32\"}],\"name\":\"claim\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"claims\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"bridger\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"},{\"internalType\":\"bool\",\"name\":\"honest\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositMinusOne\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositPlusReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochClaimWindow\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochPeriod\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"heartbeat\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"inbox\",\"outputs\":[{\"internalType\":\"contract IInbox\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"relayed\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"_stateRoot\",\"type\":\"bytes32\"}],\"name\":\"resolveDisputedClaim\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"proof\",\"type\":\"bytes32[]\"},{\"internalType\":\"uint64\",\"name\":\"msgId\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"name\":\"sendMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"stateRoot\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"timeout\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"validateSnapshot\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"veaInbox\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"veaOutboxInfo\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"latestVerifiedEpoch\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"latestHeartbeatTimestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"withdrawChallengeDeposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"withdrawChallengeDepositTimeout\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"withdrawClaimDeposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"withdrawClaimDepositTimeout\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"events\":{\"ChallengeDepositWithdrawn(uint256,address)\":{\"details\":\"This event indicates that the challenge deposit has been withdrawn.\",\"params\":{\"challenger\":\"The recipient of the challenge deposit.\",\"epoch\":\"The epoch associated with the challenge.\"}},\"ChallengeDepositWithdrawnTimeout(uint256,address)\":{\"details\":\"This event indicates that the challenge deposit has been withdrawn.\",\"params\":{\"challenger\":\"The recipient of the challenge deposit.\",\"epoch\":\"The epoch associated with the challenge.\"}},\"Challenged(uint256)\":{\"details\":\"This event indicates that `sendSafeFallback()` should be called on the sending side.\",\"params\":{\"epoch\":\"The epoch associated with the challenged claim.\"}},\"ClaimDepositWithdrawn(uint256,address)\":{\"details\":\"This event indicates that the claim deposit has been withdrawn.\",\"params\":{\"bridger\":\"The recipient of the claim deposit.\",\"epoch\":\"The epoch associated with the claim.\"}},\"ClaimDepositWithdrawnTimeout(uint256,address)\":{\"details\":\"This event indicates that the claim deposit has been withdrawn.\",\"params\":{\"bridger\":\"The recipient of the claim deposit.\",\"epoch\":\"The epoch associated with the claim.\"}},\"Claimed(uint256,bytes32)\":{\"details\":\"The Fast Bridge participants watch for these events to decide if a challenge should be submitted.\",\"params\":{\"claimedStateRoot\":\"The claimed state root of the inbox snapshot.\",\"epoch\":\"The epoch for which the the claim was made.\"}},\"MessageRelayed(uint64)\":{\"details\":\"This event indicates that a message has been relayed.\",\"params\":{\"msgId\":\"The msgId of the message that was relayed.\"}},\"Verified(uint256)\":{\"details\":\"This events indicates that optimistic verification has succeeded. The messages are ready to be relayed.\",\"params\":{\"epoch\":\"The epoch associated with the verified inbox state root snapshot.\"}}},\"kind\":\"dev\",\"methods\":{\"challenge(uint256)\":{\"details\":\"Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.\",\"params\":{\"epoch\":\"The epoch of the claim to challenge.\"}},\"claim(uint256,bytes32)\":{\"details\":\"Submit a claim about the the _stateRoot at _epoch and submit a deposit.\",\"params\":{\"_epoch\":\"The epoch for which the claim is made.\",\"_stateRoot\":\"The state root to claim.\"}},\"constructor\":{\"details\":\"Constructor.\",\"params\":{\"_challengePeriod\":\"The duration of the period allowing to challenge a claim.\",\"_deposit\":\"The deposit amount to submit a claim in wei.\",\"_epochClaimWindow\":\"The number of epochs a claim can be submitted for.\",\"_epochPeriod\":\"The duration of each epoch.\",\"_inbox\":\"The address of the inbox contract on Ethereum.\",\"_timeout\":\"The seconds before the bridge is considered shutdown.\",\"_veaInbox\":\"The address of the inbox contract on Ethereum.\"}},\"heartbeat(uint256)\":{\"details\":\"Keeps bridge alive.\",\"params\":{\"timestamp\":\"The timestamp of the heartbeat.\"}},\"resolveDisputedClaim(uint256,bytes32)\":{\"details\":\"Resolves any challenge of the optimistic claim for '_epoch'.\",\"params\":{\"_epoch\":\"The epoch to verify.\",\"_stateRoot\":\"The true state root for the epoch.\"}},\"sendMessage(bytes32[],uint64,address,bytes)\":{\"details\":\"Verifies and relays the message. UNTRUSTED.\",\"params\":{\"message\":\"The message encoded with header from VeaInbox.\",\"msgId\":\"The zero based index of the message in the inbox.\",\"proof\":\"The merkle proof to prove the message.\",\"to\":\"The address of the contract on the receiving chain which receives the calldata.\"}},\"validateSnapshot(uint256)\":{\"details\":\"Resolves the optimistic claim for '_epoch'.\",\"params\":{\"epoch\":\"The epoch of the optimistic claim.\"}},\"withdrawChallengeDeposit(uint256)\":{\"details\":\"Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.\",\"params\":{\"epoch\":\"The epoch associated with the challenge deposit to withraw.\"}},\"withdrawChallengeDepositTimeout(uint256)\":{\"details\":\"Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.\",\"params\":{\"epoch\":\"The epoch associated with the challenge deposit to withraw.\"}},\"withdrawClaimDeposit(uint256)\":{\"details\":\"Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\",\"params\":{\"epoch\":\"The epoch associated with the claim deposit to withraw.\"}},\"withdrawClaimDepositTimeout(uint256)\":{\"details\":\"Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\",\"params\":{\"epoch\":\"The epoch associated with the claim deposit to withraw.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"resolveDisputedClaim(uint256,bytes32)\":{\"notice\":\"Note: Access restricted to arbitrum  bridge.\"}},\"notice\":\"Vea Bridge Outbox From Arbitrum to Ethereum.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/ArbToEth/VeaOutboxArbToEth.sol\":\"VeaOutboxArbToEth\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/ArbToEth/VeaOutboxArbToEth.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@jaybuidl, @shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../canonical/arbitrum/IInbox.sol\\\";\\nimport \\\"../canonical/arbitrum/IOutbox.sol\\\";\\nimport \\\"../interfaces/IVeaOutbox.sol\\\";\\n\\n/**\\n * Vea Bridge Outbox From Arbitrum to Ethereum.\\n */\\ncontract VeaOutboxArbToEth is IVeaOutbox {\\n    struct Claim {\\n        bytes32 stateRoot;\\n        address bridger;\\n        uint64 timestamp;\\n        bool honest;\\n    }\\n\\n    struct Challenge {\\n        address challenger;\\n        bool honest;\\n    }\\n\\n    struct VeaOutboxInfo {\\n        uint64 latestVerifiedEpoch;\\n        uint64 latestHeartbeatTimestamp;\\n    }\\n\\n    IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.\\n    address public immutable veaInbox; // The address of the veaInbox on arbitrum.\\n\\n    uint256 public immutable deposit; // The deposit required to submit a claim or challenge\\n    uint256 public immutable burn; // The amount of wei to burn. deposit / 2\\n    uint256 public immutable depositPlusReward; // 2 * deposit - burn\\n    uint256 public immutable depositMinusOne; // deposit - 1\\n    address public constant burnAddress = address(0x0000000000000000000000000000000000000000);\\n\\n    uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.\\n    uint256 public immutable challengePeriod; // Claim challenge timewindow.\\n    uint256 public immutable epochClaimWindow; // The number of past epochs a claim can be submitted for. eg 1 => 2 epoch claims possible epochNow, epochNow - 1\\n\\n    uint256 public immutable timeout; // The seconds before the bridge is considered shutdown.\\n\\n    bytes32 public stateRoot;\\n    VeaOutboxInfo public veaOutboxInfo;\\n\\n    mapping(uint256 => Claim) public claims; // epoch => claim\\n    mapping(uint256 => Challenge) public challenges; // epoch => challenge\\n    mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap\\n\\n    /**\\n     * @dev The Fast Bridge participants watch for these events to decide if a challenge should be submitted.\\n     * @param epoch The epoch for which the the claim was made.\\n     * @param claimedStateRoot The claimed state root of the inbox snapshot.\\n     */\\n    event Claimed(uint256 indexed epoch, bytes32 claimedStateRoot);\\n\\n    /**\\n     * @dev This event indicates that `sendSafeFallback()` should be called on the sending side.\\n     * @param epoch The epoch associated with the challenged claim.\\n     */\\n    event Challenged(uint256 indexed epoch);\\n\\n    /**\\n     * @dev This events indicates that optimistic verification has succeeded. The messages are ready to be relayed.\\n     * @param epoch The epoch associated with the verified inbox state root snapshot.\\n     */\\n    event Verified(uint256 indexed epoch);\\n\\n    /**\\n     * @dev This event indicates that the claim deposit has been withdrawn.\\n     * @param epoch The epoch associated with the claim.\\n     * @param bridger The recipient of the claim deposit.\\n     */\\n    event ClaimDepositWithdrawn(uint256 indexed epoch, address bridger);\\n\\n    /**\\n     * @dev This event indicates that the challenge deposit has been withdrawn.\\n     * @param epoch The epoch associated with the challenge.\\n     * @param challenger The recipient of the challenge deposit.\\n     */\\n    event ChallengeDepositWithdrawn(uint256 indexed epoch, address challenger);\\n\\n    /**\\n     * @dev This event indicates that the claim deposit has been withdrawn.\\n     * @param epoch The epoch associated with the claim.\\n     * @param bridger The recipient of the claim deposit.\\n     */\\n    event ClaimDepositWithdrawnTimeout(uint256 indexed epoch, address bridger);\\n\\n    /**\\n     * @dev This event indicates that the challenge deposit has been withdrawn.\\n     * @param epoch The epoch associated with the challenge.\\n     * @param challenger The recipient of the challenge deposit.\\n     */\\n    event ChallengeDepositWithdrawnTimeout(uint256 indexed epoch, address challenger);\\n\\n    /**\\n     * @dev This event indicates that a message has been relayed.\\n     * @param msgId The msgId of the message that was relayed.\\n     */\\n    event MessageRelayed(uint64 indexed msgId);\\n\\n    modifier OnlyBridgeRunning() {\\n        require(block.timestamp < veaOutboxInfo.latestHeartbeatTimestamp + timeout, \\\"Bridge Shutdown.\\\");\\n        _;\\n    }\\n\\n    modifier OnlyBridgeShutdown() {\\n        require(block.timestamp >= veaOutboxInfo.latestHeartbeatTimestamp + timeout, \\\"Bridge Running.\\\");\\n        _;\\n    }\\n\\n    /**\\n     * @dev Constructor.\\n     * @param _deposit The deposit amount to submit a claim in wei.\\n     * @param _epochPeriod The duration of each epoch.\\n     * @param _challengePeriod The duration of the period allowing to challenge a claim.\\n     * @param _timeout The seconds before the bridge is considered shutdown.\\n     * @param _epochClaimWindow The number of epochs a claim can be submitted for.\\n     * @param _veaInbox The address of the inbox contract on Ethereum.\\n     * @param _inbox The address of the inbox contract on Ethereum.\\n     */\\n    constructor(\\n        uint256 _deposit,\\n        uint256 _epochPeriod,\\n        uint256 _challengePeriod,\\n        uint256 _timeout,\\n        uint256 _epochClaimWindow,\\n        address _veaInbox,\\n        address _inbox\\n    ) {\\n        deposit = _deposit;\\n        epochPeriod = _epochPeriod;\\n        challengePeriod = _challengePeriod;\\n        timeout = _timeout;\\n        epochClaimWindow = _epochClaimWindow;\\n        veaInbox = _veaInbox;\\n        inbox = IInbox(_inbox);\\n\\n        // claimant and challenger are not sybil resistant\\n        // must burn half deposit to prevent zero cost griefing\\n        burn = _deposit / 2;\\n        depositPlusReward = 2 * _deposit - burn;\\n\\n        // calculating depositMinusOne once saves gas\\n        depositMinusOne = _deposit - 1;\\n\\n        veaOutboxInfo.latestVerifiedEpoch = uint64(block.timestamp / epochPeriod) - 1;\\n        veaOutboxInfo.latestHeartbeatTimestamp = uint64(block.timestamp);\\n    }\\n\\n    // ************************************* //\\n    // *         State Modifiers           * //\\n    // ************************************* //\\n\\n    /**\\n     * @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.\\n     * @param _epoch The epoch for which the claim is made.\\n     * @param _stateRoot The state root to claim.\\n     */\\n    function claim(uint256 _epoch, bytes32 _stateRoot) external payable {\\n        // msg.value >= deposit <=> msg.value > deposit - 1\\n        // precalculated depositMinusOne = deposit - 1 in constructor saves gas\\n        require(msg.value > depositMinusOne, \\\"Insufficient claim deposit.\\\");\\n\\n        uint256 time = block.timestamp;\\n\\n        unchecked {\\n            uint256 epochNow = time / epochPeriod;\\n            require(_epoch <= epochNow && _epoch > epochNow - epochClaimWindow, \\\"Invalid epoch.\\\");\\n        }\\n\\n        require(_stateRoot != bytes32(0), \\\"Invalid claim.\\\");\\n        require(claims[_epoch].bridger == address(0), \\\"Claim already made.\\\");\\n\\n        claims[_epoch] = Claim({stateRoot: _stateRoot, bridger: msg.sender, timestamp: uint64(time), honest: false});\\n\\n        emit Claimed(_epoch, _stateRoot);\\n    }\\n\\n    /**\\n     * @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.\\n     * @param epoch The epoch of the claim to challenge.\\n     */\\n    function challenge(uint256 epoch) external payable {\\n        // msg.value >= deposit <=> msg.value > deposit - 1\\n        // precalculated depositMinusOne = deposit - 1 in constructor saves gas\\n        require(msg.value > depositMinusOne, \\\"Insufficient challenge deposit.\\\");\\n\\n        require(claims[epoch].bridger != address(0), \\\"No claim to challenge.\\\");\\n        require(challenges[epoch].challenger == address(0), \\\"Claim already challenged.\\\");\\n\\n        unchecked {\\n            require(block.timestamp < uint256(claims[epoch].timestamp) + challengePeriod, \\\"Challenge period elapsed.\\\");\\n        }\\n\\n        challenges[epoch] = Challenge({challenger: msg.sender, honest: false});\\n\\n        emit Challenged(epoch);\\n    }\\n\\n    /**\\n     * @dev Resolves the optimistic claim for '_epoch'.\\n     * @param epoch The epoch of the optimistic claim.\\n     */\\n    function validateSnapshot(uint256 epoch) external OnlyBridgeRunning {\\n        Claim storage claim = claims[epoch];\\n        require(claim.bridger != address(0), \\\"Invalid epoch, no claim to verify.\\\");\\n\\n        unchecked {\\n            require(block.timestamp > claim.timestamp + challengePeriod, \\\"Challenge period has not yet elapsed.\\\");\\n        }\\n\\n        require(challenges[epoch].challenger == address(0), \\\"Claim is challenged.\\\");\\n\\n        if (epoch > uint256(veaOutboxInfo.latestVerifiedEpoch)) {\\n            veaOutboxInfo.latestVerifiedEpoch = uint64(epoch);\\n            stateRoot = claim.stateRoot;\\n        }\\n\\n        claim.honest = true;\\n\\n        emit Verified(epoch);\\n    }\\n\\n    /**\\n     * Note: Access restricted to arbitrum  bridge.\\n     * @dev Resolves any challenge of the optimistic claim for '_epoch'.\\n     * @param _epoch The epoch to verify.\\n     * @param _stateRoot The true state root for the epoch.\\n     */\\n    function resolveDisputedClaim(uint256 _epoch, bytes32 _stateRoot) external virtual OnlyBridgeRunning {\\n        IBridge bridge = inbox.bridge();\\n        require(msg.sender == address(bridge), \\\"Not from bridge.\\\");\\n        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, \\\"Sender only.\\\");\\n\\n        if (_epoch > veaOutboxInfo.latestVerifiedEpoch && _stateRoot != bytes32(0)) {\\n            veaOutboxInfo.latestVerifiedEpoch = uint64(_epoch);\\n            stateRoot = _stateRoot;\\n        }\\n\\n        Claim storage claim = claims[_epoch];\\n        Challenge storage challenge = challenges[_epoch];\\n\\n        if (claim.bridger != address(0) && claim.stateRoot == _stateRoot) {\\n            claim.honest = true;\\n        } else if (challenge.challenger != address(0)) {\\n            challenge.honest = true;\\n        }\\n\\n        emit Verified(_epoch);\\n    }\\n\\n    function heartbeat(uint256 timestamp) external OnlyBridgeRunning {\\n        IBridge bridge = inbox.bridge();\\n        require(msg.sender == address(bridge), \\\"Not from bridge.\\\");\\n        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, \\\"Sender only.\\\");\\n\\n        if (timestamp > veaOutboxInfo.latestHeartbeatTimestamp) {\\n            veaOutboxInfo.latestHeartbeatTimestamp = uint64(timestamp);\\n        }\\n    }\\n\\n    /**\\n     * @dev Verifies and relays the message. UNTRUSTED.\\n     * @param proof The merkle proof to prove the message.\\n     * @param msgId The zero based index of the message in the inbox.\\n     * @param to The address of the contract on the receiving chain which receives the calldata.\\n     * @param message The message encoded with header from VeaInbox.\\n     */\\n    function sendMessage(bytes32[] calldata proof, uint64 msgId, address to, bytes calldata message) external {\\n        require(proof.length < 64, \\\"Proof too long.\\\");\\n        require(uint256(msgId) < 2 ** proof.length, \\\"Path not minimal.\\\");\\n\\n        bytes32 nodeHash = keccak256(abi.encodePacked(msgId, to, message));\\n\\n        // double hashed leaf\\n        // avoids second order preimage attacks\\n        // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/\\n        assembly {\\n            mstore(0x00, nodeHash)\\n            nodeHash := keccak256(0x00, 0x20)\\n        }\\n\\n        unchecked {\\n            for (uint256 i = 0; i < proof.length; i++) {\\n                bytes32 proofElement = proof[i];\\n                // sort sibling hashes as a convention for efficient proof validation\\n                if (proofElement > nodeHash)\\n                    assembly {\\n                        mstore(0x00, nodeHash)\\n                        mstore(0x20, proofElement)\\n                        nodeHash := keccak256(0x00, 0x40)\\n                    }\\n                else\\n                    assembly {\\n                        mstore(0x00, proofElement)\\n                        mstore(0x20, nodeHash)\\n                        nodeHash := keccak256(0x00, 0x40)\\n                    }\\n            }\\n        }\\n\\n        require(stateRoot == nodeHash, \\\"Invalid proof.\\\");\\n\\n        // msgId is the zero based index of the message in the inbox and is the same index to prevent replay\\n\\n        uint256 relayIndex = msgId >> 8;\\n        uint256 offset;\\n\\n        unchecked {\\n            offset = msgId % 256;\\n        }\\n\\n        bytes32 replay = relayed[relayIndex];\\n\\n        require(((replay >> offset) & bytes32(uint256(1))) == bytes32(0), \\\"Message already relayed\\\");\\n        relayed[relayIndex] = replay | bytes32(1 << offset);\\n\\n        // UNTRUSTED.\\n        (bool success, ) = to.call(message);\\n        require(success, \\\"Failed to call contract\\\");\\n\\n        emit MessageRelayed(msgId);\\n    }\\n\\n    /**\\n     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\\n     * @param epoch The epoch associated with the claim deposit to withraw.\\n     */\\n    function withdrawClaimDeposit(uint256 epoch) external {\\n        require(claims[epoch].honest == true, \\\"Claim failed.\\\");\\n\\n        address bridger = claims[epoch].bridger;\\n\\n        // redundant check\\n        // honest == true and challenger != address(0) are equivalent\\n        require(bridger != address(0), \\\"Claim does not exist\\\");\\n\\n        delete claims[epoch];\\n\\n        if (challenges[epoch].challenger != address(0)) {\\n            delete challenges[epoch];\\n            payable(burnAddress).send(burn);\\n            payable(bridger).send(depositPlusReward); // User is responsibility for accepting ETH.\\n        } else {\\n            payable(bridger).send(deposit); // User is responsibility for accepting ETH.\\n        }\\n\\n        emit ClaimDepositWithdrawn(epoch, bridger);\\n    }\\n\\n    /**\\n     * @dev Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.\\n     * @param epoch The epoch associated with the challenge deposit to withraw.\\n     */\\n    function withdrawChallengeDeposit(uint256 epoch) external {\\n        require(challenges[epoch].honest == true, \\\"Challenge failed.\\\");\\n\\n        address challenger = challenges[epoch].challenger;\\n\\n        // redundant check\\n        // honest == true and challenger != address(0) are equivalent\\n        require(challenger != address(0), \\\"Challenge does not exist\\\");\\n\\n        delete challenges[epoch];\\n        delete claims[epoch];\\n\\n        payable(burnAddress).send(burn); // half burnt\\n        payable(challenger).send(depositPlusReward); // User is responsibility for accepting ETH.\\n\\n        emit ChallengeDepositWithdrawn(epoch, challenger);\\n    }\\n\\n    /**\\n     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\\n     * @param epoch The epoch associated with the claim deposit to withraw.\\n     */\\n    function withdrawClaimDepositTimeout(uint256 epoch) external OnlyBridgeShutdown {\\n        address bridger = claims[epoch].bridger;\\n\\n        require(bridger != address(0), \\\"Claim does not exist\\\");\\n        require(claims[epoch].honest == false && challenges[epoch].honest == false, \\\"Invalid timeout withdrawal.\\\");\\n\\n        delete claims[epoch];\\n\\n        payable(bridger).send(deposit); // User is responsibility for accepting ETH.\\n\\n        emit ClaimDepositWithdrawnTimeout(epoch, bridger);\\n    }\\n\\n    /**\\n     * @dev Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.\\n     * @param epoch The epoch associated with the challenge deposit to withraw.\\n     */\\n    function withdrawChallengeDepositTimeout(uint256 epoch) external OnlyBridgeShutdown {\\n        address challenger = challenges[epoch].challenger;\\n\\n        require(challenger != address(0), \\\"Challenge does not exist\\\");\\n        require(claims[epoch].honest == false && challenges[epoch].honest == false, \\\"Invalid timeout withdrawal.\\\");\\n\\n        delete challenges[epoch];\\n\\n        payable(challenger).send(deposit); // User is responsibility for accepting ETH.\\n\\n        emit ChallengeDepositWithdrawnTimeout(epoch, challenger);\\n    }\\n}\\n\",\"keccak256\":\"0x741bfe6403cd7c13c7e9fbc31310a037d75ad06c723e841480067571a265d889\",\"license\":\"MIT\"},\"src/canonical/arbitrum/IInbox.sol\":{\"content\":\"// SPDX-License-Identifier: Apache-2.0\\n\\n/*\\n * Copyright 2019-2021, Offchain Labs, Inc.\\n *\\n * Licensed under the Apache License, Version 2.0 (the \\\"License\\\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *    http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \\\"AS IS\\\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\n\\npragma solidity >=0.7.0;\\n\\ninterface IInbox {\\n    function sendL2Message(bytes calldata messageData) external returns (uint256);\\n\\n    function sendUnsignedTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        uint256 nonce,\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (uint256);\\n\\n    function sendContractTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (uint256);\\n\\n    function sendL1FundedUnsignedTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        uint256 nonce,\\n        address destAddr,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function sendL1FundedContractTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        address destAddr,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function createRetryableTicket(\\n        address destAddr,\\n        uint256 arbTxCallValue,\\n        uint256 maxSubmissionCost,\\n        address submissionRefundAddress,\\n        address valueRefundAddress,\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function depositEth(uint256 maxSubmissionCost) external payable returns (uint256);\\n\\n    function bridge() external view returns (IBridge);\\n}\\n\\ninterface IBridge {\\n    event MessageDelivered(\\n        uint256 indexed messageIndex,\\n        bytes32 indexed beforeInboxAcc,\\n        address inbox,\\n        uint8 kind,\\n        address sender,\\n        bytes32 messageDataHash\\n    );\\n\\n    function deliverMessageToInbox(\\n        uint8 kind,\\n        address sender,\\n        bytes32 messageDataHash\\n    ) external payable returns (uint256);\\n\\n    function executeCall(\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (bool success, bytes memory returnData);\\n\\n    // These are only callable by the admin\\n    function setInbox(address inbox, bool enabled) external;\\n\\n    function setOutbox(address inbox, bool enabled) external;\\n\\n    // View functions\\n\\n    function activeOutbox() external view returns (address);\\n\\n    function allowedInboxes(address inbox) external view returns (bool);\\n\\n    function allowedOutboxes(address outbox) external view returns (bool);\\n\\n    function inboxAccs(uint256 index) external view returns (bytes32);\\n\\n    function messageCount() external view returns (uint256);\\n}\\n\\ninterface IMessageProvider {\\n    event InboxMessageDelivered(uint256 indexed messageNum, bytes data);\\n\\n    event InboxMessageDeliveredFromOrigin(uint256 indexed messageNum);\\n}\\n\",\"keccak256\":\"0xb567e54805f44ea8405231284583880a38e8a22bfe619528a4f8ec7550f11d1b\",\"license\":\"Apache-2.0\"},\"src/canonical/arbitrum/IOutbox.sol\":{\"content\":\"// SPDX-License-Identifier: Apache-2.0\\n\\n/*\\n * Copyright 2021, Offchain Labs, Inc.\\n *\\n * Licensed under the Apache License, Version 2.0 (the \\\"License\\\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *    http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \\\"AS IS\\\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\n\\npragma solidity >=0.7.0;\\n\\ninterface IOutbox {\\n    event OutboxEntryCreated(uint256 indexed batchNum, uint256 outboxIndex, bytes32 outputRoot, uint256 numInBatch);\\n\\n    function l2ToL1Sender() external view returns (address);\\n\\n    function l2ToL1Block() external view returns (uint256);\\n\\n    function l2ToL1EthBlock() external view returns (uint256);\\n\\n    function l2ToL1Timestamp() external view returns (uint256);\\n\\n    function processOutgoingMessages(bytes calldata sendsData, uint256[] calldata sendLengths) external;\\n}\\n\",\"keccak256\":\"0xdc4952b5238d6c6282595b2eab4058c86d2d232b99a2d67556c02d6c11eea94f\",\"license\":\"Apache-2.0\"},\"src/interfaces/IVeaOutbox.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@jaybuidl, @shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity ^0.8.0;\\n\\ninterface IVeaOutbox {\\n    /**\\n     * Note: Gateways expect first argument of message call to be the inbox sender, used for authenitcation.\\n     * @dev Verifies and relays the message.\\n     * @param proof The merkle proof to prove the message.\\n     * @param msgId The zero based index of the message in the inbox.\\n     * @param to The address to send the message to.\\n     * @param message The message to relay.\\n     */\\n    function sendMessage(bytes32[] calldata proof, uint64 msgId, address to, bytes calldata message) external;\\n\\n    /**\\n     * Note: Access restricted to canonical bridge.\\n     * @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.\\n     * @param epoch The epoch to verify.\\n     * @param stateRoot The true state root for the epoch.\\n     */\\n    function resolveDisputedClaim(uint256 epoch, bytes32 stateRoot) external;\\n\\n    /**\\n     * @dev Keeps bridge alive.\\n     * @param timestamp The timestamp of the heartbeat.\\n     */\\n    function heartbeat(uint256 timestamp) external;\\n}\\n\",\"keccak256\":\"0x71130c6a7b73293e7135b5d3fd4503ad930d5c7e2ec10b2964927ed94cd29ad9\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x6101c06040523480156200001257600080fd5b506040516200255f3803806200255f833981016040819052620000359162000122565b60c08790526101408690526101608590526101a08490526101808390526001600160a01b0380831660a052811660805262000072600288620001a0565b60e081905262000084886002620001c3565b620000909190620001e5565b61010052620000a1600188620001e5565b6101205261014051600190620000b89042620001a0565b620000c49190620001ff565b60018054426001600160401b0390811668010000000000000000026001600160801b0319909216931692909217919091179055506200022a95505050505050565b80516001600160a01b03811681146200011d57600080fd5b919050565b600080600080600080600060e0888a0312156200013e57600080fd5b87519650602088015195506040880151945060608801519350608088015192506200016c60a0890162000105565b91506200017c60c0890162000105565b905092959891949750929550565b634e487b7160e01b600052601160045260246000fd5b600082620001be57634e487b7160e01b600052601260045260246000fd5b500490565b6000816000190483118215151615620001e057620001e06200018a565b500290565b600082821015620001fa57620001fa6200018a565b500390565b60006001600160401b03838116908316818110156200022257620002226200018a565b039392505050565b60805160a05160c05160e05161010051610120516101405161016051610180516101a05161221f620003406000396000818161037d0152818161068001528181611010015281816112150152818161144d015261172201526000818161022b015261093f015260008181610601015281816112f30152611be601526000818161059901526109020152600081816101e9015281816108900152611a8f0152600081816103fc01528181610f4a0152611e070152600081816102b401528181610f090152611dc60152600081816105cd0152818161081601528181610f97015261119c015260008181610198015281816115820152611857015260008181610655015281816114a40152611779015261221f6000f3fe6080604052600436106101815760003560e01c8063723d330a116100d1578063a888c2cd1161008a578063d0e30db011610064578063d0e30db0146105bb578063f3f480d9146105ef578063f4cf751b14610623578063fb0e722b1461064357600080fd5b8063a888c2cd146104e2578063ab82d9a014610574578063b5b7a1841461058757600080fd5b8063723d330a1461039f578063836e344b146103ea5780638caeb7a81461041e5780638f1d37761461043e57806390df63b71461049f5780639588eca2146104cc57600080fd5b806344df8e701161013e5780635fb2f7f5116101185780635fb2f7f5146103165780636e029ad11461033657806370d5ae051461035657806370dea79a1461036b57600080fd5b806344df8e70146102a257806350b81dbe146102d657806354dd1fbb146102f657600080fd5b806302d3e2361461018657806304dd2359146101d757806324ab8c17146102195780632d011ff11461024d57806331d144571461026f57806331ddf74314610282575b600080fd5b34801561019257600080fd5b506101ba7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b3480156101e357600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b6040519081526020016101ce565b34801561022557600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b34801561025957600080fd5b5061026d610268366004611e7a565b610677565b005b61026d61027d366004611e93565b61088e565b34801561028e57600080fd5b5061026d61029d366004611f3c565b610b05565b3480156102ae57600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b3480156102e257600080fd5b5061026d6102f1366004611e7a565b610df2565b34801561030257600080fd5b5061026d610311366004611e7a565b611007565b34801561032257600080fd5b5061026d610331366004611e7a565b61120c565b34801561034257600080fd5b5061026d610351366004611e7a565b611444565b34801561036257600080fd5b506101ba600081565b34801561037757600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b3480156103ab57600080fd5b506001546103ca906001600160401b0380821691600160401b90041682565b604080516001600160401b039384168152929091166020830152016101ce565b3480156103f657600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b34801561042a57600080fd5b5061026d610439366004611e93565b611719565b34801561044a57600080fd5b50610480610459366004611e7a565b6003602052600090815260409020546001600160a01b03811690600160a01b900460ff1682565b604080516001600160a01b0390931683529015156020830152016101ce565b3480156104ab57600080fd5b5061020b6104ba366004611e7a565b60046020526000908152604090205481565b3480156104d857600080fd5b5061020b60005481565b3480156104ee57600080fd5b5061053c6104fd366004611e7a565b600260205260009081526040902080546001909101546001600160a01b03811690600160a01b81046001600160401b031690600160e01b900460ff1684565b604080519485526001600160a01b0390931660208501526001600160401b0390911691830191909152151560608201526080016101ce565b61026d610582366004611e7a565b611a8d565b34801561059357600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b3480156105c757600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b3480156105fb57600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b34801561062f57600080fd5b5061026d61063e366004611e7a565b611cca565b34801561064f57600080fd5b506101ba7f000000000000000000000000000000000000000000000000000000000000000081565b6001546106b5907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b4210156106fb5760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b60448201526064015b60405180910390fd5b6000818152600260205260409020600101546001600160a01b03168061075a5760405162461bcd60e51b815260206004820152601460248201527310db185a5b48191bd95cc81b9bdd08195e1a5cdd60621b60448201526064016106f2565b600082815260026020526040902060010154600160e01b900460ff161580156107995750600082815260036020526040902054600160a01b900460ff16155b6107e55760405162461bcd60e51b815260206004820152601b60248201527f496e76616c69642074696d656f7574207769746864726177616c2e000000000060448201526064016106f2565b60008281526002602052604080822082815560010180546001600160e81b0319169055516001600160a01b038316917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150506040516001600160a01b03851681528593507f7e6b142a218f73ba6036268baf59b969ebd7af9300bdd903d4b60dcdadf3ef15925060200190505b60405180910390a25050565b7f000000000000000000000000000000000000000000000000000000000000000034116108fd5760405162461bcd60e51b815260206004820152601b60248201527f496e73756666696369656e7420636c61696d206465706f7369742e000000000060448201526064016106f2565b4260007f0000000000000000000000000000000000000000000000000000000000000000828161092f5761092f61202b565b04905080841115801561096357507f0000000000000000000000000000000000000000000000000000000000000000810384115b6109a05760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b21032b837b1b41760911b60448201526064016106f2565b50816109df5760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b21031b630b4b69760911b60448201526064016106f2565b6000838152600260205260409020600101546001600160a01b031615610a3d5760405162461bcd60e51b815260206004820152601360248201527221b630b4b69030b63932b0b23c9036b0b2329760691b60448201526064016106f2565b604080516080810182528381523360208083019182526001600160401b038086168486019081526000606086018181528a825260029094528690209451855592516001949094018054935192511515600160e01b0260ff60e01b1993909216600160a01b026001600160e01b03199094166001600160a01b03959095169490941792909217161790555183907fd5a2476fc450083bbb092dd3f4be92698ffdc2d213e6f1e730c7f44a52f1ccfc90610af89085815260200190565b60405180910390a2505050565b60408510610b475760405162461bcd60e51b815260206004820152600f60248201526e283937b7b3103a37b7903637b7339760891b60448201526064016106f2565b610b52856002612127565b846001600160401b031610610b9d5760405162461bcd60e51b81526020600482015260116024820152702830ba34103737ba1036b4b734b6b0b61760791b60448201526064016106f2565b600084848484604051602001610bb6949392919061213a565b604051602081830303815290604052805190602001209050806000526020600020905060005b86811015610c36576000888883818110610bf857610bf861217c565b90506020020135905082811115610c1d57826000528060205260406000209250610c2d565b8060005282602052604060002092505b50600101610bdc565b508060005414610c795760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b210383937b7b31760911b60448201526064016106f2565b600885901c66ffffffffffffff1660008181526004602052604090205460ff87169080821c60011615610cee5760405162461bcd60e51b815260206004820152601760248201527f4d65737361676520616c72656164792072656c6179656400000000000000000060448201526064016106f2565b6000838152600460205260408082206001851b84179055516001600160a01b03891690610d1e9089908990612192565b6000604051808303816000865af19150503d8060008114610d5b576040519150601f19603f3d011682016040523d82523d6000602084013e610d60565b606091505b5050905080610db15760405162461bcd60e51b815260206004820152601760248201527f4661696c656420746f2063616c6c20636f6e747261637400000000000000000060448201526064016106f2565b6040516001600160401b038a16907f54303fab361bc52c2f1f56ace7351189582264f74ce47a6e7c3f478d64c4294390600090a25050505050505050505050565b6000818152600260205260409020600190810154600160e01b900460ff16151514610e4f5760405162461bcd60e51b815260206004820152600d60248201526c21b630b4b6903330b4b632b21760991b60448201526064016106f2565b6000818152600260205260409020600101546001600160a01b031680610eae5760405162461bcd60e51b815260206004820152601460248201527310db185a5b48191bd95cc81b9bdd08195e1a5cdd60621b60448201526064016106f2565b600082815260026020908152604080832083815560010180546001600160e81b031916905560039091529020546001600160a01b031615610f875760008281526003602052604080822080546001600160a81b0319169055517f000000000000000000000000000000000000000000000000000000000000000080156108fc029183818181858288f150506040516001600160a01b03851693507f000000000000000000000000000000000000000000000000000000000000000080156108fc02935091506000818181858888f1935050505050610fcc565b6040516001600160a01b038216907f000000000000000000000000000000000000000000000000000000000000000080156108fc02916000818181858888f150505050505b6040516001600160a01b038216815282907f3d8490b2b1cee24079fde68fd6a415c1f12e9a76e8090ac027dad29b6660261990602001610882565b600154611045907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b4210156110865760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b60448201526064016106f2565b6000818152600360205260409020546001600160a01b0316806110e65760405162461bcd60e51b815260206004820152601860248201527710da185b1b195b99d948191bd95cc81b9bdd08195e1a5cdd60421b60448201526064016106f2565b600082815260026020526040902060010154600160e01b900460ff161580156111255750600082815260036020526040902054600160a01b900460ff16155b6111715760405162461bcd60e51b815260206004820152601b60248201527f496e76616c69642074696d656f7574207769746864726177616c2e000000000060448201526064016106f2565b60008281526003602052604080822080546001600160a81b0319169055516001600160a01b038316917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150506040516001600160a01b03851681528593507f57a2aac8eeee60703f0470427b3a7ebeeaadf37120646ffe230c1ed17a5b08b892506020019050610882565b60015461124a907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b42106112685760405162461bcd60e51b81526004016106f2906121a2565b600081815260026020526040902060018101546001600160a01b03166112db5760405162461bcd60e51b815260206004820152602260248201527f496e76616c69642065706f63682c206e6f20636c61696d20746f2076657269666044820152613c9760f11b60648201526084016106f2565b60018101546001600160401b03600160a01b909104167f000000000000000000000000000000000000000000000000000000000000000001421161136f5760405162461bcd60e51b815260206004820152602560248201527f4368616c6c656e676520706572696f6420686173206e6f742079657420656c616044820152643839b2b21760d91b60648201526084016106f2565b6000828152600360205260409020546001600160a01b0316156113cb5760405162461bcd60e51b815260206004820152601460248201527321b630b4b69034b99031b430b63632b733b2b21760611b60448201526064016106f2565b6001546001600160401b0316821115611400576001805467ffffffffffffffff19166001600160401b03841617905580546000555b60018101805460ff60e01b1916600160e01b17905560405182907ff786e7f77ede00a02a5464f8f0555798f42ba99a4a920ef2778db8d75e4656f790600090a25050565b600154611482907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b42106114a05760405162461bcd60e51b81526004016106f2906121a2565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663e78cea926040518163ffffffff1660e01b815260040160206040518083038186803b1580156114fb57600080fd5b505afa15801561150f573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061153391906121cc565b9050336001600160a01b038216146115805760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b60448201526064016106f2565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663ab5d89436040518163ffffffff1660e01b815260040160206040518083038186803b1580156115e357600080fd5b505afa1580156115f7573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061161b91906121cc565b6001600160a01b03166380648b026040518163ffffffff1660e01b815260040160206040518083038186803b15801561165357600080fd5b505afa158015611667573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061168b91906121cc565b6001600160a01b0316146116d05760405162461bcd60e51b815260206004820152600c60248201526b29b2b73232b91037b7363c9760a11b60448201526064016106f2565b600154600160401b90046001600160401b031682111561171557600180546fffffffffffffffff00000000000000001916600160401b6001600160401b038516021790555b5050565b600154611757907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b42106117755760405162461bcd60e51b81526004016106f2906121a2565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663e78cea926040518163ffffffff1660e01b815260040160206040518083038186803b1580156117d057600080fd5b505afa1580156117e4573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061180891906121cc565b9050336001600160a01b038216146118555760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b60448201526064016106f2565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663ab5d89436040518163ffffffff1660e01b815260040160206040518083038186803b1580156118b857600080fd5b505afa1580156118cc573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906118f091906121cc565b6001600160a01b03166380648b026040518163ffffffff1660e01b815260040160206040518083038186803b15801561192857600080fd5b505afa15801561193c573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061196091906121cc565b6001600160a01b0316146119a55760405162461bcd60e51b815260206004820152600c60248201526b29b2b73232b91037b7363c9760a11b60448201526064016106f2565b6001546001600160401b0316831180156119be57508115155b156119e5576001805467ffffffffffffffff19166001600160401b03851617905560008290555b6000838152600260209081526040808320600390925290912060018201546001600160a01b031615801590611a1a5750815484145b15611a395760018201805460ff60e01b1916600160e01b179055611a5b565b80546001600160a01b031615611a5b57805460ff60a01b1916600160a01b1781555b60405185907ff786e7f77ede00a02a5464f8f0555798f42ba99a4a920ef2778db8d75e4656f790600090a25050505050565b7f00000000000000000000000000000000000000000000000000000000000000003411611afc5760405162461bcd60e51b815260206004820152601f60248201527f496e73756666696369656e74206368616c6c656e6765206465706f7369742e0060448201526064016106f2565b6000818152600260205260409020600101546001600160a01b0316611b5c5760405162461bcd60e51b815260206004820152601660248201527527379031b630b4b6903a379031b430b63632b733b29760511b60448201526064016106f2565b6000818152600360205260409020546001600160a01b031615611bc15760405162461bcd60e51b815260206004820152601960248201527f436c61696d20616c7265616479206368616c6c656e6765642e0000000000000060448201526064016106f2565b6000818152600260205260409020600101546001600160401b03600160a01b909104167f0000000000000000000000000000000000000000000000000000000000000000014210611c545760405162461bcd60e51b815260206004820152601960248201527f4368616c6c656e676520706572696f6420656c61707365642e0000000000000060448201526064016106f2565b6040805180820182523381526000602080830182815285835260039091528382209251835491511515600160a01b026001600160a81b03199092166001600160a01b03919091161717909155905182917fce8523abf4f233988e032510f5de6ab0a96edd7bfcd5d0eb347d207bd67b334491a250565b600081815260036020526040902054600160a01b900460ff161515600114611d285760405162461bcd60e51b815260206004820152601160248201527021b430b63632b733b2903330b4b632b21760791b60448201526064016106f2565b6000818152600360205260409020546001600160a01b031680611d885760405162461bcd60e51b815260206004820152601860248201527710da185b1b195b99d948191bd95cc81b9bdd08195e1a5cdd60421b60448201526064016106f2565b600082815260036020908152604080832080546001600160a81b0319169055600290915280822082815560010180546001600160e81b0319169055517f000000000000000000000000000000000000000000000000000000000000000080156108fc029183818181858288f150506040516001600160a01b03851693507f000000000000000000000000000000000000000000000000000000000000000080156108fc02935091506000818181858888f150506040516001600160a01b03851681528593507f9e0ea87919796fe5ad8e4362a6a3ff07f6a73e0731b94f451d7184e4928f313b92506020019050610882565b600060208284031215611e8c57600080fd5b5035919050565b60008060408385031215611ea657600080fd5b50508035926020909101359150565b80356001600160401b0381168114611ecc57600080fd5b919050565b6001600160a01b0381168114611ee657600080fd5b50565b8035611ecc81611ed1565b60008083601f840112611f0657600080fd5b5081356001600160401b03811115611f1d57600080fd5b602083019150836020828501011115611f3557600080fd5b9250929050565b60008060008060008060808789031215611f5557600080fd5b86356001600160401b0380821115611f6c57600080fd5b818901915089601f830112611f8057600080fd5b813581811115611f8f57600080fd5b8a60208260051b8501011115611fa457600080fd5b60208301985080975050611fba60208a01611eb5565b9550611fc860408a01611ee9565b94506060890135915080821115611fde57600080fd5b50611feb89828a01611ef4565b979a9699509497509295939492505050565b634e487b7160e01b600052601160045260246000fd5b6000821982111561202657612026611ffd565b500190565b634e487b7160e01b600052601260045260246000fd5b600181815b8085111561207c57816000190482111561206257612062611ffd565b8085161561206f57918102915b93841c9390800290612046565b509250929050565b60008261209357506001612121565b816120a057506000612121565b81600181146120b657600281146120c0576120dc565b6001915050612121565b60ff8411156120d1576120d1611ffd565b50506001821b612121565b5060208310610133831016604e8410600b84101617156120ff575081810a612121565b6121098383612041565b806000190482111561211d5761211d611ffd565b0290505b92915050565b60006121338383612084565b9392505050565b60c085901b6001600160c01b0319168152606084901b6bffffffffffffffffffffffff191660088201528183601c83013760009101601c019081529392505050565b634e487b7160e01b600052603260045260246000fd5b8183823760009101908152919050565b60208082526010908201526f213934b233b29029b43aba3237bbb71760811b604082015260600190565b6000602082840312156121de57600080fd5b815161213381611ed156fea26469706673582212208d1c2d4bb0bc851d52929a4be8d5b7a2732b922c568afc7ca807a8ecf790cd9764736f6c63430008090033",
+  "deployedBytecode": "0x6080604052600436106101815760003560e01c8063723d330a116100d1578063a888c2cd1161008a578063d0e30db011610064578063d0e30db0146105bb578063f3f480d9146105ef578063f4cf751b14610623578063fb0e722b1461064357600080fd5b8063a888c2cd146104e2578063ab82d9a014610574578063b5b7a1841461058757600080fd5b8063723d330a1461039f578063836e344b146103ea5780638caeb7a81461041e5780638f1d37761461043e57806390df63b71461049f5780639588eca2146104cc57600080fd5b806344df8e701161013e5780635fb2f7f5116101185780635fb2f7f5146103165780636e029ad11461033657806370d5ae051461035657806370dea79a1461036b57600080fd5b806344df8e70146102a257806350b81dbe146102d657806354dd1fbb146102f657600080fd5b806302d3e2361461018657806304dd2359146101d757806324ab8c17146102195780632d011ff11461024d57806331d144571461026f57806331ddf74314610282575b600080fd5b34801561019257600080fd5b506101ba7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b3480156101e357600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b6040519081526020016101ce565b34801561022557600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b34801561025957600080fd5b5061026d610268366004611e7a565b610677565b005b61026d61027d366004611e93565b61088e565b34801561028e57600080fd5b5061026d61029d366004611f3c565b610b05565b3480156102ae57600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b3480156102e257600080fd5b5061026d6102f1366004611e7a565b610df2565b34801561030257600080fd5b5061026d610311366004611e7a565b611007565b34801561032257600080fd5b5061026d610331366004611e7a565b61120c565b34801561034257600080fd5b5061026d610351366004611e7a565b611444565b34801561036257600080fd5b506101ba600081565b34801561037757600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b3480156103ab57600080fd5b506001546103ca906001600160401b0380821691600160401b90041682565b604080516001600160401b039384168152929091166020830152016101ce565b3480156103f657600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b34801561042a57600080fd5b5061026d610439366004611e93565b611719565b34801561044a57600080fd5b50610480610459366004611e7a565b6003602052600090815260409020546001600160a01b03811690600160a01b900460ff1682565b604080516001600160a01b0390931683529015156020830152016101ce565b3480156104ab57600080fd5b5061020b6104ba366004611e7a565b60046020526000908152604090205481565b3480156104d857600080fd5b5061020b60005481565b3480156104ee57600080fd5b5061053c6104fd366004611e7a565b600260205260009081526040902080546001909101546001600160a01b03811690600160a01b81046001600160401b031690600160e01b900460ff1684565b604080519485526001600160a01b0390931660208501526001600160401b0390911691830191909152151560608201526080016101ce565b61026d610582366004611e7a565b611a8d565b34801561059357600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b3480156105c757600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b3480156105fb57600080fd5b5061020b7f000000000000000000000000000000000000000000000000000000000000000081565b34801561062f57600080fd5b5061026d61063e366004611e7a565b611cca565b34801561064f57600080fd5b506101ba7f000000000000000000000000000000000000000000000000000000000000000081565b6001546106b5907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b4210156106fb5760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b60448201526064015b60405180910390fd5b6000818152600260205260409020600101546001600160a01b03168061075a5760405162461bcd60e51b815260206004820152601460248201527310db185a5b48191bd95cc81b9bdd08195e1a5cdd60621b60448201526064016106f2565b600082815260026020526040902060010154600160e01b900460ff161580156107995750600082815260036020526040902054600160a01b900460ff16155b6107e55760405162461bcd60e51b815260206004820152601b60248201527f496e76616c69642074696d656f7574207769746864726177616c2e000000000060448201526064016106f2565b60008281526002602052604080822082815560010180546001600160e81b0319169055516001600160a01b038316917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150506040516001600160a01b03851681528593507f7e6b142a218f73ba6036268baf59b969ebd7af9300bdd903d4b60dcdadf3ef15925060200190505b60405180910390a25050565b7f000000000000000000000000000000000000000000000000000000000000000034116108fd5760405162461bcd60e51b815260206004820152601b60248201527f496e73756666696369656e7420636c61696d206465706f7369742e000000000060448201526064016106f2565b4260007f0000000000000000000000000000000000000000000000000000000000000000828161092f5761092f61202b565b04905080841115801561096357507f0000000000000000000000000000000000000000000000000000000000000000810384115b6109a05760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b21032b837b1b41760911b60448201526064016106f2565b50816109df5760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b21031b630b4b69760911b60448201526064016106f2565b6000838152600260205260409020600101546001600160a01b031615610a3d5760405162461bcd60e51b815260206004820152601360248201527221b630b4b69030b63932b0b23c9036b0b2329760691b60448201526064016106f2565b604080516080810182528381523360208083019182526001600160401b038086168486019081526000606086018181528a825260029094528690209451855592516001949094018054935192511515600160e01b0260ff60e01b1993909216600160a01b026001600160e01b03199094166001600160a01b03959095169490941792909217161790555183907fd5a2476fc450083bbb092dd3f4be92698ffdc2d213e6f1e730c7f44a52f1ccfc90610af89085815260200190565b60405180910390a2505050565b60408510610b475760405162461bcd60e51b815260206004820152600f60248201526e283937b7b3103a37b7903637b7339760891b60448201526064016106f2565b610b52856002612127565b846001600160401b031610610b9d5760405162461bcd60e51b81526020600482015260116024820152702830ba34103737ba1036b4b734b6b0b61760791b60448201526064016106f2565b600084848484604051602001610bb6949392919061213a565b604051602081830303815290604052805190602001209050806000526020600020905060005b86811015610c36576000888883818110610bf857610bf861217c565b90506020020135905082811115610c1d57826000528060205260406000209250610c2d565b8060005282602052604060002092505b50600101610bdc565b508060005414610c795760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b210383937b7b31760911b60448201526064016106f2565b600885901c66ffffffffffffff1660008181526004602052604090205460ff87169080821c60011615610cee5760405162461bcd60e51b815260206004820152601760248201527f4d65737361676520616c72656164792072656c6179656400000000000000000060448201526064016106f2565b6000838152600460205260408082206001851b84179055516001600160a01b03891690610d1e9089908990612192565b6000604051808303816000865af19150503d8060008114610d5b576040519150601f19603f3d011682016040523d82523d6000602084013e610d60565b606091505b5050905080610db15760405162461bcd60e51b815260206004820152601760248201527f4661696c656420746f2063616c6c20636f6e747261637400000000000000000060448201526064016106f2565b6040516001600160401b038a16907f54303fab361bc52c2f1f56ace7351189582264f74ce47a6e7c3f478d64c4294390600090a25050505050505050505050565b6000818152600260205260409020600190810154600160e01b900460ff16151514610e4f5760405162461bcd60e51b815260206004820152600d60248201526c21b630b4b6903330b4b632b21760991b60448201526064016106f2565b6000818152600260205260409020600101546001600160a01b031680610eae5760405162461bcd60e51b815260206004820152601460248201527310db185a5b48191bd95cc81b9bdd08195e1a5cdd60621b60448201526064016106f2565b600082815260026020908152604080832083815560010180546001600160e81b031916905560039091529020546001600160a01b031615610f875760008281526003602052604080822080546001600160a81b0319169055517f000000000000000000000000000000000000000000000000000000000000000080156108fc029183818181858288f150506040516001600160a01b03851693507f000000000000000000000000000000000000000000000000000000000000000080156108fc02935091506000818181858888f1935050505050610fcc565b6040516001600160a01b038216907f000000000000000000000000000000000000000000000000000000000000000080156108fc02916000818181858888f150505050505b6040516001600160a01b038216815282907f3d8490b2b1cee24079fde68fd6a415c1f12e9a76e8090ac027dad29b6660261990602001610882565b600154611045907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b4210156110865760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b60448201526064016106f2565b6000818152600360205260409020546001600160a01b0316806110e65760405162461bcd60e51b815260206004820152601860248201527710da185b1b195b99d948191bd95cc81b9bdd08195e1a5cdd60421b60448201526064016106f2565b600082815260026020526040902060010154600160e01b900460ff161580156111255750600082815260036020526040902054600160a01b900460ff16155b6111715760405162461bcd60e51b815260206004820152601b60248201527f496e76616c69642074696d656f7574207769746864726177616c2e000000000060448201526064016106f2565b60008281526003602052604080822080546001600160a81b0319169055516001600160a01b038316917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150506040516001600160a01b03851681528593507f57a2aac8eeee60703f0470427b3a7ebeeaadf37120646ffe230c1ed17a5b08b892506020019050610882565b60015461124a907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b42106112685760405162461bcd60e51b81526004016106f2906121a2565b600081815260026020526040902060018101546001600160a01b03166112db5760405162461bcd60e51b815260206004820152602260248201527f496e76616c69642065706f63682c206e6f20636c61696d20746f2076657269666044820152613c9760f11b60648201526084016106f2565b60018101546001600160401b03600160a01b909104167f000000000000000000000000000000000000000000000000000000000000000001421161136f5760405162461bcd60e51b815260206004820152602560248201527f4368616c6c656e676520706572696f6420686173206e6f742079657420656c616044820152643839b2b21760d91b60648201526084016106f2565b6000828152600360205260409020546001600160a01b0316156113cb5760405162461bcd60e51b815260206004820152601460248201527321b630b4b69034b99031b430b63632b733b2b21760611b60448201526064016106f2565b6001546001600160401b0316821115611400576001805467ffffffffffffffff19166001600160401b03841617905580546000555b60018101805460ff60e01b1916600160e01b17905560405182907ff786e7f77ede00a02a5464f8f0555798f42ba99a4a920ef2778db8d75e4656f790600090a25050565b600154611482907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b42106114a05760405162461bcd60e51b81526004016106f2906121a2565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663e78cea926040518163ffffffff1660e01b815260040160206040518083038186803b1580156114fb57600080fd5b505afa15801561150f573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061153391906121cc565b9050336001600160a01b038216146115805760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b60448201526064016106f2565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663ab5d89436040518163ffffffff1660e01b815260040160206040518083038186803b1580156115e357600080fd5b505afa1580156115f7573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061161b91906121cc565b6001600160a01b03166380648b026040518163ffffffff1660e01b815260040160206040518083038186803b15801561165357600080fd5b505afa158015611667573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061168b91906121cc565b6001600160a01b0316146116d05760405162461bcd60e51b815260206004820152600c60248201526b29b2b73232b91037b7363c9760a11b60448201526064016106f2565b600154600160401b90046001600160401b031682111561171557600180546fffffffffffffffff00000000000000001916600160401b6001600160401b038516021790555b5050565b600154611757907f000000000000000000000000000000000000000000000000000000000000000090600160401b90046001600160401b0316612013565b42106117755760405162461bcd60e51b81526004016106f2906121a2565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663e78cea926040518163ffffffff1660e01b815260040160206040518083038186803b1580156117d057600080fd5b505afa1580156117e4573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061180891906121cc565b9050336001600160a01b038216146118555760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b60448201526064016106f2565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663ab5d89436040518163ffffffff1660e01b815260040160206040518083038186803b1580156118b857600080fd5b505afa1580156118cc573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906118f091906121cc565b6001600160a01b03166380648b026040518163ffffffff1660e01b815260040160206040518083038186803b15801561192857600080fd5b505afa15801561193c573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061196091906121cc565b6001600160a01b0316146119a55760405162461bcd60e51b815260206004820152600c60248201526b29b2b73232b91037b7363c9760a11b60448201526064016106f2565b6001546001600160401b0316831180156119be57508115155b156119e5576001805467ffffffffffffffff19166001600160401b03851617905560008290555b6000838152600260209081526040808320600390925290912060018201546001600160a01b031615801590611a1a5750815484145b15611a395760018201805460ff60e01b1916600160e01b179055611a5b565b80546001600160a01b031615611a5b57805460ff60a01b1916600160a01b1781555b60405185907ff786e7f77ede00a02a5464f8f0555798f42ba99a4a920ef2778db8d75e4656f790600090a25050505050565b7f00000000000000000000000000000000000000000000000000000000000000003411611afc5760405162461bcd60e51b815260206004820152601f60248201527f496e73756666696369656e74206368616c6c656e6765206465706f7369742e0060448201526064016106f2565b6000818152600260205260409020600101546001600160a01b0316611b5c5760405162461bcd60e51b815260206004820152601660248201527527379031b630b4b6903a379031b430b63632b733b29760511b60448201526064016106f2565b6000818152600360205260409020546001600160a01b031615611bc15760405162461bcd60e51b815260206004820152601960248201527f436c61696d20616c7265616479206368616c6c656e6765642e0000000000000060448201526064016106f2565b6000818152600260205260409020600101546001600160401b03600160a01b909104167f0000000000000000000000000000000000000000000000000000000000000000014210611c545760405162461bcd60e51b815260206004820152601960248201527f4368616c6c656e676520706572696f6420656c61707365642e0000000000000060448201526064016106f2565b6040805180820182523381526000602080830182815285835260039091528382209251835491511515600160a01b026001600160a81b03199092166001600160a01b03919091161717909155905182917fce8523abf4f233988e032510f5de6ab0a96edd7bfcd5d0eb347d207bd67b334491a250565b600081815260036020526040902054600160a01b900460ff161515600114611d285760405162461bcd60e51b815260206004820152601160248201527021b430b63632b733b2903330b4b632b21760791b60448201526064016106f2565b6000818152600360205260409020546001600160a01b031680611d885760405162461bcd60e51b815260206004820152601860248201527710da185b1b195b99d948191bd95cc81b9bdd08195e1a5cdd60421b60448201526064016106f2565b600082815260036020908152604080832080546001600160a81b0319169055600290915280822082815560010180546001600160e81b0319169055517f000000000000000000000000000000000000000000000000000000000000000080156108fc029183818181858288f150506040516001600160a01b03851693507f000000000000000000000000000000000000000000000000000000000000000080156108fc02935091506000818181858888f150506040516001600160a01b03851681528593507f9e0ea87919796fe5ad8e4362a6a3ff07f6a73e0731b94f451d7184e4928f313b92506020019050610882565b600060208284031215611e8c57600080fd5b5035919050565b60008060408385031215611ea657600080fd5b50508035926020909101359150565b80356001600160401b0381168114611ecc57600080fd5b919050565b6001600160a01b0381168114611ee657600080fd5b50565b8035611ecc81611ed1565b60008083601f840112611f0657600080fd5b5081356001600160401b03811115611f1d57600080fd5b602083019150836020828501011115611f3557600080fd5b9250929050565b60008060008060008060808789031215611f5557600080fd5b86356001600160401b0380821115611f6c57600080fd5b818901915089601f830112611f8057600080fd5b813581811115611f8f57600080fd5b8a60208260051b8501011115611fa457600080fd5b60208301985080975050611fba60208a01611eb5565b9550611fc860408a01611ee9565b94506060890135915080821115611fde57600080fd5b50611feb89828a01611ef4565b979a9699509497509295939492505050565b634e487b7160e01b600052601160045260246000fd5b6000821982111561202657612026611ffd565b500190565b634e487b7160e01b600052601260045260246000fd5b600181815b8085111561207c57816000190482111561206257612062611ffd565b8085161561206f57918102915b93841c9390800290612046565b509250929050565b60008261209357506001612121565b816120a057506000612121565b81600181146120b657600281146120c0576120dc565b6001915050612121565b60ff8411156120d1576120d1611ffd565b50506001821b612121565b5060208310610133831016604e8410600b84101617156120ff575081810a612121565b6121098383612041565b806000190482111561211d5761211d611ffd565b0290505b92915050565b60006121338383612084565b9392505050565b60c085901b6001600160c01b0319168152606084901b6bffffffffffffffffffffffff191660088201528183601c83013760009101601c019081529392505050565b634e487b7160e01b600052603260045260246000fd5b8183823760009101908152919050565b60208082526010908201526f213934b233b29029b43aba3237bbb71760811b604082015260600190565b6000602082840312156121de57600080fd5b815161213381611ed156fea26469706673582212208d1c2d4bb0bc851d52929a4be8d5b7a2732b922c568afc7ca807a8ecf790cd9764736f6c63430008090033",
   "devdoc": {
     "events": {
-      "ChallengeDepositWithdrawn(uint64,address)": {
+      "ChallengeDepositWithdrawn(uint256,address)": {
         "details": "This event indicates that the challenge deposit has been withdrawn.",
         "params": {
           "challenger": "The recipient of the challenge deposit.",
-          "epoch": "The epoch associated with the batch."
+          "epoch": "The epoch associated with the challenge."
         }
       },
-      "ChallengeDepositWithdrawnTimeout(uint64,address)": {
+      "ChallengeDepositWithdrawnTimeout(uint256,address)": {
         "details": "This event indicates that the challenge deposit has been withdrawn.",
         "params": {
           "challenger": "The recipient of the challenge deposit.",
-          "epoch": "The epoch associated with the batch."
+          "epoch": "The epoch associated with the challenge."
         }
       },
-      "Challenged(uint64)": {
+      "Challenged(uint256)": {
         "details": "This event indicates that `sendSafeFallback()` should be called on the sending side.",
         "params": {
           "epoch": "The epoch associated with the challenged claim."
         }
       },
-      "ClaimDepositWithdrawn(uint64,address)": {
+      "ClaimDepositWithdrawn(uint256,address)": {
         "details": "This event indicates that the claim deposit has been withdrawn.",
         "params": {
           "bridger": "The recipient of the claim deposit.",
-          "epoch": "The epoch associated with the batch."
+          "epoch": "The epoch associated with the claim."
         }
       },
-      "ClaimDepositWithdrawnTimeout(uint64,address)": {
+      "ClaimDepositWithdrawnTimeout(uint256,address)": {
         "details": "This event indicates that the claim deposit has been withdrawn.",
         "params": {
           "bridger": "The recipient of the claim deposit.",
-          "epoch": "The epoch associated with the batch."
+          "epoch": "The epoch associated with the claim."
         }
       },
-      "Claimed(uint64,bytes32)": {
+      "Claimed(uint256,bytes32)": {
         "details": "The Fast Bridge participants watch for these events to decide if a challenge should be submitted.",
         "params": {
-          "claimedStateRoot": "The claimed state root of the batched messages.",
+          "claimedStateRoot": "The claimed state root of the inbox snapshot.",
           "epoch": "The epoch for which the the claim was made."
         }
       },
       "MessageRelayed(uint64)": {
-        "details": "This event indicates that a message has been relayed for the batch in this `_epoch`.",
+        "details": "This event indicates that a message has been relayed.",
         "params": {
-          "nonce": "The nonce of the message that was relayed."
+          "msgId": "The msgId of the message that was relayed."
         }
       },
-      "Verified(uint64)": {
+      "Verified(uint256)": {
         "details": "This events indicates that optimistic verification has succeeded. The messages are ready to be relayed.",
         "params": {
-          "epoch": "The epoch associated with the batch."
+          "epoch": "The epoch associated with the verified inbox state root snapshot."
         }
       }
     },
     "kind": "dev",
     "methods": {
-      "challenge(uint64)": {
-        "details": "Submit a challenge for the claim of the current epoch's Fast Bridge batch merkleroot state and submit a deposit. The `batchMerkleRoot` in the claim already made for the last finalized epoch should be different from the one on the sending side, otherwise the sender will lose his deposit.",
+      "challenge(uint256)": {
+        "details": "Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.",
         "params": {
-          "_epoch": "The epoch of the claim to challenge."
+          "epoch": "The epoch of the claim to challenge."
         }
       },
-      "claim(uint64,bytes32)": {
+      "claim(uint256,bytes32)": {
         "details": "Submit a claim about the the _stateRoot at _epoch and submit a deposit.",
         "params": {
           "_epoch": "The epoch for which the claim is made.",
@@ -650,64 +692,60 @@
           "_epochClaimWindow": "The number of epochs a claim can be submitted for.",
           "_epochPeriod": "The duration of each epoch.",
           "_inbox": "The address of the inbox contract on Ethereum.",
-          "_numEpochTimeout": "The number of epochs after which the bridge is considered to be frozen.",
+          "_timeout": "The seconds before the bridge is considered shutdown.",
           "_veaInbox": "The address of the inbox contract on Ethereum."
         }
       },
-      "resolveChallenge(uint64,bytes32)": {
+      "heartbeat(uint256)": {
+        "details": "Keeps bridge alive.",
+        "params": {
+          "timestamp": "The timestamp of the heartbeat."
+        }
+      },
+      "resolveDisputedClaim(uint256,bytes32)": {
         "details": "Resolves any challenge of the optimistic claim for '_epoch'.",
         "params": {
           "_epoch": "The epoch to verify.",
           "_stateRoot": "The true state root for the epoch."
         }
       },
-      "verifyAndRelayMessage(bytes32[],uint64,address,address,bytes)": {
-        "details": "Verifies and relays the message.",
+      "sendMessage(bytes32[],uint64,address,bytes)": {
+        "details": "Verifies and relays the message. UNTRUSTED.",
         "params": {
-          "data": "The data of the message.",
-          "index": "The index of the message in the merkle tree.",
-          "msgSender": "The address of the message sender.",
+          "message": "The message encoded with header from VeaInbox.",
+          "msgId": "The zero based index of the message in the inbox.",
           "proof": "The merkle proof to prove the message.",
-          "to": "The address of the message receiver."
+          "to": "The address of the contract on the receiving chain which receives the calldata."
         }
       },
-      "verifyStateroot(uint64)": {
+      "validateSnapshot(uint256)": {
         "details": "Resolves the optimistic claim for '_epoch'.",
         "params": {
-          "_epoch": "The epoch of the optimistic claim."
+          "epoch": "The epoch of the optimistic claim."
         }
       },
-      "withdrawChallengeDeposit(uint64)": {
+      "withdrawChallengeDeposit(uint256)": {
         "details": "Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.",
         "params": {
-          "_epoch": "The epoch associated with the challenge deposit to withraw."
+          "epoch": "The epoch associated with the challenge deposit to withraw."
         }
       },
-      "withdrawChallengeDepositTimeout(uint64)": {
+      "withdrawChallengeDepositTimeout(uint256)": {
         "details": "Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.",
         "params": {
-          "_epoch": "The epoch associated with the challenge deposit to withraw."
+          "epoch": "The epoch associated with the challenge deposit to withraw."
         }
       },
-      "withdrawClaimDeposit(uint64)": {
+      "withdrawClaimDeposit(uint256)": {
         "details": "Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.",
         "params": {
-          "_epoch": "The epoch associated with the claim deposit to withraw."
+          "epoch": "The epoch associated with the claim deposit to withraw."
         }
       },
-      "withdrawClaimDepositTimeout(uint64)": {
+      "withdrawClaimDepositTimeout(uint256)": {
         "details": "Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.",
         "params": {
-          "_epoch": "The epoch associated with the claim deposit to withraw."
-        }
-      }
-    },
-    "stateVariables": {
-      "messageSender": {
-        "details": "The message sender of a relayed message.",
-        "return": "messageSender The address of the message sender.",
-        "returns": {
-          "_0": "messageSender The address of the message sender."
+          "epoch": "The epoch associated with the claim deposit to withraw."
         }
       }
     },
@@ -716,62 +754,54 @@
   "userdoc": {
     "kind": "user",
     "methods": {
-      "resolveChallenge(uint64,bytes32)": {
-        "notice": "Note: Access restricted to arbitrum canonical bridge."
+      "resolveDisputedClaim(uint256,bytes32)": {
+        "notice": "Note: Access restricted to arbitrum  bridge."
       }
     },
-    "notice": "Vea Bridge Outbox On L1 Ethereum",
+    "notice": "Vea Bridge Outbox From Arbitrum to Ethereum.",
     "version": 1
   },
   "storageLayout": {
     "storage": [
       {
-        "astId": 496,
-        "contract": "src/VeaOutbox.sol:VeaOutbox",
+        "astId": 466,
+        "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
         "label": "stateRoot",
         "offset": 0,
         "slot": "0",
         "type": "t_bytes32"
       },
       {
-        "astId": 498,
-        "contract": "src/VeaOutbox.sol:VeaOutbox",
-        "label": "latestVerifiedEpoch",
+        "astId": 469,
+        "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
+        "label": "veaOutboxInfo",
         "offset": 0,
         "slot": "1",
-        "type": "t_uint64"
+        "type": "t_struct(VeaOutboxInfo)437_storage"
       },
       {
-        "astId": 500,
-        "contract": "src/VeaOutbox.sol:VeaOutbox",
-        "label": "messageSender",
-        "offset": 8,
-        "slot": "1",
-        "type": "t_address"
-      },
-      {
-        "astId": 505,
-        "contract": "src/VeaOutbox.sol:VeaOutbox",
+        "astId": 474,
+        "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
         "label": "claims",
         "offset": 0,
         "slot": "2",
-        "type": "t_mapping(t_uint64,t_struct(Claim)472_storage)"
+        "type": "t_mapping(t_uint256,t_struct(Claim)427_storage)"
       },
       {
-        "astId": 510,
-        "contract": "src/VeaOutbox.sol:VeaOutbox",
+        "astId": 479,
+        "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
         "label": "challenges",
         "offset": 0,
         "slot": "3",
-        "type": "t_mapping(t_uint64,t_struct(Challenge)479_storage)"
+        "type": "t_mapping(t_uint256,t_struct(Challenge)432_storage)"
       },
       {
-        "astId": 514,
-        "contract": "src/VeaOutbox.sol:VeaOutbox",
+        "astId": 483,
+        "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
         "label": "relayed",
         "offset": 0,
         "slot": "4",
-        "type": "t_mapping(t_uint64,t_bytes32)"
+        "type": "t_mapping(t_uint256,t_bytes32)"
       }
     ],
     "types": {
@@ -790,104 +820,116 @@
         "label": "bytes32",
         "numberOfBytes": "32"
       },
-      "t_mapping(t_uint64,t_bytes32)": {
+      "t_mapping(t_uint256,t_bytes32)": {
         "encoding": "mapping",
-        "key": "t_uint64",
-        "label": "mapping(uint64 => bytes32)",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => bytes32)",
         "numberOfBytes": "32",
         "value": "t_bytes32"
       },
-      "t_mapping(t_uint64,t_struct(Challenge)479_storage)": {
+      "t_mapping(t_uint256,t_struct(Challenge)432_storage)": {
         "encoding": "mapping",
-        "key": "t_uint64",
-        "label": "mapping(uint64 => struct VeaOutbox.Challenge)",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => struct VeaOutboxArbToEth.Challenge)",
         "numberOfBytes": "32",
-        "value": "t_struct(Challenge)479_storage"
+        "value": "t_struct(Challenge)432_storage"
       },
-      "t_mapping(t_uint64,t_struct(Claim)472_storage)": {
+      "t_mapping(t_uint256,t_struct(Claim)427_storage)": {
         "encoding": "mapping",
-        "key": "t_uint64",
-        "label": "mapping(uint64 => struct VeaOutbox.Claim)",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => struct VeaOutboxArbToEth.Claim)",
         "numberOfBytes": "32",
-        "value": "t_struct(Claim)472_storage"
+        "value": "t_struct(Claim)427_storage"
       },
-      "t_struct(Challenge)479_storage": {
+      "t_struct(Challenge)432_storage": {
         "encoding": "inplace",
-        "label": "struct VeaOutbox.Challenge",
+        "label": "struct VeaOutboxArbToEth.Challenge",
         "members": [
           {
-            "astId": 474,
-            "contract": "src/VeaOutbox.sol:VeaOutbox",
+            "astId": 429,
+            "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
             "label": "challenger",
             "offset": 0,
             "slot": "0",
             "type": "t_address"
           },
           {
-            "astId": 476,
-            "contract": "src/VeaOutbox.sol:VeaOutbox",
+            "astId": 431,
+            "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
             "label": "honest",
             "offset": 20,
-            "slot": "0",
-            "type": "t_bool"
-          },
-          {
-            "astId": 478,
-            "contract": "src/VeaOutbox.sol:VeaOutbox",
-            "label": "depositAndRewardWithdrawn",
-            "offset": 21,
             "slot": "0",
             "type": "t_bool"
           }
         ],
         "numberOfBytes": "32"
       },
-      "t_struct(Claim)472_storage": {
+      "t_struct(Claim)427_storage": {
         "encoding": "inplace",
-        "label": "struct VeaOutbox.Claim",
+        "label": "struct VeaOutboxArbToEth.Claim",
         "members": [
           {
-            "astId": 463,
-            "contract": "src/VeaOutbox.sol:VeaOutbox",
+            "astId": 420,
+            "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
             "label": "stateRoot",
             "offset": 0,
             "slot": "0",
             "type": "t_bytes32"
           },
           {
-            "astId": 465,
-            "contract": "src/VeaOutbox.sol:VeaOutbox",
+            "astId": 422,
+            "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
             "label": "bridger",
             "offset": 0,
             "slot": "1",
             "type": "t_address"
           },
           {
-            "astId": 467,
-            "contract": "src/VeaOutbox.sol:VeaOutbox",
+            "astId": 424,
+            "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
             "label": "timestamp",
             "offset": 20,
             "slot": "1",
             "type": "t_uint64"
           },
           {
-            "astId": 469,
-            "contract": "src/VeaOutbox.sol:VeaOutbox",
+            "astId": 426,
+            "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
             "label": "honest",
             "offset": 28,
-            "slot": "1",
-            "type": "t_bool"
-          },
-          {
-            "astId": 471,
-            "contract": "src/VeaOutbox.sol:VeaOutbox",
-            "label": "depositAndRewardWithdrawn",
-            "offset": 29,
             "slot": "1",
             "type": "t_bool"
           }
         ],
         "numberOfBytes": "64"
+      },
+      "t_struct(VeaOutboxInfo)437_storage": {
+        "encoding": "inplace",
+        "label": "struct VeaOutboxArbToEth.VeaOutboxInfo",
+        "members": [
+          {
+            "astId": 434,
+            "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
+            "label": "latestVerifiedEpoch",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint64"
+          },
+          {
+            "astId": 436,
+            "contract": "src/ArbToEth/VeaOutboxArbToEth.sol:VeaOutboxArbToEth",
+            "label": "latestHeartbeatTimestamp",
+            "offset": 8,
+            "slot": "0",
+            "type": "t_uint64"
+          }
+        ],
+        "numberOfBytes": "32"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
       },
       "t_uint64": {
         "encoding": "inplace",

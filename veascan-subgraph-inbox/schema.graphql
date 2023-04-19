@@ -1,0 +1,27 @@
+type Message @entity {
+  id: ID!
+  txHash: Bytes!
+  timestamp: BigInt!
+  from: Bytes!
+  to: Bytes!
+  snapshot: Snapshot!
+  data: Bytes!
+}
+
+type Snapshot @entity {
+  id: ID!
+  epoch: BigInt
+  txHash: Bytes
+  timestamp: BigInt
+  stateRoot: Bytes
+  messages: [Message!]! @derivedFrom(field: "snapshot")
+  numberMessages: BigInt!
+  taken: Boolean!
+  resolving: Boolean!
+}
+
+type Refs @entity {
+  id: ID!
+  currentSnapshotIndex: BigInt!
+  nextMessageIndex: BigInt!
+}

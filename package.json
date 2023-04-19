@@ -17,7 +17,7 @@
   "private": true,
   "workspaces": [
     "contracts",
-    "validator-subgraph-inbox",
+    "relayer-subgraph-inbox",
     "validator-cli",
     "veascan-web",
     "veascan-subgraph-inbox",

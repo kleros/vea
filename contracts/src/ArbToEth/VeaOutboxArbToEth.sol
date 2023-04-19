@@ -41,7 +41,6 @@ contract VeaOutboxArbToEth is IVeaOutbox {
     uint256 public immutable deposit; // The deposit required to submit a claim or challenge
     uint256 public immutable burn; // The amount of wei to burn. deposit / 2
     uint256 public immutable depositPlusReward; // 2 * deposit - burn
-    uint256 public immutable depositMinusOne; // deposit - 1
     address public constant burnAddress = address(0x0000000000000000000000000000000000000000);
 
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
@@ -152,9 +151,6 @@ contract VeaOutboxArbToEth is IVeaOutbox {
         burn = _deposit / 2;
         depositPlusReward = 2 * _deposit - burn;
 
-        // calculating depositMinusOne once saves gas
-        depositMinusOne = _deposit - 1;
-
         veaOutboxInfo.latestVerifiedEpoch = uint64(block.timestamp / epochPeriod) - 1;
         veaOutboxInfo.latestHeartbeatTimestamp = uint64(block.timestamp);
     }
@@ -169,9 +165,7 @@ contract VeaOutboxArbToEth is IVeaOutbox {
      * @param _stateRoot The state root to claim.
      */
     function claim(uint256 _epoch, bytes32 _stateRoot) external payable {
-        // msg.value >= deposit <=> msg.value > deposit - 1
-        // precalculated depositMinusOne = deposit - 1 in constructor saves gas
-        require(msg.value > depositMinusOne, "Insufficient claim deposit.");
+        require(msg.value == deposit || msg.value > deposit, "Insufficient claim deposit.");
 
         uint256 time = block.timestamp;
 
@@ -193,9 +187,7 @@ contract VeaOutboxArbToEth is IVeaOutbox {
      * @param epoch The epoch of the claim to challenge.
      */
     function challenge(uint256 epoch) external payable {
-        // msg.value >= deposit <=> msg.value > deposit - 1
-        // precalculated depositMinusOne = deposit - 1 in constructor saves gas
-        require(msg.value > depositMinusOne, "Insufficient challenge deposit.");
+        require(msg.value == deposit || msg.value > deposit, "Insufficient challenge deposit.");
 
         require(claims[epoch].bridger != address(0), "No claim to challenge.");
         require(challenges[epoch].challenger == address(0), "Claim already challenged.");
