@@ -82,7 +82,7 @@ const Header = styled.label`
 `;
 
 const arbitrumExplorer = arbitrumGoerli.blockExplorers.etherscan.url;
-const goerliExplorer = goerli.blockExplorers.etherscan.url;
+const goerliExplorer = goerli.blockExplorers.etherscan.url + "/";
 
 const TxCard: React.FC<TxCardProps> = ({
   title,
