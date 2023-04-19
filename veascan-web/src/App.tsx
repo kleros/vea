@@ -1,8 +1,8 @@
 import React from "react";
-import Navbar from "./Navbar";
 import Footer from "./Footer";
 import styled from "styled-components";
 import SnapshotAccordion from "./components/SnapshotAccordion/SnapshotAccordion";
+import Navbar from "./Navbar";
 
 const MiddleContent = styled.div`
   display: flex;
