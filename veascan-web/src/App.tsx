@@ -50,15 +50,26 @@ const App = () => {
     console.log(dataForSnapshotAccordion);
   }
 
-  return (
-    <div>
-      <Navbar />
-      <MiddleContent>
-        <SnapshotAccordion items={dataForSnapshotAccordion} />
-      </MiddleContent>
-      <Footer />
-    </div>
-  );
+  if (data) {
+    return (
+      <div>
+        <Navbar />
+        <MiddleContent>
+          <SnapshotAccordion items={dataForSnapshotAccordion} />
+        </MiddleContent>
+        <Footer />
+      </div>
+    );
+  } else
+    return (
+      <div>
+        <Navbar />
+        <MiddleContent>
+          <p>loading...</p>
+        </MiddleContent>
+        <Footer />
+      </div>
+    );
 };
 
 export default App;
