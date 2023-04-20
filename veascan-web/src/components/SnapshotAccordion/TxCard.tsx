@@ -1,8 +1,7 @@
 import React from "react";
 import styled from "styled-components";
-import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
-import Ethereum from "tsx:svgs/chains/ethereum.svg";
 import Copy from "tsx:svgs/icons/copy.svg";
+import { getChain } from "consts/bridges";
 
 interface Field {
   key: string;
@@ -13,7 +12,7 @@ interface Field {
 
 export interface TxCardProps {
   title: string;
-  chain: string;
+  chain: number;
   txHash: string;
   timestamp: string;
   caller: string;
@@ -88,17 +87,18 @@ const TxCard: React.FC<TxCardProps> = ({
   caller,
   extraFields,
 }) => {
+  const chainObject = getChain(chain);
   const fields = [
     {
       key: "Chain",
-      value: chain,
+      value: chainObject.name,
       isCopy: false,
     },
     {
       key: "Transaction ID",
       value: txHash,
       isCopy: true,
-      url: `https://etherscan.io/tx/${txHash}`,
+      url: `${chainObject.blockExplorers?.default.url}/tx/${txHash}`,
     },
     {
       key: "Timestamp",
@@ -109,7 +109,7 @@ const TxCard: React.FC<TxCardProps> = ({
       key: "Caller",
       value: caller,
       isCopy: true,
-      url: `https://etherscan.io/address/${caller}`,
+      url: `${chainObject.blockExplorers?.default.url}/address/${txHash}`,
     },
   ].concat(extraFields ?? []);
 
@@ -127,9 +127,7 @@ const TxCard: React.FC<TxCardProps> = ({
             if (section.key === "Chain") {
               return (
                 <ValueDiv className="chain-info" key={index}>
-                  <Icon
-                    as={section.value === "Ethereum" ? Ethereum : Arbitrum}
-                  />
+                  <Icon as={chainObject.logo} />
                   <small>{section.value}</small>
                 </ValueDiv>
               );
