@@ -23,6 +23,7 @@ const Status = styled.div`
     line-height: 20px;
     font-size: 16px;
   }
+  margin-top: 46px;
 `;
 
 const MessageStatus: React.FC<MessageStatusProps> = ({

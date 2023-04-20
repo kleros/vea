@@ -21,7 +21,6 @@ export interface TxCardProps {
 }
 
 const StyledDiv = styled.div`
-  margin: 0px 32px;
   width: auto;
   .icon {
     width: 16px;

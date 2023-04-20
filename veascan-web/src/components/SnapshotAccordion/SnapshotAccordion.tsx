@@ -1,8 +1,13 @@
 import { CustomAccordion } from "@kleros/ui-components-library";
-import TxCard, { TxCardProps } from "./TxCard";
-import AccordionTitle, { AccordionTitleProps } from "./AccordionTitle";
+import TxCard, { TxCardProps } from "./AccordionBody/TxCard";
+import AccordionTitle, {
+  AccordionTitleProps,
+} from "./AccordionTitle/AccordionTitle";
 import styled from "styled-components";
 import React from "react";
+import AccordionBody, {
+  AccordionBodyProps,
+} from "./AccordionBody/AccordionBody";
 
 const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   display: flex;
@@ -14,10 +19,10 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
     border-radius: 3px;
   }
 
-  .accordion-item__Collapsible-sc-17yp2l-1.iIvQQL {
+  .accordion-item__Collapsible-sc-17yp2l-1:not(.tVZBd) {
     border-bottom: 1px solid ${({ theme }) => theme.color.secondaryBlue};
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
+    border-radius: 3px;
+    height: auto;
   }
 
   .accordion-item__Body-sc-17yp2l-2.jjLCsn {
@@ -34,7 +39,7 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
 interface SnapshotAccordionProps {
   items: {
     titleProps: AccordionTitleProps;
-    txCardProps: TxCardProps;
+    bodyProps: AccordionBodyProps;
   }[];
 }
 
@@ -44,7 +49,7 @@ const SnapshotAccordion: React.FC<SnapshotAccordionProps> = (p) => {
       items={p.items.map((item, index) => ({
         key: index,
         title: <AccordionTitle {...item.titleProps} />,
-        body: <TxCard {...item.txCardProps} />,
+        body: <AccordionBody {...item.bodyProps} />,
       }))}
     />
   );

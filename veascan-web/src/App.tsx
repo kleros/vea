@@ -13,91 +13,48 @@ const MiddleContent = styled.div`
 `;
 
 const App = () => {
+  // get query data
   const { data } = useSnapshots("999999999999");
-  console.log(data);
+
+  // then generate an Array of objects with the necessary fields
+  let dataForSnapshotAccordion;
+  if (data) {
+    console.log(data);
+    dataForSnapshotAccordion = data?.[0]?.map((item) => ({
+      titleProps: {
+        epoch: item?.epoch,
+        timestamp: item?.timestamp,
+        fromChain: "Arbitrum",
+        fromAddress: "0x123456789abcdef",
+        toChain: "Ethereum",
+        toAddress: "0x987654321fedcba",
+        status: "Resolved",
+      },
+      bodyProps: {
+        snapshotDetailsProps: {
+          title: "Verifier",
+          chain: "Arbitrum",
+          txHash: item?.txHash,
+          timestamp: item?.timestamp,
+          caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
+          extraFields: [
+            {
+              key: "State Root",
+              value: item?.stateRoot,
+              isCopy: true,
+            },
+          ],
+        },
+      },
+    }));
+    console.log(dataForSnapshotAccordion);
+  }
+
   return (
     <div>
       <Navbar />
       <MiddleContent>
-        <SnapshotAccordion
-          items={[
-            {
-              titleProps: {
-                epoch: "810212",
-                timestamp: "Apr 18, 2023 99:00:00am",
-                fromChain: "Arbitrum",
-                fromAddress: "0x123456789abcdef",
-                toChain: "Ethereum",
-                toAddress: "0x987654321fedcba",
-                status: "Resolved",
-              },
-              txCardProps: {
-                title: "Verifier",
-                chain: "Arbitrum",
-                txHash: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-                timestamp: "Mar 30, 2023 15:25:23pm",
-                caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-                extraFields: [
-                  {
-                    key: "State Root",
-                    value: "0x2a3d585f4ecaab46b138ec8d87238da44b32eeab",
-                    isCopy: true,
-                  },
-                ],
-              },
-            },
-            {
-              titleProps: {
-                epoch: "999999",
-                timestamp: "Jun 20, 2020 09:00:00pm",
-                fromChain: "Arbitrum",
-                fromAddress: "0x123456789abcdef",
-                toChain: "Ethereum",
-                toAddress: "0x987654321fedcba",
-                status: "Taken",
-              },
-              txCardProps: {
-                title: "Verifier",
-                chain: "Arbitrum",
-                txHash: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-                timestamp: "Mar 30, 2023 15:25:23pm",
-                caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-                extraFields: [
-                  {
-                    key: "State Root",
-                    value: "0x2a3d585f4ecaab46b138ec8d87238da44b32eeab",
-                    isCopy: true,
-                  },
-                ],
-              },
-            },
-            {
-              titleProps: {
-                epoch: "111111",
-                timestamp: "Dec 18, 2023 8:00:00am",
-                fromChain: "Ethereum",
-                fromAddress: "0x123456789abcdef",
-                toChain: "Arbitrum",
-                toAddress: "0x987654321fedcba",
-                status: "Resolving",
-              },
-              txCardProps: {
-                title: "Verifier",
-                chain: "Arbitrum",
-                txHash: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-                timestamp: "Mar 30, 2023 15:25:23pm",
-                caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-                extraFields: [
-                  {
-                    key: "State Root",
-                    value: "0x2a3d585f4ecaab46b138ec8d87238da44b32eeab",
-                    isCopy: true,
-                  },
-                ],
-              },
-            },
-          ]}
-        />
+        <SnapshotAccordion items={dataForSnapshotAccordion} />
       </MiddleContent>
       <Footer />
     </div>
