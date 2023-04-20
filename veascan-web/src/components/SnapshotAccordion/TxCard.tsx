@@ -1,6 +1,5 @@
 import React from "react";
 import styled from "styled-components";
-import { arbitrumGoerli, goerli } from "@wagmi/chains";
 import Copy from "tsx:svgs/icons/copy.svg";
 import { getChain } from "consts/bridges";
 
@@ -79,9 +78,6 @@ const Header = styled.label`
   width: fit-content;
   display: block;
 `;
-
-const arbitrumExplorer = arbitrumGoerli.blockExplorers.etherscan.url;
-const goerliExplorer = goerli.blockExplorers.etherscan.url + "/";
 
 const TxCard: React.FC<TxCardProps> = ({
   title,
