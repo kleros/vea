@@ -1,9 +1,10 @@
-import React from "react";
-import Footer from "./Footer";
-import styled from "styled-components";
-import SnapshotAccordion from "./components/SnapshotAccordion/SnapshotAccordion";
-import Navbar from "./Navbar";
+import { arbitrumGoerli, goerli } from "@wagmi/chains";
 import { useSnapshots } from "hooks/useSnapshots";
+import React from "react";
+import styled from "styled-components";
+import Footer from "./Footer";
+import Navbar from "./Navbar";
+import SnapshotAccordion from "./components/SnapshotAccordion/SnapshotAccordion";
 
 const MiddleContent = styled.div`
   display: flex;
