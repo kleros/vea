@@ -1,9 +1,8 @@
-import { arbitrumGoerli, goerli } from "@wagmi/chains";
 import React from "react";
 import styled from "styled-components";
-import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
-import Ethereum from "tsx:svgs/chains/ethereum.svg";
+import { arbitrumGoerli, goerli } from "@wagmi/chains";
 import Copy from "tsx:svgs/icons/copy.svg";
+import { getChain } from "consts/bridges";
 
 interface Field {
   key: string;
@@ -92,19 +91,18 @@ const TxCard: React.FC<TxCardProps> = ({
   caller,
   extraFields,
 }) => {
+  const chainObject = getChain(chain);
   const fields = [
     {
       key: "Chain",
-      value: chain === arbitrumGoerli.id ? "Arbitrum" : "Ethereum",
+      value: chainObject.name,
       isCopy: false,
     },
     {
       key: "Transaction ID",
       value: txHash,
       isCopy: true,
-      url: `${
-        chain === arbitrumGoerli.id ? arbitrumExplorer : goerliExplorer
-      }tx/${txHash}`,
+      url: `${chainObject.blockExplorers?.default.url}/tx/${txHash}`,
     },
     {
       key: "Timestamp",
@@ -115,9 +113,7 @@ const TxCard: React.FC<TxCardProps> = ({
       key: "Caller",
       value: caller,
       isCopy: true,
-      url: `${
-        chain === arbitrumGoerli.id ? arbitrumExplorer : goerliExplorer
-      }address/${caller}`,
+      url: `${chainObject.blockExplorers?.default.url}/address/${txHash}`,
     },
   ].concat(extraFields ?? []);
 
@@ -135,9 +131,7 @@ const TxCard: React.FC<TxCardProps> = ({
             if (section.key === "Chain") {
               return (
                 <ValueDiv className="chain-info" key={index}>
-                  <Icon
-                    as={section.value === "Ethereum" ? Ethereum : Arbitrum}
-                  />
+                  <Icon as={chainObject.logo} />
                   <small>{section.value}</small>
                 </ValueDiv>
               );
