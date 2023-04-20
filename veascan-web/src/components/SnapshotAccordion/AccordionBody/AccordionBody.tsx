@@ -1,7 +1,6 @@
 import { Button } from "@kleros/ui-components-library";
 import React, { useState } from "react";
 import styled from "styled-components";
-import Document from "tsx:svgs/icons/document.svg";
 import MessageStatus from "./MessageStatus";
 import TxCard, { TxCardProps } from "./TxCard";
 

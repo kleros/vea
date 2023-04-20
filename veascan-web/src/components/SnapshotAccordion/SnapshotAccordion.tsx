@@ -1,5 +1,4 @@
 import { CustomAccordion } from "@kleros/ui-components-library";
-import TxCard, { TxCardProps } from "./AccordionBody/TxCard";
 import AccordionTitle, {
   AccordionTitleProps,
 } from "./AccordionTitle/AccordionTitle";
@@ -22,7 +21,6 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   .accordion-item__Collapsible-sc-17yp2l-1:not(.tVZBd) {
     border-bottom: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-radius: 3px;
-    height: auto;
   }
 
   .accordion-item__Body-sc-17yp2l-2.jjLCsn {
