@@ -18,15 +18,12 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
     border-radius: 3px;
   }
 
-  .accordion-item__Collapsible-sc-17yp2l-1:not(.tVZBd) {
-    border-bottom: 1px solid ${({ theme }) => theme.color.secondaryBlue};
-    border-radius: 3px;
-  }
-
   .accordion-item__Body-sc-17yp2l-2.jjLCsn {
     background-color: ${({ theme }) => theme.color.secondaryPurple};
     border-right: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-left: 1px solid ${({ theme }) => theme.color.secondaryBlue};
+    border-bottom: 1px solid ${({ theme }) => theme.color.secondaryBlue};
+    border-radius: 3px;
   }
 
   svg.accordion-svg path {
