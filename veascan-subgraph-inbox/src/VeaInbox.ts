@@ -69,6 +69,7 @@ function useNextMessageIndex(): BigInt {
 export function handleSnapshotSaved(event: SnapshotSaved): void {
   const currentSnapshot = getCurrentSnapshot();
   currentSnapshot.taken = true;
+  currentSnapshot.caller = event.transaction.from;
   currentSnapshot.stateRoot = event.params.stateRoot;
   currentSnapshot.timestamp = event.block.timestamp;
   currentSnapshot.txHash = event.transaction.hash;
@@ -85,7 +86,6 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
     refs.currentSnapshotIndex.plus(BigInt.fromI32(1)).toString()
   );
   newSnapshot.numberMessages = BigInt.fromI32(0);
-  newSnapshot.caller = event.transaction.from;
   newSnapshot.taken = false;
   newSnapshot.resolving = false;
   newSnapshot.save();
