@@ -75,9 +75,9 @@ const StyledColoredLabelContainer = styled.div`
 export interface AccordionTitleProps {
   epoch: string;
   timestamp: string;
-  fromChain: string;
+  fromChain: number;
   fromAddress: string;
-  toChain: string;
+  toChain: number;
   toAddress: string;
   status: string;
 }
@@ -98,9 +98,7 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
       <StyledTimestamp>{p.timestamp}</StyledTimestamp>
       <StyledChainsAndAddressesContainer>
         <StyledChainAndAddress>
-          <ChainIcon
-            as={p.fromChain === "Ethereum" ? EthereumLogo : ArbitrumLogo}
-          />
+          <ChainIcon as={p.fromChain === 5 ? EthereumLogo : ArbitrumLogo} />
           <StyledTruncatedAddress>
             {truncatedFromAddress}
           </StyledTruncatedAddress>
@@ -109,9 +107,7 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
           <StyledRightArrowIcon as={RightArrowLogo} />
         </ArrowContainer>
         <StyledChainAndAddress>
-          <ChainIcon
-            as={p.toChain === "Ethereum" ? EthereumLogo : ArbitrumLogo}
-          />
+          <ChainIcon as={p.toChain === 5 ? EthereumLogo : ArbitrumLogo} />
           <StyledTruncatedAddress>{truncatedToAddress}</StyledTruncatedAddress>
         </StyledChainAndAddress>
       </StyledChainsAndAddressesContainer>
