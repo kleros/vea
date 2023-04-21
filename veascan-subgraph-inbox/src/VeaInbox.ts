@@ -85,6 +85,7 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
     refs.currentSnapshotIndex.plus(BigInt.fromI32(1)).toString()
   );
   newSnapshot.numberMessages = BigInt.fromI32(0);
+  newSnapshot.caller = event.transaction.from;
   newSnapshot.taken = false;
   newSnapshot.resolving = false;
   newSnapshot.save();
