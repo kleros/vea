@@ -112,7 +112,7 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
       <StyledTimestamp>{p.timestamp}</StyledTimestamp>
       <StyledChainsAndAddressesContainer>
         <StyledChainAndAddress>
-          <ChainIcon as={p.fromChain === 5 ? EthereumLogo : ArbitrumLogo} />
+          <ChainIcon as={fromChainObject?.logo} />
           <StyledTruncatedAddress
             href={`${fromChainObject?.blockExplorers?.default.url}/address/${p.fromAddress}`}
             target="_blank"
@@ -125,7 +125,7 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
           <StyledRightArrowIcon as={RightArrowLogo} />
         </ArrowContainer>
         <StyledChainAndAddress>
-          <ChainIcon as={p.toChain === 5 ? EthereumLogo : ArbitrumLogo} />
+          <ChainIcon as={toChainObject?.logo} />
           <StyledTruncatedAddress
             href={`${toChainObject?.blockExplorers?.default.url}/address/${p.toAddress}`}
             target="_blank"
