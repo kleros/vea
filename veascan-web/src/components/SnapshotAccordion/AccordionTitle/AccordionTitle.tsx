@@ -3,6 +3,7 @@ import styled from "styled-components";
 import ArbitrumLogo from "tsx:svgs/chains/arbitrum.svg";
 import EthereumLogo from "tsx:svgs/chains/ethereum.svg";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
+import { getChain } from "~src/consts/bridges";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
 
 const StyledSnapshotAccordionTitle = styled.div`
@@ -11,10 +12,11 @@ const StyledSnapshotAccordionTitle = styled.div`
   height: 40px;
 `;
 
-const StyledEpoch = styled.div`
+const StyledEpoch = styled.a`
   color: ${({ theme }) => theme.color.blue};
   width: 60px;
   margin-right: 32px;
+  text-decoration: none;
 `;
 
 const StyledTimestamp = styled.div`
@@ -35,7 +37,6 @@ const StyledChainsAndAddressesContainer = styled.div`
 const StyledChainAndAddress = styled.div`
   position: relative;
   padding-left: 5px;
-  color: ${({ theme }) => theme.color.blue};
   display: flex;
   flex-direction: row;
 `;
@@ -63,9 +64,11 @@ const StyledRightArrowIcon = styled.svg`
   fill: none;
 `;
 
-const StyledTruncatedAddress = styled.div`
+const StyledTruncatedAddress = styled.a`
   display: flex;
   padding-top: 3.5px;
+  color: ${({ theme }) => theme.color.blue};
+  text-decoration: none;
 `;
 
 const StyledColoredLabelContainer = styled.div`
@@ -90,16 +93,23 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
   const truncatedToAddress = `${p.toAddress.slice(0, 6)}...${p.toAddress.slice(
     -4
   )}`;
-
+  const fromChainObject = getChain(p.fromChain);
+  const toChainObject = getChain(p.toChain);
   return (
     <StyledSnapshotAccordionTitle>
-      <StyledEpoch>{p.epoch}</StyledEpoch>
+      <StyledEpoch href="" target="_blank" rel="noreferrer">
+        {p.epoch}
+      </StyledEpoch>
 
       <StyledTimestamp>{p.timestamp}</StyledTimestamp>
       <StyledChainsAndAddressesContainer>
         <StyledChainAndAddress>
           <ChainIcon as={p.fromChain === 5 ? EthereumLogo : ArbitrumLogo} />
-          <StyledTruncatedAddress>
+          <StyledTruncatedAddress
+            href={`${fromChainObject?.blockExplorers?.default.url}/address/${p.fromAddress}`}
+            target="_blank"
+            rel="noreferrer"
+          >
             {truncatedFromAddress}
           </StyledTruncatedAddress>
         </StyledChainAndAddress>
@@ -108,7 +118,13 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
         </ArrowContainer>
         <StyledChainAndAddress>
           <ChainIcon as={p.toChain === 5 ? EthereumLogo : ArbitrumLogo} />
-          <StyledTruncatedAddress>{truncatedToAddress}</StyledTruncatedAddress>
+          <StyledTruncatedAddress
+            href={`${toChainObject?.blockExplorers?.default.url}/address/${p.toAddress}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {truncatedToAddress}
+          </StyledTruncatedAddress>
         </StyledChainAndAddress>
       </StyledChainsAndAddressesContainer>
 
