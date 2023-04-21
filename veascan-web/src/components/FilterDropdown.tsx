@@ -1,26 +1,51 @@
 import { DropdownSelect } from "@kleros/ui-components-library";
 import React from "react";
 import styled from "styled-components";
-import { theme } from "~src/styles/themes";
 
-const ITEMS = [
-  { text: "All", dot: "white", value: 1 },
-  { text: "Invalid", dot: theme.color.lightRed, value: 2 },
-  { text: "Taken", dot: theme.color.lightYellow, value: 3 },
-  { text: "Claimed", dot: theme.color.turquoise, value: 4 },
-  { text: "Challenged", dot: theme.color.lightPurple, value: 5 },
-  { text: "Verified", dot: theme.color.darkBlue, value: 6 },
-  { text: "Expired", dot: theme.color.smoke, value: 7 },
-  { text: "Resolving", dot: theme.color.teal, value: 8 },
-  { text: "Resolved", dot: theme.color.green, value: 9 },
-];
+interface Item {
+  text: string;
+  dot?: string;
+  Icon?: React.FC<React.SVGAttributes<SVGAElement>>;
+  value: number;
+}
+
+interface FilterDropdownProps {
+  isSimpleButton: boolean;
+  itemData: Item[];
+}
 
 const FilterItem = styled(DropdownSelect)`
+  .item-icon {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+  }
+  h1 {
+    font-family: "Oxanium";
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 17.5px;
+  }
+  svg {
+    height: 8px;
+    width: 8px;
+  }
+
   p {
     font-family: "Open Sans";
   }
 `;
 
-export const FilterDropdown = () => {
-  return <FilterItem items={ITEMS} defaultValue={1} callback={() => {}} />;
+export const FilterDropdown: React.FC<FilterDropdownProps> = ({
+  isSimpleButton,
+  itemData,
+}) => {
+  return (
+    <FilterItem
+      items={itemData}
+      defaultValue={1}
+      simpleButton={isSimpleButton}
+      callback={() => {}}
+    />
+  );
 };
