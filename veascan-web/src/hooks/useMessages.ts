@@ -16,7 +16,7 @@ export const useMessages = (
       skip,
       snapshot,
     }).then((result) => result.messages);
-    if (!getRelays) return messages;
+    if (!getRelays) return messages.map((message) => [message, null]);
     else
       return Promise.all(
         messages.map(async (message) => {
