@@ -94,6 +94,7 @@ export const GlobalStyle = createGlobalStyle`
   }
   svg, img {
     display: inline-block;
+    visibility: visible;
     vertical-align: middle;
   }
 `;
