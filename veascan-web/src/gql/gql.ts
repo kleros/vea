@@ -19,7 +19,7 @@ const documents = {
     types.GetMessagesDocument,
   "\n  query getRelay($id: ID!) {\n    message(id: $id) {\n      timestamp\n      txHash\n      relayer\n      proof\n    }\n  }\n":
     types.GetRelayDocument,
-  "\n  query getSnapshots($lastTimestamp: BigInt!) {\n    snapshots(\n      first: 5\n      orderBy: timestamp\n      orderDirection: desc\n      where: { timestamp_lt: $lastTimestamp }\n    ) {\n      id\n      epoch\n      txHash\n      timestamp\n      stateRoot\n      numberMessages\n      taken\n      resolving\n    }\n  }\n":
+  "\n  query getSnapshots($lastTimestamp: BigInt!) {\n    snapshots(\n      first: 5\n      orderBy: timestamp\n      orderDirection: desc\n      where: { timestamp_lt: $lastTimestamp }\n    ) {\n      id\n      epoch\n      caller\n      txHash\n      timestamp\n      stateRoot\n      numberMessages\n      taken\n      resolving\n    }\n  }\n":
     types.GetSnapshotsDocument,
 };
 
@@ -59,8 +59,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query getSnapshots($lastTimestamp: BigInt!) {\n    snapshots(\n      first: 5\n      orderBy: timestamp\n      orderDirection: desc\n      where: { timestamp_lt: $lastTimestamp }\n    ) {\n      id\n      epoch\n      txHash\n      timestamp\n      stateRoot\n      numberMessages\n      taken\n      resolving\n    }\n  }\n"
-): (typeof documents)["\n  query getSnapshots($lastTimestamp: BigInt!) {\n    snapshots(\n      first: 5\n      orderBy: timestamp\n      orderDirection: desc\n      where: { timestamp_lt: $lastTimestamp }\n    ) {\n      id\n      epoch\n      txHash\n      timestamp\n      stateRoot\n      numberMessages\n      taken\n      resolving\n    }\n  }\n"];
+  source: "\n  query getSnapshots($lastTimestamp: BigInt!) {\n    snapshots(\n      first: 5\n      orderBy: timestamp\n      orderDirection: desc\n      where: { timestamp_lt: $lastTimestamp }\n    ) {\n      id\n      epoch\n      caller\n      txHash\n      timestamp\n      stateRoot\n      numberMessages\n      taken\n      resolving\n    }\n  }\n"
+): (typeof documents)["\n  query getSnapshots($lastTimestamp: BigInt!) {\n    snapshots(\n      first: 5\n      orderBy: timestamp\n      orderDirection: desc\n      where: { timestamp_lt: $lastTimestamp }\n    ) {\n      id\n      epoch\n      caller\n      txHash\n      timestamp\n      stateRoot\n      numberMessages\n      taken\n      resolving\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};
