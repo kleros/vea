@@ -326,6 +326,7 @@ export enum Message_OrderBy {
   Proof = "proof",
   Relayer = "relayer",
   Snapshot = "snapshot",
+  SnapshotCaller = "snapshot__caller",
   SnapshotEpoch = "snapshot__epoch",
   SnapshotId = "snapshot__id",
   SnapshotNumberMessages = "snapshot__numberMessages",
@@ -514,6 +515,7 @@ export enum Refs_OrderBy {
 
 export type Snapshot = {
   __typename?: "Snapshot";
+  caller?: Maybe<Scalars["Bytes"]>;
   epoch?: Maybe<Scalars["BigInt"]>;
   id: Scalars["ID"];
   messages: Array<Message>;
@@ -537,6 +539,16 @@ export type Snapshot_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
   and?: InputMaybe<Array<InputMaybe<Snapshot_Filter>>>;
+  caller?: InputMaybe<Scalars["Bytes"]>;
+  caller_contains?: InputMaybe<Scalars["Bytes"]>;
+  caller_gt?: InputMaybe<Scalars["Bytes"]>;
+  caller_gte?: InputMaybe<Scalars["Bytes"]>;
+  caller_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  caller_lt?: InputMaybe<Scalars["Bytes"]>;
+  caller_lte?: InputMaybe<Scalars["Bytes"]>;
+  caller_not?: InputMaybe<Scalars["Bytes"]>;
+  caller_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  caller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
   epoch?: InputMaybe<Scalars["BigInt"]>;
   epoch_gt?: InputMaybe<Scalars["BigInt"]>;
   epoch_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -602,6 +614,7 @@ export type Snapshot_Filter = {
 };
 
 export enum Snapshot_OrderBy {
+  Caller = "caller",
   Epoch = "epoch",
   Id = "id",
   Messages = "messages",
@@ -808,6 +821,7 @@ export type GetSnapshotsQuery = {
     __typename?: "Snapshot";
     id: string;
     epoch?: any | null;
+    caller?: any | null;
     txHash?: any | null;
     timestamp?: any | null;
     stateRoot?: any | null;
@@ -1117,6 +1131,7 @@ export const GetSnapshotsDocument = {
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "caller" } },
                 { kind: "Field", name: { kind: "Name", value: "txHash" } },
                 { kind: "Field", name: { kind: "Name", value: "timestamp" } },
                 { kind: "Field", name: { kind: "Name", value: "stateRoot" } },
