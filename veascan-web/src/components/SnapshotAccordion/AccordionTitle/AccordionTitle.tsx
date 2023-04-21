@@ -17,6 +17,10 @@ const StyledEpoch = styled.a`
   width: 60px;
   margin-right: 32px;
   text-decoration: none;
+
+  :hover {
+    text-decoration: underline;
+  }
 `;
 
 const StyledTimestamp = styled.div`
@@ -69,6 +73,10 @@ const StyledTruncatedAddress = styled.a`
   padding-top: 3.5px;
   color: ${({ theme }) => theme.color.blue};
   text-decoration: none;
+
+  :hover {
+    text-decoration: underline;
+  }
 `;
 
 const StyledColoredLabelContainer = styled.div`
