@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import Navbar from "./Navbar";
 import SnapshotAccordion from "./components/SnapshotAccordion/SnapshotAccordion";
 import { bridges, getChain } from "./consts/bridges";
+import TxFilterHeader from "./components/TxFilterHeader";
 
 const MiddleContent = styled.div`
   display: flex;
@@ -71,6 +72,7 @@ const App = () => {
   return (
     <div>
       <Navbar />
+      <TxFilterHeader />
       <MiddleContent>
         {data ? (
           <SnapshotAccordion items={getFormattedDataForAccordion(data)} />
