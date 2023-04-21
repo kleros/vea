@@ -6,7 +6,7 @@ import TxCard, { TxCardProps } from "./TxCard";
 
 export interface AccordionBodyProps {
   snapshotDetailsProps: TxCardProps;
-  newMessagesProps?: TxCardProps;
+  newMessagesProps: TxCardProps;
 }
 
 const StyledSnapshotDetailsButton = styled(Button)<{
@@ -89,12 +89,11 @@ const AccordionBody: React.FC<AccordionBodyProps> = (p) => {
       {snapshotDetailsVisible ? (
         <>
           <TxCard {...p.snapshotDetailsProps} />
-          <TxCard {...p.snapshotDetailsProps} />
         </>
       ) : (
         <>
           <MessageStatus messageNumber={1} status="Relayed" />
-          <TxCard {...p.snapshotDetailsProps} />
+          <TxCard {...p.newMessagesProps} />
         </>
       )}
     </>

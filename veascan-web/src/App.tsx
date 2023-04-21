@@ -5,7 +5,7 @@ import styled from "styled-components";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
 import SnapshotAccordion from "./components/SnapshotAccordion/SnapshotAccordion";
-import { getChain } from "./consts/bridges";
+import { bridges, getChain } from "./consts/bridges";
 
 const MiddleContent = styled.div`
   display: flex;
@@ -15,33 +15,51 @@ const MiddleContent = styled.div`
 `;
 
 const getFormattedDataForAccordion = (data: any) => {
-  const formattedDataForAccordion = data?.[0]?.map((item) => ({
-    titleProps: {
-      epoch: item?.epoch,
-      timestamp: item?.timestamp,
-      fromChain: "Arbitrum",
-      fromAddress: "0x123456789abcdef",
-      toChain: "Ethereum",
-      toAddress: "0x987654321fedcba",
-      status: "Resolved",
-    },
-    bodyProps: {
-      snapshotDetailsProps: {
-        title: "Verifier",
-        chain: "Arbitrum",
-        txHash: item?.txHash,
-        timestamp: item?.timestamp,
-        caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-        extraFields: [
-          {
-            key: "State Root",
-            value: item?.stateRoot,
-            isCopy: true,
-          },
-        ],
+  const formattedDataForAccordion = data.map(([inboxData, outboxData]) => {
+    const bridgeInfo = bridges[inboxData.bridgeIndex];
+    console.log(bridgeInfo);
+    return {
+      titleProps: {
+        epoch: inboxData?.epoch,
+        timestamp: inboxData?.timestamp,
+        fromChain: bridgeInfo.from,
+        fromAddress: bridgeInfo.inboxAddress,
+        toChain: bridgeInfo.to,
+        toAddress: bridgeInfo.outboxAddress,
+        status: "Resolved",
       },
-    },
-  }));
+      bodyProps: {
+        snapshotDetailsProps: {
+          title: "Verifier",
+          chain: bridgeInfo.from,
+          txHash: inboxData?.txHash,
+          timestamp: inboxData?.timestamp,
+          caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
+          extraFields: [
+            {
+              key: "State Root",
+              value: inboxData?.stateRoot,
+              isCopy: true,
+            },
+          ],
+        },
+        newMessagesProps: {
+          title: "Verifier",
+          chain: bridgeInfo.from,
+          txHash: inboxData?.txHash,
+          timestamp: inboxData?.timestamp,
+          caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
+          extraFields: [
+            {
+              key: "State Root",
+              value: inboxData?.stateRoot,
+              isCopy: true,
+            },
+          ],
+        },
+      },
+    };
+  });
   return formattedDataForAccordion;
 };
 
