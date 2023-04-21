@@ -1,7 +1,6 @@
+import { IChain, supportedChains } from "consts/bridges";
 import React, { FC } from "react";
 import styled from "styled-components";
-import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
-import Ethereum from "tsx:svgs/chains/ethereum.svg";
 import Globe from "tsx:svgs/icons/globe.svg";
 import { theme } from "~src/styles/themes";
 import { FilterDropdown } from "./FilterDropdown";
@@ -20,11 +19,13 @@ const STATUS_ITEMS = [
   { text: "Resolved", dot: theme.color.green, value: 9 },
 ];
 
-const CHAIN_ITEMS = [
-  { text: "All Networks", Icon: Globe, value: 1 },
-  { text: "Arbitrum", Icon: Arbitrum, value: 2 },
-  { text: "Ethereum", Icon: Ethereum, value: 3 },
-];
+const CHAIN_ITEMS = [{ text: "All Networks", Icon: Globe, value: 1 }].concat(
+  supportedChains.map((chain: IChain, i: number) => ({
+    text: chain.name,
+    Icon: chain.logo,
+    value: i + 2,
+  }))
+);
 
 const HeaderText = styled.h5`
   font-size: 24px;
@@ -37,7 +38,8 @@ const SnapshotHeader = styled.div`
   display: flex;
   flex-direction: column;
   gap: 64px;
-  margin: 76px 0 24px 132px;
+  margin: 76px auto 24px auto;
+  width: 1170px;
 `;
 
 const FilterHeader = styled.div`
@@ -91,17 +93,29 @@ const TxFilterHeader: FC<TxFilterHeaderProps> = ({}) => {
         <NetworkTag>
           <DropdownTag>
             <small>From: </small>
-            <FilterDropdown isSimpleButton itemData={CHAIN_ITEMS} />
+            <FilterDropdown
+              isAlignRight={false}
+              isSimpleButton
+              itemData={CHAIN_ITEMS}
+            />
           </DropdownTag>
 
           <DropdownTag>
             <small>To: </small>
-            <FilterDropdown isSimpleButton itemData={CHAIN_ITEMS} />
+            <FilterDropdown
+              isAlignRight={false}
+              isSimpleButton
+              itemData={CHAIN_ITEMS}
+            />
           </DropdownTag>
         </NetworkTag>
         <DropdownTag>
           <small>Status: </small>
-          <FilterDropdown isSimpleButton itemData={STATUS_ITEMS} />
+          <FilterDropdown
+            isAlignRight={true}
+            isSimpleButton
+            itemData={STATUS_ITEMS}
+          />
         </DropdownTag>
       </FilterHeader>
     </SnapshotHeader>

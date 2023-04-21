@@ -11,6 +11,7 @@ interface Item {
 
 interface FilterDropdownProps {
   isSimpleButton: boolean;
+  isAlignRight: boolean;
   itemData: Item[];
 }
 
@@ -38,6 +39,7 @@ const FilterItem = styled(DropdownSelect)`
 
 export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   isSimpleButton,
+  isAlignRight,
   itemData,
 }) => {
   return (
@@ -45,6 +47,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
       items={itemData}
       defaultValue={1}
       simpleButton={isSimpleButton}
+      alignRight={isAlignRight}
       callback={() => {}}
     />
   );
