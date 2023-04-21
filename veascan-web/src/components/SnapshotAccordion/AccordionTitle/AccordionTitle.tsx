@@ -12,15 +12,10 @@ const StyledSnapshotAccordionTitle = styled.div`
   height: 40px;
 `;
 
-const StyledEpoch = styled.a`
-  color: ${({ theme }) => theme.color.blue};
+const StyledEpoch = styled.div`
+  color: ${({ theme }) => theme.color.lightBlue};
   width: 60px;
   margin-right: 32px;
-  text-decoration: none;
-
-  :hover {
-    text-decoration: underline;
-  }
 `;
 
 const StyledTimestamp = styled.div`

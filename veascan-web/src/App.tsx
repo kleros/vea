@@ -15,14 +15,43 @@ const MiddleContent = styled.div`
   width: 100%;
 `;
 
+const formatDate = (timestamp: number): string => {
+  const date = new Date(timestamp * 1000);
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const year = date.getFullYear();
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+  const hour = date.getHours();
+  const minute = "0" + date.getMinutes();
+  const second = "0" + date.getSeconds();
+  const formattedDate = `${month} ${day}, ${year} ${hour}:${minute.substr(
+    -2
+  )}:${second.substr(-2)} ${hour >= 12 ? "pm" : "am"}`;
+  return formattedDate;
+};
+
 const getFormattedDataForAccordion = (data: any) => {
   const formattedDataForAccordion = data.map(([inboxData, outboxData]) => {
     const bridgeInfo = bridges[inboxData.bridgeIndex];
+    const humanReadableTimestamp = formatDate(inboxData?.timestamp);
     console.log(bridgeInfo);
     return {
       titleProps: {
         epoch: inboxData?.epoch,
-        timestamp: inboxData?.timestamp,
+        timestamp: humanReadableTimestamp,
         fromChain: bridgeInfo.from,
         fromAddress: bridgeInfo.inboxAddress,
         toChain: bridgeInfo.to,
@@ -34,7 +63,7 @@ const getFormattedDataForAccordion = (data: any) => {
           title: "Verifier",
           chain: bridgeInfo.from,
           txHash: inboxData?.txHash,
-          timestamp: inboxData?.timestamp,
+          timestamp: humanReadableTimestamp,
           caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
           extraFields: [
             {
@@ -48,7 +77,7 @@ const getFormattedDataForAccordion = (data: any) => {
           title: "Verifier",
           chain: bridgeInfo.from,
           txHash: inboxData?.txHash,
-          timestamp: inboxData?.timestamp,
+          timestamp: humanReadableTimestamp,
           caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
           extraFields: [
             {
@@ -72,8 +101,8 @@ const App = () => {
   return (
     <div>
       <Navbar />
-      <TxFilterHeader />
       <MiddleContent>
+        <TxFilterHeader />
         {data ? (
           <SnapshotAccordion items={getFormattedDataForAccordion(data)} />
         ) : (
