@@ -11,6 +11,7 @@ type Message @entity {
 type Snapshot @entity {
   id: ID!
   epoch: BigInt
+  caller: Bytes
   txHash: Bytes
   timestamp: BigInt
   stateRoot: Bytes

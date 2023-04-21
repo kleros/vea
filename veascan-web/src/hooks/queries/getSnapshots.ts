@@ -10,6 +10,7 @@ export const getSnapshotsQuery = graphql(`
     ) {
       id
       epoch
+      caller
       txHash
       timestamp
       stateRoot

@@ -326,6 +326,7 @@ export enum Message_OrderBy {
   Proof = "proof",
   Relayer = "relayer",
   Snapshot = "snapshot",
+  SnapshotCaller = "snapshot__caller",
   SnapshotEpoch = "snapshot__epoch",
   SnapshotId = "snapshot__id",
   SnapshotNumberMessages = "snapshot__numberMessages",
@@ -514,6 +515,7 @@ export enum Refs_OrderBy {
 
 export type Snapshot = {
   __typename?: "Snapshot";
+  caller?: Maybe<Scalars["Bytes"]>;
   epoch?: Maybe<Scalars["BigInt"]>;
   id: Scalars["ID"];
   messages: Array<Message>;
@@ -537,6 +539,16 @@ export type Snapshot_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
   and?: InputMaybe<Array<InputMaybe<Snapshot_Filter>>>;
+  caller?: InputMaybe<Scalars["Bytes"]>;
+  caller_contains?: InputMaybe<Scalars["Bytes"]>;
+  caller_gt?: InputMaybe<Scalars["Bytes"]>;
+  caller_gte?: InputMaybe<Scalars["Bytes"]>;
+  caller_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  caller_lt?: InputMaybe<Scalars["Bytes"]>;
+  caller_lte?: InputMaybe<Scalars["Bytes"]>;
+  caller_not?: InputMaybe<Scalars["Bytes"]>;
+  caller_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  caller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
   epoch?: InputMaybe<Scalars["BigInt"]>;
   epoch_gt?: InputMaybe<Scalars["BigInt"]>;
   epoch_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -602,6 +614,7 @@ export type Snapshot_Filter = {
 };
 
 export enum Snapshot_OrderBy {
+  Caller = "caller",
   Epoch = "epoch",
   Id = "id",
   Messages = "messages",
@@ -765,6 +778,39 @@ export type GetClaimQuery = {
   }>;
 };
 
+export type GetMessagesQueryVariables = Exact<{
+  skip: Scalars["Int"];
+  snapshot: Scalars["String"];
+}>;
+
+export type GetMessagesQuery = {
+  __typename?: "Query";
+  messages: Array<{
+    __typename?: "Message";
+    id: string;
+    txHash: any;
+    timestamp: any;
+    from: any;
+    to: any;
+    data: any;
+  }>;
+};
+
+export type GetRelayQueryVariables = Exact<{
+  id: Scalars["ID"];
+}>;
+
+export type GetRelayQuery = {
+  __typename?: "Query";
+  message?: {
+    __typename?: "Message";
+    timestamp: any;
+    txHash: any;
+    relayer: any;
+    proof: any;
+  } | null;
+};
+
 export type GetSnapshotsQueryVariables = Exact<{
   lastTimestamp: Scalars["BigInt"];
 }>;
@@ -775,6 +821,7 @@ export type GetSnapshotsQuery = {
     __typename?: "Snapshot";
     id: string;
     epoch?: any | null;
+    caller?: any | null;
     txHash?: any | null;
     timestamp?: any | null;
     stateRoot?: any | null;
@@ -872,6 +919,150 @@ export const GetClaimDocument = {
     },
   ],
 } as unknown as DocumentNode<GetClaimQuery, GetClaimQueryVariables>;
+export const GetMessagesDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getMessages" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "skip" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshot" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "messages" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "5" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "skip" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "skip" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: { kind: "EnumValue", value: "timestamp" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderDirection" },
+                value: { kind: "EnumValue", value: "desc" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "snapshot" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "snapshot" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "from" } },
+                { kind: "Field", name: { kind: "Name", value: "to" } },
+                { kind: "Field", name: { kind: "Name", value: "data" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetMessagesQuery, GetMessagesQueryVariables>;
+export const GetRelayDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getRelay" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "message" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                { kind: "Field", name: { kind: "Name", value: "relayer" } },
+                { kind: "Field", name: { kind: "Name", value: "proof" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetRelayQuery, GetRelayQueryVariables>;
 export const GetSnapshotsDocument = {
   kind: "Document",
   definitions: [
@@ -940,6 +1131,7 @@ export const GetSnapshotsDocument = {
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "caller" } },
                 { kind: "Field", name: { kind: "Name", value: "txHash" } },
                 { kind: "Field", name: { kind: "Name", value: "timestamp" } },
                 { kind: "Field", name: { kind: "Name", value: "stateRoot" } },
