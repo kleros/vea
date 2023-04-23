@@ -1,14 +1,15 @@
 import { Button } from "@kleros/ui-components-library";
 import React, { useState } from "react";
 import styled from "styled-components";
+import { bridges } from "~src/consts/bridges";
+import { useMessages } from "~src/hooks/useMessages";
 import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
 import MessageStatus from "./MessageStatus";
-import TxCard, { TxCardProps } from "./TxCard";
+import TxCard from "./TxCard";
 
 export interface AccordionBodyProps {
-  snapshotDetailsProps: TxCardProps;
-  newMessagesProps: any[];
-  bridgeInfo: any;
+  inboxData: any;
+  outboxData: any;
 }
 
 const StyledSnapshotDetailsButton = styled(Button)<{
@@ -64,6 +65,30 @@ const StyledButtonsContainer = styled.div`
 
 const AccordionBody: React.FC<AccordionBodyProps> = (p) => {
   const [snapshotDetailsVisible, setSnapshotDetailsVisible] = useState(true);
+  const bridgeInfo = bridges[p.inboxData.bridgeIndex];
+
+  const snapshotDetailsParams = {
+    title: "Verifier",
+    chain: bridgeInfo.from,
+    txHash: p.inboxData.txHash,
+    timestamp: formatTimestampToHumanReadable(p.inboxData.timestamp),
+    caller: p.inboxData.caller,
+    extraFields: [
+      {
+        key: "State Root",
+        value: p.inboxData.stateRoot,
+        isCopy: true,
+      },
+    ],
+  };
+
+  // new messages data
+  const { data } = useMessages(
+    p.inboxData.id,
+    p.inboxData.bridgeIndex,
+    0,
+    false
+  );
 
   const handleClickSnapshotDetails = () => {
     setSnapshotDetailsVisible(true);
@@ -90,22 +115,22 @@ const AccordionBody: React.FC<AccordionBodyProps> = (p) => {
 
       {snapshotDetailsVisible ? (
         <>
-          <TxCard {...p.snapshotDetailsProps} />
+          <TxCard {...snapshotDetailsParams} />
         </>
       ) : (
-        p.newMessagesProps?.map(([messageInboxData, messageOutboxData]) => {
+        data?.map(([messageInboxData, messageOutboxData]) => {
           return (
-            <div key={messageInboxData.id}>
+            <div key={messageInboxData?.id}>
               <MessageStatus
-                messageNumber={messageInboxData.id}
+                messageNumber={messageInboxData?.id}
                 status="Relayed"
               />
               <TxCard
                 title="Verifier"
-                chain={p.bridgeInfo.from}
-                txHash={messageInboxData.txHash}
+                chain={bridgeInfo.from}
+                txHash={messageInboxData?.txHash}
                 timestamp={formatTimestampToHumanReadable(
-                  messageInboxData.timestamp
+                  messageInboxData?.timestamp
                 )}
                 caller="0x123"
               />

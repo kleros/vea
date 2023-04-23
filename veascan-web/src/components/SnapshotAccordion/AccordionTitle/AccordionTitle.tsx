@@ -1,9 +1,8 @@
 import React from "react";
 import styled from "styled-components";
-import ArbitrumLogo from "tsx:svgs/chains/arbitrum.svg";
-import EthereumLogo from "tsx:svgs/chains/ethereum.svg";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
-import { getChain } from "~src/consts/bridges";
+import { bridges, getChain } from "~src/consts/bridges";
+import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
 
 const StyledSnapshotAccordionTitle = styled.div`
@@ -79,37 +78,44 @@ const StyledColoredLabelContainer = styled.div`
 `;
 
 export interface AccordionTitleProps {
-  epoch: string;
-  timestamp: string;
-  fromChain: number;
-  fromAddress: string;
-  toChain: number;
-  toAddress: string;
-  status: string;
+  inboxData: any;
+  outboxData: any;
 }
 
 const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
-  const truncatedFromAddress = `${p.fromAddress.slice(
+  const bridgeInfo = bridges[p.inboxData.bridgeIndex];
+  const titleParams = {
+    epoch: p.inboxData.epoch,
+    timestamp: formatTimestampToHumanReadable(p.inboxData.timestamp),
+    fromChain: bridgeInfo.from,
+    fromAddress: bridgeInfo.inboxAddress,
+    toChain: bridgeInfo.to,
+    toAddress: bridgeInfo.outboxAddress,
+    status: "Resolved",
+  };
+
+  const truncatedFromAddress = `${titleParams.fromAddress.slice(
     0,
     6
-  )}...${p.fromAddress.slice(-4)}`;
-  const truncatedToAddress = `${p.toAddress.slice(0, 6)}...${p.toAddress.slice(
-    -4
-  )}`;
-  const fromChainObject = getChain(p.fromChain);
-  const toChainObject = getChain(p.toChain);
+  )}...${titleParams.fromAddress.slice(-4)}`;
+  const truncatedToAddress = `${titleParams.toAddress.slice(
+    0,
+    6
+  )}...${titleParams.toAddress.slice(-4)}`;
+  const fromChainObject = getChain(titleParams.fromChain);
+  const toChainObject = getChain(titleParams.toChain);
   return (
     <StyledSnapshotAccordionTitle>
       <StyledEpoch href="" target="_blank" rel="noreferrer">
-        {p.epoch}
+        {titleParams.epoch}
       </StyledEpoch>
 
-      <StyledTimestamp>{p.timestamp}</StyledTimestamp>
+      <StyledTimestamp>{titleParams.timestamp}</StyledTimestamp>
       <StyledChainsAndAddressesContainer>
         <StyledChainAndAddress>
           <ChainIcon as={fromChainObject?.logo} />
           <StyledTruncatedAddress
-            href={`${fromChainObject?.blockExplorers?.default.url}/address/${p.fromAddress}`}
+            href={`${fromChainObject?.blockExplorers?.default.url}/address/${titleParams.fromAddress}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -122,7 +128,7 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
         <StyledChainAndAddress>
           <ChainIcon as={toChainObject?.logo} />
           <StyledTruncatedAddress
-            href={`${toChainObject?.blockExplorers?.default.url}/address/${p.toAddress}`}
+            href={`${toChainObject?.blockExplorers?.default.url}/address/${titleParams.toAddress}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -133,8 +139,8 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
 
       <StyledColoredLabelContainer>
         <ColoredLabel
-          text={p.status}
-          variant={p.status as keyof typeof variantColors}
+          text={titleParams.status}
+          variant={titleParams.status as keyof typeof variantColors}
         />
       </StyledColoredLabelContainer>
     </StyledSnapshotAccordionTitle>

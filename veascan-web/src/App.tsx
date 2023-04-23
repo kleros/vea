@@ -1,4 +1,3 @@
-import { arbitrumGoerli, goerli } from "@wagmi/chains";
 import { useSnapshots } from "hooks/useSnapshots";
 import React from "react";
 import styled from "styled-components";
@@ -6,7 +5,7 @@ import Footer from "./Footer";
 import Navbar from "./Navbar";
 import SnapshotAccordion from "./components/SnapshotAccordion/SnapshotAccordion";
 import TxFilterHeader from "./components/TxFilterHeader";
-import { formatDataForAccordion } from "./utils/formatDataForAccordion";
+import { mapDataForAccordion } from "./utils/mapDataForAccordion";
 
 const MiddleContent = styled.div`
   display: flex;
@@ -25,7 +24,7 @@ const App = () => {
       <TxFilterHeader />
       <MiddleContent>
         {data ? (
-          <SnapshotAccordion items={formatDataForAccordion(data)} />
+          <SnapshotAccordion items={mapDataForAccordion(data)} />
         ) : (
           <p>loading...</p>
         )}
