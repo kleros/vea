@@ -16,15 +16,14 @@ const MiddleContent = styled.div`
 `;
 
 const App = () => {
-  // get query data
   const { data } = useSnapshots("999999999999");
   console.log(data);
 
   return (
     <div>
       <Navbar />
+      <TxFilterHeader />
       <MiddleContent>
-        <TxFilterHeader />
         {data ? (
           <SnapshotAccordion items={formatDataForAccordion(data)} />
         ) : (

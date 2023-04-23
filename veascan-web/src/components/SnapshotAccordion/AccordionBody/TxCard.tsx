@@ -108,7 +108,7 @@ const TxCard: React.FC<TxCardProps> = ({
       key: "Caller",
       value: caller,
       isCopy: true,
-      url: `${chainObject?.blockExplorers?.default.url}/address/${txHash}`,
+      url: `${chainObject?.blockExplorers?.default.url}/address/${caller}`,
     },
   ].concat(extraFields ?? []);
 

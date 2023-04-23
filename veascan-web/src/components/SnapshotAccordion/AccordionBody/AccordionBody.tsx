@@ -1,12 +1,14 @@
 import { Button } from "@kleros/ui-components-library";
 import React, { useState } from "react";
 import styled from "styled-components";
+import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
 import MessageStatus from "./MessageStatus";
 import TxCard, { TxCardProps } from "./TxCard";
 
 export interface AccordionBodyProps {
   snapshotDetailsProps: TxCardProps;
-  newMessagesProps: TxCardProps;
+  newMessagesProps: any[];
+  bridgeInfo: any;
 }
 
 const StyledSnapshotDetailsButton = styled(Button)<{
@@ -91,10 +93,25 @@ const AccordionBody: React.FC<AccordionBodyProps> = (p) => {
           <TxCard {...p.snapshotDetailsProps} />
         </>
       ) : (
-        <>
-          <MessageStatus messageNumber={1} status="Relayed" />
-          <TxCard {...p.newMessagesProps} />
-        </>
+        p.newMessagesProps?.map(([messageInboxData, messageOutboxData]) => {
+          return (
+            <div key={messageInboxData.id}>
+              <MessageStatus
+                messageNumber={messageInboxData.id}
+                status="Relayed"
+              />
+              <TxCard
+                title="Verifier"
+                chain={p.bridgeInfo.from}
+                txHash={messageInboxData.txHash}
+                timestamp={formatTimestampToHumanReadable(
+                  messageInboxData.timestamp
+                )}
+                caller="0x123"
+              />
+            </div>
+          );
+        })
       )}
     </>
   );
