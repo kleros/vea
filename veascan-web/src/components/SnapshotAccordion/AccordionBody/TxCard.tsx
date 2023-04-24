@@ -20,7 +20,6 @@ export interface TxCardProps {
 }
 
 const StyledDiv = styled.div`
-  margin: 0px 32px;
   width: auto;
   .icon {
     width: 16px;
@@ -91,14 +90,14 @@ const TxCard: React.FC<TxCardProps> = ({
   const fields = [
     {
       key: "Chain",
-      value: chainObject.name,
+      value: chainObject?.name,
       isCopy: false,
     },
     {
       key: "Transaction ID",
       value: txHash,
       isCopy: true,
-      url: `${chainObject.blockExplorers?.default.url}/tx/${txHash}`,
+      url: `${chainObject?.blockExplorers?.default.url}/tx/${txHash}`,
     },
     {
       key: "Timestamp",
@@ -109,7 +108,7 @@ const TxCard: React.FC<TxCardProps> = ({
       key: "Caller",
       value: caller,
       isCopy: true,
-      url: `${chainObject.blockExplorers?.default.url}/address/${txHash}`,
+      url: `${chainObject?.blockExplorers?.default.url}/address/${caller}`,
     },
   ].concat(extraFields ?? []);
 
@@ -127,7 +126,7 @@ const TxCard: React.FC<TxCardProps> = ({
             if (section.key === "Chain") {
               return (
                 <ValueDiv className="chain-info" key={index}>
-                  <Icon as={chainObject.logo} />
+                  <Icon as={chainObject?.logo} />
                   <small>{section.value}</small>
                 </ValueDiv>
               );

@@ -1,8 +1,8 @@
 import React from "react";
 import styled from "styled-components";
-import ArbitrumLogo from "tsx:svgs/chains/arbitrum.svg";
-import EthereumLogo from "tsx:svgs/chains/ethereum.svg";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
+import { bridges, getChain } from "~src/consts/bridges";
+import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
 
 const StyledSnapshotAccordionTitle = styled.div`
@@ -12,7 +12,7 @@ const StyledSnapshotAccordionTitle = styled.div`
 `;
 
 const StyledEpoch = styled.div`
-  color: ${({ theme }) => theme.color.blue};
+  color: ${({ theme }) => theme.color.lightBlue};
   width: 60px;
   margin-right: 32px;
 `;
@@ -35,7 +35,6 @@ const StyledChainsAndAddressesContainer = styled.div`
 const StyledChainAndAddress = styled.div`
   position: relative;
   padding-left: 5px;
-  color: ${({ theme }) => theme.color.blue};
   display: flex;
   flex-direction: row;
 `;
@@ -63,9 +62,15 @@ const StyledRightArrowIcon = styled.svg`
   fill: none;
 `;
 
-const StyledTruncatedAddress = styled.div`
+const StyledTruncatedAddress = styled.a`
   display: flex;
   padding-top: 3.5px;
+  color: ${({ theme }) => theme.color.blue};
+  text-decoration: none;
+
+  :hover {
+    text-decoration: underline;
+  }
 `;
 
 const StyledColoredLabelContainer = styled.div`
@@ -73,35 +78,47 @@ const StyledColoredLabelContainer = styled.div`
 `;
 
 export interface AccordionTitleProps {
-  epoch: string;
-  timestamp: string;
-  fromChain: string;
-  fromAddress: string;
-  toChain: string;
-  toAddress: string;
-  status: string;
+  inboxData: any;
+  outboxData: any;
 }
 
 const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
-  const truncatedFromAddress = `${p.fromAddress.slice(
+  const bridgeInfo = bridges[p.inboxData.bridgeIndex];
+  const titleParams = {
+    epoch: p.inboxData.epoch,
+    timestamp: formatTimestampToHumanReadable(p.inboxData.timestamp),
+    fromChain: bridgeInfo.from,
+    fromAddress: bridgeInfo.inboxAddress,
+    toChain: bridgeInfo.to,
+    toAddress: bridgeInfo.outboxAddress,
+    status: "Resolved",
+  };
+
+  const truncatedFromAddress = `${titleParams.fromAddress.slice(
     0,
     6
-  )}...${p.fromAddress.slice(-4)}`;
-  const truncatedToAddress = `${p.toAddress.slice(0, 6)}...${p.toAddress.slice(
-    -4
-  )}`;
-
+  )}...${titleParams.fromAddress.slice(-4)}`;
+  const truncatedToAddress = `${titleParams.toAddress.slice(
+    0,
+    6
+  )}...${titleParams.toAddress.slice(-4)}`;
+  const fromChainObject = getChain(titleParams.fromChain);
+  const toChainObject = getChain(titleParams.toChain);
   return (
     <StyledSnapshotAccordionTitle>
-      <StyledEpoch>{p.epoch}</StyledEpoch>
+      <StyledEpoch href="" target="_blank" rel="noreferrer">
+        {titleParams.epoch}
+      </StyledEpoch>
 
-      <StyledTimestamp>{p.timestamp}</StyledTimestamp>
+      <StyledTimestamp>{titleParams.timestamp}</StyledTimestamp>
       <StyledChainsAndAddressesContainer>
         <StyledChainAndAddress>
-          <ChainIcon
-            as={p.fromChain === "Ethereum" ? EthereumLogo : ArbitrumLogo}
-          />
-          <StyledTruncatedAddress>
+          <ChainIcon as={fromChainObject?.logo} />
+          <StyledTruncatedAddress
+            href={`${fromChainObject?.blockExplorers?.default.url}/address/${titleParams.fromAddress}`}
+            target="_blank"
+            rel="noreferrer"
+          >
             {truncatedFromAddress}
           </StyledTruncatedAddress>
         </StyledChainAndAddress>
@@ -109,17 +126,21 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
           <StyledRightArrowIcon as={RightArrowLogo} />
         </ArrowContainer>
         <StyledChainAndAddress>
-          <ChainIcon
-            as={p.toChain === "Ethereum" ? EthereumLogo : ArbitrumLogo}
-          />
-          <StyledTruncatedAddress>{truncatedToAddress}</StyledTruncatedAddress>
+          <ChainIcon as={toChainObject?.logo} />
+          <StyledTruncatedAddress
+            href={`${toChainObject?.blockExplorers?.default.url}/address/${titleParams.toAddress}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {truncatedToAddress}
+          </StyledTruncatedAddress>
         </StyledChainAndAddress>
       </StyledChainsAndAddressesContainer>
 
       <StyledColoredLabelContainer>
         <ColoredLabel
-          text={p.status}
-          variant={p.status as keyof typeof variantColors}
+          text={titleParams.status}
+          variant={titleParams.status as keyof typeof variantColors}
         />
       </StyledColoredLabelContainer>
     </StyledSnapshotAccordionTitle>

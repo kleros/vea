@@ -22,5 +22,6 @@ export const theme = {
     smoke: "#BECCE5",
     teal: "#00B8C4",
     green: "#65DC7F",
+    midnightPurple: "#2E206C",
   },
 };
