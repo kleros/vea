@@ -7,17 +7,6 @@ interface ColoredLabelProps {
   text: string;
 }
 
-const ColorTag = styled(Tag)<{ backgroundColor: string; text: string }>`
-  background-color: ${({ theme, backgroundColor }) =>
-    theme.color[backgroundColor]};
-  pointer-events: none;
-  p {
-    color: ${({ theme }) => theme.color.secondaryPurple};
-    font-size: 14px;
-    line-height: 17.5px;
-  }
-`;
-
 export const variantColors = {
   Invalid: "lightRed",
   Taken: "lightYellow",
@@ -29,9 +18,25 @@ export const variantColors = {
   Resolved: "green",
 };
 
+const ColorWrapper = styled.div<{ variant: keyof typeof variantColors }>`
+  div {
+    background-color: ${({ theme, variant }) =>
+      theme.color[variantColors[variant]]};
+    pointer-events: none;
+    p {
+      color: ${({ theme }) => theme.color.secondaryPurple};
+      font-size: 14px;
+      line-height: 17.5px;
+    }
+  }
+`;
+
 const ColoredLabel: React.FC<ColoredLabelProps> = ({ text, variant }) => {
-  const backgroundColor = variantColors[variant];
-  return <ColorTag as="div" text={text} backgroundColor={backgroundColor} />;
+  return (
+    <ColorWrapper {...{ variant }}>
+      <Tag as="div" {...{ text }} />
+    </ColorWrapper>
+  );
 };
 
 export default ColoredLabel;
