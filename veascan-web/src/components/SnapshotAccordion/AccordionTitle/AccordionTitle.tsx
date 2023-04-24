@@ -82,6 +82,15 @@ export interface AccordionTitleProps {
   outboxData: any;
 }
 
+export const statusRoles = {
+  Taken: "Creator",
+  Claimed: "Oracle",
+  Verified: "Verifier",
+  Challenged: "Challenger",
+  Resolving: "Fallback Sender",
+  Resolved: "Fallback Executor",
+};
+
 const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
   const bridgeInfo = bridges[p.inboxData.bridgeIndex];
   const titleParams = {
@@ -91,7 +100,9 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
     fromAddress: bridgeInfo.inboxAddress,
     toChain: bridgeInfo.to,
     toAddress: bridgeInfo.outboxAddress,
-    status: "Resolved",
+    status:
+      // bridgeInfo.from === 421613 || bridgeInfo.from === 42161 ? "Taken" : "Resolved",
+      "Resolved",
   };
 
   const truncatedFromAddress = `${titleParams.fromAddress.slice(

@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import Document from "tsx:svgs/icons/document.svg";
 
 interface MessageStatusProps {
-  messageNumber: number;
-  status: string;
+  messageInboxData: any;
+  messageOutboxData: any;
+  messageStatus: string;
+  setMessageStatus: any;
 }
 
 const Icon = styled.svg`
@@ -27,14 +29,28 @@ const Status = styled.div`
 `;
 
 const MessageStatus: React.FC<MessageStatusProps> = ({
-  messageNumber,
-  status,
+  messageInboxData,
+  messageOutboxData,
+  messageStatus,
+  setMessageStatus,
 }) => {
+  useEffect(() => {
+    calculateMessageStatus(messageOutboxData);
+  }, []);
+
+  const calculateMessageStatus = (messageOutboxData: any) => {
+    if (!messageOutboxData) {
+      setMessageStatus("Inboxed");
+    } else {
+      setMessageStatus("Relayed");
+    }
+  };
+
   return (
     <Status>
       <Icon as={Document} />
       <small>
-        Message #{messageNumber} - {status}
+        Message #{messageInboxData.id} - {messageStatus}
       </small>
     </Status>
   );

@@ -63,8 +63,15 @@ const StyledButtonsContainer = styled.div`
   padding-bottom: 12px;
 `;
 
+export const messageStatusRoles = {
+  Inboxed: "Sender",
+  Relayed: "Relayer",
+};
+
 const AccordionBody: React.FC<AccordionBodyProps> = (p) => {
   const [snapshotDetailsVisible, setSnapshotDetailsVisible] = useState(true);
+  const [messageStatus, setMessageStatus] = useState("");
+  const [snapshotDetailsStatus, setSnapshotDetailsStatus] = useState("");
   const bridgeInfo = bridges[p.inboxData.bridgeIndex];
 
   const snapshotDetailsParams = {
@@ -122,17 +129,19 @@ const AccordionBody: React.FC<AccordionBodyProps> = (p) => {
           return (
             <div key={messageInboxData?.id}>
               <MessageStatus
-                messageNumber={messageInboxData?.id}
-                status="Relayed"
+                messageInboxData={messageInboxData}
+                messageOutboxData={messageOutboxData}
+                messageStatus={messageStatus}
+                setMessageStatus={setMessageStatus}
               />
               <TxCard
-                title="Verifier"
+                title={messageStatusRoles[messageStatus]}
                 chain={bridgeInfo.from}
                 txHash={messageInboxData?.txHash}
                 timestamp={formatTimestampToHumanReadable(
                   messageInboxData?.timestamp
                 )}
-                caller="0x123"
+                caller={messageInboxData?.from}
               />
             </div>
           );
