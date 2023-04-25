@@ -12,19 +12,29 @@ export const useMessages = (
 ) => {
   return useSWR(`${snapshot}-${bridgeIndex}-${skip}-${getRelays}`, async () => {
     const { inboxEndpoint, outboxEndpoint } = bridges[bridgeIndex];
-    const messages = await request(inboxEndpoint, getMessagesQuery, {
-      skip,
-      snapshot,
-    }).then((result) => result.messages);
-    if (!getRelays) return messages.map((message) => [message, null]);
-    else
-      return Promise.all(
-        messages.map(async (message) => {
-          const relayData = await request(outboxEndpoint, getRelayQuery, {
-            id: message.id,
-          }).then((result) => result.message);
-          return [message, relayData];
+    const [messages, totalMessages] = await request(
+      inboxEndpoint,
+      getMessagesQuery,
+      {
+        skip,
+        snapshot,
+        snapshotID: snapshot,
+      }
+    ).then((result) => [result.messages, result.snapshot?.numberMessages]);
+    return {
+      messages: await Promise.all(
+        messages.map(async (message: (typeof messages)[number]) => {
+          return [
+            message,
+            getRelays
+              ? await request(outboxEndpoint, getRelayQuery, {
+                  id: message.id,
+                }).then((result) => result.message)
+              : null,
+          ];
         })
-      );
+      ),
+      totalMessages,
+    };
   });
 };

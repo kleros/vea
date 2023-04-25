@@ -109,7 +109,7 @@ const AccordionBody: React.FC<AccordionBodyProps> = ({
           snapshotStatus={snapshotStatus}
         />
       ) : (
-        data?.map(([messageInboxData, messageOutboxData]) => {
+        data?.messages.map(([messageInboxData, messageOutboxData]) => {
           return (
             <Message
               key={messageInboxData?.id}
