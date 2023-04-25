@@ -26,7 +26,7 @@ const Status = styled.div`
   margin-top: 46px;
 `;
 
-const MessageInfo: React.FC<MessageStatusProps> = ({
+const MessageHeader: React.FC<MessageStatusProps> = ({
   messageNumber,
   status,
 }) => {
@@ -40,4 +40,4 @@ const MessageInfo: React.FC<MessageStatusProps> = ({
   );
 };
 
-export default MessageInfo;
+export default MessageHeader;

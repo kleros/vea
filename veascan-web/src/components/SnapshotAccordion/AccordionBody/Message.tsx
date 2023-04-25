@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { bridges } from "~src/consts/bridges";
 import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
-import MessageInfo from "./MessageInfo";
+import MessageHeader from "./MessageHeader";
 import TxCard from "./TxCard";
 
 interface MessageProps {
@@ -39,7 +39,7 @@ const Message: React.FC<MessageProps> = ({
 
   return (
     <div key={messageInboxData?.id}>
-      <MessageInfo
+      <MessageHeader
         status={messageStatus}
         messageNumber={messageInboxData?.id}
       />
