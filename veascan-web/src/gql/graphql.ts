@@ -781,6 +781,7 @@ export type GetClaimQuery = {
 export type GetMessagesQueryVariables = Exact<{
   skip: Scalars["Int"];
   snapshot: Scalars["String"];
+  snapshotID: Scalars["ID"];
 }>;
 
 export type GetMessagesQuery = {
@@ -794,6 +795,7 @@ export type GetMessagesQuery = {
     to: any;
     data: any;
   }>;
+  snapshot?: { __typename?: "Snapshot"; numberMessages: any } | null;
 };
 
 export type GetRelayQueryVariables = Exact<{
@@ -949,6 +951,17 @@ export const GetMessagesDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotID" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -1007,6 +1020,29 @@ export const GetMessagesDocument = {
                 { kind: "Field", name: { kind: "Name", value: "from" } },
                 { kind: "Field", name: { kind: "Name", value: "to" } },
                 { kind: "Field", name: { kind: "Name", value: "data" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "snapshot" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotID" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "numberMessages" },
+                },
               ],
             },
           },

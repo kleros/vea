@@ -1,7 +1,7 @@
 import { graphql } from "src/gql";
 
 export const getMessagesQuery = graphql(`
-  query getMessages($skip: Int!, $snapshot: String!) {
+  query getMessages($skip: Int!, $snapshot: String!, $snapshotID: ID!) {
     messages(
       first: 5
       skip: $skip
@@ -15,6 +15,9 @@ export const getMessagesQuery = graphql(`
       from
       to
       data
+    }
+    snapshot(id: $snapshotID) {
+      numberMessages
     }
   }
 `);

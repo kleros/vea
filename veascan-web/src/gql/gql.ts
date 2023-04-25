@@ -15,7 +15,7 @@ import { TypedDocumentNode as DocumentNode } from "@graphql-typed-document-node/
 const documents = {
   "\n  query getClaim($epoch: BigInt!) {\n    claims(where: { epoch: $epoch }) {\n      id\n      epoch\n      timestamp\n      stateroot\n      bridger\n      challenged\n      challenge {\n        id\n        timestamp\n        challenger\n        honest\n      }\n      honest\n    }\n  }\n":
     types.GetClaimDocument,
-  "\n  query getMessages($skip: Int!, $snapshot: String!) {\n    messages(\n      first: 5\n      skip: $skip\n      orderBy: timestamp\n      orderDirection: desc\n      where: { snapshot: $snapshot }\n    ) {\n      id\n      txHash\n      timestamp\n      from\n      to\n      data\n    }\n  }\n":
+  "\n  query getMessages($skip: Int!, $snapshot: String!, $snapshotID: ID!) {\n    messages(\n      first: 5\n      skip: $skip\n      orderBy: timestamp\n      orderDirection: desc\n      where: { snapshot: $snapshot }\n    ) {\n      id\n      txHash\n      timestamp\n      from\n      to\n      data\n    }\n    snapshot(id: $snapshotID) {\n      numberMessages\n    }\n  }\n":
     types.GetMessagesDocument,
   "\n  query getRelay($id: ID!) {\n    message(id: $id) {\n      timestamp\n      txHash\n      relayer\n      proof\n    }\n  }\n":
     types.GetRelayDocument,
@@ -47,8 +47,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query getMessages($skip: Int!, $snapshot: String!) {\n    messages(\n      first: 5\n      skip: $skip\n      orderBy: timestamp\n      orderDirection: desc\n      where: { snapshot: $snapshot }\n    ) {\n      id\n      txHash\n      timestamp\n      from\n      to\n      data\n    }\n  }\n"
-): (typeof documents)["\n  query getMessages($skip: Int!, $snapshot: String!) {\n    messages(\n      first: 5\n      skip: $skip\n      orderBy: timestamp\n      orderDirection: desc\n      where: { snapshot: $snapshot }\n    ) {\n      id\n      txHash\n      timestamp\n      from\n      to\n      data\n    }\n  }\n"];
+  source: "\n  query getMessages($skip: Int!, $snapshot: String!, $snapshotID: ID!) {\n    messages(\n      first: 5\n      skip: $skip\n      orderBy: timestamp\n      orderDirection: desc\n      where: { snapshot: $snapshot }\n    ) {\n      id\n      txHash\n      timestamp\n      from\n      to\n      data\n    }\n    snapshot(id: $snapshotID) {\n      numberMessages\n    }\n  }\n"
+): (typeof documents)["\n  query getMessages($skip: Int!, $snapshot: String!, $snapshotID: ID!) {\n    messages(\n      first: 5\n      skip: $skip\n      orderBy: timestamp\n      orderDirection: desc\n      where: { snapshot: $snapshot }\n    ) {\n      id\n      txHash\n      timestamp\n      from\n      to\n      data\n    }\n    snapshot(id: $snapshotID) {\n      numberMessages\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
