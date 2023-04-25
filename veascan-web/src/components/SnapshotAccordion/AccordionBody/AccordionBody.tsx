@@ -4,13 +4,9 @@ import styled from "styled-components";
 import { bridges } from "~src/consts/bridges";
 import { useMessages } from "~src/hooks/useMessages";
 import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
-import MessageStatus from "./MessageStatus";
 import TxCard from "./TxCard";
-
-export interface AccordionBodyProps {
-  inboxData: any;
-  outboxData: any;
-}
+import Message from "./Message";
+import SnapshotDetails from "./SnapshotDetails";
 
 const StyledSnapshotDetailsButton = styled(Button)<{
   snapshotDetailsVisible: boolean;
@@ -63,29 +59,23 @@ const StyledButtonsContainer = styled.div`
   padding-bottom: 12px;
 `;
 
-const AccordionBody: React.FC<AccordionBodyProps> = (p) => {
-  const [snapshotDetailsVisible, setSnapshotDetailsVisible] = useState(true);
-  const bridgeInfo = bridges[p.inboxData.bridgeIndex];
+export interface AccordionBodyProps {
+  snapshotInboxData: any;
+  snapshotOutboxData: any;
+  snapshotStatus: any;
+}
 
-  const snapshotDetailsParams = {
-    title: "Verifier",
-    chain: bridgeInfo.from,
-    txHash: p.inboxData.txHash,
-    timestamp: formatTimestampToHumanReadable(p.inboxData.timestamp),
-    caller: p.inboxData.caller,
-    extraFields: [
-      {
-        key: "State Root",
-        value: p.inboxData.stateRoot,
-        isCopy: true,
-      },
-    ],
-  };
+const AccordionBody: React.FC<AccordionBodyProps> = ({
+  snapshotInboxData,
+  snapshotOutboxData,
+  snapshotStatus,
+}) => {
+  const [snapshotDetailsVisible, setSnapshotDetailsVisible] = useState(true);
 
   // new messages data
   const { data } = useMessages(
-    p.inboxData.id,
-    p.inboxData.bridgeIndex,
+    snapshotInboxData.id,
+    snapshotInboxData.bridgeIndex,
     0,
     false
   );
@@ -114,27 +104,20 @@ const AccordionBody: React.FC<AccordionBodyProps> = (p) => {
       </StyledButtonsContainer>
 
       {snapshotDetailsVisible ? (
-        <>
-          <TxCard {...snapshotDetailsParams} />
-        </>
+        <SnapshotDetails
+          snapshotInboxData={snapshotInboxData}
+          snapshotStatus={snapshotStatus}
+        />
       ) : (
         data?.map(([messageInboxData, messageOutboxData]) => {
           return (
-            <div key={messageInboxData?.id}>
-              <MessageStatus
-                messageNumber={messageInboxData?.id}
-                status="Relayed"
-              />
-              <TxCard
-                title="Verifier"
-                chain={bridgeInfo.from}
-                txHash={messageInboxData?.txHash}
-                timestamp={formatTimestampToHumanReadable(
-                  messageInboxData?.timestamp
-                )}
-                caller="0x123"
-              />
-            </div>
+            <Message
+              key={messageInboxData?.id}
+              messageInboxData={messageInboxData}
+              messageOutboxData={messageOutboxData}
+              snapshotInboxData={snapshotInboxData}
+              snapshotOutboxData={snapshotOutboxData}
+            />
           );
         })
       )}

@@ -3,7 +3,7 @@ import AccordionTitle, {
   AccordionTitleProps,
 } from "./AccordionTitle/AccordionTitle";
 import styled from "styled-components";
-import React from "react";
+import React, { useState } from "react";
 import AccordionBody, {
   AccordionBodyProps,
 } from "./AccordionBody/AccordionBody";
@@ -33,18 +33,33 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
 
 interface SnapshotAccordionProps {
   items: {
-    titleProps: AccordionTitleProps;
-    bodyProps: AccordionBodyProps;
+    snapshotInboxData: any;
+    snapshotOutboxData: any;
   }[];
 }
 
 const SnapshotAccordion: React.FC<SnapshotAccordionProps> = (p) => {
+  const [snapshotStatus, setSnapshotStatus] = useState("");
+
   return (
     <StyledSnapshotAccordionGlobal
       items={p.items.map((item, index) => ({
         key: index,
-        title: <AccordionTitle {...item.titleProps} />,
-        body: <AccordionBody {...item.bodyProps} />,
+        title: (
+          <AccordionTitle
+            snapshotInboxData={item.snapshotInboxData}
+            snapshotOutboxData={item.snapshotOutboxData}
+            snapshotStatus={snapshotStatus}
+            setSnapshotStatus={setSnapshotStatus}
+          />
+        ),
+        body: (
+          <AccordionBody
+            snapshotInboxData={item.snapshotInboxData}
+            snapshotOutboxData={item.snapshotOutboxData}
+            snapshotStatus={snapshotStatus}
+          />
+        ),
       }))}
     />
   );
