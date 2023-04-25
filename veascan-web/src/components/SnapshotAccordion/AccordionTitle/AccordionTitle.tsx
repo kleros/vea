@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
 import { bridges, getChain } from "~src/consts/bridges";
 import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
+import SnapshotStatus from "./SnapshotStatus";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
@@ -78,24 +79,35 @@ const StyledColoredLabelContainer = styled.div`
 `;
 
 export interface AccordionTitleProps {
-  inboxData: any;
-  outboxData: any;
+  snapshotInboxData: any;
+  snapshotOutboxData: any;
+  snapshotStatus: any;
+  setSnapshotStatus: any;
 }
 
-export const statusRoles = {
-  Taken: "Creator",
-  Claimed: "Oracle",
-  Verified: "Verifier",
-  Challenged: "Challenger",
-  Resolving: "Fallback Sender",
-  Resolved: "Fallback Executor",
-};
+const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
+  snapshotInboxData,
+  snapshotOutboxData,
+  snapshotStatus,
+  setSnapshotStatus,
+}) => {
+  useEffect(() => {
+    calculateSnapshotStatus(snapshotOutboxData);
+  }, []);
 
-const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
-  const bridgeInfo = bridges[p.inboxData.bridgeIndex];
+  const calculateSnapshotStatus = (snapshotOutboxData: any) => {
+    if (!snapshotOutboxData) {
+      setSnapshotStatus("Taken");
+    } else {
+      //todo all statuses
+      setSnapshotStatus("Resolved");
+    }
+  };
+
+  const bridgeInfo = bridges[snapshotInboxData.bridgeIndex];
   const titleParams = {
-    epoch: p.inboxData.epoch,
-    timestamp: formatTimestampToHumanReadable(p.inboxData.timestamp),
+    epoch: snapshotInboxData.epoch,
+    timestamp: formatTimestampToHumanReadable(snapshotInboxData.timestamp),
     fromChain: bridgeInfo.from,
     fromAddress: bridgeInfo.inboxAddress,
     toChain: bridgeInfo.to,
@@ -150,8 +162,8 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = (p) => {
 
       <StyledColoredLabelContainer>
         <ColoredLabel
-          text={titleParams.status}
-          variant={titleParams.status as keyof typeof variantColors}
+          text={snapshotStatus}
+          variant={snapshotStatus as keyof typeof variantColors}
         />
       </StyledColoredLabelContainer>
     </StyledSnapshotAccordionTitle>
