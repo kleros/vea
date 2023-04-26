@@ -1,6 +1,6 @@
 //https://github.com/poanetwork/tokenbridge-contracts/blob/master/contracts/libraries/Bytes.sol
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 /**
  * @title Bytes

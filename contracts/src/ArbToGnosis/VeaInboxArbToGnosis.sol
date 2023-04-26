@@ -8,7 +8,7 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/IVeaInbox.sol";
@@ -208,7 +208,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
         require(epochSend < epochNow, "Cannot send stateroot for current or future epoch.");
 
-        bytes memory data = abi.encodeWithSelector(IRouter.route.selector, epochSend, snapshots[epochSend]);
+        bytes memory data = abi.encodeCall(IRouter.route, (epochSend, snapshots[epochSend]));
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));
 
@@ -219,7 +219,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
      * @dev Sends heartbeat to VeaOutbox.
      */
     function sendHeartbeat() external virtual {
-        bytes memory data = abi.encodeWithSelector(IVeaOutbox.heartbeat.selector, block.timestamp);
+        bytes memory data = abi.encodeCall(IVeaOutbox.heartbeat, block.timestamp);
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));
 

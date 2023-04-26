@@ -8,7 +8,7 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../../ArbToEth/VeaInboxArbToEth.sol";
 
@@ -25,10 +25,9 @@ contract VeaInboxMockArbToEth is VeaInboxArbToEth {
     function sendSnapshot(uint256 _epochSnapshot) external override {
         uint256 epoch = uint256(block.timestamp) / epochPeriod;
         require(_epochSnapshot <= epoch, "Epoch in the future.");
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutbox.resolveDisputedClaim.selector,
-            _epochSnapshot,
-            snapshots[_epochSnapshot]
+        bytes memory data = abi.encodeCall(
+            IVeaOutbox.resolveDisputedClaim,
+            (_epochSnapshot, snapshots[_epochSnapshot])
         );
 
         bytes32 ticketID = bytes32(arbSys.sendTxToL1(veaOutbox, data));

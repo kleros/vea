@@ -8,7 +8,7 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/IVeaInbox.sol";
@@ -214,11 +214,7 @@ contract VeaInboxArbToEth is IVeaInbox {
 
         require(epochSend < epochNow, "Can only send past epoch snapshot.");
 
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutbox.resolveDisputedClaim.selector,
-            epochSend,
-            snapshots[epochSend]
-        );
+        bytes memory data = abi.encodeCall(IVeaOutbox.resolveDisputedClaim, (epochSend, snapshots[epochSend]));
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
 
@@ -229,7 +225,7 @@ contract VeaInboxArbToEth is IVeaInbox {
      * @dev Sends heartbeat to VeaOutbox.
      */
     function sendHeartbeat() external virtual {
-        bytes memory data = abi.encodeWithSelector(IVeaOutbox.heartbeat.selector, block.timestamp);
+        bytes memory data = abi.encodeCall(IVeaOutbox.heartbeat, block.timestamp);
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
 

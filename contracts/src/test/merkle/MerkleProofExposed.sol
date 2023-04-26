@@ -8,7 +8,7 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../../merkle/MerkleProof.sol";
 
@@ -23,11 +23,7 @@ contract MerkleProofExposed is MerkleProof {
      *  @param leaf The leaf to validate membership in merkle tree.
      *  @param merkleRoot The root of the merkle tree.
      */
-    function validateProof(
-        bytes32[] memory proof,
-        bytes32 leaf,
-        bytes32 merkleRoot
-    ) public pure returns (bool) {
+    function validateProof(bytes32[] memory proof, bytes32 leaf, bytes32 merkleRoot) public pure returns (bool) {
         return _validateProof(proof, leaf, merkleRoot);
     }
 }

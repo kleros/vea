@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 // https://github.com/fx-portal/contracts/blob/main/contracts/tunnel/FxBaseChildTunnel.sol
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 // IFxMessageProcessor represents interface to process message
 interface IFxMessageProcessor {
-    function processMessageFromRoot(
-        uint256 stateId,
-        address rootMessageSender,
-        bytes calldata data
-    ) external;
+    function processMessageFromRoot(uint256 stateId, address rootMessageSender, bytes calldata data) external;
 }
 
 /**
@@ -40,11 +36,7 @@ abstract contract FxBaseChildTunnel is IFxMessageProcessor {
         fxRootTunnel = _fxRootTunnel;
     }
 
-    function processMessageFromRoot(
-        uint256 stateId,
-        address rootMessageSender,
-        bytes calldata data
-    ) external override {
+    function processMessageFromRoot(uint256 stateId, address rootMessageSender, bytes calldata data) external override {
         require(msg.sender == fxChild, "FxBaseChildTunnel: INVALID_SENDER");
         _processMessageFromRoot(stateId, rootMessageSender, data);
     }
@@ -71,9 +63,5 @@ abstract contract FxBaseChildTunnel is IFxMessageProcessor {
      * @param sender root message sender
      * @param message bytes message that was sent from Root Tunnel
      */
-    function _processMessageFromRoot(
-        uint256 stateId,
-        address sender,
-        bytes memory message
-    ) internal virtual;
+    function _processMessageFromRoot(uint256 stateId, address sender, bytes memory message) internal virtual;
 }

@@ -8,7 +8,7 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../canonical/arbitrum/IInbox.sol";
@@ -65,7 +65,7 @@ contract RouterArbToGnosis is IRouter {
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
 
-        bytes memory data = abi.encodeWithSelector(IVeaOutbox.resolveDisputedClaim.selector, epoch, stateroot);
+        bytes memory data = abi.encodeCall(IVeaOutbox.resolveDisputedClaim, (epoch, stateroot));
 
         // replace maxGasPerTx with safe level for production deployment
         bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());
