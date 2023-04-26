@@ -8,7 +8,7 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../canonical/gnosis-chain/IAMB.sol";
 import "./interfaces/IVeaOutboxArbToGnosis.sol";
