@@ -10,9 +10,6 @@ const Container = styled.div`
   top: 0px;
   z-index: 2;
   background-color: ${({ theme }) => theme.color.secondaryPurple};
-  ${smallScreenStyle(css`
-    height: calc(32px + (64 - 32) * (100vw - 300px) / (1250 - 300));
-  `)}
   padding: 0 8%;
   display: flex;
   justify-content: space-between;
@@ -26,6 +23,14 @@ const Container = styled.div`
       ${theme.color.pink}
     );
   `}
+
+  ${smallScreenStyle(css`
+    height: 136px;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 0 6%;
+  `)}
 `;
 
 const StyledTitle = styled.h5`
@@ -33,6 +38,10 @@ const StyledTitle = styled.h5`
   font-size: 31.5px;
   margin-top: 20px;
   margin-bottom: 20px;
+
+  ${smallScreenStyle(css`
+    margin-bottom: 10px;
+  `)}
 `;
 
 const StyledSubtitle = styled.h5`
@@ -41,6 +50,10 @@ const StyledSubtitle = styled.h5`
   padding-left: 14px;
   margin-top: 26.5px;
   margin-bottom: 24px;
+
+  ${smallScreenStyle(css`
+    margin-bottom: 14px;
+  `)}
 `;
 
 const StyledLogo = styled.div`

@@ -1,11 +1,12 @@
 import React, { useRef } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { useClickAway, useToggle } from "react-use";
 import QuestionIcon from "tsx:svgs/icons/question.svg";
 import BugIcon from "tsx:svgs/icons/bug.svg";
 import BookIcon from "tsx:svgs/icons/book.svg";
 import OpenBookIcon from "tsx:svgs/icons/open-book.svg";
 import MenuLink from "./MenuLink";
+import { smallScreenStyle } from "styles/smallScreenStyle";
 
 const ITEMS = [
   {
@@ -39,6 +40,11 @@ const Container = styled.div`
   display: flex;
   gap: 32px;
   padding-left: 32px;
+
+  ${smallScreenStyle(css`
+    padding-left: 24px;
+    margin-bottom: 55px;
+  `)}
 `;
 
 const Wrapper = styled.div`
