@@ -10,10 +10,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./IVeaOutbox.sol";
-
 interface IReceiverGateway {
-    function veaOutbox() external view returns (IVeaOutbox);
+    function veaOutbox() external view returns (address);
 
     function senderGateway() external view returns (address);
 }

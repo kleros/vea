@@ -1,5 +1,4 @@
 import {
-  Hearbeat as HearbeatEvent,
   MessageSent as MessageSentEvent,
   SnapshotSaved as SnapshotSavedEvent,
   SnapshotSent as SnapshotSentEvent,
@@ -25,19 +24,6 @@ import {
   crypto,
   ethereum,
 } from "@graphprotocol/graph-ts";
-
-export function handleHearbeat(event: HearbeatEvent): void {
-  let entity = new Hearbeat(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  );
-  entity.ticketId = event.params.ticketId;
-
-  entity.blockNumber = event.block.number;
-  entity.blockTimestamp = event.block.timestamp;
-  entity.transactionHash = event.transaction.hash;
-
-  entity.save();
-}
 
 export function handleMessageSent(event: MessageSentEvent): void {
   let entity = new MessageSent(
@@ -138,15 +124,15 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
   );
   let contract = VeaInbox.bind(event.address);
   entity.epoch = event.block.timestamp.div(contract.epochPeriod());
-  entity.stateRoot = event.params.stateRoot;
-  entity.count = contract.count();
+  entity.stateRoot = contract.snapshots(entity.epoch);
+  entity.count = event.params.count;
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
   entity.save();
 
-  let size = contract.count().toI32();
+  let size = entity.count.toI32();
 
   let oldCount = size - 1;
   let isFirstHash = true;
@@ -199,13 +185,20 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
         nodeHash = Bytes.fromByteArray(
           crypto.keccak256(concatAndSortByteArrays(nodeHash!, sibling))
         );
-        node = new Node(
+        node = Node.load(
           BigInt.fromU64(index).toString() +
             "," +
             BigInt.fromU64(oldCount).toString()
         );
-        node.hash = nodeHash;
-        node.save();
+        if (!node) {
+          node = new Node(
+            BigInt.fromU64(index).toString() +
+              "," +
+              BigInt.fromU64(oldCount).toString()
+          );
+          node.hash = nodeHash;
+          node.save();
+        }
       }
     }
     size /= 2;

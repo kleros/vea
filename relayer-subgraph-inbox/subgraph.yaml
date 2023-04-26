@@ -6,9 +6,9 @@ dataSources:
     name: VeaInbox
     network: arbitrum-goerli
     source:
-      address: "0xD2d4174A971b2AE58F23F7d4F5e4DE9d97bDda31"
+      address: "0xb25BA694e53ed11Fa7E1AecA8CC640F85af5b436"
       abi: VeaInbox
-      startBlock: 16137740
+      startBlock: 16978653
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -21,12 +21,10 @@ dataSources:
         - name: VeaInbox
           file: ../contracts/deployments/arbitrumGoerli/VeaInbox.json
       eventHandlers:
-        - event: Hearbeat(bytes32)
-          handler: handleHearbeat
         - event: MessageSent(bytes)
           handler: handleMessageSent
-        - event: SnapshotSaved(bytes32)
+        - event: SnapshotSaved(uint256)
           handler: handleSnapshotSaved
-        - event: SnapshotSent(uint256,bytes32)
+        - event: SnapshotSent(indexed uint256,bytes32)
           handler: handleSnapshotSent
       file: ./src/vea-inbox-arb-to-eth.ts

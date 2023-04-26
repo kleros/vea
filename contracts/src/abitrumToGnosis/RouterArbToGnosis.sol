@@ -13,13 +13,13 @@ pragma solidity ^0.8.0;
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../canonical/arbitrum/IInbox.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "../interfaces/IRouter.sol";
-import "../interfaces/IVeaOutbox.sol";
+import "./interfaces/IRouterArbToGnosis.sol";
+import "./interfaces/IVeaOutboxArbToGnosis.sol";
 
 /**
  * Router on Ethereum from Arbitrum to Gnosis Chain.
  */
-contract RouterArbToGnosis is IRouter {
+contract RouterArbToGnosis is IRouterArbToGnosis {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
@@ -60,12 +60,17 @@ contract RouterArbToGnosis is IRouter {
      * @param epoch The epoch to verify.
      * @param stateroot The true batch merkle root for the epoch.
      */
-    function route(uint256 epoch, bytes32 stateroot) external {
+    function route(uint256 epoch, bytes32 stateroot, Claim calldata claim) external {
         IBridge bridge = inbox.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
 
-        bytes memory data = abi.encodeWithSelector(IVeaOutbox.resolveDisputedClaim.selector, epoch, stateroot);
+        bytes memory data = abi.encodeWithSelector(
+            IVeaOutboxArbToGnosis.resolveDisputedClaim.selector,
+            epoch,
+            stateroot,
+            claim
+        );
 
         // replace maxGasPerTx with safe level for production deployment
         bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());
