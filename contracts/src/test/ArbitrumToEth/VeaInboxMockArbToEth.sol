@@ -8,9 +8,9 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
-import "../../ArbToEth/VeaInboxArbToEth.sol";
+import "../../arbitrumToEth/VeaInboxArbToEth.sol";
 
 contract VeaInboxMockArbToEth is VeaInboxArbToEth {
     IArbSys public immutable arbSys;
@@ -22,13 +22,14 @@ contract VeaInboxMockArbToEth is VeaInboxArbToEth {
     /**
      * @dev Sends the state root using Arbitrum's canonical bridge.
      */
-    function sendSnapshot(uint256 _epochSnapshot) external override {
+    function sendSnapshot(uint256 _epochSnapshot, IVeaOutboxArbToEth.Claim calldata claim) external override {
         uint256 epoch = uint256(block.timestamp) / epochPeriod;
         require(_epochSnapshot <= epoch, "Epoch in the future.");
         bytes memory data = abi.encodeWithSelector(
-            IVeaOutbox.resolveDisputedClaim.selector,
+            IVeaOutboxArbToEth.resolveDisputedClaim.selector,
             _epochSnapshot,
-            snapshots[_epochSnapshot]
+            snapshots[_epochSnapshot],
+            claim
         );
 
         bytes32 ticketID = bytes32(arbSys.sendTxToL1(veaOutbox, data));

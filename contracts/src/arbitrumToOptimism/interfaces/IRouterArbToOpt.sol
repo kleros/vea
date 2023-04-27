@@ -10,7 +10,7 @@
 
 pragma solidity 0.8.18;
 
-interface IRouter {
+interface IRouterArbToOpt {
     /**
      * Note: Access restricted to canonical bridge.
      * @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.

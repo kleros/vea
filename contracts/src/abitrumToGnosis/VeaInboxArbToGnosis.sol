@@ -8,18 +8,18 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/IVeaInbox.sol";
-import "../interfaces/IVeaOutbox.sol";
+import "./interfaces/IVeaOutboxArbToGnosis.sol";
 
 /**
- * Vea Bridge Inbox From Arbitrum to Ethereum.
+ * Vea Bridge Inbox From Arbitrum to Gnosis.
  */
-contract VeaInboxArbToEth is IVeaInbox {
+contract VeaInboxArbToGnosis is IVeaInbox {
     /**
-     * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
+     * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Gnosis.
      * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, data), outbox relays to.call(data)
      */
     event MessageSent(bytes nodeData);
@@ -27,9 +27,10 @@ contract VeaInboxArbToEth is IVeaInbox {
     /**
      * The bridgers watch this event to claim the stateRoot on the veaOutbox.
      * The epoch (not emitted) is determined by block.timestamp / epochPeriod.
-     * @param stateRoot The receiving domain encoded message data.
+     * @param stateRoot The stateRoot snapshot
+     * @param count The count of messages in the merkle tree
      */
-    event SnapshotSaved(bytes32 stateRoot);
+    event SnapshotSaved(bytes32 stateRoot, uint256 count);
 
     /**
      * @dev The event is emitted when a snapshot through the canonical arbiturm bridge.
@@ -38,16 +39,10 @@ contract VeaInboxArbToEth is IVeaInbox {
      */
     event SnapshotSent(uint256 epochSent, bytes32 ticketId);
 
-    /**
-     * @dev The event is emitted when a heartbeat is sent.
-     * @param ticketId The ticketId of the L2->L1 message.
-     */
-    event Hearbeat(bytes32 ticketId);
-
     IArbSys public constant ARB_SYS = IArbSys(address(100));
 
     uint256 public immutable epochPeriod; // Epochs mark the period between stateroot snapshots
-    address public immutable veaOutbox; // The vea outbox on ethereum.
+    address public immutable router; // The router on ethereum.
 
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
 
@@ -60,11 +55,11 @@ contract VeaInboxArbToEth is IVeaInbox {
     /**
      * @dev Constructor.
      * @param _epochPeriod The duration in seconds between epochs.
-     * @param _veaOutbox The veaOutbox on ethereum.
+     * @param _router The router on ethereum.
      */
-    constructor(uint256 _epochPeriod, address _veaOutbox) {
+    constructor(uint256 _epochPeriod, address _router) {
         epochPeriod = _epochPeriod;
-        veaOutbox = _veaOutbox;
+        router = _router;
     }
 
     /**
@@ -173,7 +168,7 @@ contract VeaInboxArbToEth is IVeaInbox {
 
         snapshots[epoch] = stateRoot;
 
-        emit SnapshotSaved(stateRoot);
+        emit SnapshotSaved(stateRoot, count);
     }
 
     /**
@@ -206,33 +201,18 @@ contract VeaInboxArbToEth is IVeaInbox {
      * @param epochSend The epoch of the snapshot requested to send.
      */
     function sendSnapshot(uint256 epochSend) external virtual {
-        uint256 epochNow;
-
         unchecked {
-            epochNow = block.timestamp / epochPeriod;
+            require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        require(epochSend < epochNow, "Can only send past epoch snapshot.");
-
         bytes memory data = abi.encodeWithSelector(
-            IVeaOutbox.resolveDisputedClaim.selector,
+            IVeaOutboxArbToGnosis.resolveDisputedClaim.selector,
             epochSend,
             snapshots[epochSend]
         );
 
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
+        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(router, data));
 
         emit SnapshotSent(epochSend, ticketID);
-    }
-
-    /**
-     * @dev Sends heartbeat to VeaOutbox.
-     */
-    function sendHeartbeat() external virtual {
-        bytes memory data = abi.encodeWithSelector(IVeaOutbox.heartbeat.selector, block.timestamp);
-
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
-
-        emit Hearbeat(ticketID);
     }
 }

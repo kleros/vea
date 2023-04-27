@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // https://github.com/fx-portal/contracts/blob/main/contracts/tunnel/FxBaseRootTunnel.sol
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import {RLPReader} from "./lib/RLPReader.sol";
 import {MerklePatriciaProof} from "./lib/MerklePatriciaProof.sol";

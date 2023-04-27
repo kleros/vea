@@ -8,9 +8,9 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
-interface IVeaOutbox {
+interface IVeaOutboxArbToOpt {
     /**
      * Note: Gateways expect first argument of message call to be the inbox sender, used for authenitcation.
      * @dev Verifies and relays the message.
@@ -28,10 +28,4 @@ interface IVeaOutbox {
      * @param stateRoot The true state root for the epoch.
      */
     function resolveDisputedClaim(uint256 epoch, bytes32 stateRoot) external;
-
-    /**
-     * @dev Keeps bridge alive.
-     * @param timestamp The timestamp of the heartbeat.
-     */
-    function heartbeat(uint256 timestamp) external;
 }

@@ -11,7 +11,7 @@ const paramsByChainId = {
     epochPeriod: 43200, // 12 hours
   },
   ARBITRUM_GOERLI: {
-    epochPeriod: 1800, // 30 minutes
+    epochPeriod: 3600, // 1 hour
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes

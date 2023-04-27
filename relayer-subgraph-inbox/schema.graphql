@@ -38,6 +38,7 @@ type SnapshotSaved @entity(immutable: true) {
   id: Bytes!
   stateRoot: Bytes! # bytes32
   epoch: BigInt! # uint64
+  count: BigInt! # uint64
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!

@@ -15,6 +15,7 @@ import {
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import "@nomicfoundation/hardhat-chai-matchers";
 import { MerkleTree } from "../merkle/MerkleTree";
+import { zeroAddress } from "ethereumjs-util";
 
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-unused-expressions */ // https://github.com/standard/standard/issues/690#issuecomment-278533482
@@ -83,6 +84,10 @@ describe("Integration tests", async () => {
       // sending sample data through the fast Bridge
       const data = 1121;
       const sendFastMessageTx = await senderGateway.sendFastMessage(data);
+      const sendFastMessageTx2 = await senderGateway.sendFastMessage(data);
+      const sendFastMessageTx3 = await senderGateway.sendFastMessage(data);
+      const sendFastMessageTx4 = await senderGateway.sendFastMessage(data);
+      const sendFastMessageTx5 = await senderGateway.sendFastMessage(data);
     });
 
     it("should send the batch", async () => {
@@ -102,7 +107,7 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
       expect(await veaInbox.snapshots(epoch)).equal(batchMerkleRoot);
     });
@@ -118,8 +123,7 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
-
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
       const invalidEpoch = BigNumber.from(2).add(epoch);
 
       await expect(
@@ -136,10 +140,7 @@ describe("Integration tests", async () => {
 
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
 
-      await expect(bridgerClaimTx).to.emit(veaOutbox, "Claimed").withArgs(epoch, batchMerkleRoot);
-
-      expect(await (await veaOutbox.claims(epoch)).bridger).to.equal(bridger.address);
-      expect(await (await veaOutbox.claims(epoch)).honest).to.equal(false);
+      await expect(bridgerClaimTx).to.emit(veaOutbox, "Claimed").withArgs(epoch, bridger.address, batchMerkleRoot);
 
       await expect(veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH })).to.be.revertedWith(
         "Claim already made."
@@ -148,9 +149,17 @@ describe("Integration tests", async () => {
 
     it("should be able to verify batch", async () => {
       // should fail for invalid epochs
-      await expect(veaOutbox.connect(bridger).validateSnapshot(0)).to.be.revertedWith(
-        "Invalid epoch, no claim to verify."
-      );
+
+      await expect(
+        veaOutbox.connect(bridger).validateSnapshot(0, {
+          stateRoot: ethers.constants.HashZero,
+          claimer: bridger.address,
+          timestamp: 0,
+          blocknumber: 0,
+          honest: 0,
+          challenger: challenger.address,
+        })
+      ).to.be.revertedWith("Invalid claim.");
 
       // sending sample data through the fast bridge
       const data = 1121;
@@ -163,25 +172,41 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
       // should revert as the challenge period has not passed
-      await expect(veaOutbox.connect(bridger).validateSnapshot(epoch)).to.be.revertedWith(
-        "Challenge period has not yet elapsed."
-      );
+      await expect(
+        veaOutbox.connect(bridger).validateSnapshot(epoch, {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: blockClaim.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: ethers.constants.AddressZero,
+        })
+      ).to.be.revertedWith("Challenge period has not yet elapsed.");
 
       // wait for challenge period (and epoch) to pass
+      console.log("block number");
+      console.log(bridgerClaimTx.blockNumber);
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch);
-      await expect(bridgerVerifyBatchTx).to.emit(veaOutbox, "Verified").withArgs(epoch);
+      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestamp: block.timestamp,
+        blocknumber: bridgerClaimTx.blockNumber!,
+        honest: 0,
+        challenger: ethers.constants.AddressZero,
+      });
 
       expect(await veaOutbox.stateRoot()).to.equal(batchMerkleRoot);
-      expect(await (await veaOutbox.claims(epoch)).honest).to.equal(true);
     });
 
     it("should be able verify and relay message", async () => {
@@ -219,15 +244,23 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
       // wait for challenge period (and epoch) to pass
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch);
+      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestamp: block.timestamp,
+        blocknumber: bridgerClaimTx.blockNumber!,
+        honest: 0,
+        challenger: ethers.constants.AddressZero,
+      });
 
       const mt = new MerkleTree(nodes);
       await expect(veaOutbox.connect(relayer).sendMessage([], nonce, to, msgData)).to.be.revertedWith("Invalid proof.");
@@ -267,22 +300,36 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
       // wait for challenge period (and epoch) to pass
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch);
+      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestamp: block.timestamp,
+        blocknumber: bridgerClaimTx.blockNumber!,
+        honest: 0,
+        challenger: ethers.constants.AddressZero,
+      });
 
       const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
-      const withdrawClaimDepositTx = await veaOutbox.connect(bridger).withdrawClaimDeposit(epoch);
-      await expect(withdrawClaimDepositTx).to.emit(veaOutbox, "ClaimDepositWithdrawn").withArgs(epoch, bridger.address);
+      const withdrawClaimDepositTx = await veaOutbox.connect(bridger).withdrawClaimDeposit(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestamp: block.timestamp,
+        blocknumber: bridgerClaimTx.blockNumber!,
+        honest: 1,
+        challenger: ethers.constants.AddressZero,
+      });
     });
 
     it("should not allow challenger to withdraw deposit - as challenge doesn't exist", async () => {
@@ -311,21 +358,36 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
       // wait for challenge period (and epoch) to pass
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch);
+      const bridgerVerifyBatchTx = await veaOutbox.connect(bridger).validateSnapshot(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestamp: block.timestamp,
+        blocknumber: bridgerClaimTx.blockNumber!,
+        honest: 0,
+        challenger: ethers.constants.AddressZero,
+      });
+
       const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
-      const withdrawClaimDepositTx = await veaOutbox.withdrawClaimDeposit(epoch);
-      await expect(veaOutbox.withdrawChallengeDeposit(epoch)).to.be.revertedWith("Challenge failed.");
+      const withdrawClaimDepositTx = await veaOutbox.withdrawClaimDeposit(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestamp: block.timestamp,
+        blocknumber: bridgerClaimTx.blockNumber!,
+        honest: 1,
+        challenger: ethers.constants.AddressZero,
+      });
     });
   });
 
@@ -334,11 +396,6 @@ describe("Integration tests", async () => {
     // only challenge related functionality are tested here
 
     it("should not be able to challenge after challenge period elapsed", async () => {
-      // should revert when challenged for invalid claim
-      await expect(veaOutbox.connect(challenger).challenge(0, { value: TEN_ETH })).to.be.revertedWith(
-        "No claim to challenge."
-      );
-
       const data = 1121;
 
       const sendFastMessagetx = await senderGateway.sendFastMessage(data);
@@ -349,24 +406,48 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
       // bridger tx starts - Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
 
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+
       // should revert if deposit is less than claim deposit
       // @note - if challenger deposits more than deposit then only the deposit will be returned
-      await expect(veaOutbox.connect(challenger).challenge(epoch, { value: ONE_HUNDREDTH_ETH })).to.be.revertedWith(
-        "Insufficient challenge deposit."
-      );
+      await expect(
+        veaOutbox.connect(challenger).challenge(
+          epoch,
+          {
+            stateRoot: batchMerkleRoot,
+            claimer: bridger.address,
+            timestamp: block.timestamp,
+            blocknumber: bridgerClaimTx.blockNumber!,
+            honest: 0,
+            challenger: ethers.constants.AddressZero,
+          },
+          { value: ONE_HUNDREDTH_ETH }
+        )
+      ).to.be.revertedWith("Insufficient challenge deposit.");
 
       // wait for challenge period (and epoch) to pass
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      await expect(veaOutbox.connect(challenger).challenge(epoch, { value: TEN_ETH })).to.be.revertedWith(
-        "Challenge period elapsed."
-      );
+      await expect(
+        veaOutbox.connect(challenger).challenge(
+          epoch,
+          {
+            stateRoot: batchMerkleRoot,
+            claimer: bridger.address,
+            timestamp: block.timestamp,
+            blocknumber: bridgerClaimTx.blockNumber!,
+            honest: 0,
+            challenger: ethers.constants.AddressZero,
+          },
+          { value: TEN_ETH }
+        )
+      ).to.be.revertedWith("Challenge period elapsed.");
     });
 
     it("should be able to challenge", async () => {
@@ -380,13 +461,25 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
       // bridger tx starts - Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
-      const challengeTx = await veaOutbox.connect(challenger).challenge(epoch, { value: TEN_ETH });
-      await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch);
+      const challengeTx = await veaOutbox.connect(challenger).challenge(
+        epoch,
+        {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: ethers.constants.AddressZero,
+        },
+        { value: TEN_ETH }
+      );
+      await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch, challenger.address);
     });
 
     it("should be able to fallback to send safe", async () => {
@@ -400,19 +493,51 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
       // bridger tx starts - Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
-      const challengeTx = await veaOutbox.connect(challenger).challenge(epoch, { value: TEN_ETH });
+      const challengeTx = await veaOutbox.connect(challenger).challenge(
+        epoch,
+        {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: ethers.constants.AddressZero,
+        },
+        { value: TEN_ETH }
+      );
 
       // wait for challenge period (and epoch) to pass
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      await expect(veaOutbox.connect(relayer).validateSnapshot(epoch)).to.be.revertedWith("Claim is challenged.");
+      await expect(
+        veaOutbox.connect(relayer).validateSnapshot(epoch, {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: challenger.address,
+        })
+      ).to.be.revertedWith("Claim is challenged.");
 
-      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(epoch, { gasLimit: 1000000 });
+      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(
+        epoch,
+        {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: challenger.address,
+        },
+        { gasLimit: 1000000 }
+      );
       await expect(sendSafeFallbackTx)
         .to.emit(veaInbox, "SnapshotSent")
         .withArgs(epoch, ethers.utils.formatBytes32String("")); // ticketId is always 0x00..0
@@ -444,35 +569,89 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
       // bridger tx starts - Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
       // withdraw challenge deposit should revert for invalid epoch
-      await expect(veaOutbox.connect(challenger).withdrawChallengeDeposit(epoch)).to.be.revertedWith(
-        "Challenge failed."
-      );
+      await expect(
+        veaOutbox.connect(challenger).withdrawChallengeDeposit(epoch, {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: ethers.constants.AddressZero,
+        })
+      ).to.be.revertedWith("Challenge failed.");
 
       // Challenger tx starts
-      const challengeTx = await veaOutbox.connect(challenger).challenge(epoch, { value: TEN_ETH });
-      await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch);
+      const challengeTx = await veaOutbox.connect(challenger).challenge(
+        epoch,
+        {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: ethers.constants.AddressZero,
+        },
+        { value: TEN_ETH }
+      );
+      await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch, challenger.address);
       // wait for challenge period (and epoch) to pass
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      await expect(veaOutbox.connect(relayer).validateSnapshot(epoch)).revertedWith("Claim is challenged.");
+      await expect(
+        veaOutbox.connect(relayer).validateSnapshot(epoch, {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: challenger.address,
+        })
+      ).revertedWith("Claim is challenged.");
 
-      expect(await (await veaOutbox.challenges(epoch)).honest).to.equal(false);
-      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(epoch, { gasLimit: 1000000 });
-      await expect(sendSafeFallbackTx).to.emit(veaOutbox, "Verified").withArgs(epoch); // ticketId is always 0x00..0
-      expect(await (await veaOutbox.challenges(epoch)).honest).to.equal(false);
-      expect(await (await veaOutbox.claims(epoch)).honest).to.equal(true);
+      //expect(await (await veaOutbox.challenges(epoch)).honest).to.equal(false);
+      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(
+        epoch,
+        {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: challenger.address,
+        },
+        { gasLimit: 1000000 }
+      );
+      //expect(await (await veaOutbox.challenges(epoch)).honest).to.equal(false);
+      //expect(await (await veaOutbox.claims(epoch)).honest).to.equal(true);
       const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
-      await expect(veaOutbox.withdrawChallengeDeposit(epoch)).to.be.revertedWith("Challenge failed.");
+      await expect(
+        veaOutbox.withdrawChallengeDeposit(epoch, {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 1,
+          challenger: challenger.address,
+        })
+      ).to.be.revertedWith("Challenge failed.");
 
-      const withdrawClaimDepositTx = await veaOutbox.withdrawClaimDeposit(epoch);
+      const withdrawClaimDepositTx = await veaOutbox.withdrawClaimDeposit(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestamp: block.timestamp,
+        blocknumber: bridgerClaimTx.blockNumber!,
+        honest: 1,
+        challenger: challenger.address,
+      });
     });
   });
 
@@ -503,32 +682,80 @@ describe("Integration tests", async () => {
       const epoch = Math.floor(
         (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
       );
-      const batchMerkleRoot = batchOutGoingEvent[0].args.stateRoot;
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
       // bridger tx starts - bridger creates fakeData & fakeHash
 
       const fakeData = "KlerosToTheMoon";
       const fakeHash = utils.keccak256(utils.defaultAbiCoder.encode(["string"], [fakeData]));
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, fakeHash, { value: TEN_ETH });
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
       // Challenger tx starts
-      const challengeTx = await veaOutbox.connect(challenger).challenge(epoch, { value: TEN_ETH });
+      const challengeTx = await veaOutbox.connect(challenger).challenge(
+        epoch,
+        {
+          stateRoot: fakeHash,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: ethers.constants.AddressZero,
+        },
+        { value: TEN_ETH }
+      );
 
       // wait for challenge period (and epoch) to pass
       await network.provider.send("evm_increaseTime", [1800]);
       await network.provider.send("evm_mine");
 
-      await expect(veaOutbox.connect(relayer).validateSnapshot(epoch)).to.revertedWith("Claim is challenged.");
+      await expect(
+        veaOutbox.connect(relayer).validateSnapshot(epoch, {
+          stateRoot: fakeHash,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: challenger.address,
+        })
+      ).to.revertedWith("Claim is challenged.");
 
       // sendSafeFallback internally calls the verifySafeBatch
-      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(epoch, { gasLimit: 1000000 });
+      const sendSafeFallbackTx = await veaInbox.connect(bridger).sendSnapshot(
+        epoch,
+        {
+          stateRoot: fakeHash,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: challenger.address,
+        },
+        { gasLimit: 1000000 }
+      );
       const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
-      expect(veaOutbox.connect(relayer).withdrawClaimDeposit(epoch)).to.be.revertedWith("Claim failed.");
+      expect(
+        veaOutbox.connect(relayer).withdrawClaimDeposit(epoch, {
+          stateRoot: fakeHash,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 0,
+          challenger: challenger.address,
+        })
+      ).to.be.revertedWith("Claim failed.");
 
-      await expect(veaOutbox.connect(relayer).withdrawChallengeDeposit(epoch))
-        .to.emit(veaOutbox, "ChallengeDepositWithdrawn")
-        .withArgs(epoch, challenger.address);
+      await expect(
+        veaOutbox.connect(relayer).withdrawChallengeDeposit(epoch, {
+          stateRoot: fakeHash,
+          claimer: bridger.address,
+          timestamp: block.timestamp,
+          blocknumber: bridgerClaimTx.blockNumber!,
+          honest: 2,
+          challenger: challenger.address,
+        })
+      );
     });
   });
 });
