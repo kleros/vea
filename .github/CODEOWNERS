@@ -1,4 +1,10 @@
+# Defaults
 * @jaybuidl @shotaronowhere
+
+# Veascan
 veascan-subgraph-inbox/ @jaybuidl @alcercu
 veascan-subgraph-outbox/ @jaybuidl @alcercu
 veascan-web/ @jaybuidl @alcercu
+
+# Owned by everyone
+yarn.lock @jaybuidl @shotaronowhere @alcercu
