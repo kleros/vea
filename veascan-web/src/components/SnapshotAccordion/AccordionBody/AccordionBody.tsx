@@ -1,11 +1,8 @@
 import { Button } from "@kleros/ui-components-library";
 import React, { useState } from "react";
 import styled from "styled-components";
-import { bridges } from "~src/consts/bridges";
 import { useMessages } from "~src/hooks/useMessages";
-import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
-import TxCard from "./TxCard";
-import Message from "./Message";
+import DisplayMessages from "./DisplayMessages";
 import SnapshotDetails from "./SnapshotDetails";
 
 const StyledSnapshotDetailsButton = styled(Button)<{
@@ -107,19 +104,13 @@ const AccordionBody: React.FC<AccordionBodyProps> = ({
         <SnapshotDetails
           snapshotInboxData={snapshotInboxData}
           snapshotStatus={snapshotStatus}
+          snapshotOutboxData={snapshotOutboxData}
         />
       ) : (
-        data?.messages.map(([messageInboxData, messageOutboxData]) => {
-          return (
-            <Message
-              key={messageInboxData?.id}
-              messageInboxData={messageInboxData}
-              messageOutboxData={messageOutboxData}
-              snapshotInboxData={snapshotInboxData}
-              snapshotOutboxData={snapshotOutboxData}
-            />
-          );
-        })
+        <DisplayMessages
+          snapshotInboxData={snapshotInboxData}
+          snapshotOutboxData={snapshotOutboxData}
+        />
       )}
     </>
   );
