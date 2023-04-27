@@ -1,6 +1,7 @@
-import { StandardPagination } from "@kleros/ui-components-library";
 import React, { FC, useState } from "react";
-import { useMessages } from "~src/hooks/useMessages";
+import styled from "styled-components";
+import { CompactPagination } from "@kleros/ui-components-library";
+import { useMessages } from "hooks/useMessages";
 import Message from "./Message";
 
 interface DisplayMessagesProps {
@@ -9,6 +10,12 @@ interface DisplayMessagesProps {
 }
 
 const MESSAGES_PER_PAGE = 5;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin: 24px 12px;
+`;
 
 const DisplayMessages: FC<DisplayMessagesProps> = ({
   snapshotInboxData,
@@ -28,6 +35,14 @@ const DisplayMessages: FC<DisplayMessagesProps> = ({
 
   return (
     <>
+      <PaginationContainer>
+        <small>Page {currentPage}</small>
+        <CompactPagination
+          currentPage={currentPage}
+          callback={setCurrentPage}
+          numPages={pageCount ? pageCount : currentPage}
+        />
+      </PaginationContainer>
       {data?.messages.map(([messageInboxData, messageOutboxData]) => {
         return (
           <Message
@@ -39,12 +54,6 @@ const DisplayMessages: FC<DisplayMessagesProps> = ({
           />
         );
       })}
-      <StandardPagination
-        currentPage={currentPage}
-        callback={setCurrentPage}
-        numPages={pageCount ? pageCount : currentPage}
-      />
-      ;
     </>
   );
 };
