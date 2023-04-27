@@ -8,7 +8,7 @@ interface DisplayMessagesProps {
   snapshotOutboxData: any;
 }
 
-const MESSAGES_PER_PAGE = 6;
+const MESSAGES_PER_PAGE = 5;
 
 const DisplayMessages: FC<DisplayMessagesProps> = ({
   snapshotInboxData,
