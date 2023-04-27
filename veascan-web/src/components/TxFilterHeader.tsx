@@ -1,7 +1,8 @@
 import { IChain, supportedChains } from "consts/bridges";
 import React, { FC } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import Globe from "tsx:svgs/icons/globe.svg";
+import { smallScreenStyle } from "~src/styles/smallScreenStyle";
 import { theme } from "~src/styles/themes";
 import { FilterDropdown } from "./FilterDropdown";
 
@@ -40,18 +41,36 @@ const SnapshotHeader = styled.div`
   gap: 64px;
   margin: 76px auto 24px auto;
   width: 1170px;
+
+  ${smallScreenStyle(css`
+    margin-top: 48px;
+    margin-bottom: 0px;
+    width: 342px;
+  `)}
 `;
 
 const FilterHeader = styled.div`
   display: flex;
   margin-left: 33px;
-  align-items: center;
+  align-items: start;
+
+  ${smallScreenStyle(css`
+    flex-direction: column;
+    margin-left: 0px;
+    height: 108px;
+  `)}
 `;
 
 const NetworkTag = styled.div`
   display: flex;
   gap: 50px;
   margin-right: 309.5px;
+
+  ${smallScreenStyle(css`
+    flex-direction: row;
+    gap: 24px;
+    margin-right: 0px;
+  `)}
 `;
 
 const DropdownTag = styled.div`
@@ -65,6 +84,22 @@ const DropdownTag = styled.div`
     line-height: 17.5px;
     color: ${({ theme }) => theme.color.blue} !important;
   }
+
+  ${smallScreenStyle(css`
+    align-items: normal;
+  `)}
+`;
+
+const StyledStatusDropdownTag = styled(DropdownTag)`
+  ${smallScreenStyle(css`
+    margin-top: 24px;
+  `)}
+`;
+
+const StyledToNetworkDropdownTag = styled(DropdownTag)`
+  ${smallScreenStyle(css`
+    gap: 4px;
+  `)}
 `;
 
 const EpochAndTimeTag = styled.div`
@@ -79,6 +114,10 @@ const EpochAndTimeTag = styled.div`
     line-height: 18px;
     color: ${({ theme }) => theme.color.lightBlue} !important;
   }
+
+  ${smallScreenStyle(css`
+    display: none;
+  `)}
 `;
 
 const TxFilterHeader: FC<TxFilterHeaderProps> = ({}) => {
@@ -100,23 +139,23 @@ const TxFilterHeader: FC<TxFilterHeaderProps> = ({}) => {
             />
           </DropdownTag>
 
-          <DropdownTag>
+          <StyledToNetworkDropdownTag>
             <small>To: </small>
             <FilterDropdown
               isAlignRight={false}
               isSimpleButton
               itemData={CHAIN_ITEMS}
             />
-          </DropdownTag>
+          </StyledToNetworkDropdownTag>
         </NetworkTag>
-        <DropdownTag>
+        <StyledStatusDropdownTag>
           <small>Status: </small>
           <FilterDropdown
             isAlignRight={true}
             isSimpleButton
             itemData={STATUS_ITEMS}
           />
-        </DropdownTag>
+        </StyledStatusDropdownTag>
       </FilterHeader>
     </SnapshotHeader>
   );
