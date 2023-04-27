@@ -1,27 +1,40 @@
 import React, { useEffect } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
-import { bridges, getChain } from "~src/consts/bridges";
-import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
+import { bridges, getChain } from "src/consts/bridges";
+import { smallScreenStyle } from "src/styles/smallScreenStyle";
+import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
-import SnapshotStatus from "./SnapshotStatus";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
   align-items: center;
   height: 40px;
+
+  ${smallScreenStyle(css`
+    height: 139px;
+    align-items: start;
+    flex-direction: column;
+  `)}
 `;
 
 const StyledEpoch = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
   width: 60px;
-  margin-right: 32px;
+
+  ${smallScreenStyle(css`
+    margin-top: 15px;
+  `)}
 `;
 
 const StyledTimestamp = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
   width: 220px;
-  margin-right: 32px;
+  margin-left: 32px;
+
+  ${smallScreenStyle(css`
+    margin-top: 15px;
+  `)}
 `;
 
 const StyledChainsAndAddressesContainer = styled.div`
@@ -29,8 +42,13 @@ const StyledChainsAndAddressesContainer = styled.div`
   display: flex;
   color: ${({ theme }) => theme.color.blue};
   padding-right: 308.5px;
-  margin-right: 32px;
+  margin-left: 32px;
   width: 590px;
+
+  ${smallScreenStyle(css`
+    margin-left: 0px;
+    margin-top: 14px;
+  `)}
 `;
 
 const StyledChainAndAddress = styled.div`
@@ -38,6 +56,10 @@ const StyledChainAndAddress = styled.div`
   padding-left: 5px;
   display: flex;
   flex-direction: row;
+
+  ${smallScreenStyle(css`
+    padding-left: 0px;
+  `)}
 `;
 
 const ArrowContainer = styled.div`
@@ -45,6 +67,11 @@ const ArrowContainer = styled.div`
   padding-left: 18px;
   padding-right: 10px;
   padding-top: 3.5px;
+
+  ${smallScreenStyle(css`
+    padding-left: 8px;
+    padding-right: 7px;
+  `)}
 `;
 
 const ChainIcon = styled.svg`
@@ -76,6 +103,15 @@ const StyledTruncatedAddress = styled.a`
 
 const StyledColoredLabelContainer = styled.div`
   margin-right: 32px;
+
+  ${smallScreenStyle(css`
+    margin-top: 14px;
+  `)}
+`;
+
+const StyledEpochAndTimestamp = styled.div`
+  display: flex;
+  flex-direction: row;
 `;
 
 export interface AccordionTitleProps {
@@ -112,9 +148,6 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
     fromAddress: bridgeInfo.inboxAddress,
     toChain: bridgeInfo.to,
     toAddress: bridgeInfo.outboxAddress,
-    status:
-      // bridgeInfo.from === 421613 || bridgeInfo.from === 42161 ? "Taken" : "Resolved",
-      "Resolved",
   };
 
   const truncatedFromAddress = `${titleParams.fromAddress.slice(
@@ -129,11 +162,14 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
   const toChainObject = getChain(titleParams.toChain);
   return (
     <StyledSnapshotAccordionTitle>
-      <StyledEpoch href="" target="_blank" rel="noreferrer">
-        {titleParams.epoch}
-      </StyledEpoch>
+      <StyledEpochAndTimestamp>
+        <StyledEpoch href="" target="_blank" rel="noreferrer">
+          {titleParams.epoch}
+        </StyledEpoch>
 
-      <StyledTimestamp>{titleParams.timestamp}</StyledTimestamp>
+        <StyledTimestamp>{titleParams.timestamp}</StyledTimestamp>
+      </StyledEpochAndTimestamp>
+
       <StyledChainsAndAddressesContainer>
         <StyledChainAndAddress>
           <ChainIcon as={fromChainObject?.logo} />
