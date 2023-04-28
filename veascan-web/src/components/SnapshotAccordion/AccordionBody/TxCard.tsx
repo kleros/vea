@@ -71,6 +71,9 @@ const StyledDiv = styled.div`
     flex-direction: column;
     gap: 4px;
     width: 106px;
+    ${smallScreenStyle(css`
+      width: auto;
+    `)}
   }
   .tx-info-data {
     grid-column-start: 2;
