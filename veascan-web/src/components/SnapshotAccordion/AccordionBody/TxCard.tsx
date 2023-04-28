@@ -65,12 +65,12 @@ const StyledDiv = styled.div`
     `)}
     width: fit-content;
   }
+
   .tx-info-titles {
     grid-column-start: 1;
     display: inline-block;
     width: 12vw;
     gap: 4px;
-
     ${smallScreenStyle(css`
       width: auto;
     `)}
@@ -87,6 +87,13 @@ const StyledDiv = styled.div`
     border: 1px solid ${({ theme }) => theme.klerosUIComponentsStroke};
     height: 0px;
   }
+`;
+
+const InfoText = styled.small`
+  color: ${({ theme }) => theme.color.smoke};
+`;
+const DataText = styled.small`
+  color: ${({ theme }) => theme.klerosUIComponentsPrimaryText};
 `;
 
 const ValueDiv = styled.div`
@@ -178,13 +185,13 @@ const TxCard: React.FC<TxCardProps> = ({
             key={index}
           >
             <div className="tx-info-titles">
-              <small>{section.key}</small>
+              <InfoText>{section.key}</InfoText>
             </div>
             <div className="tx-info-data">
               {section.key === "Chain" ? (
                 <ValueDiv className="chain-info">
                   <Icon as={chainObject?.logo} />
-                  <small>{section.value}</small>
+                  <DataText>{section.value}</DataText>
                 </ValueDiv>
               ) : (
                 <ValueDiv>
@@ -196,9 +203,9 @@ const TxCard: React.FC<TxCardProps> = ({
                         style={{ textDecoration: "none" }}
                         rel="noreferrer"
                       >
-                        <small className="tx-info-copyable">
+                        <DataText className="tx-info-copyable">
                           {section.value}
-                        </small>
+                        </DataText>
                       </a>{" "}
                       {section.isCopy && (
                         <button
@@ -212,7 +219,7 @@ const TxCard: React.FC<TxCardProps> = ({
                     </div>
                   ) : (
                     <div className="tx-copy-div">
-                      <small>{section.value} </small>
+                      <DataText>{section.value} </DataText>
                       {section.isCopy && (
                         <button
                           onClick={() => {
