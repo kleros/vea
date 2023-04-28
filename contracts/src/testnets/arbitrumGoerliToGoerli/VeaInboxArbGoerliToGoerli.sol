@@ -18,21 +18,6 @@ import "./interfaces/IVeaOutboxArbGoerliToGoerli.sol";
  * Vea Bridge Inbox From Arbitrum to Ethereum.
  */
 contract VeaInboxArbGoerliToGoerli is IVeaInbox {
-    enum Party {
-        None,
-        Claimer,
-        Challenger
-    }
-
-    struct Claim {
-        bytes32 stateRoot;
-        address claimer;
-        uint32 timestamp;
-        uint32 blocknumber;
-        Party honest;
-        address challenger;
-    }
-
     /**
      * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
      * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, data), outbox relays to.call(data)
@@ -216,16 +201,14 @@ contract VeaInboxArbGoerliToGoerli is IVeaInbox {
      * @dev Sends the state root snapshot using Arbitrum's canonical bridge.
      * @param epochSend The epoch of the snapshot requested to send.
      */
-    function sendSnapshot(uint256 epochSend, Claim calldata claim) external virtual {
+    function sendSnapshot(uint256 epochSend, IVeaOutboxArbGoerliToGoerli.Claim memory claim) external virtual {
         unchecked {
             require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutboxArbGoerliToGoerli.resolveDisputedClaim.selector,
-            epochSend,
-            snapshots[epochSend],
-            claim
+        bytes memory data = abi.encodeCall(
+            IVeaOutboxArbGoerliToGoerli.resolveDisputedClaim,
+            (epochSend, snapshots[epochSend], claim)
         );
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));

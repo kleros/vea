@@ -2,12 +2,13 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
-  ARBITRUM = 42161,
+  ARBITRUM_GOERLI = 421613,
   HARDHAT = 31337,
 }
+
 const paramsByChainId = {
-  ARBITRUM: {
-    epochPeriod: 43200, // 12 hours
+  ARBITRUM_GOERLI: {
+    epochPeriod: 3600, // 1 hour
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -70,9 +71,9 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await hre.companionNetworks.receiver.deployments.get("VeaOutbox");
+    const veaOutbox = await hre.companionNetworks.receiver.deployments.get("VeaOutboxArbGoerliToGoerli");
 
-    await deploy("VeaInboxArbToEth", {
+    await deploy("VeaInboxArbGoerliToGoerli", {
       from: deployer,
       args: [epochPeriod, veaOutbox.address],
       log: true,
@@ -91,7 +92,7 @@ deploySender.tags = ["ArbToEthInbox", "ArbToEthInbox", "ArbToEthInbox"];
 deploySender.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !(chainId === 42161 || chainId === 31337);
+  return !(chainId === 421613 || chainId === 31337);
 };
 deploySender.runAtTheEnd = true;
 
