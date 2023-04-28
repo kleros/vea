@@ -24,7 +24,7 @@ const StyledDiv = styled.div`
   width: auto;
 
   ${smallScreenStyle(css`
-    width: 307px;
+    width: 100%;
     word-wrap: break-word;
     margin-left: 2px;
   `)}
@@ -67,10 +67,10 @@ const StyledDiv = styled.div`
   }
   .tx-info-titles {
     grid-column-start: 1;
-    display: flex;
-    flex-direction: column;
+    display: inline-block;
+    width: 12vw;
     gap: 4px;
-    width: 106px;
+
     ${smallScreenStyle(css`
       width: auto;
     `)}
