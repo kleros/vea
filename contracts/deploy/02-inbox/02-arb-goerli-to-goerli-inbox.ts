@@ -75,6 +75,7 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     await deploy("VeaInboxArbGoerliToGoerli", {
       from: deployer,
+      contract: "VeaInboxArbToEth",
       args: [epochPeriod, veaOutbox.address],
       log: true,
     });
@@ -88,7 +89,7 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deploySender.tags = ["ArbToEthInbox", "ArbToEthInbox", "ArbToEthInbox"];
+deploySender.tags = ["ArbGoerliToGoerliInbox"];
 deploySender.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

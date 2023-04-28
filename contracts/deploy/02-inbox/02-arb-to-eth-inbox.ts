@@ -87,11 +87,11 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deploySender.tags = ["ArbToEthInbox", "ArbToEthInbox", "ArbToEthInbox"];
+deploySender.tags = ["ArbToEthInbox"];
 deploySender.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !(chainId === 42161 || chainId === 31337);
+  return !SenderChains[chainId];
 };
 deploySender.runAtTheEnd = true;
 
