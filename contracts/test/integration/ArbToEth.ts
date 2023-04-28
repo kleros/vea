@@ -140,7 +140,7 @@ describe("Integration tests", async () => {
 
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
 
-      await expect(bridgerClaimTx).to.emit(veaOutbox, "Claimed").withArgs(epoch, bridger.address, batchMerkleRoot);
+      await expect(bridgerClaimTx).to.emit(veaOutbox, "Claimed").withArgs(bridger.address, batchMerkleRoot);
 
       await expect(veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH })).to.be.revertedWith(
         "Claim already made."

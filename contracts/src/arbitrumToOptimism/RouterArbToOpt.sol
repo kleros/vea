@@ -66,7 +66,7 @@ contract RouterArbToGnosis is IRouterArbToOpt {
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
 
-        bytes memory data = abi.encodeWithSelector(IVeaOutboxArbToOpt.resolveDisputedClaim.selector, epoch, stateroot);
+        bytes memory data = abi.encodeCall(IVeaOutboxArbToOpt.resolveDisputedClaim, (epoch, stateroot));
 
         // TODO: Send message to Optimism.
     }

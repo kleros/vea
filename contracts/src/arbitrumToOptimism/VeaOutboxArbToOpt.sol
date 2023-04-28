@@ -43,8 +43,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
 
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable challengePeriod; // Claim challenge timewindow.
-    uint256 public immutable epochClaimDelay; // Can only claim for epochs after this delay. eg 1 => claims about epoch 1 can be made in epoch 2.
-    uint256 public immutable epochClaimWindow; // The number of epochs after the delay that can be claimed. eg 1 => 2 epoch claims possible epochNow, epochNow - 1
+    uint256 public immutable claimDelay; // Can only claim for epochs after this delay. eg 1 => claims about epoch 1 can be made in epoch 2.
 
     uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.
     uint256 public immutable maxMissingBlocks; // The maximum number of blocks that can be missing in a challenge period.
@@ -58,10 +57,10 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
 
     /**
      * @dev Watcher check this event to challenge fraud.
-     * @param epoch The epoch for which the the claim was made.
      * @param claimer The address of the claimer.
+     * @param stateRoot The state root of the challenged claim.
      */
-    event Claimed(uint256 epoch, address indexed claimer);
+    event Claimed(address indexed claimer, bytes32 stateRoot);
 
     /**
      * @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
@@ -75,6 +74,12 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
      * @param msgId The msgId of the message that was relayed.
      */
     event MessageRelayed(uint64 msgId);
+
+    /**
+     * @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
+     * @param epoch The epoch that was verified.
+     */
+    event Verified(uint256 epoch);
 
     modifier OnlyBridgeRunning() {
         unchecked {
@@ -96,7 +101,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
      * @param _epochPeriod The duration of each epoch.
      * @param _challengePeriod The duration of the period allowing to challenge a claim.
      * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-     * @param _epochClaimDelay The number of epochs a claim can be submitted for.
+     * @param _claimDelay The number of epochs a claim can be submitted for.
      * @param _veaInbox The address of the inbox contract on Arbitrum.
      * @param _inbox The address of the inbox contract on Ethereum.
      * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
@@ -106,8 +111,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         uint256 _epochPeriod,
         uint256 _challengePeriod,
         uint256 _timeoutEpochs,
-        uint256 _epochClaimDelay,
-        uint256 _epochClaimWindow,
+        uint256 _claimDelay,
         address _veaInbox,
         address _inbox,
         uint256 _maxMissingBlocks
@@ -116,8 +120,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         epochPeriod = _epochPeriod;
         challengePeriod = _challengePeriod;
         timeoutEpochs = _timeoutEpochs;
-        epochClaimDelay = _epochClaimDelay;
-        epochClaimWindow = _epochClaimWindow;
+        claimDelay = _claimDelay;
         veaInbox = _veaInbox;
         inbox = IInbox(_inbox);
         maxMissingBlocks = _maxMissingBlocks;
@@ -129,12 +132,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
 
         latestVerifiedEpoch = block.timestamp / epochPeriod - 1;
 
-        unchecked {
-            uint256 epochNow = block.timestamp / epochPeriod;
-            require(epochClaimDelay + epochClaimWindow <= epochNow, "Invalid epochClaimDelay.");
-        }
-
-        require(challengePeriod < epochClaimWindow * epochPeriod, "Invalid challengePeriod.");
+        require(claimDelay <= block.timestamp, "Invalid epochClaimDelay.");
     }
 
     // ************************************* //
@@ -150,11 +148,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
         unchecked {
-            uint256 epochNow = block.timestamp / epochPeriod;
-            require(
-                epochNow - epochClaimDelay - epochClaimWindow <= _epoch && _epoch <= epochNow - epochClaimDelay,
-                "Invalid epoch."
-            );
+            require((block.timestamp - claimDelay) / epochPeriod == _epoch, "Invalid epoch.");
         }
 
         require(_stateRoot != bytes32(0), "Invalid claim.");
@@ -168,7 +162,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
             honest: false
         });
 
-        emit Claimed(_epoch, msg.sender);
+        emit Claimed(msg.sender, _stateRoot);
     }
 
     /**
@@ -200,14 +194,11 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         require(claim.bridger != address(0), "Invalid epoch, no claim to verify.");
 
         unchecked {
-            require(
-                uint256(claim.timestamp) + challengePeriod < block.timestamp,
-                "Challenge period has not yet elapsed."
-            );
+            require(claim.timestamp + challengePeriod < block.timestamp, "Challenge period has not yet elapsed.");
             require(
                 // expected blocks <= actual blocks + maxMissingBlocks
-                (block.timestamp - uint256(claim.timestamp)) / slotTime <=
-                    block.number - uint256(claim.blocknumber) + maxMissingBlocks,
+                uint256(claim.blocknumber) + (block.timestamp - uint256(claim.timestamp)) / slotTime <=
+                    block.number + maxMissingBlocks,
                 "Too many missing blocks. Possible censorship attack. Use canonical bridge."
             );
         }
@@ -217,6 +208,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         if (epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = epoch;
             stateRoot = claim.stateRoot;
+            emit Verified(epoch);
         }
 
         claim.honest = true;
@@ -233,12 +225,10 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "Sender only.");
 
-        if (epoch > latestVerifiedEpoch) {
+        if (epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {
             latestVerifiedEpoch = epoch;
-
-            if (_stateRoot != bytes32(0)) {
-                stateRoot = _stateRoot;
-            }
+            stateRoot = _stateRoot;
+            emit Verified(epoch);
         }
 
         Claim storage claim = claims[epoch];
@@ -385,5 +375,16 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         delete challenges[epoch];
 
         payable(challenger).send(deposit); // User is responsibility for accepting ETH.
+    }
+
+    function passedTest(uint256 epoch) external view returns (bool) {
+        Claim storage claim = claims[epoch];
+        if (claim.bridger == address(0)) {
+            return false;
+        }
+
+        uint256 expectedBlocks = uint256(claim.blocknumber) + (block.timestamp - uint256(claim.timestamp)) / slotTime;
+        uint256 actualBlocks = block.number;
+        return (expectedBlocks <= actualBlocks + maxMissingBlocks);
     }
 }

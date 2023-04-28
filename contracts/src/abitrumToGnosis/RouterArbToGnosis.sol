@@ -60,17 +60,12 @@ contract RouterArbToGnosis is IRouterArbToGnosis {
      * @param epoch The epoch to verify.
      * @param stateroot The true batch merkle root for the epoch.
      */
-    function route(uint256 epoch, bytes32 stateroot, Claim calldata claim) external {
+    function route(uint256 epoch, bytes32 stateroot, IVeaOutboxArbToGnosis.Claim calldata claim) external {
         IBridge bridge = inbox.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
 
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutboxArbToGnosis.resolveDisputedClaim.selector,
-            epoch,
-            stateroot,
-            claim
-        );
+        bytes memory data = abi.encodeCall(IVeaOutboxArbToGnosis.resolveDisputedClaim, (epoch, stateroot, claim));
 
         // replace maxGasPerTx with safe level for production deployment
         bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());

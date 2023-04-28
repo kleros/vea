@@ -42,10 +42,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
 
     /**
      * @dev Watcher check this event to challenge fraud.
-     * @param stateRoot The epoch for which the the claim was made.
      * @param claimer The address of the claimer.
+     * @param stateRoot The state root of the challenged claim.
      */
-    event Claimed(uint256 indexed epoch, address indexed claimer, bytes32 stateRoot);
+    event Claimed(address indexed claimer, bytes32 stateRoot);
 
     /**
      * @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
@@ -62,9 +62,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
 
     /**
      * @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
-     * @param epoch The epoch associated with the verified inbox state root snapshot.
+     * @param epoch The epoch that was verified.
      */
-    event Verified(uint256 indexed epoch);
+    event Verified(uint256 epoch);
 
     modifier OnlyBridgeRunning() {
         unchecked {
@@ -117,9 +117,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
 
         latestVerifiedEpoch = block.timestamp / epochPeriod - 1;
 
-        unchecked {
-            require(claimDelay <= block.timestamp, "Invalid epochClaimDelay.");
-        }
+        require(claimDelay <= block.timestamp, "Invalid epochClaimDelay.");
     }
 
     // ************************************* //
@@ -152,7 +150,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
             })
         );
 
-        emit Claimed(_epoch, msg.sender, _stateRoot);
+        emit Claimed(msg.sender, _stateRoot);
     }
 
     /**
@@ -196,12 +194,11 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
         if (epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = epoch;
             stateRoot = claim.stateRoot;
+            emit Verified(epoch);
         }
 
         claim.honest = Party.Claimer;
         claimHashes[epoch] = hashClaim(claim);
-
-        emit Verified(epoch);
     }
 
     /**
@@ -218,14 +215,13 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
         require(msg.sender == address(amb), "Not from bridge.");
         require(amb.messageSender() == router, "Not from router.");
 
-        if (epoch > latestVerifiedEpoch) {
+        if (epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {
             latestVerifiedEpoch = epoch;
-            if (_stateRoot != bytes32(0)) {
-                stateRoot = _stateRoot;
-            }
+            stateRoot = _stateRoot;
+            emit Verified(epoch);
         }
 
-        if (claimHashes[epoch] == hashClaim(claim)) {
+        if (claimHashes[epoch] == hashClaim(claim) && claim.honest == Party.None) {
             if (claim.stateRoot == _stateRoot) {
                 claim.honest = Party.Claimer;
             } else if (claim.challenger != address(0)) {
@@ -233,8 +229,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
             }
             claimHashes[epoch] = hashClaim(claim);
         }
-
-        emit Verified(epoch);
     }
 
     /**
@@ -332,19 +326,44 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
     }
 
     /**
-     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
+     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
      * @param epoch The epoch associated with the claim deposit to withraw.
      */
-    function withdrawEscapeHatch(uint256 epoch, Claim calldata claim) external OnlyBridgeShutdown {
+    function withdrawClaimerEscapeHatch(uint256 epoch, Claim memory claim) external OnlyBridgeShutdown {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
-        delete claimHashes[epoch];
-        payable(claim.claimer).send(deposit); // User is responsibility for accepting ETH.
+        require(claim.honest == Party.None, "Claim resolved.");
+
+        if (claim.claimer != address(0)) {
+            if (claim.challenger == address(0)) {
+                delete claimHashes[epoch];
+            } else {
+                claim.claimer = address(0);
+                claimHashes[epoch] == hashClaim(claim);
+            }
+            payable(claim.claimer).send(deposit); // User is responsibility for accepting ETH.
+        }
+    }
+
+    /**
+     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
+     * @param epoch The epoch associated with the claim deposit to withraw.
+     */
+    function withdrawChallengerEscapeHatch(uint256 epoch, Claim memory claim) external OnlyBridgeShutdown {
+        require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
+        require(claim.honest == Party.None, "Claim resolved.");
+
         if (claim.challenger != address(0)) {
+            if (claim.claimer == address(0)) {
+                delete claimHashes[epoch];
+            } else {
+                claim.challenger = address(0);
+                claimHashes[epoch] == hashClaim(claim);
+            }
             payable(claim.challenger).send(deposit); // User is responsibility for accepting ETH.
         }
     }
 
-    function hashClaim(Claim memory claim) internal pure returns (bytes32) {
+    function hashClaim(Claim memory claim) public pure returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
@@ -356,5 +375,11 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
                     claim.challenger
                 )
             );
+    }
+
+    function passedTest(Claim calldata claim) external view returns (bool) {
+        uint256 expectedBlocks = uint256(claim.blocknumber) + (block.timestamp - uint256(claim.timestamp)) / slotTime;
+        uint256 actualBlocks = block.number;
+        return (expectedBlocks <= actualBlocks + maxMissingBlocks);
     }
 }
