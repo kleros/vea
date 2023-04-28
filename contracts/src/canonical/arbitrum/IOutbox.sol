@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-pragma solidity >=0.7.0;
+pragma solidity 0.8.18;
 
 interface IOutbox {
     event OutboxEntryCreated(uint256 indexed batchNum, uint256 outboxIndex, bytes32 outputRoot, uint256 numInBatch);

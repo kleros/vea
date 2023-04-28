@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-pragma solidity >=0.7.0;
+pragma solidity 0.8.18;
 
 interface IInbox {
     function sendL2Message(bytes calldata messageData) external returns (uint256);
