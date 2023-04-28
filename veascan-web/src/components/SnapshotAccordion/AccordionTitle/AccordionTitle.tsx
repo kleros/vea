@@ -48,6 +48,7 @@ const StyledChainsAndAddressesContainer = styled.div`
   ${smallScreenStyle(css`
     margin-left: 0px;
     margin-top: 14px;
+    width: 342px;
   `)}
 `;
 
