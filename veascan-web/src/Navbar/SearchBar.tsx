@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import styled, { css } from "styled-components";
 import SearchIconLogo from "tsx:svgs/icons/search.svg";
 import { smallScreenStyle } from "styles/smallScreenStyle";
-import { mobileScreenStyle } from "styles/mobileScreenStyle";
 
 const Container = styled.div`
   height: 45px;
@@ -21,8 +20,6 @@ const Container = styled.div`
   }
   ${smallScreenStyle(css`
     margin-bottom: 64px;
-  `)}
-  ${mobileScreenStyle(css`
     width: 302px;
   `)}
 `;
@@ -47,7 +44,7 @@ const StyledInput = styled.input`
     outline: none;
   }
 
-  ${mobileScreenStyle(css`
+  ${smallScreenStyle(css`
     margin-left: 4px;
   `)}
 `;
@@ -70,7 +67,7 @@ const SearchBar: React.FC = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth <= 768) {
+      if (window.innerWidth <= 950) {
         setPlaceholder("Search");
       } else {
         setPlaceholder("Search by Epoch ID / Tx ID / Merkle root");
