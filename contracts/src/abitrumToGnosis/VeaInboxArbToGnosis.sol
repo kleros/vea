@@ -12,7 +12,7 @@ pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/IVeaInbox.sol";
-import "./interfaces/IVeaOutboxArbToGnosis.sol";
+import "./interfaces/IRouterArbToGnosis.sol";
 
 /**
  * Vea Bridge Inbox From Arbitrum to Gnosis.
@@ -40,7 +40,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     IArbSys public constant ARB_SYS = IArbSys(address(100));
 
     uint256 public immutable epochPeriod; // Epochs mark the period between stateroot snapshots
-    address public immutable veaOutbox; // The vea outbox on ethereum.
+    address public immutable router; // The router on ethereum.
 
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
 
@@ -53,11 +53,11 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     /**
      * @dev Constructor.
      * @param _epochPeriod The duration in seconds between epochs.
-     * @param _veaOutbox The veaOutbox on ethereum.
+     * @param _router The router on ethereum.
      */
-    constructor(uint256 _epochPeriod, address _veaOutbox) {
+    constructor(uint256 _epochPeriod, address _router) {
         epochPeriod = _epochPeriod;
-        veaOutbox = _veaOutbox;
+        router = _router;
     }
 
     /**
@@ -206,12 +206,9 @@ contract VeaInboxArbToGnosis is IVeaInbox {
             require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(
-            IVeaOutboxArbToGnosis.resolveDisputedClaim,
-            (epochSend, snapshots[epochSend], claim)
-        );
+        bytes memory data = abi.encodeCall(IRouterArbToGnosis.route, (epochSend, snapshots[epochSend], claim));
 
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
+        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(router, data));
 
         emit SnapshotSent(epochSend, ticketID);
     }
