@@ -1,25 +1,26 @@
+import { useState } from "react";
 import useSWR from "swr";
 import { request } from "../../../node_modules/graphql-request/build/cjs/index";
 import { bridges } from "consts/bridges";
 import { getSnapshotsQuery } from "./queries/getSnapshots";
 import { getClaimQuery } from "./queries/getClaim";
+import { GetSnapshotsQuery } from "src/gql/graphql";
 
 export const useSnapshots = (lastTimestamp: string) => {
+  const [currentTimestamp, setCurrentTimestamp] = useState<string>();
+  const [currentSnapshots, setCurrentSnapshots] = useState<Set<string>>();
   return useSWR("all", async () => {
-    const snapshots = bridges.map((bridge) =>
-      request(bridge.inboxEndpoint, getSnapshotsQuery, { lastTimestamp })
+    const sortedSnapshots = await getSortedSnapshots(lastTimestamp);
+    const filteredSnapshots = sortedSnapshots.filter(
+      (snapshot) =>
+        currentTimestamp === lastTimestamp ||
+        !currentSnapshots?.has(getSnapshotId(snapshot))
     );
-    const snapshotQueryResult = await Promise.all(snapshots);
-    const snapshotsWithBridgeIndex = snapshotQueryResult
-      .map((result, bridgeIndex) =>
-        result.snapshots.map((snapshot) => ({ ...snapshot, bridgeIndex }))
-      )
-      .flat();
-    const orderedSnapshots = snapshotsWithBridgeIndex.sort(
-      (a, b) => parseInt(a.timestamp) - parseInt(b.timestamp)
-    );
+    const pageSnapshots = filteredSnapshots.slice(0, 6);
+    setCurrentSnapshots(new Set(pageSnapshots.map(getSnapshotId)));
+    setCurrentTimestamp(lastTimestamp);
     return Promise.all(
-      orderedSnapshots.slice(0, 6).map(async (snapshot) => {
+      pageSnapshots.map(async (snapshot) => {
         const claim = await request(
           bridges[snapshot.bridgeIndex].outboxEndpoint,
           getClaimQuery,
@@ -30,3 +31,24 @@ export const useSnapshots = (lastTimestamp: string) => {
     );
   });
 };
+
+const getSortedSnapshots = async (lastTimestamp: string) => {
+  const queryQueue = bridges.map((bridge) =>
+    request(bridge.inboxEndpoint, getSnapshotsQuery, { lastTimestamp })
+  );
+  const queryResults = await Promise.all(queryQueue);
+  const snapshotsWithBridgeIndex = queryResults
+    .map((queryResult, bridgeIndex) =>
+      queryResult.snapshots.map((snapshot) => ({ ...snapshot, bridgeIndex }))
+    )
+    .flat();
+  return snapshotsWithBridgeIndex.sort(
+    (a, b) => parseInt(a.timestamp) - parseInt(b.timestamp)
+  );
+};
+
+const getSnapshotId = ({
+  bridgeIndex,
+  epoch,
+}: GetSnapshotsQuery["snapshots"][number] & { bridgeIndex: number }) =>
+  `${bridgeIndex.toString() + epoch}`;

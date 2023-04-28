@@ -1152,7 +1152,7 @@ export const GetSnapshotsDocument = {
                   fields: [
                     {
                       kind: "ObjectField",
-                      name: { kind: "Name", value: "timestamp_lt" },
+                      name: { kind: "Name", value: "timestamp_lte" },
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "lastTimestamp" },
