@@ -3565,7 +3565,7 @@ __metadata:
     "@parcel/watcher": ~2.0.0
     "@sentry/react": ^7.37.2
     "@sentry/tracing": ^7.37.2
-    "@types/react": ^18.0.25
+    "@types/react": ^18.2.0
     "@types/react-dom": ^18.0.9
     "@types/react-modal": ^3.13.1
     "@types/styled-components": ^5.1.26
@@ -6325,7 +6325,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*, @types/react@npm:^18.0.25":
+"@types/react@npm:*":
   version: 18.0.32
   resolution: "@types/react@npm:18.0.32"
   dependencies:
@@ -6333,6 +6333,17 @@ __metadata:
     "@types/scheduler": "*"
     csstype: ^3.0.2
   checksum: c8dbce83c455e520e75f3649988f46100e3a3c0bf7241281ea5bd9067a0368290f0d7c6102e12e6ec9d649134b29a3ef4c421f376ec5aa06ed78cbdd8c144b4c
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:^18.2.0":
+  version: 18.2.0
+  resolution: "@types/react@npm:18.2.0"
+  dependencies:
+    "@types/prop-types": "*"
+    "@types/scheduler": "*"
+    csstype: ^3.0.2
+  checksum: db3d92b423150222a666329f7aa3023e3e942044700557b8a7d161530847e621aec9f56c9e7f71761b06dd164c8a7b17ad52355863efe80963dffa5537e8e5fd
   languageName: node
   linkType: hard
 
