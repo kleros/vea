@@ -24,6 +24,6 @@
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.44.0",
     "gluegun": "^5.1.2",
-    "matchstick-as": "0.5.0"
+    "matchstick-as": "0.5.2"
   }
 }
