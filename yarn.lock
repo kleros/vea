@@ -3577,7 +3577,7 @@ __metadata:
     "@web3-react/types": ^6.0.7
     chart.js: ^3.9.1
     chartjs-adapter-moment: ^1.0.0
-    core-js: ^3.21.1
+    core-js: ^3.30.1
     eslint: ^8.27.0
     eslint-config-prettier: ^8.3.0
     eslint-import-resolver-parcel: ^1.10.6
@@ -9926,10 +9926,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^3.0.1, core-js@npm:^3.19.2, core-js@npm:^3.21.1":
+"core-js@npm:^3.0.1, core-js@npm:^3.19.2":
   version: 3.29.1
   resolution: "core-js@npm:3.29.1"
   checksum: b38446dbfcfd3887b3d4922990da487e2c95044cb4c5717aaf95e786a4c6b218f05c056c7ed6c699169b9794a49fec890e402659d54661fc56965a0eb717e7bd
+  languageName: node
+  linkType: hard
+
+"core-js@npm:^3.30.1":
+  version: 3.30.1
+  resolution: "core-js@npm:3.30.1"
+  checksum: 6d4a00b488694d4c715c424e15dfef31433ac7aa395c39c518a0cfacec918ada1c716fed74682033197e0164e23bbf38bfd598ee9a239c4aaa590ab1ba862ac8
   languageName: node
   linkType: hard
 
