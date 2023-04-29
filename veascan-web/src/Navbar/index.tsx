@@ -34,7 +34,6 @@ const Container = styled.div`
 `;
 
 const StyledTitle = styled.h5`
-  width: 70.72px;
   font-size: 31.5px;
   margin-top: 20px;
   margin-bottom: 20px;

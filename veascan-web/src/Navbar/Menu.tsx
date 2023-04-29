@@ -71,7 +71,6 @@ const MenuContainer = styled.div<{ isOpen: boolean }>`
 
 const StyledQuestion = styled(QuestionIcon)`
   height: 16px;
-  width: 16px;
   transition: fill 0.25s ease;
 
   :hover {

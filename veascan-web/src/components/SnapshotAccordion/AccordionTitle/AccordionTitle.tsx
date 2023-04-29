@@ -8,32 +8,36 @@ import ColoredLabel, { variantColors } from "./ColoredLabel";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
+  justify-content: space-between;
   align-items: center;
   height: 40px;
+  width: 95%;
 
   ${smallScreenStyle(css`
+    max-width: 90%;
     height: 139px;
     align-items: start;
     flex-direction: column;
+    justify-content: start;
   `)}
 `;
 
 const StyledEpoch = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
-  width: 60px;
+  width: 35%;
 
   ${smallScreenStyle(css`
-    margin-top: 15px;
+    margin-top: 14px;
   `)}
 `;
 
 const StyledTimestamp = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
-  width: 220px;
-  margin-left: 32px;
+  width: 4%;
+  white-space: nowrap;
 
   ${smallScreenStyle(css`
-    margin-top: 15px;
+    margin-top: 14px;
   `)}
 `;
 
@@ -41,14 +45,11 @@ const StyledChainsAndAddressesContainer = styled.div`
   position: relative;
   display: flex;
   color: ${({ theme }) => theme.color.blue};
-  padding-right: 308.5px;
-  margin-left: 32px;
-  width: 590px;
+  width: 50.21%;
 
   ${smallScreenStyle(css`
     margin-left: 0px;
-    margin-top: 14px;
-    width: 342px;
+    margin-top: 15px;
   `)}
 `;
 
@@ -103,16 +104,19 @@ const StyledTruncatedAddress = styled.a`
 `;
 
 const StyledColoredLabelContainer = styled.div`
-  margin-right: 32px;
+  display: flex;
 
   ${smallScreenStyle(css`
-    margin-top: 14px;
+    padding-left: 0px;
+    margin-top: 15px;
   `)}
 `;
 
 const StyledEpochAndTimestamp = styled.div`
   display: flex;
   flex-direction: row;
+  justify-content: start;
+  margin-right: 3.5%;
 `;
 
 export interface AccordionTitleProps {

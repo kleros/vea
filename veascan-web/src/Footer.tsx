@@ -72,11 +72,6 @@ const StyledLink = styled.a`
       transform: scale(1.05);
     }
   }
-  ${smallScreenStyle(css`
-    > svg {
-      width: calc(16px + (32 - 16) * (100vw - 300px) / (1250 - 300));
-    }
-  `)}
 `;
 
 const SocialMedia = styled.div`
@@ -90,7 +85,7 @@ const SocialMedia = styled.div`
   ${smallScreenStyle(css`
     position: relative;
     right: 0%;
-    margin-top: 28px;
+    margin-top: 30px;
   `)}
 `;
 
@@ -104,7 +99,6 @@ const StyledBuiltByKleros = styled(BuiltByKleros)`
     top: 100%;
     position: relative;
     left: 0%;
-    width: 150px;
   `)}
 `;
 

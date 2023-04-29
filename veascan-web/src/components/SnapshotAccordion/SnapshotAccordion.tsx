@@ -7,25 +7,33 @@ import { smallScreenStyle } from "src/styles/smallScreenStyle";
 
 const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   display: flex;
-  width: auto;
-  margin: 0 auto;
+  width: 100%;
+  justify-content: center;
+  padding-left: 32px;
+  padding-right: 32px;
+
+  ${smallScreenStyle(css`
+    padding-left: 0px;
+    padding-right: 0px;
+  `)}
 
   .accordion-button {
     border: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-radius: 3px;
 
     ${smallScreenStyle(css`
-      width: 342px;
+      justify-content: start;
       height: 139px;
-      padding: 16px;
+      padding-left: 16px;
+      padding-right: 16px;
     `)}
   }
 
   .accordion-svg {
     ${smallScreenStyle(css`
-      position: absolute;
-      margin-left: 290px;
-      margin-top: 75px;
+      align-self: end;
+      margin-bottom: 9px;
+      z-index: 100;
     `)}
   }
 
@@ -37,7 +45,7 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
     border-radius: 3px;
 
     ${smallScreenStyle(css`
-      width: 342px;
+      width: 100%;
       padding-left: 16px;
       padding-right: 16px;
     `)}

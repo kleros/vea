@@ -39,6 +39,10 @@ const SnapshotHeader = styled.div`
   gap: 64px;
   margin: 76px auto 24px auto;
   width: 100%;
+
+  ${smallScreenStyle(css`
+    margin-top: 60px;
+  `)}
 `;
 
 const FilterHeader = styled.div`
