@@ -83,18 +83,18 @@ describe("Integration tests", async () => {
     it("should send the fastMessage", async () => {
       // sending sample data through the fast Bridge
       const data = 1121;
-      const sendFastMessageTx = await senderGateway.sendFastMessage(data);
-      const sendFastMessageTx2 = await senderGateway.sendFastMessage(data);
-      const sendFastMessageTx3 = await senderGateway.sendFastMessage(data);
-      const sendFastMessageTx4 = await senderGateway.sendFastMessage(data);
-      const sendFastMessageTx5 = await senderGateway.sendFastMessage(data);
+      const sendMessageTx = await senderGateway.sendMessage(data);
+      const sendMessageTx2 = await senderGateway.sendMessage(data);
+      const sendMessageTx3 = await senderGateway.sendMessage(data);
+      const sendMessageTx4 = await senderGateway.sendMessage(data);
+      const sendMessageTx5 = await senderGateway.sendMessage(data);
     });
 
     it("should send the batch", async () => {
       // should revert if No messages have been sent yet.
 
       const data = 1121;
-      let sendFastMessageTx = await senderGateway.sendFastMessage(data);
+      let sendMessageTx = await senderGateway.sendMessage(data);
 
       const currentBlockNum = ethers.provider.getBlockNumber();
       const currentTimestamp = (await ethers.provider.getBlock(currentBlockNum)).timestamp;
@@ -114,7 +114,7 @@ describe("Integration tests", async () => {
 
     it("should be able to claim", async () => {
       const data = 1121;
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
 
       const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
@@ -163,7 +163,7 @@ describe("Integration tests", async () => {
 
       // sending sample data through the fast bridge
       const data = 1121;
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
 
       const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
@@ -212,21 +212,21 @@ describe("Integration tests", async () => {
     it("should be able verify and relay message", async () => {
       // sending sample data through the fast bridge
       const data = 1121;
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
       //const inboxsnapshot = await veaInbox.inbox(0);
 
-      const sendFastMessagetx2 = await senderGateway.sendFastMessage(data);
+      const sendMessagetx2 = await senderGateway.sendMessage(data);
       //const inboxsnapshot2 = await veaInbox.inbox(0);
-      await expect(sendFastMessagetx).to.emit(veaInbox, "MessageSent");
-      const MessageReceived = veaInbox.filters.MessageSent();
-      const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
-      const msg = MessageReceivedEvent[0].args.nodeData;
+      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
+      const MessageSent = veaInbox.filters.MessageSent();
+      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
+      const msg = MessageSentEvent[0].args.nodeData;
 
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
 
-      const msg2 = MessageReceivedEvent[1].args.nodeData;
+      const msg2 = MessageSentEvent[1].args.nodeData;
 
       let nodes: string[] = [];
 
@@ -277,12 +277,12 @@ describe("Integration tests", async () => {
     it("should allow bridger to claim deposit", async () => {
       // sending sample data through the fast bridge
       const data = 1121;
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
 
-      await expect(sendFastMessagetx).to.emit(veaInbox, "MessageSent");
-      const MessageReceived = veaInbox.filters.MessageSent();
-      const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
-      const msg = MessageReceivedEvent[0].args.nodeData;
+      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
+      const MessageSent = veaInbox.filters.MessageSent();
+      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
+      const msg = MessageSentEvent[0].args.nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
@@ -335,12 +335,12 @@ describe("Integration tests", async () => {
     it("should not allow challenger to withdraw deposit - as challenge doesn't exist", async () => {
       // sending sample data through the fast bridge
       const data = 1121;
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
 
-      await expect(sendFastMessagetx).to.emit(veaInbox, "MessageSent");
-      const MessageReceived = veaInbox.filters.MessageSent();
-      const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
-      const msg = MessageReceivedEvent[0].args.nodeData;
+      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
+      const MessageSent = veaInbox.filters.MessageSent();
+      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
+      const msg = MessageSentEvent[0].args.nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
@@ -398,7 +398,7 @@ describe("Integration tests", async () => {
     it("should not be able to challenge after challenge period elapsed", async () => {
       const data = 1121;
 
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
       const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
@@ -453,7 +453,7 @@ describe("Integration tests", async () => {
     it("should be able to challenge", async () => {
       const data = 1121;
 
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
       const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
@@ -485,7 +485,7 @@ describe("Integration tests", async () => {
     it("should be able to fallback to send safe", async () => {
       const data = 1121;
 
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
       const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
@@ -547,11 +547,11 @@ describe("Integration tests", async () => {
       // sample data
       const data = 1121;
 
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
-      await expect(sendFastMessagetx).to.emit(veaInbox, "MessageSent");
-      const MessageReceived = veaInbox.filters.MessageSent();
-      const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
-      const msg = MessageReceivedEvent[0].args.nodeData;
+      const sendMessagetx = await senderGateway.sendMessage(data);
+      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
+      const MessageSent = veaInbox.filters.MessageSent();
+      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
+      const msg = MessageSentEvent[0].args.nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
@@ -659,12 +659,12 @@ describe("Integration tests", async () => {
     it("Bridger deposit forfeited, Challenger paid", async () => {
       const data = 1121;
 
-      const sendFastMessagetx = await senderGateway.sendFastMessage(data);
+      const sendMessagetx = await senderGateway.sendMessage(data);
 
-      await expect(sendFastMessagetx).to.emit(veaInbox, "MessageSent");
-      const MessageReceived = veaInbox.filters.MessageSent();
-      const MessageReceivedEvent = await veaInbox.queryFilter(MessageReceived);
-      const msg = MessageReceivedEvent[0].args.nodeData;
+      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
+      const MessageSent = veaInbox.filters.MessageSent();
+      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
+      const msg = MessageSentEvent[0].args.nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
