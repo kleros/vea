@@ -3,11 +3,17 @@ import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
   ARBITRUM = 42161,
+  ARBITRUM_GOERLI = 421613,
   HARDHAT = 31337,
 }
 const paramsByChainId = {
   ARBITRUM: {
     epochPeriod: 43200, // 12 hours
+    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.mainnet,
+  },
+  ARBITRUM_GOERLI: {
+    epochPeriod: 1800, // 30 minutes
+    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.goerli,
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -24,7 +30,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
   console.log("deployer: %s", deployer);
 
-  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
+  const { epochPeriod, companion } = paramsByChainId[SenderChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
@@ -70,7 +76,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await hre.companionNetworks.receiver.deployments.get("VeaOutbox");
+    const veaOutbox = await companion(hre).deployments.get("VeaOutbox");
 
     await deploy("VeaInboxArbToEth", {
       from: deployer,

@@ -71,7 +71,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await hre.companionNetworks.receiver.deployments.get("VeaOutboxArbToEthDevnet");
+    const veaOutbox = await hre.companionNetworks.goerli.deployments.get("VeaOutboxArbToEthDevnet");
 
     await deploy("VeaInboxArbToEthDevnet", {
       from: deployer,

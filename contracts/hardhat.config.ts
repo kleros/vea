@@ -56,16 +56,17 @@ const config: HardhatUserConfig = {
       tags: ["test", "local"],
     },
 
-    // Sender chain ---------------------------------------------------------------------------------
+    // INBOX ---------------------------------------------------------------------------------------
     arbitrumGoerli: {
       chainId: 421613,
       url: "https://goerli-rollup.arbitrum.io/rpc",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["staging", "sender", "layer2"],
+      tags: ["staging", "inbox", "layer2"],
       companionNetworks: {
-        receiver: "goerli",
+        goerli: "goerli",
+        chiado: "chiado",
       },
       verify: {
         etherscan: {
@@ -79,9 +80,10 @@ const config: HardhatUserConfig = {
       accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["production", "sender", "layer2"],
+      tags: ["production", "inbox", "layer2"],
       companionNetworks: {
-        receiver: "mainnet",
+        mainnet: "mainnet",
+        gnosischain: "gnosischain",
       },
       verify: {
         etherscan: {
@@ -89,16 +91,16 @@ const config: HardhatUserConfig = {
         },
       },
     },
-    // Receiver chain ---------------------------------------------------------------------------------
+    // OUTBOX ---------------------------------------------------------------------------------------
     chiado: {
       chainId: 10200,
       url: "https://rpc.chiadochain.net",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["staging", "receiver", "layer1"],
+      tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
-        sender: "arbitrumGoerli",
+        arbitrumGoerli: "arbitrumGoerli",
       },
       verify: {
         etherscan: {
@@ -112,9 +114,9 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["staging", "receiver", "layer1"],
+      tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
-        sender: "arbitrumGoerli",
+        arbitrumGoerli: "arbitrumGoerli",
       },
     },
     mainnet: {
@@ -123,9 +125,9 @@ const config: HardhatUserConfig = {
       accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["production", "receiver", "layer1"],
+      tags: ["production", "outbox", "layer1"],
       companionNetworks: {
-        sender: "arbitrum",
+        arbitrum: "arbitrum",
       },
     },
   },

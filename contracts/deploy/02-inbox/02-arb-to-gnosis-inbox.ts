@@ -9,9 +9,11 @@ enum SenderChains {
 const paramsByChainId = {
   ARBITRUM: {
     epochPeriod: 43200, // 12 hours
+    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.gnosischain,
   },
   ARBITRUM_GOERLI: {
     epochPeriod: 1800, // 30 minutes
+    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.chiado,
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -27,11 +29,11 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deployer = (await getNamedAccounts()).deployer;
   console.log("deployer: %s", deployer);
 
-  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
+  const { epochPeriod, companion } = paramsByChainId[SenderChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
 
-  const veaOutboxGnosis = await hre.companionNetworks.receiver.deployments.get("VeaOutboxGnosis");
+  const veaOutboxGnosis = await companion(hre).deployments.get("VeaOutboxGnosis");
 
   await deploy("VeaInboxArbToGnosis", {
     from: deployer,
