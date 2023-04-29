@@ -129,7 +129,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
      * @param _epoch The epoch for which the claim is made.
      * @param _stateRoot The state root to claim.
      */
-    function claim(uint256 _epoch, bytes32 _stateRoot) external payable {
+    function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
         unchecked {
@@ -157,7 +157,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
      * @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
      * @param epoch The epoch of the claim to challenge.
      */
-    function challenge(uint256 epoch, Claim memory claim) external payable {
+    function challenge(uint256 epoch, Claim memory claim) external payable virtual {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
         require(claim.challenger == address(0), "Claim already challenged.");
         require(msg.value >= deposit, "Insufficient challenge deposit.");

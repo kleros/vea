@@ -15,7 +15,7 @@ const paramsByChainId = {
 };
 
 // TODO: use deterministic deployments
-const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
   const { deploy, execute } = deployments;
   const chainId = Number(await getChainId());
@@ -87,12 +87,12 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deploySender.tags = ["ArbToEthInbox"];
-deploySender.skip = async ({ getChainId }) => {
+deployInbox.tags = ["ArbToEthInbox"];
+deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
   return !SenderChains[chainId];
 };
-deploySender.runAtTheEnd = true;
+deployInbox.runAtTheEnd = true;
 
-export default deploySender;
+export default deployInbox;

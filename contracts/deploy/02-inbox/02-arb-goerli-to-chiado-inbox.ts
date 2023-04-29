@@ -33,14 +33,15 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const veaOutboxGnosis = await hre.companionNetworks.receiver.deployments.get("VeaOutboxGnosis");
 
-  await deploy("VeaInboxArbToGnosis", {
+  await deploy("VeaInboxArbToGnosisDevnet", {
     from: deployer,
+    contract: "VeaInboxArbToGnosis",
     args: [epochPeriod, veaOutboxGnosis.address],
     log: true,
   });
 };
 
-deployInbox.tags = ["ArbToGnosisInbox"];
+deployInbox.tags = ["ArbGoerliToChiadoInbox"];
 deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

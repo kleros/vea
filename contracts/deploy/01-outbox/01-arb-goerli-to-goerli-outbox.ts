@@ -8,6 +8,7 @@ enum ReceiverChains {
   ETHEREUM_GOERLI = 5,
   HARDHAT = 31337,
 }
+
 const paramsByChainId = {
   ETHEREUM_GOERLI: {
     deposit: parseEther("0.01"), // 0.1 eth, 120 eth budget for timeout
@@ -102,7 +103,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    console.log(config.networks);
     const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
@@ -110,7 +110,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
     if (chainId)
-      await deploy("VeaOutboxArbGoerliToGoerli", {
+      await deploy("VeaOutboxArbToEthDevnet", {
         from: deployer,
         args: [
           deposit,

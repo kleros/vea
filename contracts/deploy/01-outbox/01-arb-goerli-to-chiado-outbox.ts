@@ -10,18 +10,6 @@ enum ReceiverChains {
   HARDHAT = 31337,
 }
 const paramsByChainId = {
-  GNOSIS_MAINNET: {
-    deposit: parseEther("20000"), // 200,000 xDAI budget to start, enough for 10 days till timeout
-    // Average happy path wait time is 31 hours
-    epochPeriod: 43200, // 12 hours
-    challengePeriod: 90000, // 24 hours (sequencer backdating) + 1 hour buffer
-    numEpochTimeout: 20, // 10 days
-    claimDelay: 3, // 24 hours (sequencer backdating) + 1 hour buffer
-    amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
-    routerAddress: ethers.constants.AddressZero, // TODO: FIX ME, address on Ethereum mainnet
-    maxMissingBlocks: 10000000000000,
-    senderChainId: 421613,
-  },
   GNOSIS_CHIADO: {
     deposit: parseEther("5"), // 120 xDAI budget for timeout
     // Average happy path wait time is 22.5 mins, assume no censorship
@@ -104,7 +92,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
-    await deploy("VeaOutboxArbToGnosis", {
+    await deploy("VeaOutboxArbToGnosisDevnet", {
       from: deployer,
       args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks],
       log: true,
@@ -119,7 +107,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deployOutbox.tags = ["ArbToGnosisOutbox"];
+deployOutbox.tags = ["ArbGoerliToChiadoOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

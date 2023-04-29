@@ -16,7 +16,7 @@ const paramsByChainId = {
 };
 
 // TODO: use deterministic deployments
-const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
   const { deploy, execute } = deployments;
   const chainId = Number(await getChainId());
@@ -71,9 +71,9 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await hre.companionNetworks.receiver.deployments.get("VeaOutboxArbGoerliToGoerli");
+    const veaOutbox = await hre.companionNetworks.receiver.deployments.get("VeaOutboxArbToEthDevnet");
 
-    await deploy("VeaInboxArbGoerliToGoerli", {
+    await deploy("VeaInboxArbToEthDevnet", {
       from: deployer,
       contract: "VeaInboxArbToEth",
       args: [epochPeriod, veaOutbox.address],
@@ -89,12 +89,12 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deploySender.tags = ["ArbGoerliToGoerliInbox"];
-deploySender.skip = async ({ getChainId }) => {
+deployInbox.tags = ["ArbGoerliToGoerliInbox"];
+deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
   return !(chainId === 421613 || chainId === 31337);
 };
-deploySender.runAtTheEnd = true;
+deployInbox.runAtTheEnd = true;
 
-export default deploySender;
+export default deployInbox;

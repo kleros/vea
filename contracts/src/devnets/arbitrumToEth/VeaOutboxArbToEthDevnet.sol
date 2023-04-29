@@ -12,7 +12,7 @@ pragma solidity 0.8.18;
 
 import "../../arbitrumToEth/VeaOutboxArbToEth.sol";
 
-contract VeaOutboxArbGoerliToGoerli is VeaOutboxArbToEth {
+contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
     address public immutable testnetOperator;
 
     /**
