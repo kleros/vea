@@ -1,6 +1,6 @@
 {
   "name": "@kleros/vea-contracts",
-  "version": "0.1.11",
+  "version": "0.1.14",
   "description": "Smart contracts for Vea",
   "repository": {
     "type": "git",
@@ -28,7 +28,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "dev"
+    "tag": "latest"
   },
   "scripts": {
     "build": "hardhat compile",
@@ -42,7 +42,9 @@
     "size": "hardhat size-contracts --no-compile",
     "watch": "hardhat watch",
     "docgen": "hardhat docgen",
-    "release:patch": "scripts/publish-dev-patch.sh"
+    "release:patch": "scripts/publish.sh patch",
+    "release:minor": "scripts/publish.sh minor",
+    "release:major": "scripts/publish.sh major"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",

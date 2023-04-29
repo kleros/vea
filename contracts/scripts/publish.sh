@@ -20,7 +20,7 @@ trap _finally EXIT
 
 #--------------------------------------
 
-yarn version patch
+yarn version $1
 
 mkdir dist
 cp -pr README.md deployments src/ dist/ 
@@ -28,5 +28,5 @@ rm -rf dist/test
 jq 'del(.scripts.prepare)' package.json > dist/package.json
 
 cd dist
-npm publish $@
+npm publish
 cd -
