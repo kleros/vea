@@ -9,10 +9,9 @@ import { Challenge, Claim, Message, Refs } from "../generated/schema";
 
 export function handleClaimed(event: Claimed): void {
   const claim = getNextClaim();
-  claim.epoch = event.params.epoch;
-  claim.stateroot = event.params.claimedStateRoot;
+  claim.stateroot = event.params.stateRoot;
   claim.timestamp = event.block.timestamp;
-  claim.bridger = event.transaction.from;
+  claim.bridger = event.transaction.from; // same as event.params.claimer
   claim.challenged = false;
   claim.honest = false;
   claim.save();

@@ -10,9 +10,12 @@
     "yarn": "3.3.1"
   },
   "scripts": {
+    "update:goerli": "./scripts/update.sh goerli goerli ArbToEthDevnet",
+    "update:chiado": "./scripts/update.sh chiado chiado ArbToGnosisDevnet",
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ kleros/veascan-outbox-goerli",
+    "deploy:goerli": "graph deploy --node https://api.thegraph.com/deploy/ kleros/veascan-outbox-goerli",
+    "deploy:chiado": "goldsky subgraph deploy kleros/veascan-outbox-chiado",
     "create-local": "graph create --node http://localhost:8020/ kleros/veascan-outbox",
     "remove-local": "graph remove --node http://localhost:8020/ kleros/veascan-outbox",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/veascan-subgraph-outbox"
@@ -21,6 +24,7 @@
     "@graphprotocol/graph-ts": "^0.29.3"
   },
   "devDependencies": {
+    "@goldskycom/cli": "^1.6.0",
     "@graphprotocol/graph-cli": "^0.44.0"
   }
 }
