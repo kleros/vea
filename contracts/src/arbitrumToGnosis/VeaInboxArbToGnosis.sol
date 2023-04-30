@@ -12,32 +12,30 @@ pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/IVeaInbox.sol";
-import "./interfaces/IVeaOutboxArbToGnosis.sol";
+import "./interfaces/IRouterArbToGnosis.sol";
 
 /**
  * Vea Bridge Inbox From Arbitrum to Gnosis.
  */
 contract VeaInboxArbToGnosis is IVeaInbox {
     /**
-     * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Gnosis.
+     * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
      * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, data), outbox relays to.call(data)
      */
     event MessageSent(bytes nodeData);
 
     /**
-     * The bridgers watch this event to claim the stateRoot on the veaOutbox.
-     * The epoch (not emitted) is determined by block.timestamp / epochPeriod.
-     * @param stateRoot The stateRoot snapshot
+     * The bridgers can watch this event to claim the stateRoot on the veaOutbox.
      * @param count The count of messages in the merkle tree
      */
-    event SnapshotSaved(bytes32 stateRoot, uint256 count);
+    event SnapshotSaved(uint256 count);
 
     /**
      * @dev The event is emitted when a snapshot through the canonical arbiturm bridge.
      * @param epochSent The epoch of the snapshot.
      * @param ticketId The ticketId of the L2->L1 message.
      */
-    event SnapshotSent(uint256 epochSent, bytes32 ticketId);
+    event SnapshotSent(uint256 indexed epochSent, bytes32 ticketId);
 
     IArbSys public constant ARB_SYS = IArbSys(address(100));
 
@@ -64,6 +62,8 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
     /**
      * @dev Sends an arbitrary message to a receiving chain.
+     * `O(log(count))` where count is the number of messages already sent.
+     * Note: Amortized cost is O(1).
      * @param to The address of the contract on the receiving chain which receives the calldata.
      * @param fnSelector The function selector of the receiving contract.
      * @param data The message calldata, abi.encode(param1, param2, ...)
@@ -124,6 +124,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
     /**
      * Saves snapshot of state root.
+     * `O(log(count))` where count number of messages in the inbox.
      * @dev Snapshots can be saved a maximum of once per epoch.
      */
     function saveSnapshot() external {
@@ -168,7 +169,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
         snapshots[epoch] = stateRoot;
 
-        emit SnapshotSaved(stateRoot, count);
+        emit SnapshotSaved(count);
     }
 
     /**
@@ -200,16 +201,12 @@ contract VeaInboxArbToGnosis is IVeaInbox {
      * @dev Sends the state root snapshot using Arbitrum's canonical bridge.
      * @param epochSend The epoch of the snapshot requested to send.
      */
-    function sendSnapshot(uint256 epochSend) external virtual {
+    function sendSnapshot(uint256 epochSend, IVeaOutboxArbToGnosis.Claim memory claim) external virtual {
         unchecked {
             require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutboxArbToGnosis.resolveDisputedClaim.selector,
-            epochSend,
-            snapshots[epochSend]
-        );
+        bytes memory data = abi.encodeCall(IRouterArbToGnosis.route, (epochSend, snapshots[epochSend], claim));
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(router, data));
 

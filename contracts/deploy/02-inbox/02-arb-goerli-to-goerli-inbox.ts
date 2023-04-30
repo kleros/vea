@@ -2,18 +2,13 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
-  ARBITRUM = 42161,
   ARBITRUM_GOERLI = 421613,
   HARDHAT = 31337,
 }
+
 const paramsByChainId = {
-  ARBITRUM: {
-    epochPeriod: 43200, // 12 hours
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.mainnet,
-  },
   ARBITRUM_GOERLI: {
-    epochPeriod: 1800, // 30 minutes
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.goerli,
+    epochPeriod: 3600, // 1 hour
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -30,7 +25,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
   console.log("deployer: %s", deployer);
 
-  const { epochPeriod, companion } = paramsByChainId[SenderChains[chainId]];
+  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
@@ -76,10 +71,11 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await companion(hre).deployments.get("VeaOutbox");
+    const veaOutbox = await hre.companionNetworks.goerli.deployments.get("VeaOutboxArbToEthDevnet");
 
-    await deploy("VeaInboxArbToEth", {
+    await deploy("VeaInboxArbToEthDevnet", {
       from: deployer,
+      contract: "VeaInboxArbToEth",
       args: [epochPeriod, veaOutbox.address],
       log: true,
     });
@@ -93,11 +89,11 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deployInbox.tags = ["ArbToEthInbox"];
+deployInbox.tags = ["ArbGoerliToGoerliInbox"];
 deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !SenderChains[chainId];
+  return !(chainId === 421613 || chainId === 31337);
 };
 deployInbox.runAtTheEnd = true;
 

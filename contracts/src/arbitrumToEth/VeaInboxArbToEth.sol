@@ -206,11 +206,9 @@ contract VeaInboxArbToEth is IVeaInbox {
             require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutboxArbToEth.resolveDisputedClaim.selector,
-            epochSend,
-            snapshots[epochSend],
-            claim
+        bytes memory data = abi.encodeCall(
+            IVeaOutboxArbToEth.resolveDisputedClaim,
+            (epochSend, snapshots[epochSend], claim)
         );
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));

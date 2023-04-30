@@ -20,4 +20,11 @@ interface IVeaInbox {
      * @return msgId The index of the message in the inbox, as a message Id, needed to relay the message.
      */
     function sendMessage(address to, bytes4 fnSelection, bytes memory data) external returns (uint64 msgId);
+
+    /**
+     * Saves snapshot of state root.
+     * `O(log(count))` where count number of messages in the inbox.
+     * @dev Snapshots can be saved a maximum of once per epoch.
+     */
+    function saveSnapshot() external;
 }

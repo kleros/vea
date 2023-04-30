@@ -25,11 +25,9 @@ contract VeaInboxMockArbToEth is VeaInboxArbToEth {
     function sendSnapshot(uint256 _epochSnapshot, IVeaOutboxArbToEth.Claim calldata claim) external override {
         uint256 epoch = uint256(block.timestamp) / epochPeriod;
         require(_epochSnapshot <= epoch, "Epoch in the future.");
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutboxArbToEth.resolveDisputedClaim.selector,
-            _epochSnapshot,
-            snapshots[_epochSnapshot],
-            claim
+        bytes memory data = abi.encodeCall(
+            IVeaOutboxArbToEth.resolveDisputedClaim,
+            (_epochSnapshot, snapshots[_epochSnapshot], claim)
         );
 
         bytes32 ticketID = bytes32(arbSys.sendTxToL1(veaOutbox, data));

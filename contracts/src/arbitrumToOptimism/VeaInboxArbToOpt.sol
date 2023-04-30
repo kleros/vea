@@ -11,11 +11,11 @@
 pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
-import "./interfaces/IVeaOutboxArbToOpt.sol";
 import "../interfaces/IVeaInbox.sol";
+import "./interfaces/IVeaOutboxArbToOpt.sol";
 
 /**
- * Vea Bridge Inbox From Arbitrum to Opt.
+ * Vea Bridge Inbox From Arbitrum to Optimism.
  */
 contract VeaInboxArbToOpt is IVeaInbox {
     /**
@@ -62,6 +62,8 @@ contract VeaInboxArbToOpt is IVeaInbox {
 
     /**
      * @dev Sends an arbitrary message to a receiving chain.
+     * `O(log(count))` where count is the number of messages already sent.
+     * Note: Amortized cost is O(1).
      * @param to The address of the contract on the receiving chain which receives the calldata.
      * @param fnSelector The function selector of the receiving contract.
      * @param data The message calldata, abi.encode(param1, param2, ...)
@@ -204,11 +206,7 @@ contract VeaInboxArbToOpt is IVeaInbox {
             require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutboxArbToOpt.resolveDisputedClaim.selector,
-            epochSend,
-            snapshots[epochSend]
-        );
+        bytes memory data = abi.encodeCall(IVeaOutboxArbToOpt.resolveDisputedClaim, (epochSend, snapshots[epochSend]));
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
 

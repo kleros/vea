@@ -1,5 +1,5 @@
-import VeaInboxArbitrumGoerli from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInbox.json";
-import VeaOutboxGoerli from "@kleros/vea-contracts/deployments/goerli/VeaOutbox.json";
+import VeaInboxArbitrumGoerli from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json";
+import VeaOutboxGoerli from "@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json";
 import { Chain, arbitrumGoerli, goerli } from "@wagmi/chains";
 import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
 import Ethereum from "tsx:svgs/chains/ethereum.svg";

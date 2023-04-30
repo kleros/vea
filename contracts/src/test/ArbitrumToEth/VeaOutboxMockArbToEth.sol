@@ -22,7 +22,11 @@ contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
      * @param _epoch The epoch to verify.
      * @param _stateRoot The true state root for the epoch.
      */
-    function resolveDisputedClaim(uint256 _epoch, bytes32 _stateRoot, Claim memory claim) external override {
+    function resolveDisputedClaim(
+        uint256 _epoch,
+        bytes32 _stateRoot,
+        Claim memory claim
+    ) external override OnlyBridgeRunning {
         require(
             claimHashes[_epoch] ==
                 keccak256(

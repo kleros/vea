@@ -2,18 +2,13 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
-  ARBITRUM = 42161,
   ARBITRUM_GOERLI = 421613,
   HARDHAT = 31337,
 }
+
 const paramsByChainId = {
-  ARBITRUM: {
-    epochPeriod: 43200, // 12 hours
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.gnosischain,
-  },
   ARBITRUM_GOERLI: {
     epochPeriod: 1800, // 30 minutes
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.chiado,
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -29,20 +24,21 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deployer = (await getNamedAccounts()).deployer;
   console.log("deployer: %s", deployer);
 
-  const { epochPeriod, companion } = paramsByChainId[SenderChains[chainId]];
+  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
 
-  const veaOutboxGnosis = await companion(hre).deployments.get("VeaOutboxGnosis");
+  const veaOutboxGnosis = await hre.companionNetworks.chiado.deployments.get("VeaOutboxGnosis");
 
-  await deploy("VeaInboxArbToGnosis", {
+  await deploy("VeaInboxArbToGnosisDevnet", {
     from: deployer,
+    contract: "VeaInboxArbToGnosis",
     args: [epochPeriod, veaOutboxGnosis.address],
     log: true,
   });
 };
 
-deployInbox.tags = ["ArbToGnosisInbox"];
+deployInbox.tags = ["ArbGoerliToChiadoInbox"];
 deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

@@ -2,6 +2,7 @@
   "solidity.compileUsingRemoteVersion": "v0.8.10+commit.fc410830",
   "cSpell.words": [
     "arbitrum",
+    "Devnet",
     "IERC",
     "kleros",
     "typechain"
