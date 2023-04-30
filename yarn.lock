@@ -3450,7 +3450,6 @@ __metadata:
     ethers: ^5.7.2
     graphql: ^16.6.0
     graphql-request: ^6.0.0
-    lru-cache: ^7.18.3
     parcel: ^2.8.3
     prettier: ^2.8.8
     react: ^18.2.0
@@ -14718,7 +14717,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^7.14.1, lru-cache@npm:^7.18.3, lru-cache@npm:^7.7.1":
+"lru-cache@npm:^7.14.1, lru-cache@npm:^7.7.1":
   version: 7.18.3
   resolution: "lru-cache@npm:7.18.3"
   checksum: e550d772384709deea3f141af34b6d4fa392e2e418c1498c078de0ee63670f1f46f5eee746e8ef7e69e1c895af0d4224e62ee33e66a543a14763b0f2e74c1356
