@@ -1,5 +1,7 @@
 import { CustomAccordion } from "@kleros/ui-components-library";
-import AccordionTitle from "./AccordionTitle/AccordionTitle";
+import AccordionTitle, {
+  SnapshotInboxDataType,
+} from "./AccordionTitle/AccordionTitle";
 import styled, { css } from "styled-components";
 import React, { useState } from "react";
 import AccordionBody from "./AccordionBody/AccordionBody";
@@ -58,13 +60,13 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
 
 interface SnapshotAccordionProps {
   items: {
-    snapshotInboxData: any;
+    snapshotInboxData: SnapshotInboxDataType;
     snapshotOutboxData: any;
   }[];
 }
 
 const SnapshotAccordion: React.FC<SnapshotAccordionProps> = (p) => {
-  const [snapshotStatus, setSnapshotStatus] = useState("");
+  const [snapshotStatus, setSnapshotStatus] = useState<string>("");
 
   return (
     <StyledSnapshotAccordionGlobal

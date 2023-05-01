@@ -1,9 +1,10 @@
 import { Button } from "@kleros/ui-components-library";
 import React, { useState } from "react";
 import styled from "styled-components";
-import { useMessages } from "~src/hooks/useMessages";
+import { useMessages } from "src/hooks/useMessages";
 import DisplayMessages from "./DisplayMessages";
 import SnapshotDetails from "./SnapshotDetails";
+import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
 
 const StyledSnapshotDetailsButton = styled(Button)<{
   snapshotDetailsVisible: boolean;
@@ -57,7 +58,7 @@ const StyledButtonsContainer = styled.div`
 `;
 
 export interface AccordionBodyProps {
-  snapshotInboxData: any;
+  snapshotInboxData: SnapshotInboxDataType;
   snapshotOutboxData: any;
   snapshotStatus: any;
 }

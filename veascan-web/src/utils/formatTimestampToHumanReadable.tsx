@@ -1,4 +1,7 @@
-export const formatTimestampToHumanReadable = (timestamp: number): string => {
+export const formatTimestampToHumanReadable = (
+  timestamp: number | string
+): string => {
+  timestamp = Number(timestamp);
   const date = new Date(timestamp * 1000);
   const months = [
     "Jan",

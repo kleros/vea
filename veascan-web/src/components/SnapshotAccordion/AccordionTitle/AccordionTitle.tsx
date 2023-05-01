@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { Dispatch, SetStateAction, useEffect } from "react";
 import styled, { css } from "styled-components";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
 import { bridges, getChain } from "src/consts/bridges";
@@ -119,11 +119,24 @@ const StyledEpochAndTimestamp = styled.div`
   margin-right: 3.5%;
 `;
 
+export interface SnapshotInboxDataType {
+  bridgeIndex: number;
+  caller: string;
+  epoch: string;
+  id: string;
+  numberMessages: string;
+  resolving: boolean;
+  stateRoot: string;
+  taken: boolean;
+  timestamp: string;
+  txHash: string;
+}
+
 export interface AccordionTitleProps {
-  snapshotInboxData: any;
+  snapshotInboxData: SnapshotInboxDataType;
   snapshotOutboxData: any;
-  snapshotStatus: any;
-  setSnapshotStatus: any;
+  snapshotStatus: string;
+  setSnapshotStatus: Dispatch<SetStateAction<string>>;
 }
 
 const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({

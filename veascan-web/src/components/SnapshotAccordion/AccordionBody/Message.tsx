@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { bridges } from "~src/consts/bridges";
-import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
+import { bridges } from "src/consts/bridges";
+import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
+import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
 import MessageHeader from "./MessageHeader";
 import TxCard from "./TxCard";
 
 interface MessageProps {
-  messageInboxData: any;
+  messageInboxData: MessageInboxDataType;
   messageOutboxData: any;
-  snapshotInboxData: any;
+  snapshotInboxData: SnapshotInboxDataType;
   snapshotOutboxData: any;
 }
 
@@ -15,6 +16,15 @@ const messageStatusRoles = {
   Inboxed: "Sender",
   Relayed: "Relayer",
 };
+
+interface MessageInboxDataType {
+  data: string;
+  from: string;
+  id: string;
+  timestamp: string;
+  to: string;
+  txHash: string;
+}
 
 const Message: React.FC<MessageProps> = ({
   messageInboxData,
