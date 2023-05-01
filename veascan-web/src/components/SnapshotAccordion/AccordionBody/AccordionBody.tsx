@@ -60,7 +60,7 @@ const StyledButtonsContainer = styled.div`
 export interface AccordionBodyProps {
   snapshotInboxData: SnapshotInboxDataType;
   snapshotOutboxData: any;
-  snapshotStatus: any;
+  snapshotStatus: string;
 }
 
 const AccordionBody: React.FC<AccordionBodyProps> = ({

@@ -16,7 +16,7 @@ export const statusRoles = {
 interface SnapshotDetailsProps {
   snapshotInboxData: SnapshotInboxDataType;
   snapshotOutboxData: any;
-  snapshotStatus: any;
+  snapshotStatus: string;
 }
 
 const SnapshotDetails: React.FC<SnapshotDetailsProps> = ({
