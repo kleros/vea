@@ -6,9 +6,9 @@ dataSources:
     name: VeaInboxArbToGnosis
     network: arbitrum-goerli
     source:
-      address: "0xD2d4174A971b2AE58F23F7d4F5e4DE9d97bDda31"
+      address: "0x3b894FE680deB990b4Fb7E7D0000C32Af06687C3"
       abi: VeaInbox
-      startBlock: 16239261
+      startBlock: 18151531
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -19,12 +19,12 @@ dataSources:
       - Refs
       abis:
         - name: VeaInbox
-          file: ../contracts/deployments/arbitrumGoerli/VeaInbox.json
+          file: ../contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json
       eventHandlers:
         - event: MessageSent(bytes)
           handler: handleMessageSent
-        - event: SnapshotSaved(bytes32)
+        - event: SnapshotSaved(uint256)
           handler: handleSnapshotSaved
-        - event: SnapshotSent(uint256,bytes32)
+        - event: SnapshotSent(indexed uint256,bytes32)
           handler: handleSnapshotSent
       file: ./src/VeaInbox.ts

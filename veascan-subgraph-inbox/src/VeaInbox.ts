@@ -67,16 +67,18 @@ function useNextMessageIndex(): BigInt {
 }
 
 export function handleSnapshotSaved(event: SnapshotSaved): void {
+  const inbox = VeaInbox.bind(event.address);
+  // Get the epochPeriod from the public variable of the deployed contract
+  const epochPeriod = inbox.epochPeriod();
+  const epoch = event.block.timestamp.div(epochPeriod);
+  // Get stateRoot from contract
+  const stateRoot = inbox.snapshots(epoch);
   const currentSnapshot = getCurrentSnapshot();
   currentSnapshot.taken = true;
   currentSnapshot.caller = event.transaction.from;
-  currentSnapshot.stateRoot = event.params.stateRoot;
+  currentSnapshot.stateRoot = stateRoot;
   currentSnapshot.timestamp = event.block.timestamp;
   currentSnapshot.txHash = event.transaction.hash;
-  //Get the epochPeriod from the public variable of the deployed contract
-  const veaInboxContract = VeaInbox.bind(event.address);
-  const epochPeriod = veaInboxContract.epochPeriod();
-  const epoch = event.block.timestamp.div(epochPeriod);
   currentSnapshot.epoch = epoch;
   currentSnapshot.save();
 
