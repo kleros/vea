@@ -6,7 +6,7 @@ export const getSnapshotsQuery = graphql(`
       first: 5
       orderBy: timestamp
       orderDirection: desc
-      where: { timestamp_lt: $lastTimestamp }
+      where: { timestamp_lte: $lastTimestamp }
     ) {
       id
       epoch

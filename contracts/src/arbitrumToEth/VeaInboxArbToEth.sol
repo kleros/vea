@@ -8,11 +8,11 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/IVeaInbox.sol";
-import "../interfaces/IVeaOutbox.sol";
+import "./interfaces/IVeaOutboxArbToEth.sol";
 
 /**
  * Vea Bridge Inbox From Arbitrum to Ethereum.
@@ -25,24 +25,17 @@ contract VeaInboxArbToEth is IVeaInbox {
     event MessageSent(bytes nodeData);
 
     /**
-     * The bridgers watch this event to claim the stateRoot on the veaOutbox.
-     * The epoch (not emitted) is determined by block.timestamp / epochPeriod.
-     * @param stateRoot The receiving domain encoded message data.
+     * The bridgers can watch this event to claim the stateRoot on the veaOutbox.
+     * @param count The count of messages in the merkle tree
      */
-    event SnapshotSaved(bytes32 stateRoot);
+    event SnapshotSaved(uint256 count);
 
     /**
      * @dev The event is emitted when a snapshot through the canonical arbiturm bridge.
      * @param epochSent The epoch of the snapshot.
      * @param ticketId The ticketId of the L2->L1 message.
      */
-    event SnapshotSent(uint256 epochSent, bytes32 ticketId);
-
-    /**
-     * @dev The event is emitted when a heartbeat is sent.
-     * @param ticketId The ticketId of the L2->L1 message.
-     */
-    event Hearbeat(bytes32 ticketId);
+    event SnapshotSent(uint256 indexed epochSent, bytes32 ticketId);
 
     IArbSys public constant ARB_SYS = IArbSys(address(100));
 
@@ -69,6 +62,8 @@ contract VeaInboxArbToEth is IVeaInbox {
 
     /**
      * @dev Sends an arbitrary message to a receiving chain.
+     * `O(log(count))` where count is the number of messages already sent.
+     * Note: Amortized cost is O(1).
      * @param to The address of the contract on the receiving chain which receives the calldata.
      * @param fnSelector The function selector of the receiving contract.
      * @param data The message calldata, abi.encode(param1, param2, ...)
@@ -129,6 +124,7 @@ contract VeaInboxArbToEth is IVeaInbox {
 
     /**
      * Saves snapshot of state root.
+     * `O(log(count))` where count number of messages in the inbox.
      * @dev Snapshots can be saved a maximum of once per epoch.
      */
     function saveSnapshot() external {
@@ -173,7 +169,7 @@ contract VeaInboxArbToEth is IVeaInbox {
 
         snapshots[epoch] = stateRoot;
 
-        emit SnapshotSaved(stateRoot);
+        emit SnapshotSaved(count);
     }
 
     /**
@@ -205,34 +201,18 @@ contract VeaInboxArbToEth is IVeaInbox {
      * @dev Sends the state root snapshot using Arbitrum's canonical bridge.
      * @param epochSend The epoch of the snapshot requested to send.
      */
-    function sendSnapshot(uint256 epochSend) external virtual {
-        uint256 epochNow;
-
+    function sendSnapshot(uint256 epochSend, IVeaOutboxArbToEth.Claim memory claim) external virtual {
         unchecked {
-            epochNow = block.timestamp / epochPeriod;
+            require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        require(epochSend < epochNow, "Can only send past epoch snapshot.");
-
-        bytes memory data = abi.encodeWithSelector(
-            IVeaOutbox.resolveDisputedClaim.selector,
-            epochSend,
-            snapshots[epochSend]
+        bytes memory data = abi.encodeCall(
+            IVeaOutboxArbToEth.resolveDisputedClaim,
+            (epochSend, snapshots[epochSend], claim)
         );
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
 
         emit SnapshotSent(epochSend, ticketID);
-    }
-
-    /**
-     * @dev Sends heartbeat to VeaOutbox.
-     */
-    function sendHeartbeat() external virtual {
-        bytes memory data = abi.encodeWithSelector(IVeaOutbox.heartbeat.selector, block.timestamp);
-
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
-
-        emit Hearbeat(ticketID);
     }
 }

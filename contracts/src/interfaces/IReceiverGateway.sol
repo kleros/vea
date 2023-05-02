@@ -8,12 +8,10 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
-
-import "./IVeaOutbox.sol";
+pragma solidity 0.8.18;
 
 interface IReceiverGateway {
-    function veaOutbox() external view returns (IVeaOutbox);
+    function veaOutbox() external view returns (address);
 
     function senderGateway() external view returns (address);
 }

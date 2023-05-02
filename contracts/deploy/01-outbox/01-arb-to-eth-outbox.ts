@@ -6,57 +6,42 @@ import { ethers } from "hardhat";
 
 enum ReceiverChains {
   ETHEREUM_MAINNET = 1,
-  ETHEREUM_GOERLI = 5,
   HARDHAT = 31337,
 }
 const paramsByChainId = {
   ETHEREUM_MAINNET: {
-    deposit: parseEther("100"), // 2800 ETH budget to start, enough for 14 days till timeout
-    // Average happy path wait time is 31 hours
+    deposit: parseEther("20"), // 1000 ETH budget to start, enough for 21 days till timeout
+    // Average happy path wait time is 42 hours (36, 48 hours)
     epochPeriod: 43200, // 12 hours
-    challengePeriod: 90000, // 24 hours (sequencer backdating) + 1 hour buffer
-    // if maxTimeVariation on seuqencer is 4 hours. . .
-    // Average happy path wait time is 6 hours
-    // epochPeriod: 7200, // 2 hours
-    // challengePeriod: 90000, // 4 hours (sequencer backdating) + 1 hour buffer (resync time)
-    numEpochTimeout: 1209600, // 10 days
-    maxMissingBlocks: 4, // 4 in 225 slots
-    epochClaimWindow: 3, // 24 hours (sequencer backdating) + 1 hour buffer (resync time )
+    claimDelay: 108000, // 30 hours (24 hours sequencer backdating + 6 hour buffer)
+    challengePeriod: 21600, // 6 hours
+    numEpochTimeout: 42, // 21 days
+    maxMissingBlocks: 108, // 108 in 1800 slots
     senderChainId: 42161,
     arbitrumInbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
   },
   /*
   // if maxTimeVariation on seuqencer is 4 hours. . .
   ETHEREUM_MAINNET: {
-    deposit: parseEther("16"), // 2000 ETH budget to start, enough for 10 days till timeout
-    // Average happy path wait time is 6 hours
-    epochPeriod: 7200, // 2 hours
-    challengePeriod: 18000, // 4 hours (sequencer backdating) + 1 hour buffer (resync time)
-    numEpochTimeout: 120, // 10 days
-    epochClaimWindow: 3, // 4 hours (sequencer backdating) + 1 hour buffer (resync time )
-    senderChainId: ...,
-    arbitrumInbox: "...",
+    deposit: parseEther("10"), // 1000 ETH budget to start, enough for 21 days till timeout
+    // Average happy path wait time is 12 hours (9, 15 hours)
+    epochPeriod: 43200, // 6 hours
+    claimDelay: 21600, // 6 hours (4 hours sequencer backdating + 2 hour buffer)
+    challengePeriod: 21600, // 3 hours
+    numEpochTimeout: 42, // 21 days
+    maxMissingBlocks: 40, // 900 in 1800 slots
+    senderChainId: 42161,
+    arbitrumInbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
   },*/
-  ETHEREUM_GOERLI: {
-    deposit: parseEther("10"), // 120 eth budget for timeout
-    // Average happy path wait time is 45 mins, assume no censorship
-    epochPeriod: 1800, // 30 min
-    challengePeriod: 1800, // 30 min (assume no sequencer backdating)
-    numEpochTimeout: 21600, // 6 hours
-    epochClaimWindow: 2,
-    senderChainId: 421613,
-    maxMissingBlocks: 0,
-    arbitrumInbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
-  },
   HARDHAT: {
     deposit: parseEther("10"), // 120 eth budget for timeout
     // Average happy path wait time is 45 mins, assume no censorship
     epochPeriod: 1800, // 30 min
+    claimDelay: 0, // 30 hours (24 hours sequencer backdating + 6 hour buffer)
     challengePeriod: 1800, // 30 min (assume no sequencer backdating)
-    numEpochTimeout: 21600, // 6 hours
-    epochClaimWindow: 2,
+    numEpochTimeout: 10000000000000, // 6 hours
     senderChainId: 31337,
-    maxMissingBlocks: 0,
+    maxMissingBlocks: 10000000000000,
     arbitrumInbox: ethers.constants.AddressZero,
   },
 };
@@ -77,7 +62,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, maxMissingBlocks, arbitrumInbox } =
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, maxMissingBlocks, arbitrumInbox } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -112,9 +97,10 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         epochPeriod,
         challengePeriod,
         numEpochTimeout,
-        epochClaimWindow,
+        claimDelay,
         veaInboxAddress,
         inboxAddress,
+        maxMissingBlocks,
       ],
       log: true,
     });
@@ -137,12 +123,22 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
-    await deploy("VeaOutbox", {
-      from: deployer,
-      contract: "VeaOutboxArbToEth",
-      args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, veaInboxAddress, arbitrumInbox],
-      log: true,
-    });
+    if (chainId)
+      await deploy("VeaOutboxArbToEth", {
+        from: deployer,
+        contract: "VeaOutboxArbToEth",
+        args: [
+          deposit,
+          epochPeriod,
+          challengePeriod,
+          numEpochTimeout,
+          claimDelay,
+          veaInboxAddress,
+          arbitrumInbox,
+          maxMissingBlocks,
+        ],
+        log: true,
+      });
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -157,7 +153,7 @@ deployOutbox.tags = ["ArbToEthOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !ReceiverChains[chainId];
+  return !(chainId === 1 || chainId === 31337);
 };
 
 export default deployOutbox;

@@ -8,48 +8,39 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/IVeaInbox.sol";
-import "../interfaces/IVeaOutbox.sol";
-import "../interfaces/IRouter.sol";
+import "./interfaces/IRouterArbToGnosis.sol";
 
 /**
- * Vea Bridge Outbox From Arbitrum to Gnosis.
+ * Vea Bridge Inbox From Arbitrum to Gnosis.
  */
 contract VeaInboxArbToGnosis is IVeaInbox {
     /**
      * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
-     * @param msgId The zero based index of the message in the inbox.
-     * @param to The address to call.
-     * @param msgData The message to relay. eg to.call(msgData)
+     * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, data), outbox relays to.call(data)
      */
-    event MessageSent(uint64 msgId, address to, bytes msgData);
+    event MessageSent(bytes nodeData);
 
     /**
-     * The bridgers watch this event to claim the stateRoot on the veaOutbox.
-     * The epoch (not emitted) is determined by block.timestamp / epochPeriod.
-     * @param stateRoot The receiving domain encoded message data.
+     * The bridgers can watch this event to claim the stateRoot on the veaOutbox.
+     * @param count The count of messages in the merkle tree
      */
-    event SnapshotSaved(bytes32 stateRoot);
+    event SnapshotSaved(uint256 count);
 
     /**
      * @dev The event is emitted when a snapshot through the canonical arbiturm bridge.
      * @param epochSent The epoch of the snapshot.
      * @param ticketId The ticketId of the L2->L1 message.
      */
-    event SnapshotSent(uint256 epochSent, bytes32 ticketId);
-
-    /**
-     * @dev The event is emitted when a heartbeat is sent.
-     * @param ticketId The ticketId of the L2->L1 message.
-     */
-    event Hearbeat(bytes32 ticketId);
+    event SnapshotSent(uint256 indexed epochSent, bytes32 ticketId);
 
     IArbSys public constant ARB_SYS = IArbSys(address(100));
+
     uint256 public immutable epochPeriod; // Epochs mark the period between stateroot snapshots
-    address public immutable routerArbToGnosis; // The router from arbitrum to gnosis on ethereum.
+    address public immutable router; // The router on ethereum.
 
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
 
@@ -62,28 +53,38 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     /**
      * @dev Constructor.
      * @param _epochPeriod The duration in seconds between epochs.
-     * @param _routerArbToGnosis The router from arbitrum to gnosis on ethereum.
+     * @param _router The router on ethereum.
      */
-    constructor(uint256 _epochPeriod, address _routerArbToGnosis) {
+    constructor(uint256 _epochPeriod, address _router) {
         epochPeriod = _epochPeriod;
-        routerArbToGnosis = _routerArbToGnosis;
+        router = _router;
     }
 
     /**
      * @dev Sends an arbitrary message to a receiving chain.
+     * `O(log(count))` where count is the number of messages already sent.
+     * Note: Amortized cost is O(1).
      * @param to The address of the contract on the receiving chain which receives the calldata.
      * @param fnSelector The function selector of the receiving contract.
      * @param data The message calldata, abi.encode(param1, param2, ...)
      * @return msgId The zero based index of the message in the inbox.
      */
-    function sendMessage(address to, bytes4 fnSelector, bytes calldata data) external override returns (uint64) {
+    function sendMessage(address to, bytes4 fnSelector, bytes memory data) external override returns (uint64) {
         uint256 oldCount = count;
 
-        // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
-        bytes memory msgData = abi.encodePacked(fnSelector, bytes32(uint256(uint160(msg.sender))), data);
+        bytes memory nodeData = abi.encodePacked(
+            uint64(oldCount),
+            to,
+            // data for outbox relay
+            abi.encodePacked( // abi.encodeWithSelector(fnSelector, msg.sender, data)
+                fnSelector,
+                bytes32(uint256(uint160(msg.sender))), // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
+                data
+            )
+        );
 
         // single hashed leaf
-        bytes32 newInboxNode = keccak256(abi.encodePacked(uint64(oldCount), to, msgData));
+        bytes32 newInboxNode = keccak256(nodeData);
 
         // double hashed leaf
         // avoids second order preimage attacks
@@ -114,7 +115,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
             count = oldCount + 1;
         }
 
-        emit MessageSent(uint64(oldCount), to, msgData);
+        emit MessageSent(nodeData);
 
         // old count is the zero indexed leaf position in the tree, acts as a msgId
         // gateways should index these msgIds to later relay proofs
@@ -123,6 +124,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
     /**
      * Saves snapshot of state root.
+     * `O(log(count))` where count number of messages in the inbox.
      * @dev Snapshots can be saved a maximum of once per epoch.
      */
     function saveSnapshot() external {
@@ -136,25 +138,24 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
             // calculate the current root of the incremental merkle tree encoded in the inbox
 
-            // first hash is special case
-            // inbox already stores the root of complete subtrees
-            // so we can skip calculating the root of the first complete subtree
-            // eg inbox = [H(m_1), H(H(m_1),H(m_2))], we can skip inbox[0] and read inbox[1] directly
-
             uint256 height;
-            uint256 x;
 
             // x acts as a bit mask to determine if the hash stored in the inbox contributes to the root
+            uint256 x;
+
             // x is bit shifted to the right each loop, hence this loop will always terminate in a maximum of log_2(count) iterations
             for (x = count; x > 0; x = x >> 1) {
                 if ((x & 1) == 1) {
+                    // first hash is special case
+                    // inbox stores the root of complete subtrees
+                    // eg if count = 4 = 0b100, then the first complete subtree is inbox[2]
+                    // inbox = [H(m_3), H(H(m_1),H(m_2)) H(H(H(m_1),H(m_2)),H(H(m_3),H(m_4)))], we read inbox[2] directly
+
                     stateRoot = inbox[height];
                     break;
                 }
                 height++;
             }
-
-            // x is right bit shifted by 1 since this was skipped in the break condition
 
             for (x = x >> 1; x > 0; x = x >> 1) {
                 height++;
@@ -168,7 +169,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
         snapshots[epoch] = stateRoot;
 
-        emit SnapshotSaved(stateRoot);
+        emit SnapshotSaved(count);
     }
 
     /**
@@ -198,31 +199,17 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
     /**
      * @dev Sends the state root snapshot using Arbitrum's canonical bridge.
-     * @param epochSend The epoch of the batch requested to send.
+     * @param epochSend The epoch of the snapshot requested to send.
      */
-    function sendSnapshot(uint256 epochSend) external virtual {
-        uint256 epochNow;
+    function sendSnapshot(uint256 epochSend, IVeaOutboxArbToGnosis.Claim memory claim) external virtual {
         unchecked {
-            epochNow = uint256(block.timestamp) / epochPeriod;
+            require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        require(epochSend < epochNow, "Cannot send stateroot for current or future epoch.");
+        bytes memory data = abi.encodeCall(IRouterArbToGnosis.route, (epochSend, snapshots[epochSend], claim));
 
-        bytes memory data = abi.encodeWithSelector(IRouter.route.selector, epochSend, snapshots[epochSend]);
-
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));
+        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(router, data));
 
         emit SnapshotSent(epochSend, ticketID);
-    }
-
-    /**
-     * @dev Sends heartbeat to VeaOutbox.
-     */
-    function sendHeartbeat() external virtual {
-        bytes memory data = abi.encodeWithSelector(IVeaOutbox.heartbeat.selector, block.timestamp);
-
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));
-
-        emit Hearbeat(ticketID);
     }
 }

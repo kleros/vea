@@ -8,6 +8,16 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 ### Current version
 
+#### Goerli
+
+- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0xAA0FA4fB781d8e17F3998291774601e06f2f27be)
+
+#### Arbitrum Goerli
+
+- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0x3b894FE680deB990b4Fb7E7D0000C32Af06687C3)
+
+### Previous version
+
 #### Arbitrum Goerli
 
 - [FastBridgeSenderToGnosis](https://goerli.arbiscan.io/address/0xd599f19e8e2b5CE6ad94328be138B11bA97A7F21)
@@ -39,16 +49,10 @@ yarn build
 ### Run Linter on Files
 
 ```bash
-yarn lint
+yarn check
 ```
 
-### Fix Linter Issues on Files
-
-```bash
-yarn fix
-```
-
-### Deploy Instructions
+### Deployment
 
 **NOTICE:** the commands below work only if you are inside the `contracts/` directory.
 
@@ -77,30 +81,34 @@ If some of the constructor parameters (such as the Meta Evidence) needs to chang
 
 #### 2. Deploy to a Local Network
 
-:warning: TODO: OUTDATED, FIX ME
-The complete deployment is multi-chain, so a deployment to the local network can only simulate either the Home chain or the Foreign chain.
-
-**Shell 1: the node**
-
 ```bash
-yarn hardhat node --tags nothing
+yarn start-local
 ```
 
-**Shell 2: the deploy script**
+#### 3. Deploy to Public Networks
+
+##### Testnets
 
 ```bash
-yarn hardhat deploy --network localhost --tags HomeChain
+# ArbitrumGoerli -> Goerli
+yarn deploy --network goerli --tags ArbGoerliToGoerliOutbox
+yarn deploy --network arbitrumGoerli --tags ArbGoerliToGoerliInbox
+
+# ArbitrumGoerli -> Chiado
+yarn deploy --network chiado --tags ArbGoerliToChiadoOutbox
+yarn deploy --network arbitrumGoerli --tags ArbGoerliToChiadoInbox
 ```
 
-#### 3. Deploy to Public Testnets
-
-:warning: TODO: OUTDATED, FIX ME
+##### Mainnets
 
 ```bash
-# Goerli
-yarn hardhat deploy --network arbitrumGoerli --tags Arbitration
-yarn hardhat deploy --network goerli --tags ForeignChain
-yarn hardhat deploy --network arbitrumGoerli --tags HomeChain
+# Arbitrum -> Ethereum
+yarn deploy --network mainnet --tags ArbToEthOutbox
+yarn deploy --network arbitrum --tags ArbToEthInbox
+
+# Arbitrum -> Gnosis chain
+yarn deploy --network gnosischain --tags ArbToGnosisOutbox
+yarn deploy --network arbitrum --tags ArbToGnosisInbox
 ```
 
 The deployed addresses should be output to the screen after the deployment is complete.
@@ -108,18 +116,8 @@ If you miss that, you can always go to the `deployments/<network>` directory and
 
 #### Running Test Fixtures
 
-:warning: TODO: OUTDATED, FIX ME
-
-**Shell 1: the node**
-
 ```bash
-yarn hardhat node --tags Arbitration,ForeignGateway,HomeGateway
-```
-
-**Shell 2: the test script**
-
-```bash
-yarn hardhat test --network localhost
+yarn test
 ```
 
 #### 4. Verify the Source Code for Contracts
@@ -127,5 +125,5 @@ yarn hardhat test --network localhost
 This must be done for each network separately.
 
 ```bash
-yarn hardhat --network <arbitrumGoerli|arbitrum|goerli|mainnet> etherscan-verify
+yarn hardhat --network <arbitrumGoerli|arbitrum|goerli|mainnet|chiado|gnosischain> etherscan-verify
 ```

@@ -9,9 +9,11 @@ enum SenderChains {
 const paramsByChainId = {
   ARBITRUM: {
     epochPeriod: 43200, // 12 hours
+    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.mainnet,
   },
   ARBITRUM_GOERLI: {
     epochPeriod: 1800, // 30 minutes
+    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.goerli,
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -19,7 +21,7 @@ const paramsByChainId = {
 };
 
 // TODO: use deterministic deployments
-const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
   const { deploy, execute } = deployments;
   const chainId = Number(await getChainId());
@@ -28,7 +30,7 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
   console.log("deployer: %s", deployer);
 
-  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
+  const { epochPeriod, companion } = paramsByChainId[SenderChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
@@ -74,11 +76,10 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await hre.companionNetworks.receiver.deployments.get("VeaOutbox");
+    const veaOutbox = await companion(hre).deployments.get("VeaOutbox");
 
-    await deploy("VeaInbox", {
+    await deploy("VeaInboxArbToEth", {
       from: deployer,
-      contract: "VeaInboxArbToEth",
       args: [epochPeriod, veaOutbox.address],
       log: true,
     });
@@ -92,12 +93,12 @@ const deploySender: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deploySender.tags = ["ArbToEthInbox"];
-deploySender.skip = async ({ getChainId }) => {
+deployInbox.tags = ["ArbToEthInbox"];
+deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
   return !SenderChains[chainId];
 };
-deploySender.runAtTheEnd = true;
+deployInbox.runAtTheEnd = true;
 
-export default deploySender;
+export default deployInbox;

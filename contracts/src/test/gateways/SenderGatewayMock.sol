@@ -8,7 +8,7 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "./IReceiverGatewayMock.sol";
 import "../../interfaces/ISenderGateway.sol";
@@ -26,7 +26,7 @@ contract SenderGatewayMock is ISenderGateway {
         receiverGateway = _receiverGateway;
     }
 
-    function sendFastMessage(uint256 _data) external {
+    function sendMessage(uint256 _data) external {
         bytes4 methodSelector = IReceiverGatewayMock.receiveMessage.selector;
         bytes memory data = abi.encode(_data);
         veaInbox.sendMessage(receiverGateway, methodSelector, data);

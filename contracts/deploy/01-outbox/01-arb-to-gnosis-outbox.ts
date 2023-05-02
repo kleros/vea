@@ -16,9 +16,11 @@ const paramsByChainId = {
     epochPeriod: 43200, // 12 hours
     challengePeriod: 90000, // 24 hours (sequencer backdating) + 1 hour buffer
     numEpochTimeout: 20, // 10 days
-    epochClaimWindow: 3, // 24 hours (sequencer backdating) + 1 hour buffer
-    senderChainId: 421613,
+    claimDelay: 3, // 24 hours (sequencer backdating) + 1 hour buffer
     amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
+    routerAddress: ethers.constants.AddressZero, // TODO: FIX ME, address on Ethereum mainnet
+    maxMissingBlocks: 10000000000000,
+    senderChainId: 421613,
   },
   GNOSIS_CHIADO: {
     deposit: parseEther("5"), // 120 xDAI budget for timeout
@@ -26,9 +28,11 @@ const paramsByChainId = {
     epochPeriod: 600, // 15 min
     challengePeriod: 600, // 15 min (assume no sequencer backdating)
     numEpochTimeout: 24, // 6 hours
-    epochClaimWindow: 2,
-    senderChainId: 421613,
+    claimDelay: 2,
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    routerAddress: ethers.constants.AddressZero, // TODO: FIX ME, address on Goerli
+    maxMissingBlocks: 10000000000000,
+    senderChainId: 421613,
   },
   HARDHAT: {
     deposit: parseEther("5"), // 120 xDAI budget for timeout
@@ -36,9 +40,11 @@ const paramsByChainId = {
     epochPeriod: 600, // 15 min
     challengePeriod: 600, // 15 min (assume no sequencer backdating)
     numEpochTimeout: 24, // 6 hours
-    epochClaimWindow: 2,
-    senderChainId: 421613,
+    claimDelay: 2,
     amb: ethers.constants.AddressZero,
+    routerAddress: ethers.constants.AddressZero,
+    maxMissingBlocks: 10000000000000,
+    senderChainId: 421613,
   },
 };
 
@@ -58,7 +64,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, senderChainId, amb } =
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -72,9 +78,19 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
-    const veaOutboxGnosis = await deploy("VeaOutboxGnosisMock", {
+    await deploy("VeaOutboxGnosisMock", {
       from: deployer,
-      args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, veaInboxAddress, amb],
+      args: [
+        deposit,
+        epochPeriod,
+        challengePeriod,
+        numEpochTimeout,
+        claimDelay,
+        veaInboxAddress,
+        amb,
+        routerAddress,
+        maxMissingBlocks,
+      ],
       log: true,
     });
   };
@@ -90,7 +106,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     await deploy("VeaOutboxArbToGnosis", {
       from: deployer,
-      args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, epochClaimWindow, veaInboxAddress, amb],
+      args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks],
       log: true,
     });
   };

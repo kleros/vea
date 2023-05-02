@@ -8,7 +8,7 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
 import "./IReceiverGatewayMock.sol";
 
@@ -17,35 +17,37 @@ import "./IReceiverGatewayMock.sol";
  * Counterpart of `SenderGatewayMock`
  */
 contract ReceiverGatewayMock is IReceiverGatewayMock {
-    IVeaOutbox public immutable veaOutbox;
+    address public immutable veaOutbox;
     address public immutable override senderGateway;
 
     uint256 public messageCount;
     uint256 public data;
 
-    constructor(IVeaOutbox _veaOutbox, address _senderGateway) {
+    constructor(address _veaOutbox, address _senderGateway) {
         veaOutbox = _veaOutbox;
         senderGateway = _senderGateway;
     }
 
-    modifier onlyFromBridge() {
-        require(address(veaOutbox) == msg.sender, "Vea Bridge only.");
+    modifier onlyFromAuthenticatedVeaSender(address messageSender) {
+        require(veaOutbox == msg.sender, "Vea Bridge only.");
+        require(messageSender == senderGateway, "Only the sender gateway is allowed.");
         _;
     }
 
     /**
      * Receive the message from the sender gateway.
      */
-    function receiveMessage(address messageSender) external onlyFromBridge {
-        require(messageSender == senderGateway, "Only the sender gateway is allowed.");
+    function receiveMessage(address messageSender) external onlyFromAuthenticatedVeaSender(messageSender) {
         _receiveMessage();
     }
 
     /**
      * Receive the message from the sender gateway.
      */
-    function receiveMessage(address messageSender, uint256 _data) external onlyFromBridge {
-        require(messageSender == senderGateway, "Only the sender gateway is allowed.");
+    function receiveMessage(
+        address messageSender,
+        uint256 _data
+    ) external onlyFromAuthenticatedVeaSender(messageSender) {
         _receiveMessage(_data);
     }
 

@@ -8,24 +8,25 @@
  *  @deployments: []
  */
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
-import "../canonical/gnosis-chain/IAMB.sol";
+// import "../canonical/optimism/IInboxOpt.sol";
+// TODO: implement Optimism messaging.
 import "../canonical/arbitrum/IInbox.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "../interfaces/IRouter.sol";
-import "../interfaces/IVeaOutbox.sol";
+import "./interfaces/IRouterArbToOpt.sol";
+import "./interfaces/IVeaOutboxArbToOpt.sol";
 
 /**
  * Router on Ethereum from Arbitrum to Gnosis Chain.
  */
-contract RouterArbToGnosis is IRouter {
+contract RouterArbToGnosis is IRouterArbToOpt {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
 
-    IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.
-    IAMB public immutable amb; // The address of the AMB contract on Ethereum.
+    IInbox public immutable inboxOpt; // The address of the Optimism Inbox contract.
+    IInbox public immutable inboxArb; // The address of the Optimism Inbox contract.
     address public immutable sender; // The address of the sender on Arbitrum.
     address public immutable receiver; // The address of the Receiver on Gnosis Chain.
 
@@ -42,14 +43,14 @@ contract RouterArbToGnosis is IRouter {
 
     /**
      * @dev Constructor.
-     * @param _inbox The address of the inbox contract on Ethereum.
-     * @param _amb The address of the AMB contract on Ethereum.
+     * @param _inboxArb The address of the arbitrum inbox contract on Ethereum.
+     * @param _inboxOpt The address of the optimism inbox contract on Ethereum.
      * @param _sender The safe bridge sender on Arbitrum.
      * @param _receiver The fast bridge receiver on Gnosis Chain.
      */
-    constructor(IInbox _inbox, IAMB _amb, address _sender, address _receiver) {
-        inbox = _inbox;
-        amb = _amb;
+    constructor(IInbox _inboxArb, IInbox _inboxOpt, address _sender, address _receiver) {
+        inboxOpt = _inboxOpt;
+        inboxArb = _inboxArb;
         sender = _sender;
         receiver = _receiver;
     }
@@ -61,16 +62,12 @@ contract RouterArbToGnosis is IRouter {
      * @param stateroot The true batch merkle root for the epoch.
      */
     function route(uint256 epoch, bytes32 stateroot) external {
-        IBridge bridge = inbox.bridge();
+        IBridge bridge = inboxArb.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
 
-        bytes memory data = abi.encodeWithSelector(IVeaOutbox.resolveDisputedClaim.selector, epoch, stateroot);
+        bytes memory data = abi.encodeCall(IVeaOutboxArbToOpt.resolveDisputedClaim, (epoch, stateroot));
 
-        // replace maxGasPerTx with safe level for production deployment
-        bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());
-        emit Routed(epoch, ticketID);
+        // TODO: Send message to Optimism.
     }
-
-    // TODO Route heartbeat
 }
