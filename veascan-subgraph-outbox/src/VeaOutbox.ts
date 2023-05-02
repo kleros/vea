@@ -4,13 +4,18 @@ import {
   Claimed,
   MessageRelayed,
   Verified,
+  VeaOutbox,
 } from "../generated/VeaOutbox/VeaOutbox";
 import { Challenge, Claim, Message, Refs } from "../generated/schema";
 
 export function handleClaimed(event: Claimed): void {
   const claim = getNextClaim();
-  claim.epoch = event.params.epoch;
-  claim.stateroot = event.params.claimedStateRoot;
+  const outbox = VeaOutbox.bind(event.address);
+  const claimDelay = outbox.claimDelay();
+  const epochPeriod = outbox.epochPeriod();
+  const epoch = event.block.timestamp.minus(claimDelay).div(epochPeriod);
+  claim.epoch = epoch;
+  claim.stateroot = event.params.stateRoot;
   claim.timestamp = event.block.timestamp;
   claim.bridger = event.transaction.from;
   claim.challenged = false;

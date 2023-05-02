@@ -6,9 +6,9 @@ dataSources:
     name: VeaOutbox
     network: goerli
     source:
-      address: "0xD035Ccf1FC71A879d9F6E10215c5297489A40B46"
+      address: "0xAA0FA4fB781d8e17F3998291774601e06f2f27be"
       abi: VeaOutbox
-      startBlock: 8823379
+      startBlock: 8904168
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -20,14 +20,14 @@ dataSources:
         - Verified
       abis:
         - name: VeaOutbox
-          file: ../contracts/deployments/goerli/VeaOutbox.json
+          file: ../contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json
       eventHandlers:
-        - event: Challenged(indexed uint256)
+        - event: Challenged(uint256,indexed address)
           handler: handleChallenged
-        - event: Claimed(indexed uint256,bytes32)
+        - event: Claimed(indexed address,bytes32)
           handler: handleClaimed
-        - event: MessageRelayed(indexed uint64)
+        - event: MessageRelayed(uint64)
           handler: handleMessageRelayed
-        - event: Verified(indexed uint256)
+        - event: Verified(uint256)
           handler: handleVerified
       file: ./src/VeaOutbox.ts
