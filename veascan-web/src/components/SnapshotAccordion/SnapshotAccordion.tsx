@@ -11,23 +11,17 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   display: flex;
   width: 100%;
   justify-content: center;
-  padding-left: 32px;
-  padding-right: 32px;
 
   ${smallScreenStyle(css`
-    padding-left: 0px;
-    padding-right: 0px;
+    padding: 0px;
   `)}
 
   .accordion-button {
     border: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-radius: 3px;
-
+    padding: 16px;
     ${smallScreenStyle(css`
-      justify-content: start;
-      height: 139px;
-      padding-left: 16px;
-      padding-right: 16px;
+      padding: 16px calc(6px + (10) * (100vw - 370px) / (1250 - 370));
     `)}
   }
 

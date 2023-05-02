@@ -1,67 +1,40 @@
 import React, { Dispatch, SetStateAction, useEffect } from "react";
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
 import { bridges, getChain } from "src/consts/bridges";
-import { smallScreenStyle } from "src/styles/smallScreenStyle";
 import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  height: 40px;
+  gap: 24px;
   width: 95%;
-
-  ${smallScreenStyle(css`
-    max-width: 90%;
-    height: 139px;
-    align-items: start;
-    flex-direction: column;
-    justify-content: start;
-  `)}
 `;
 
 const StyledEpoch = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
   width: 35%;
-
-  ${smallScreenStyle(css`
-    margin-top: 14px;
-  `)}
 `;
 
 const StyledTimestamp = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
-  width: 4%;
   white-space: nowrap;
-
-  ${smallScreenStyle(css`
-    margin-top: 14px;
-  `)}
 `;
 
 const StyledChainsAndAddressesContainer = styled.div`
   position: relative;
   display: flex;
+  flex-wrap: nowrap;
   color: ${({ theme }) => theme.color.blue};
-  width: 50.21%;
-
-  ${smallScreenStyle(css`
-    margin-left: 0px;
-    margin-top: 15px;
-  `)}
 `;
 
 const StyledChainAndAddress = styled.div`
   position: relative;
-  padding-left: 5px;
   display: flex;
   flex-direction: row;
-
-  ${smallScreenStyle(css`
-    padding-left: 0px;
-  `)}
 `;
 
 const ArrowContainer = styled.div`
@@ -69,11 +42,6 @@ const ArrowContainer = styled.div`
   padding-left: 18px;
   padding-right: 10px;
   padding-top: 3.5px;
-
-  ${smallScreenStyle(css`
-    padding-left: 8px;
-    padding-right: 7px;
-  `)}
 `;
 
 const ChainIcon = styled.svg`
@@ -103,20 +71,16 @@ const StyledTruncatedAddress = styled.a`
   }
 `;
 
-const StyledColoredLabelContainer = styled.div`
-  display: flex;
-
-  ${smallScreenStyle(css`
-    padding-left: 0px;
-    margin-top: 15px;
-  `)}
+const StyledColoredLabel = styled(ColoredLabel)`
+  margin-left: auto;
+  padding-right: calc(12px - (12) * (100vw - 370px) / (1250 - 370));
 `;
 
 const StyledEpochAndTimestamp = styled.div`
   display: flex;
-  flex-direction: row;
   justify-content: start;
-  margin-right: 3.5%;
+  gap: 24px;
+  margin-right: auto;
 `;
 
 export interface SnapshotInboxDataType {
@@ -181,10 +145,7 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
   return (
     <StyledSnapshotAccordionTitle>
       <StyledEpochAndTimestamp>
-        <StyledEpoch href="" target="_blank" rel="noreferrer">
-          {titleParams.epoch}
-        </StyledEpoch>
-
+        <StyledEpoch> {titleParams.epoch} </StyledEpoch>
         <StyledTimestamp>{titleParams.timestamp}</StyledTimestamp>
       </StyledEpochAndTimestamp>
 
@@ -214,12 +175,10 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
         </StyledChainAndAddress>
       </StyledChainsAndAddressesContainer>
 
-      <StyledColoredLabelContainer>
-        <ColoredLabel
-          text={snapshotStatus}
-          variant={snapshotStatus as keyof typeof variantColors}
-        />
-      </StyledColoredLabelContainer>
+      <StyledColoredLabel
+        text={snapshotStatus}
+        variant={snapshotStatus as keyof typeof variantColors}
+      />
     </StyledSnapshotAccordionTitle>
   );
 };

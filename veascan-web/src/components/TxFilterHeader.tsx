@@ -60,6 +60,11 @@ const FilterHeader = styled.div`
 const NetworkFilters = styled.div`
   display: flex;
   gap: 50px;
+  position: relative;
+  right: 40px;
+  ${smallScreenStyle(css`
+    right: 0px;
+  `)}
 `;
 
 const DropdownTag = styled.div`
