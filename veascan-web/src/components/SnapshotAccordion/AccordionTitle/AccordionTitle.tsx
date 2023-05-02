@@ -4,6 +4,9 @@ import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
 import { bridges, getChain } from "src/consts/bridges";
 import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
+import Epoch from "./Epoch";
+import Timestamp from "./Timestamp";
+import ChainAndAddress from "./ChainAndAddress";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
@@ -14,27 +17,11 @@ const StyledSnapshotAccordionTitle = styled.div`
   width: 95%;
 `;
 
-const StyledEpoch = styled.div`
-  color: ${({ theme }) => theme.color.lightBlue};
-  width: 35%;
-`;
-
-const StyledTimestamp = styled.div`
-  color: ${({ theme }) => theme.color.lightBlue};
-  white-space: nowrap;
-`;
-
 const StyledChainsAndAddressesContainer = styled.div`
   position: relative;
   display: flex;
   flex-wrap: nowrap;
   color: ${({ theme }) => theme.color.blue};
-`;
-
-const StyledChainAndAddress = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: row;
 `;
 
 const ArrowContainer = styled.div`
@@ -44,31 +31,11 @@ const ArrowContainer = styled.div`
   padding-top: 3.5px;
 `;
 
-const ChainIcon = styled.svg`
-  position: relative;
-  width: 24px;
-  height: 28px;
-  fill: none;
-  margin-right: 8px;
-  padding-bottom: 2px;
-`;
-
 const StyledRightArrowIcon = styled.svg`
   position: relative;
   width: 17px;
   height: 17px;
   fill: none;
-`;
-
-const StyledTruncatedAddress = styled.a`
-  display: flex;
-  padding-top: 3.5px;
-  color: ${({ theme }) => theme.color.blue};
-  text-decoration: none;
-
-  :hover {
-    text-decoration: underline;
-  }
 `;
 
 const StyledColoredLabel = styled(ColoredLabel)`
@@ -131,48 +98,27 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
     toChain: bridgeInfo.to,
     toAddress: bridgeInfo.outboxAddress,
   };
-
-  const truncatedFromAddress = `${titleParams.fromAddress.slice(
-    0,
-    6
-  )}...${titleParams.fromAddress.slice(-4)}`;
-  const truncatedToAddress = `${titleParams.toAddress.slice(
-    0,
-    6
-  )}...${titleParams.toAddress.slice(-4)}`;
   const fromChainObject = getChain(titleParams.fromChain);
   const toChainObject = getChain(titleParams.toChain);
   return (
     <StyledSnapshotAccordionTitle>
       <StyledEpochAndTimestamp>
-        <StyledEpoch> {titleParams.epoch} </StyledEpoch>
-        <StyledTimestamp>{titleParams.timestamp}</StyledTimestamp>
+        <Epoch epoch={titleParams.epoch} />
+        <Timestamp timestamp={titleParams.timestamp} />
       </StyledEpochAndTimestamp>
 
       <StyledChainsAndAddressesContainer>
-        <StyledChainAndAddress>
-          <ChainIcon as={fromChainObject?.logo} />
-          <StyledTruncatedAddress
-            href={`${fromChainObject?.blockExplorers?.default.url}/address/${titleParams.fromAddress}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {truncatedFromAddress}
-          </StyledTruncatedAddress>
-        </StyledChainAndAddress>
+        <ChainAndAddress
+          chainObject={fromChainObject}
+          address={titleParams.fromAddress}
+        />
         <ArrowContainer>
           <StyledRightArrowIcon as={RightArrowLogo} />
         </ArrowContainer>
-        <StyledChainAndAddress>
-          <ChainIcon as={toChainObject?.logo} />
-          <StyledTruncatedAddress
-            href={`${toChainObject?.blockExplorers?.default.url}/address/${titleParams.toAddress}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {truncatedToAddress}
-          </StyledTruncatedAddress>
-        </StyledChainAndAddress>
+        <ChainAndAddress
+          chainObject={toChainObject}
+          address={titleParams.toAddress}
+        />
       </StyledChainsAndAddressesContainer>
 
       <StyledColoredLabel
