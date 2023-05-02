@@ -16,7 +16,7 @@ const MiddleContent = styled.div`
   ${smallScreenStyle(css`
     margin: 0 5%;
   `)}
-  max-width: 1175px;
+  max-width: 1120px;
 `;
 
 const App = () => {
