@@ -76,6 +76,7 @@ export function handleVerified(event: Verified): void {
       verification.timestamp = event.block.timestamp;
       verification.caller = event.transaction.from;
       verification.txHash = event.transaction.hash;
+      verification.save();
     }
     if (claim.epoch.le(event.params.epoch)) {
       claim.honest = true;
