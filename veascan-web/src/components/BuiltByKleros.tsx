@@ -8,7 +8,7 @@ const StyledKlerosLink = styled.a`
   line-height: 0;
   display: block;
   > svg {
-    width: 180px;
+    width: 150px;
     transition: transform 0.25s ease;
 
     :hover {

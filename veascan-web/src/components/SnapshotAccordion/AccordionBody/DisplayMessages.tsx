@@ -3,9 +3,10 @@ import styled from "styled-components";
 import { CompactPagination } from "@kleros/ui-components-library";
 import { useMessages } from "hooks/useMessages";
 import Message from "./Message";
+import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
 
 interface DisplayMessagesProps {
-  snapshotInboxData: any;
+  snapshotInboxData: SnapshotInboxDataType;
   snapshotOutboxData: any;
 }
 

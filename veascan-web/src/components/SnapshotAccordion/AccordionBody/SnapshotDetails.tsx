@@ -1,6 +1,7 @@
 import React from "react";
-import { bridges } from "~src/consts/bridges";
-import { formatTimestampToHumanReadable } from "~src/utils/formatTimestampToHumanReadable";
+import { bridges } from "src/consts/bridges";
+import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
+import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
 import TxCard from "./TxCard";
 
 export const statusRoles = {
@@ -13,9 +14,9 @@ export const statusRoles = {
 };
 
 interface SnapshotDetailsProps {
-  snapshotInboxData: any;
+  snapshotInboxData: SnapshotInboxDataType;
   snapshotOutboxData: any;
-  snapshotStatus: any;
+  snapshotStatus: string;
 }
 
 const SnapshotDetails: React.FC<SnapshotDetailsProps> = ({

@@ -1,11 +1,10 @@
 import { IChain, supportedChains } from "consts/bridges";
 import React, { FC } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import Globe from "tsx:svgs/icons/globe.svg";
-import { theme } from "~src/styles/themes";
+import { smallScreenStyle } from "styles/smallScreenStyle";
+import { theme } from "styles/themes";
 import { FilterDropdown } from "./FilterDropdown";
-
-interface TxFilterHeaderProps {}
 
 const STATUS_ITEMS = [
   { text: "All", dot: theme.color.white, value: 1 },
@@ -39,19 +38,33 @@ const SnapshotHeader = styled.div`
   flex-direction: column;
   gap: 64px;
   margin: 76px auto 24px auto;
-  width: 1170px;
+  width: 100%;
+
+  ${smallScreenStyle(css`
+    margin-top: 60px;
+  `)}
 `;
 
 const FilterHeader = styled.div`
   display: flex;
   margin-left: 33px;
-  align-items: center;
+  align-items: start;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  ${smallScreenStyle(css`
+    margin-left: calc(0px + (33) * (100vw - 370px) / (1250 - 370));
+    gap: 12px;
+  `)}
 `;
 
-const NetworkTag = styled.div`
+const NetworkFilters = styled.div`
   display: flex;
   gap: 50px;
-  margin-right: 309.5px;
+  position: relative;
+  right: 40px;
+  ${smallScreenStyle(css`
+    right: 0px;
+  `)}
 `;
 
 const DropdownTag = styled.div`
@@ -79,9 +92,13 @@ const EpochAndTimeTag = styled.div`
     line-height: 18px;
     color: ${({ theme }) => theme.color.lightBlue} !important;
   }
+
+  ${smallScreenStyle(css`
+    display: none;
+  `)}
 `;
 
-const TxFilterHeader: FC<TxFilterHeaderProps> = ({}) => {
+const TxFilterHeader: FC = () => {
   return (
     <SnapshotHeader>
       <HeaderText>Latest Snapshots</HeaderText>
@@ -90,7 +107,7 @@ const TxFilterHeader: FC<TxFilterHeaderProps> = ({}) => {
           <small>Epoch ID</small>
           <small>Timestamp</small>
         </EpochAndTimeTag>
-        <NetworkTag>
+        <NetworkFilters>
           <DropdownTag>
             <small>From: </small>
             <FilterDropdown
@@ -108,7 +125,7 @@ const TxFilterHeader: FC<TxFilterHeaderProps> = ({}) => {
               itemData={CHAIN_ITEMS}
             />
           </DropdownTag>
-        </NetworkTag>
+        </NetworkFilters>
         <DropdownTag>
           <small>Status: </small>
           <FilterDropdown
