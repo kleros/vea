@@ -32,7 +32,7 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
     `)}
   }
 
-  .accordion-item__Body-sc-17yp2l-2.jjLCsn {
+  .accordion-item__Body-sc-17yp2l-2 {
     background-color: ${({ theme }) => theme.color.secondaryPurple};
     border-right: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-left: 1px solid ${({ theme }) => theme.color.secondaryBlue};
