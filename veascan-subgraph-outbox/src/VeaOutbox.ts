@@ -24,7 +24,7 @@ export function handleClaimed(event: Claimed): void {
   claim.txHash = event.transaction.hash;
   claim.stateroot = event.params.stateRoot;
   claim.timestamp = event.block.timestamp;
-  claim.bridger = event.transaction.from;
+  claim.bridger = event.transaction.from; // same as event.params.claimer
   claim.challenged = false;
   claim.honest = false;
   claim.save();
