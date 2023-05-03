@@ -28,7 +28,6 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
     ${smallScreenStyle(css`
       align-self: end;
       margin-bottom: 9px;
-      z-index: 100;
     `)}
   }
 

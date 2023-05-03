@@ -43,7 +43,6 @@ const Container = styled.div`
 
   ${smallScreenStyle(css`
     padding-left: 24px;
-    margin-bottom: 55px;
   `)}
 `;
 

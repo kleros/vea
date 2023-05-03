@@ -19,7 +19,6 @@ const Container = styled.div`
     color: ${({ theme }) => theme.color.lightBlue};
   }
   ${smallScreenStyle(css`
-    margin-bottom: 64px;
     width: 77.46vw;
   `)}
 `;
