@@ -1,5 +1,5 @@
 import { BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
-import { Snapshot, Message, Refs } from "../generated/schema";
+import { Snapshot, Message, Refs, Fallback } from "../generated/schema";
 import {
   MessageSent,
   SnapshotSaved,
@@ -67,16 +67,18 @@ function useNextMessageIndex(): BigInt {
 }
 
 export function handleSnapshotSaved(event: SnapshotSaved): void {
+  const inbox = VeaInbox.bind(event.address);
+  // Get the epochPeriod from the public variable of the deployed contract
+  const epochPeriod = inbox.epochPeriod();
+  const epoch = event.block.timestamp.div(epochPeriod);
+  // Get stateRoot from contract
+  const stateRoot = inbox.snapshots(epoch);
   const currentSnapshot = getCurrentSnapshot();
   currentSnapshot.taken = true;
   currentSnapshot.caller = event.transaction.from;
-  currentSnapshot.stateRoot = event.params.stateRoot;
+  currentSnapshot.stateRoot = stateRoot;
   currentSnapshot.timestamp = event.block.timestamp;
   currentSnapshot.txHash = event.transaction.hash;
-  //Get the epochPeriod from the public variable of the deployed contract
-  const veaInboxContract = VeaInbox.bind(event.address);
-  const epochPeriod = veaInboxContract.epochPeriod();
-  const epoch = event.block.timestamp.div(epochPeriod);
   currentSnapshot.epoch = epoch;
   currentSnapshot.save();
 
@@ -97,8 +99,15 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
 
 export function handleSnapshotSent(event: SnapshotSent): void {
   const epochSent = event.params.epochSent;
+  const fallback = new Fallback(
+    epochSent.plus(event.block.timestamp).toString()
+  );
   let snapshot: Snapshot | null;
   const refs = Refs.load("0")!;
+  fallback.timestamp = event.block.timestamp;
+  fallback.txHash = event.transaction.hash;
+  fallback.executor = event.transaction.from;
+  fallback.ticketId = event.params.ticketId;
 
   for (let i = refs.currentSnapshotIndex.toI32(); i >= 0; i--) {
     const snapshotId = BigInt.fromI32(i).toString();
@@ -108,7 +117,9 @@ export function handleSnapshotSent(event: SnapshotSent): void {
       // Snapshot found, update resolving field and save
       snapshot.resolving = true;
       snapshot.save();
+      fallback.snapshot = snapshotId;
       break;
     }
   }
+  fallback.save();
 }

@@ -4,11 +4,24 @@ import {
   Claimed,
   MessageRelayed,
   Verified,
+  VeaOutbox,
 } from "../generated/VeaOutbox/VeaOutbox";
-import { Challenge, Claim, Message, Refs } from "../generated/schema";
+import {
+  Challenge,
+  Claim,
+  Message,
+  Refs,
+  Verification,
+} from "../generated/schema";
 
 export function handleClaimed(event: Claimed): void {
   const claim = getNextClaim();
+  const outbox = VeaOutbox.bind(event.address);
+  const claimDelay = outbox.claimDelay();
+  const epochPeriod = outbox.epochPeriod();
+  const epoch = event.block.timestamp.minus(claimDelay).div(epochPeriod);
+  claim.epoch = epoch;
+  claim.txHash = event.transaction.hash;
   claim.stateroot = event.params.stateRoot;
   claim.timestamp = event.block.timestamp;
   claim.bridger = event.transaction.from; // same as event.params.claimer
@@ -39,6 +52,7 @@ export function handleChallenged(event: Challenged): void {
     const challengeIndex = useChallengeIndex();
     const challenge = new Challenge(challengeIndex.toString());
     challenge.claim = outterClaim.id;
+    challenge.txHash = event.transaction.hash;
     challenge.challenger = event.transaction.from;
     challenge.timestamp = event.block.timestamp;
     challenge.honest = false;
@@ -56,6 +70,14 @@ export function handleVerified(event: Verified): void {
     const claim = Claim.load(i.toString());
     if (!claim) continue;
     if (claim.honest) break;
+    if (claim.epoch.equals(event.params.epoch)) {
+      const verification = new Verification(claim.id);
+      verification.claim = claim.id;
+      verification.timestamp = event.block.timestamp;
+      verification.caller = event.transaction.from;
+      verification.txHash = event.transaction.hash;
+      verification.save();
+    }
     if (claim.epoch.le(event.params.epoch)) {
       claim.honest = true;
       claim.save();

@@ -28,6 +28,7 @@ const ColorWrapper = styled.div<{ variant: keyof typeof variantColors }>`
       font-size: 14px;
       line-height: 17.5px;
     }
+    width: 100px;
   }
 `;
 

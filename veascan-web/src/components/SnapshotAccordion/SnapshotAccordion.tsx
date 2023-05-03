@@ -1,11 +1,10 @@
-import { CustomAccordion } from "@kleros/ui-components-library";
-import AccordionTitle, {
-  SnapshotInboxDataType,
-} from "./AccordionTitle/AccordionTitle";
+import React from "react";
 import styled, { css } from "styled-components";
-import React, { useState } from "react";
-import AccordionBody from "./AccordionBody/AccordionBody";
+import { CustomAccordion } from "@kleros/ui-components-library";
 import { smallScreenStyle } from "src/styles/smallScreenStyle";
+import AccordionTitle from "./AccordionTitle/AccordionTitle";
+import AccordionBody from "./AccordionBody/AccordionBody";
+import { IParsedData } from "src/utils/mapDataForAccordion";
 
 const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   display: flex;
@@ -33,7 +32,7 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
     `)}
   }
 
-  .accordion-item__Body-sc-17yp2l-2.jjLCsn {
+  .accordion-item__Body-sc-17yp2l-2 {
     background-color: ${({ theme }) => theme.color.secondaryPurple};
     border-right: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-left: 1px solid ${({ theme }) => theme.color.secondaryBlue};
@@ -53,35 +52,30 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
 `;
 
 interface SnapshotAccordionProps {
-  items: {
-    snapshotInboxData: SnapshotInboxDataType;
-    snapshotOutboxData: any;
-  }[];
+  items: IParsedData[];
 }
 
-const SnapshotAccordion: React.FC<SnapshotAccordionProps> = (p) => {
-  const [snapshotStatus, setSnapshotStatus] = useState<string>("");
-
+const SnapshotAccordion: React.FC<SnapshotAccordionProps> = ({ items }) => {
   return (
     <StyledSnapshotAccordionGlobal
-      items={p.items.map((item, index) => ({
-        key: index,
-        title: (
-          <AccordionTitle
-            snapshotInboxData={item.snapshotInboxData}
-            snapshotOutboxData={item.snapshotOutboxData}
-            snapshotStatus={snapshotStatus}
-            setSnapshotStatus={setSnapshotStatus}
-          />
-        ),
-        body: (
-          <AccordionBody
-            snapshotInboxData={item.snapshotInboxData}
-            snapshotOutboxData={item.snapshotOutboxData}
-            snapshotStatus={snapshotStatus}
-          />
-        ),
-      }))}
+      items={items.map(
+        ({ epoch, bridgeIndex, snapshotId, status, transactions }, index) => ({
+          key: index,
+          title: (
+            <AccordionTitle
+              epoch={epoch}
+              bridgeIndex={bridgeIndex}
+              timestamp={transactions[0].timestamp}
+              status={status}
+            />
+          ),
+          body: (
+            <AccordionBody
+              {...{ transactions, snapshotId, bridgeIndex, epoch }}
+            />
+          ),
+        })
+      )}
     />
   );
 };

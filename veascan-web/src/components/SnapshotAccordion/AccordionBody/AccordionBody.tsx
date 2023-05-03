@@ -1,10 +1,8 @@
 import { Button } from "@kleros/ui-components-library";
 import React, { useState } from "react";
 import styled from "styled-components";
-import { useMessages } from "src/hooks/useMessages";
 import DisplayMessages from "./DisplayMessages";
-import SnapshotDetails from "./SnapshotDetails";
-import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
+import TxCard, { TxCardProps } from "./TxCard";
 
 const StyledSnapshotDetailsButton = styled(Button)<{
   snapshotDetailsVisible: boolean;
@@ -58,25 +56,17 @@ const StyledButtonsContainer = styled.div`
 `;
 
 export interface AccordionBodyProps {
-  snapshotInboxData: SnapshotInboxDataType;
-  snapshotOutboxData: any;
-  snapshotStatus: string;
+  bridgeIndex: number;
+  snapshotId: string;
+  transactions: TxCardProps[];
 }
 
 const AccordionBody: React.FC<AccordionBodyProps> = ({
-  snapshotInboxData,
-  snapshotOutboxData,
-  snapshotStatus,
+  bridgeIndex,
+  snapshotId,
+  transactions,
 }) => {
   const [snapshotDetailsVisible, setSnapshotDetailsVisible] = useState(true);
-
-  // new messages data
-  const { data } = useMessages(
-    snapshotInboxData.id,
-    snapshotInboxData.bridgeIndex,
-    0,
-    false
-  );
 
   const handleClickSnapshotDetails = () => {
     setSnapshotDetailsVisible(true);
@@ -102,16 +92,11 @@ const AccordionBody: React.FC<AccordionBodyProps> = ({
       </StyledButtonsContainer>
 
       {snapshotDetailsVisible ? (
-        <SnapshotDetails
-          snapshotInboxData={snapshotInboxData}
-          snapshotStatus={snapshotStatus}
-          snapshotOutboxData={snapshotOutboxData}
-        />
+        Object.values(transactions).map(
+          (txInfo, index) => txInfo && <TxCard key={index} {...txInfo} />
+        )
       ) : (
-        <DisplayMessages
-          snapshotInboxData={snapshotInboxData}
-          snapshotOutboxData={snapshotOutboxData}
-        />
+        <DisplayMessages {...{ snapshotId, bridgeIndex }} />
       )}
     </>
   );

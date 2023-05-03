@@ -9,11 +9,18 @@ export const getClaimQuery = graphql(`
       stateroot
       bridger
       challenged
+      txHash
       challenge {
         id
         timestamp
         challenger
         honest
+        txHash
+      }
+      verification {
+        timestamp
+        caller
+        txHash
       }
       honest
     }

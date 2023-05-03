@@ -1,8 +1,8 @@
-import { useSnapshots } from "hooks/useSnapshots";
 import React from "react";
 import styled, { css } from "styled-components";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
+import { useSnapshots } from "hooks/useSnapshots";
 import SnapshotAccordion from "./components/SnapshotAccordion/SnapshotAccordion";
 import TxFilterHeader from "./components/TxFilterHeader";
 import { mapDataForAccordion } from "./utils/mapDataForAccordion";
@@ -21,8 +21,6 @@ const MiddleContent = styled.div`
 
 const App = () => {
   const { data } = useSnapshots("999999999999");
-  console.log(data);
-
   return (
     <div>
       <Navbar />

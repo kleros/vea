@@ -42,11 +42,7 @@ const SnapshotDetails: React.FC<SnapshotDetailsProps> = ({
     ],
   };
 
-  return (
-    <div>
-      <TxCard {...snapshotDetailsParams} />
-    </div>
-  );
+  return <div></div>;
 };
 
 export default SnapshotDetails;

@@ -4,12 +4,18 @@ import { request } from "../../../node_modules/graphql-request/build/cjs/index";
 import { bridges } from "consts/bridges";
 import { getSnapshotsQuery } from "./queries/getSnapshots";
 import { getClaimQuery } from "./queries/getClaim";
-import { GetSnapshotsQuery } from "src/gql/graphql";
+import { GetSnapshotsQuery, GetClaimQuery } from "src/gql/graphql";
+
+export type InboxData = GetSnapshotsQuery["snapshots"][number] & {
+  bridgeIndex: number;
+};
+
+export type OutboxData = GetClaimQuery["claims"][number];
 
 export const useSnapshots = (lastTimestamp: string) => {
   const [currentTimestamp, setCurrentTimestamp] = useState<string>();
   const [currentSnapshots, setCurrentSnapshots] = useState<Set<string>>();
-  return useSWR("all", async () => {
+  return useSWR("all", async (): Promise<[InboxData, OutboxData][]> => {
     const sortedSnapshots = await getSortedSnapshots(lastTimestamp);
     const filteredSnapshots = sortedSnapshots.filter(
       (snapshot) =>
@@ -43,12 +49,9 @@ const getSortedSnapshots = async (lastTimestamp: string) => {
     )
     .flat();
   return snapshotsWithBridgeIndex.sort(
-    (a, b) => parseInt(a.timestamp) - parseInt(b.timestamp)
+    (a, b) => parseInt(b.timestamp) - parseInt(a.timestamp)
   );
 };
 
-const getSnapshotId = ({
-  bridgeIndex,
-  epoch,
-}: GetSnapshotsQuery["snapshots"][number] & { bridgeIndex: number }) =>
+const getSnapshotId = ({ bridgeIndex, epoch }: InboxData) =>
   `${bridgeIndex.toString() + epoch}`;

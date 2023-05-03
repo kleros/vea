@@ -1,12 +1,12 @@
-import React, { Dispatch, SetStateAction, useEffect } from "react";
+import React from "react";
 import styled from "styled-components";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
 import { bridges, getChain } from "src/consts/bridges";
-import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
 import Epoch from "./Epoch";
 import Timestamp from "./Timestamp";
 import ChainAndAddress from "./ChainAndAddress";
+import { IStatus } from "src/utils/mapDataForAccordion";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
@@ -64,35 +64,22 @@ export interface SnapshotInboxDataType {
 }
 
 export interface AccordionTitleProps {
-  snapshotInboxData: SnapshotInboxDataType;
-  snapshotOutboxData: any;
-  snapshotStatus: string;
-  setSnapshotStatus: Dispatch<SetStateAction<string>>;
+  epoch: string;
+  bridgeIndex: number;
+  timestamp: string;
+  status: IStatus;
 }
 
 const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
-  snapshotInboxData,
-  snapshotOutboxData,
-  snapshotStatus,
-  setSnapshotStatus,
+  epoch,
+  bridgeIndex,
+  timestamp,
+  status,
 }) => {
-  useEffect(() => {
-    calculateSnapshotStatus(snapshotOutboxData);
-  }, []);
-
-  const calculateSnapshotStatus = (snapshotOutboxData: any) => {
-    if (!snapshotOutboxData) {
-      setSnapshotStatus("Taken");
-    } else {
-      //todo all statuses
-      setSnapshotStatus("Resolved");
-    }
-  };
-
-  const bridgeInfo = bridges[snapshotInboxData.bridgeIndex];
+  const bridgeInfo = bridges[bridgeIndex];
   const titleParams = {
-    epoch: snapshotInboxData.epoch,
-    timestamp: formatTimestampToHumanReadable(snapshotInboxData.timestamp),
+    epoch: epoch,
+    timestamp: timestamp,
     fromChain: bridgeInfo.from,
     fromAddress: bridgeInfo.inboxAddress,
     toChain: bridgeInfo.to,
@@ -103,7 +90,7 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
   return (
     <StyledSnapshotAccordionTitle>
       <StyledEpochAndTimestamp>
-        <Epoch epoch={titleParams.epoch} />
+        <Epoch epoch={epoch} />
         <Timestamp timestamp={titleParams.timestamp} />
       </StyledEpochAndTimestamp>
 
@@ -122,11 +109,24 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
       </StyledChainsAndAddressesContainer>
 
       <StyledColoredLabel
-        text={snapshotStatus}
-        variant={snapshotStatus as keyof typeof variantColors}
+        text={parseStatus(status)}
+        variant={parseStatus(status)}
       />
     </StyledSnapshotAccordionTitle>
   );
+};
+
+const parseStatus = ({
+  resolved,
+  resolving,
+  challenged,
+  claimed,
+}: IStatus): keyof typeof variantColors => {
+  if (resolved) return "Resolved";
+  if (resolving) return "Resolving";
+  if (challenged) return "Challenged";
+  if (claimed) return "Claimed";
+  return "Taken";
 };
 
 export default SnapshotAccordionTitle;

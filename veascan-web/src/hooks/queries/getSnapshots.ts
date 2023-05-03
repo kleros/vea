@@ -5,7 +5,7 @@ export const getSnapshotsQuery = graphql(`
     snapshots(
       first: 5
       orderBy: timestamp
-      orderDirection: desc
+      orderDirection: asc
       where: { timestamp_lte: $lastTimestamp }
     ) {
       id
@@ -17,6 +17,12 @@ export const getSnapshotsQuery = graphql(`
       numberMessages
       taken
       resolving
+      fallback(first: 1, orderBy: timestamp, orderDirection: desc) {
+        executor
+        timestamp
+        txHash
+        ticketId
+      }
     }
   }
 `);

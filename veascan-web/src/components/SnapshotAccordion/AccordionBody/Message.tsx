@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { bridges } from "src/consts/bridges";
 import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
-import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
 import MessageHeader from "./MessageHeader";
 import TxCard from "./TxCard";
 
 interface MessageProps {
   messageInboxData: MessageInboxDataType;
   messageOutboxData: any;
-  snapshotInboxData: SnapshotInboxDataType;
-  snapshotOutboxData: any;
+  bridgeIndex: number;
 }
 
 const messageStatusRoles = {
@@ -29,15 +27,14 @@ interface MessageInboxDataType {
 const Message: React.FC<MessageProps> = ({
   messageInboxData,
   messageOutboxData,
-  snapshotInboxData,
-  snapshotOutboxData,
+  bridgeIndex,
 }) => {
   const [messageStatus, setMessageStatus] = useState("");
-  const bridgeInfo = bridges[snapshotInboxData?.bridgeIndex];
+  const bridgeInfo = bridges[bridgeIndex];
 
   useEffect(() => {
     calculateMessageStatus(messageOutboxData);
-  }, []);
+  }, [messageOutboxData]);
 
   const calculateMessageStatus = (messageOutboxData: any) => {
     if (!messageOutboxData) {
@@ -51,7 +48,7 @@ const Message: React.FC<MessageProps> = ({
     <div key={messageInboxData?.id}>
       <MessageHeader
         status={messageStatus}
-        messageNumber={messageInboxData?.id}
+        messageNumber={parseInt(messageInboxData?.id)}
       />
       <TxCard
         title={messageStatusRoles[messageStatus]}

@@ -3,11 +3,10 @@ import styled from "styled-components";
 import { CompactPagination } from "@kleros/ui-components-library";
 import { useMessages } from "hooks/useMessages";
 import Message from "./Message";
-import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
 
 interface DisplayMessagesProps {
-  snapshotInboxData: SnapshotInboxDataType;
-  snapshotOutboxData: any;
+  snapshotId: string;
+  bridgeIndex: number;
 }
 
 const MESSAGES_PER_PAGE = 5;
@@ -19,14 +18,14 @@ const PaginationContainer = styled.div`
 `;
 
 const DisplayMessages: FC<DisplayMessagesProps> = ({
-  snapshotInboxData,
-  snapshotOutboxData,
+  snapshotId,
+  bridgeIndex,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data } = useMessages(
-    snapshotInboxData.id,
-    snapshotInboxData.bridgeIndex,
+    snapshotId,
+    bridgeIndex,
     (currentPage - 1) * MESSAGES_PER_PAGE,
     false
   );
@@ -50,8 +49,7 @@ const DisplayMessages: FC<DisplayMessagesProps> = ({
             key={messageInboxData?.id}
             messageInboxData={messageInboxData}
             messageOutboxData={messageOutboxData}
-            snapshotInboxData={snapshotInboxData}
-            snapshotOutboxData={snapshotOutboxData}
+            bridgeIndex={bridgeIndex}
           />
         );
       })}

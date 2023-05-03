@@ -19,6 +19,16 @@ type Snapshot @entity {
   numberMessages: BigInt!
   taken: Boolean!
   resolving: Boolean!
+  fallback: [Fallback!]! @derivedFrom(field: "snapshot")
+}
+
+type Fallback @entity {
+  id: ID!
+  snapshot: Snapshot!
+  executor: Bytes!
+  timestamp: BigInt
+  txHash: Bytes!
+  ticketId: Bytes!
 }
 
 type Refs @entity {
