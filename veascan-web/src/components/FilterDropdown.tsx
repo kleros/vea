@@ -1,6 +1,7 @@
 import { DropdownSelect } from "@kleros/ui-components-library";
 import React from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
+import { smallScreenStyle } from "src/styles/smallScreenStyle";
 
 interface Item {
   text: string;
@@ -34,6 +35,18 @@ const FilterItem = styled(DropdownSelect)`
 
   p {
     font-family: "Open Sans";
+  }
+
+  .cOGsRq {
+    ${smallScreenStyle(css`
+      right: auto;
+    `)}
+  }
+
+  .iVPRzL {
+    ${smallScreenStyle(css`
+      right: auto;
+    `)}
   }
 `;
 

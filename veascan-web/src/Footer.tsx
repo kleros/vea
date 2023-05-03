@@ -41,12 +41,21 @@ const InnerContainer = styled.div`
   justify-content: center;
   ${smallScreenStyle(css`
     margin-bottom: 32px;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 40px;
+    margin-bottom: 10px;
   `)}
 `;
 
 const Logo = styled.h2`
   text-align: center;
-  margin: 24px;
+  margin: 20px;
+
+  ${smallScreenStyle(css`
+    position: relative;
+    font-size: 46px;
+  `)}
 `;
 
 const StyledLink = styled.a`
@@ -55,7 +64,7 @@ const StyledLink = styled.a`
   align-items: center;
   justify-content: center;
   > svg {
-    fill: ${({ theme }) => theme.color.white};
+    fill: ${({ theme }) => theme.color.lightBlue};
     width: 32px;
     transition: fill 0.25s ease, transform 0.25s ease;
     :hover {
@@ -63,11 +72,6 @@ const StyledLink = styled.a`
       transform: scale(1.05);
     }
   }
-  ${smallScreenStyle(css`
-    > svg {
-      width: calc(16px + (32 - 16) * (100vw - 300px) / (1250 - 300));
-    }
-  `)}
 `;
 
 const SocialMedia = styled.div`
@@ -77,6 +81,12 @@ const SocialMedia = styled.div`
   transform: translateY(-50%);
   display: flex;
   gap: 16px;
+
+  ${smallScreenStyle(css`
+    position: relative;
+    right: 0%;
+    margin-top: 30px;
+  `)}
 `;
 
 const StyledBuiltByKleros = styled(BuiltByKleros)`
@@ -87,6 +97,8 @@ const StyledBuiltByKleros = styled(BuiltByKleros)`
   display: flex;
   ${smallScreenStyle(css`
     top: 100%;
+    position: relative;
+    left: 0%;
   `)}
 `;
 

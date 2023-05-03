@@ -1,26 +1,27 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styled, { css } from "styled-components";
-import SearchIcon from "tsx:svgs/icons/search.svg";
+import SearchIconLogo from "tsx:svgs/icons/search.svg";
 import { smallScreenStyle } from "styles/smallScreenStyle";
 
 const Container = styled.div`
   height: 45px;
   margin-top: 9px;
   margin-bottom: 10px;
-  width: 540px;
   display: flex;
   background-color: transparent;
   color: ${({ theme }) => theme.color.lightBlue};
   border: 1px solid #42498f;
   border-radius: 3px;
-
-  ${smallScreenStyle(css`
-    height: calc(32px + (45 - 32) * (100vw - 300px) / (1250 - 300));
-  `)}
+  align-items: center;
+  width: 33.5vw;
 
   ::placeholder {
     color: ${({ theme }) => theme.color.lightBlue};
   }
+  ${smallScreenStyle(css`
+    margin-bottom: 64px;
+    width: 77.46vw;
+  `)}
 `;
 
 const StyledInput = styled.input`
@@ -28,8 +29,8 @@ const StyledInput = styled.input`
   background-color: transparent;
   color: ${({ theme }) => theme.color.lightBlue};
   border: none;
-  width: 540px;
-  padding: 0px;
+  width: 33.5vw;
+  margin-left: 4px;
 
   font-family: "Oxanium";
   font-style: normal;
@@ -43,13 +44,43 @@ const StyledInput = styled.input`
   :focus {
     outline: none;
   }
+
+  ${smallScreenStyle(css`
+    width: 77.46vw;
+  `)}
 `;
 
-const StyledSearchIcon = styled(SearchIcon)`
-  padding: 13px;
+const SearchIcon = styled.svg`
+  height: 16px;
+  margin-left: 16px;
+  margin-top: 14px;
+  margin-bottom: 15px;
+`;
+
+const SearchIconContainer = styled.div`
+  height: 45px;
 `;
 
 const SearchBar: React.FC = () => {
+  const [placeholder, setPlaceholder] = useState("");
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 500) {
+        setPlaceholder("Search");
+      } else {
+        setPlaceholder("Search by Epoch ID / Tx ID / Merkle root");
+      }
+    };
+
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
   // const snapshots = [
   //   {
   //     chain: "Arbitrum",
@@ -91,12 +122,15 @@ const SearchBar: React.FC = () => {
 
   return (
     <Container>
-      <StyledSearchIcon />
+      <SearchIconContainer>
+        <SearchIcon as={SearchIconLogo} />
+      </SearchIconContainer>
+
       <StyledInput
         type="text"
         //value={searchQuery}
         //onChange={handleInputChange}
-        placeholder="Search by Epoch ID / Tx ID / Merkle root"
+        placeholder={placeholder}
       />
     </Container>
   );

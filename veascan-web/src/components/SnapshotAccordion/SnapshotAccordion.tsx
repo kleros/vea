@@ -1,17 +1,36 @@
 import { CustomAccordion } from "@kleros/ui-components-library";
+import AccordionTitle, {
+  SnapshotInboxDataType,
+} from "./AccordionTitle/AccordionTitle";
+import styled, { css } from "styled-components";
 import React, { useState } from "react";
-import styled from "styled-components";
 import AccordionBody from "./AccordionBody/AccordionBody";
-import AccordionTitle from "./AccordionTitle/AccordionTitle";
+import { smallScreenStyle } from "src/styles/smallScreenStyle";
 
 const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   display: flex;
-  width: auto;
-  margin: 0 auto;
+  width: 100%;
+  justify-content: center;
 
-  button.accordion-button {
+  ${smallScreenStyle(css`
+    padding: 0px;
+  `)}
+
+  .accordion-button {
     border: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-radius: 3px;
+    padding: 16px;
+    ${smallScreenStyle(css`
+      padding: 16px calc(6px + (10) * (100vw - 370px) / (1250 - 370));
+    `)}
+  }
+
+  .accordion-svg {
+    ${smallScreenStyle(css`
+      align-self: end;
+      margin-bottom: 9px;
+      z-index: 100;
+    `)}
   }
 
   .accordion-item__Body-sc-17yp2l-2.jjLCsn {
@@ -20,6 +39,12 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
     border-left: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-bottom: 1px solid ${({ theme }) => theme.color.secondaryBlue};
     border-radius: 3px;
+
+    ${smallScreenStyle(css`
+      width: 100%;
+      padding-left: 16px;
+      padding-right: 16px;
+    `)}
   }
 
   svg.accordion-svg path {
@@ -29,13 +54,13 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
 
 interface SnapshotAccordionProps {
   items: {
-    snapshotInboxData: any;
+    snapshotInboxData: SnapshotInboxDataType;
     snapshotOutboxData: any;
   }[];
 }
 
 const SnapshotAccordion: React.FC<SnapshotAccordionProps> = (p) => {
-  const [snapshotStatus, setSnapshotStatus] = useState("");
+  const [snapshotStatus, setSnapshotStatus] = useState<string>("");
 
   return (
     <StyledSnapshotAccordionGlobal

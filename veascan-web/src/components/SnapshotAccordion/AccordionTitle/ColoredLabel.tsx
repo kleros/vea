@@ -31,9 +31,13 @@ const ColorWrapper = styled.div<{ variant: keyof typeof variantColors }>`
   }
 `;
 
-const ColoredLabel: React.FC<ColoredLabelProps> = ({ text, variant }) => {
+const ColoredLabel: React.FC<ColoredLabelProps> = ({
+  text,
+  variant,
+  ...props
+}) => {
   return (
-    <ColorWrapper {...{ variant }}>
+    <ColorWrapper {...{ variant, ...props }}>
       <Tag as="div" {...{ text }} />
     </ColorWrapper>
   );
