@@ -1,8 +1,7 @@
+import { bridges } from "consts/bridges";
 import React from "react";
-import { bridges } from "src/consts/bridges";
-import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
+import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
 import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
-import TxCard from "./TxCard";
 
 export const statusRoles = {
   Taken: "Creator",

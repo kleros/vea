@@ -11,6 +11,9 @@
       "hooks*": [
         "./src/hooks*"
       ],
+      "queries*": [
+        "./src/hooks/queries*"
+      ],
       "consts*": [
         "./src/consts*"
       ],
@@ -19,6 +22,12 @@
       ],
       "svgs*": [
         "./src/assets/svgs*"
+      ],
+      "utils*": [
+        "./src/utils*"
+      ],
+      "components*": [
+        "./src/components*"
       ]
     },
     "experimentalDecorators": true,

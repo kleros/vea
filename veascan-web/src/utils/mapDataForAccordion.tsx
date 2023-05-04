@@ -1,7 +1,7 @@
+import { TxCardProps } from "components/SnapshotAccordion/AccordionBody/TxCard";
 import { bridges } from "consts/bridges";
 import { InboxData, OutboxData } from "hooks/useSnapshots";
 import { formatTimestampToHumanReadable } from "./formatTimestampToHumanReadable";
-import { TxCardProps } from "src/components/SnapshotAccordion/AccordionBody/TxCard";
 
 export interface IStatus {
   honest: boolean;

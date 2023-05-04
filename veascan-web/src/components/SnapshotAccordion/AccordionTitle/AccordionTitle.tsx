@@ -1,12 +1,12 @@
+import { bridges, getChain } from "consts/bridges";
 import React from "react";
 import styled from "styled-components";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
-import { bridges, getChain } from "src/consts/bridges";
+import { IStatus } from "utils/mapDataForAccordion";
+import ChainAndAddress from "./ChainAndAddress";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
 import Epoch from "./Epoch";
 import Timestamp from "./Timestamp";
-import ChainAndAddress from "./ChainAndAddress";
-import { IStatus } from "src/utils/mapDataForAccordion";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;

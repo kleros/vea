@@ -24,7 +24,10 @@
     "hooks": "./src/hooks",
     "consts": "./src/consts",
     "styles": "./src/styles",
-    "svgs": "./src/assets/svgs"
+    "svgs": "./src/assets/svgs",
+    "utils": "./src/utils",
+    "components": "./src/components",
+    "queries": "./src/hooks/queries"
   },
   "scripts": {
     "clear": "rm -r .parcel-cache",

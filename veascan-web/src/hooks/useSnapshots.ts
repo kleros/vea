@@ -1,10 +1,10 @@
+import { bridges } from "consts/bridges";
+import { getClaimQuery } from "queries/getClaim";
+import { getSnapshotsQuery } from "queries/getSnapshots";
 import { useState } from "react";
+import { GetClaimQuery, GetSnapshotsQuery } from "src/gql/graphql";
 import useSWR from "swr";
 import { request } from "../../../node_modules/graphql-request/build/cjs/index";
-import { bridges } from "consts/bridges";
-import { getSnapshotsQuery } from "./queries/getSnapshots";
-import { getClaimQuery } from "./queries/getClaim";
-import { GetSnapshotsQuery, GetClaimQuery } from "src/gql/graphql";
 
 export type InboxData = GetSnapshotsQuery["snapshots"][number] & {
   bridgeIndex: number;
@@ -30,7 +30,9 @@ export const useSnapshots = (lastTimestamp: string) => {
         const claim = await request(
           bridges[snapshot.bridgeIndex].outboxEndpoint,
           getClaimQuery,
-          { epoch: snapshot.epoch.toString() }
+          {
+            epoch: snapshot.epoch.toString(),
+          }
         ).then((result) => result.claims[0]);
         return [snapshot, claim];
       })
