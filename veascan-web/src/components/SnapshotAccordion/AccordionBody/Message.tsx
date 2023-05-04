@@ -1,6 +1,6 @@
+import { bridges } from "consts/bridges";
 import React, { useEffect, useState } from "react";
-import { bridges } from "src/consts/bridges";
-import { formatTimestampToHumanReadable } from "src/utils/formatTimestampToHumanReadable";
+import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
 import MessageHeader from "./MessageHeader";
 import TxCard from "./TxCard";
 

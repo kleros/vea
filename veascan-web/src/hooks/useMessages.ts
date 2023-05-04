@@ -1,8 +1,8 @@
+import { bridges } from "consts/bridges";
+import { getMessagesQuery } from "queries/getMessages";
+import { getRelayQuery } from "queries/getRelay";
 import useSWR from "swr";
 import { request } from "../../../node_modules/graphql-request/build/cjs/index";
-import { bridges } from "consts/bridges";
-import { getMessagesQuery } from "./queries/getMessages";
-import { getRelayQuery } from "./queries/getRelay";
 
 export const useMessages = (
   snapshot: string,

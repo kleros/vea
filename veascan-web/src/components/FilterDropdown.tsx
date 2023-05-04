@@ -1,7 +1,7 @@
 import { DropdownSelect } from "@kleros/ui-components-library";
 import React from "react";
 import styled, { css } from "styled-components";
-import { smallScreenStyle } from "src/styles/smallScreenStyle";
+import { smallScreenStyle } from "styles/smallScreenStyle";
 
 interface Item {
   text: string;

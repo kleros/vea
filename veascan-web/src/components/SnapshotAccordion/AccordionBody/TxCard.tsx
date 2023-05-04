@@ -1,8 +1,8 @@
 import { getChain } from "consts/bridges";
 import React from "react";
 import styled, { css } from "styled-components";
+import { smallScreenStyle } from "styles/smallScreenStyle";
 import Copy from "tsx:svgs/icons/copy.svg";
-import { smallScreenStyle } from "src/styles/smallScreenStyle";
 
 interface Field {
   key: string;
