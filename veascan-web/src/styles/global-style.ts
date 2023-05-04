@@ -5,6 +5,9 @@ export const GlobalStyle = createGlobalStyle`
   html {
     box-sizing: border-box;
     margin: 0px;
+    overflow-x: hidden;
+    margin-right: calc(-1 * (100vw - 100%));
+
   }
   *, *:before, *:after {
     box-sizing: inherit;
@@ -96,5 +99,19 @@ export const GlobalStyle = createGlobalStyle`
     display: inline-block;
     visibility: visible;
     vertical-align: middle;
+  }
+
+  *::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background-color: ${({ theme }) => theme.color.lightBlue}80;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: ${({ theme }) => theme.color.pink}80;
+    border-radius: 12px;
+    border: 2px solid transparent;
   }
 `;
