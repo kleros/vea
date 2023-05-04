@@ -1,5 +1,5 @@
 import {} from "styled-components";
-import { lightTheme } from "./src/styles/themes";
+import { theme } from "./src/styles/themes";
 
 declare global {
   module "*.svg" {
@@ -9,7 +9,7 @@ declare global {
 }
 
 declare module "styled-components" {
-  type Theme = typeof lightTheme;
+  type Theme = typeof theme;
   //eslint-disable-next-line @typescript-eslint/no-empty-interface
   export interface DefaultTheme extends Theme {}
 }
