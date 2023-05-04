@@ -36,7 +36,7 @@ type Message @entity {
   proof: Bytes!
 }
 
-type Refs @entity {
+type Ref @entity {
   id: ID!
   totalClaims: BigInt!
   totalMessages: BigInt!

@@ -1,11 +1,11 @@
 import { graphql } from "src/gql";
 
 export const getSnapshotsQuery = graphql(`
-  query getSnapshots($lastTimestamp: BigInt!) {
+  query getSnapshots($lastTimestamp: BigInt!, $snapshotsPerPage: Int) {
     snapshots(
-      first: 5
+      first: $snapshotsPerPage
       orderBy: timestamp
-      orderDirection: asc
+      orderDirection: desc
       where: { timestamp_lte: $lastTimestamp }
     ) {
       id
@@ -23,6 +23,9 @@ export const getSnapshotsQuery = graphql(`
         txHash
         ticketId
       }
+    }
+    ref(id: "0") {
+      currentSnapshotIndex
     }
   }
 `);
