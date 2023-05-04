@@ -5,7 +5,7 @@ import Lines from "tsx:svgs/footer/lines.svg";
 import IconTwitter from "tsx:svgs/icons/twitter.svg";
 import IconGithub from "tsx:svgs/icons/github.svg";
 import IconTelegram from "tsx:svgs/icons/telegram.svg";
-import BuiltByKleros from "./components/BuiltByKleros";
+import BuiltByKleros from "src/components/BuiltByKleros";
 
 const LINKS = [
   {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import styled, { css } from "styled-components";
 import { smallScreenStyle } from "styles/smallScreenStyle";
 import Menu from "./Menu";
@@ -60,19 +60,18 @@ const StyledLogo = styled.div`
   align-items: center;
 `;
 
-const Navbar: React.FC = () => {
-  return (
-    <Container>
-      <StyledLogo>
-        <StyledTitle>VeA</StyledTitle>
-        <StyledSubtitle>explorer</StyledSubtitle>
-      </StyledLogo>
-      <StyledLogo>
-        <SearchBar />
-        <Menu />
-      </StyledLogo>
-    </Container>
-  );
-};
+const Navbar = forwardRef((_, ref) => (
+  <Container ref={ref}>
+    <StyledLogo>
+      <StyledTitle>VeA</StyledTitle>
+      <StyledSubtitle>explorer</StyledSubtitle>
+    </StyledLogo>
+    <StyledLogo>
+      <SearchBar />
+      <Menu />
+    </StyledLogo>
+  </Container>
+));
+Navbar.displayName = "Navbar";
 
 export default Navbar;
