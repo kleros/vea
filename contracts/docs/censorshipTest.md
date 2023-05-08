@@ -30,11 +30,17 @@ Observed rate of missing blocks
 
 # Vea Outbox
 
-For this reason, the missing blocks are [checked](https://github.com/kleros/vea/blob/c78180985507611b3f6b69c2863a7a36e1daed47/contracts/src/arbitrumToEth/VeaOutboxArbToEth.sol#L186) when optimistic claims are validated. If too many blocks are missing, 
+
+<p align="center"><img width="770" alt="image" src="https://user-images.githubusercontent.com/10378902/236892050-8756f0bc-e782-496f-9c57-56851db975ef.png"></p>
+
+
+For this reason, the missing blocks are [checked](https://github.com/kleros/vea/blob/c78180985507611b3f6b69c2863a7a36e1daed47/contracts/src/arbitrumToEth/VeaOutboxArbToEth.sol#L186) when optimistic claims are validated. If too many blocks are missing, the native bridges need to be called to resolve a challenge.
 
 ## Missing Blocks
 
 A live view of the past 30 days of missing blocks on mainnet is available [here](https://censorship-oracle-frontend.vercel.app/). A jupyter notebook to calculate censroship test parameters is available [here](https://github.com/shotaronowhere/CensorshipOracle/tree/main/scripts/notebooks).
+
+<p align="center"><img width="756" alt="image" src="https://user-images.githubusercontent.com/10378902/236892359-57ab1122-e810-487b-b7af-bd76681b6688.png"></p>
 
 ### Ethereum Mainnet
 
