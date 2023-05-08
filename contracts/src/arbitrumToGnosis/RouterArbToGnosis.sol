@@ -67,10 +67,8 @@ contract RouterArbToGnosis is IRouterArbToGnosis {
 
         bytes memory data = abi.encodeCall(IVeaOutboxArbToGnosis.resolveDisputedClaim, (epoch, stateroot, claim));
 
-        // replace maxGasPerTx with safe level for production deployment
+        // replace maxGasPerTx with reasonable level for production deployment
         bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());
         emit Routed(epoch, ticketID);
     }
-
-    // TODO Route heartbeat
 }
