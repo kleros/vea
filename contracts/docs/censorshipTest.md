@@ -34,6 +34,8 @@ For this reason, the missing blocks are [checked](https://github.com/kleros/vea/
 
 ## Missing Blocks
 
+A live view of the past 30 days of missing blocks on mainnet is available [here](https://censorship-oracle-frontend.vercel.app/). A jupyter notebook to calculate censroship test parameters is available [here](https://github.com/shotaronowhere/CensorshipOracle/tree/main/scripts/notebooks).
+
 ### Ethereum Mainnet
 
 Over a recent series of 500,000 blocks, 3346 blocks were missing, a rate of 0.67%.
