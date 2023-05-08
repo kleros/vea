@@ -24,6 +24,10 @@ H(n):= keccak256(keccak256(n)))
 
 H(n,m):= n>m? keccak256(n concat m): keccak256(m concat n)
 
+
+<p align="center"><img width="662" alt="image" src="https://user-images.githubusercontent.com/10378902/236891420-d771eb2a-1b40-4570-be5c-a9cbd0d08da4.png"></p>
+
+
 Then the table below describes the inbox state for the first few insertions. Note H(n,m) sorts n with respect to m. This is a typical and arbitrary ordering convention chosen for convinience.
 
 | Count | Inbox[2] | Inbox[1] | Inbox[0] |
