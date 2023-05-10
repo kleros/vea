@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@jaybuidl, @shotaronowhere]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
@@ -14,9 +12,7 @@ import "../canonical/arbitrum/IInbox.sol";
 import "../canonical/arbitrum/IOutbox.sol";
 import "./interfaces/IVeaOutboxArbToEth.sol";
 
-/**
- * Vea Bridge Outbox From Arbitrum to Ethereum.
- */
+/// Vea Bridge Outbox From Arbitrum to Ethereum.
 contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.
     address public immutable veaInbox; // The address of the veaInbox on arbitrum.
@@ -41,30 +37,22 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     mapping(uint256 => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap
 
-    /**
-     * @dev Watcher check this event to challenge fraud.
-     * @param claimer The address of the claimer.
-     * @param stateRoot The state root of the challenged claim.
-     */
+    /// @dev Watcher check this event to challenge fraud.
+    /// @param claimer The address of the claimer.
+    /// @param stateRoot The state root of the challenged claim.
     event Claimed(address indexed claimer, bytes32 stateRoot);
 
-    /**
-     * @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
-     * @param epoch The epoch associated with the challenged claim.
-     * @param challenger The address of the challenger.
-     */
+    /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
+    /// @param epoch The epoch associated with the challenged claim.
+    /// @param challenger The address of the challenger.
     event Challenged(uint256 epoch, address indexed challenger);
 
-    /**
-     * @dev This event indicates that a message has been relayed.
-     * @param msgId The msgId of the message that was relayed.
-     */
+    /// @dev This event indicates that a message has been relayed.
+    /// @param msgId The msgId of the message that was relayed.
     event MessageRelayed(uint64 msgId);
 
-    /**
-     * @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
-     * @param epoch The epoch that was verified.
-     */
+    /// @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
+    /// @param epoch The epoch that was verified.
     event Verified(uint256 epoch);
 
     modifier OnlyBridgeRunning() {
@@ -81,17 +69,15 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         _;
     }
 
-    /**
-     * @dev Constructor.
-     * @param _deposit The deposit amount to submit a claim in wei.
-     * @param _epochPeriod The duration of each epoch.
-     * @param _challengePeriod The duration of the period allowing to challenge a claim.
-     * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-     * @param _claimDelay The number of epochs a claim can be submitted for.
-     * @param _veaInbox The address of the inbox contract on Arbitrum.
-     * @param _inbox The address of the inbox contract on Ethereum.
-     * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
-     */
+    /// @dev Constructor.
+    /// @param _deposit The deposit amount to submit a claim in wei.
+    /// @param _epochPeriod The duration of each epoch.
+    /// @param _challengePeriod The duration of the period allowing to challenge a claim.
+    /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
+    /// @param _claimDelay The number of epochs a claim can be submitted for.
+    /// @param _veaInbox The address of the inbox contract on Arbitrum.
+    /// @param _inbox The address of the inbox contract on Ethereum.
+    /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -122,14 +108,12 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     }
 
     // ************************************* //
-    // *         State Modifiers           * //
+    // *         State Modifiers             //
     // ************************************* //
 
-    /**
-     * @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.
-     * @param _epoch The epoch for which the claim is made.
-     * @param _stateRoot The state root to claim.
-     */
+    /// @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.
+    /// @param _epoch The epoch for which the claim is made.
+    /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
@@ -154,10 +138,8 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         emit Claimed(msg.sender, _stateRoot);
     }
 
-    /**
-     * @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
-     * @param epoch The epoch of the claim to challenge.
-     */
+    /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
+    /// @param epoch The epoch of the claim to challenge.
     function challenge(uint256 epoch, Claim memory claim) external payable virtual {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
         require(claim.challenger == address(0), "Claim already challenged.");
@@ -173,10 +155,8 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         emit Challenged(epoch, msg.sender);
     }
 
-    /**
-     * @dev Resolves the optimistic claim for '_epoch'.
-     * @param epoch The epoch of the optimistic claim.
-     */
+    /// @dev Resolves the optimistic claim for '_epoch'.
+    /// @param epoch The epoch of the optimistic claim.
     function validateSnapshot(uint256 epoch, Claim memory claim) external OnlyBridgeRunning {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
 
@@ -202,12 +182,10 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         claimHashes[epoch] = hashClaim(claim);
     }
 
-    /**
-     * Note: Access restricted to arbitrum  bridge.
-     * @dev Resolves any challenge of the optimistic claim for '_epoch'.
-     * @param epoch The epoch to verify.
-     * @param _stateRoot The true state root for the epoch.
-     */
+    /// Note: Access restricted to arbitrum  bridge.
+    /// @dev Resolves any challenge of the optimistic claim for '_epoch'.
+    /// @param epoch The epoch to verify.
+    /// @param _stateRoot The true state root for the epoch.
     function resolveDisputedClaim(
         uint256 epoch,
         bytes32 _stateRoot,
@@ -233,13 +211,11 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         }
     }
 
-    /**
-     * @dev Verifies and relays the message. UNTRUSTED.
-     * @param proof The merkle proof to prove the message.
-     * @param msgId The zero based index of the message in the inbox.
-     * @param to The address of the contract on the receiving chain which receives the calldata.
-     * @param message The message encoded with header from VeaInbox.
-     */
+    /// @dev Verifies and relays the message. UNTRUSTED.
+    /// @param proof The merkle proof to prove the message.
+    /// @param msgId The zero based index of the message in the inbox.
+    /// @param to The address of the contract on the receiving chain which receives the calldata.
+    /// @param message The message encoded with header from VeaInbox.
     function sendMessage(bytes32[] calldata proof, uint64 msgId, address to, bytes calldata message) external {
         require(proof.length < 64, "Proof too long.");
 
@@ -295,10 +271,8 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         emit MessageRelayed(msgId);
     }
 
-    /**
-     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
-     * @param epoch The epoch associated with the claim deposit to withraw.
-     */
+    /// @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
+    /// @param epoch The epoch associated with the claim deposit to withraw.
     function withdrawClaimDeposit(uint256 epoch, Claim calldata claim) external {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
         require(claim.honest == Party.Claimer, "Claim failed.");
@@ -313,10 +287,8 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         }
     }
 
-    /**
-     * @dev Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.
-     * @param epoch The epoch associated with the challenge deposit to withraw.
-     */
+    /// @dev Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.
+    /// @param epoch The epoch associated with the challenge deposit to withraw.
     function withdrawChallengeDeposit(uint256 epoch, Claim calldata claim) external {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
         require(claim.honest == Party.Challenger, "Challenge failed.");
@@ -327,10 +299,8 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         payable(claim.challenger).send(depositPlusReward); // User is responsibility for accepting ETH.
     }
 
-    /**
-     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
-     * @param epoch The epoch associated with the claim deposit to withraw.
-     */
+    /// @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
+    /// @param epoch The epoch associated with the claim deposit to withraw.
     function withdrawClaimerEscapeHatch(uint256 epoch, Claim memory claim) external OnlyBridgeShutdown {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
         require(claim.honest == Party.None, "Claim resolved.");
@@ -346,10 +316,8 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         }
     }
 
-    /**
-     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
-     * @param epoch The epoch associated with the claim deposit to withraw.
-     */
+    /// @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
+    /// @param epoch The epoch associated with the claim deposit to withraw.
     function withdrawChallengerEscapeHatch(uint256 epoch, Claim memory claim) external OnlyBridgeShutdown {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
         require(claim.honest == Party.None, "Claim resolved.");

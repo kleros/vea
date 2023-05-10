@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@hrishibhat, @adi274]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@hrishibhat, @adi274]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 

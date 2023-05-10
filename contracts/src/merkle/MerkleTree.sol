@@ -1,23 +1,19 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@shotaronowhere]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@shotaronowhere]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
-/**
- *  @title MerkleTree
- *  @author Shotaro N. - <shawtarohgn@gmail.com>
- *  @dev An efficient append only merkle tree.
- */
+/// @title MerkleTree
+/// @author Shotaro N. - <shawtarohgn@gmail.com>
+/// @dev An efficient append only merkle tree.
 contract MerkleTree {
     // ***************************** //
-    // *         Storage           * //
+    // *         Storage             //
     // ***************************** //
 
     // merkle tree representation of a batch of messages
@@ -26,14 +22,13 @@ contract MerkleTree {
     uint256 internal count;
 
     // ************************************* //
-    // *         State Modifiers           * //
+    // *         State Modifiers             //
     // ************************************* //
 
-    /** @dev Append data into merkle tree.
-     *  `O(log(n))` where `n` is the number of leaves.
-     *  Note: Although each insertion is O(log(n)), complexity of n total insertions is O(n).
-     *  @param leaf The leaf (already hashed) to insert in the merkle tree.
-     */
+    /// @dev Append data into merkle tree.
+    /// `O(log(n))` where `n` is the number of leaves.
+    /// Note: Although each insertion is O(log(n)), complexity of n total insertions is O(n).
+    /// @param leaf The leaf (already hashed) to insert in the merkle tree.
     function _appendMessage(bytes32 leaf) internal {
         // double hashed leaf
         // avoids second order preimage attacks
@@ -65,10 +60,9 @@ contract MerkleTree {
         }
     }
 
-    /** @dev Gets the current merkle root.
-     *  `O(log(n))` where
-     *  `n` is the number of leaves.
-     */
+    /// @dev Gets the current merkle root.
+    /// `O(log(n))` where
+    /// `n` is the number of leaves.
     function _getMerkleRoot() internal view returns (bytes32 merkleRoot) {
         unchecked {
             // first hash is special case
@@ -100,13 +94,11 @@ contract MerkleTree {
         }
     }
 
-    /**
-     * @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing sibling hashes.
-     * note: EVM scratch space is used to efficiently calculate hashes.
-     * @param child_1 The first child hash.
-     * @param child_2 The second child hash.
-     * @return parent The parent hash.
-     */
+    /// @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing sibling hashes.
+    /// note: EVM scratch space is used to efficiently calculate hashes.
+    /// @param child_1 The first child hash.
+    /// @param child_2 The second child hash.
+    /// @return parent The parent hash.
     function sortConcatAndHash(bytes32 child_1, bytes32 child_2) internal pure returns (bytes32 parent) {
         if (child_1 > child_2) {
             assembly {
