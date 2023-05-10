@@ -8,41 +8,26 @@
       "src*": [
         "./src*"
       ],
-      "utils*": [
-        "./src/utils*"
-      ],
-      "assets*": [
-        "./src/assets*"
-      ],
-      "components*": [
-        "./src/components*"
-      ],
-      "connectors*": [
-        "./src/connectors*"
-      ],
-      "context*": [
-        "./src/context*"
-      ],
-      "layout*": [
-        "./src/layout*"
-      ],
-      "consts*": [
-        "./src/consts*"
-      ],
       "hooks*": [
         "./src/hooks*"
       ],
       "queries*": [
         "./src/hooks/queries*"
       ],
-      "pages*": [
-        "./src/pages*"
+      "consts*": [
+        "./src/consts*"
       ],
       "styles*": [
         "./src/styles*"
       ],
       "svgs*": [
         "./src/assets/svgs*"
+      ],
+      "utils*": [
+        "./src/utils*"
+      ],
+      "components*": [
+        "./src/components*"
       ]
     },
     "experimentalDecorators": true,

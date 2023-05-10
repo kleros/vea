@@ -1,0 +1,44 @@
+type Claim @entity {
+  id: ID!
+  epoch: BigInt!
+  stateroot: Bytes!
+  bridger: Bytes!
+  timestamp: BigInt!
+  challenged: Boolean!
+  challenge: Challenge @derivedFrom(field: "claim")
+  verification: Verification @derivedFrom(field: "claim")
+  honest: Boolean!
+  txHash: Bytes!
+}
+
+type Challenge @entity {
+  id: ID!
+  claim: Claim!
+  txHash: Bytes!
+  timestamp: BigInt!
+  challenger: Bytes!
+  honest: Boolean!
+}
+
+type Verification @entity {
+  id: ID!
+  claim: Claim!
+  timestamp: BigInt!
+  caller: Bytes!
+  txHash: Bytes!
+}
+
+type Message @entity {
+  id: ID!
+  timestamp: BigInt!
+  txHash: Bytes!
+  relayer: Bytes!
+  proof: Bytes!
+}
+
+type Refs @entity {
+  id: ID!
+  totalClaims: BigInt!
+  totalMessages: BigInt!
+  totalChallenges: BigInt!
+}

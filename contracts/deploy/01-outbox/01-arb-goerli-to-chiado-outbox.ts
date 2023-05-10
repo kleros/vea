@@ -85,7 +85,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    console.log(config.networks);
+    const gasOptions = {
+      maxFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+      maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+    };
+
     const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
@@ -96,6 +100,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       from: deployer,
       args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks],
       log: true,
+      ...gasOptions,
     });
   };
 

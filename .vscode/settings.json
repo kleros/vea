@@ -5,6 +5,7 @@
     "Devnet",
     "IERC",
     "kleros",
+    "stateroot",
     "typechain"
   ],
   "prettier.configPath": ".prettierrc.json",
