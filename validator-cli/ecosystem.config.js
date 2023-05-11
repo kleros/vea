@@ -7,7 +7,7 @@ module.exports = {
       interpreter: "/bin/bash",
       log_date_format: "YYYY-MM-DD HH:mm Z",
       watch: false,
-      autorestart: true,
+      autorestart: false,
       env: {
         NODE_ENV: "development",
       },
@@ -19,7 +19,7 @@ module.exports = {
       interpreter: "/bin/bash",
       log_date_format: "YYYY-MM-DD HH:mm Z",
       watch: false,
-      autorestart: true,
+      autorestart: false,
       env: {
         NODE_ENV: "development",
       },

@@ -56,8 +56,13 @@ require("dotenv").config();
         // should take snapshot
         console.log("inbox updated: taking snapshot. . .");
         const txn = await veaInboxArbGoerliToGoerli.saveSnapshot();
-        await delay(1 * 60 * 1000);
-        const snapshot = await veaInboxArbGoerliToGoerli.snapshots(claimableEpoch);
+        delay(10000);
+        let snapshot = await veaInboxArbGoerliToGoerli.snapshots(claimableEpoch);
+        while (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
+          console.log("waiting for snapshot to be saved. . .");
+          snapshot = await veaInboxArbGoerliToGoerli.snapshots(claimableEpoch);
+          delay(30000);
+        }
         console.log(`Snapshot Txn: ${txn.hash}`);
         lastSavedCount = inboxCount;
         const txnOutbox = await veaOutboxGoerli.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
@@ -75,8 +80,9 @@ require("dotenv").config();
       }
     }
     currentTS = Math.floor(Date.now() / 1000);
-    console.log("waiting for the next epoch. . .");
-    await delay(Math.floor(currentTS % epochPeriod) * 1000 + 30000);
+    const delayAmount = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 30000;
+    console.log("waiting for the next epoch. . .", Math.floor(delayAmount / 1000), "seconds");
+    await delay(delayAmount);
   }
 })();
 
