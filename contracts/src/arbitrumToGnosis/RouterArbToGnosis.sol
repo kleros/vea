@@ -26,8 +26,8 @@ contract RouterArbToGnosis is IRouterArbToGnosis {
 
     IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.
     IAMB public immutable amb; // The address of the AMB contract on Ethereum.
-    address public immutable sender; // The address of the sender on Arbitrum.
-    address public immutable receiver; // The address of the Receiver on Gnosis Chain.
+    address public immutable veaInbox; // The address of the veaInbox on Arbitrum.
+    address public immutable veaOutbox; // The address of the veaOutbox on Gnosis Chain.
 
     // ************************************* //
     // *              Events               * //
@@ -44,14 +44,14 @@ contract RouterArbToGnosis is IRouterArbToGnosis {
      * @dev Constructor.
      * @param _inbox The address of the inbox contract on Ethereum.
      * @param _amb The address of the AMB contract on Ethereum.
-     * @param _sender The safe bridge sender on Arbitrum.
-     * @param _receiver The fast bridge receiver on Gnosis Chain.
+     * @param _veaInbox The veaInbox on Arbitrum.
+     * @param _veaOutbox The veaOutbox on Gnosis Chain.
      */
-    constructor(IInbox _inbox, IAMB _amb, address _sender, address _receiver) {
+    constructor(IInbox _inbox, IAMB _amb, address _veaInbox, address _veaOutbox) {
         inbox = _inbox;
         amb = _amb;
-        sender = _sender;
-        receiver = _receiver;
+        veaInbox = _veaInbox;
+        veaOutbox = _veaOutbox;
     }
 
     /**
@@ -63,12 +63,12 @@ contract RouterArbToGnosis is IRouterArbToGnosis {
     function route(uint256 epoch, bytes32 stateroot, IVeaOutboxArbToGnosis.Claim calldata claim) external {
         IBridge bridge = inbox.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
-        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
+        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "veaInbox only.");
 
         bytes memory data = abi.encodeCall(IVeaOutboxArbToGnosis.resolveDisputedClaim, (epoch, stateroot, claim));
 
         // replace maxGasPerTx with reasonable level for production deployment
-        bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());
+        bytes32 ticketID = amb.requireToPassMessage(veaOutbox, data, amb.maxGasPerTx());
         emit Routed(epoch, ticketID);
     }
 }

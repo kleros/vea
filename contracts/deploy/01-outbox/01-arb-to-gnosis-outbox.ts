@@ -12,14 +12,14 @@ enum ReceiverChains {
 const paramsByChainId = {
   GNOSIS_MAINNET: {
     deposit: parseEther("20000"), // 200,000 xDAI budget to start, enough for 10 days till timeout
-    // Average happy path wait time is 31 hours
+    // Average happy path wait time is 42 hours (36 - 48 hours)
     epochPeriod: 43200, // 12 hours
-    challengePeriod: 90000, // 24 hours (sequencer backdating) + 1 hour buffer
-    numEpochTimeout: 20, // 10 days
-    claimDelay: 3, // 24 hours (sequencer backdating) + 1 hour buffer
+    claimDelay: 108000, // 30 hours (24 hours sequencer backdating + 6 hour buffer)
+    challengePeriod: 21600, // 6 hours
+    numEpochTimeout: 42, // 21 days
     amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
     routerAddress: ethers.constants.AddressZero, // TODO: FIX ME, address on Ethereum mainnet
-    maxMissingBlocks: 10000000000000,
+    maxMissingBlocks: 709, // 709 in 4320 slots, assumes 20% honest validators
     senderChainId: 421613,
   },
   GNOSIS_CHIADO: {

@@ -5,21 +5,20 @@ import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
 
 enum ReceiverChains {
-  GNOSIS_MAINNET = 100,
   GNOSIS_CHIADO = 10200,
   HARDHAT = 31337,
 }
+
 const paramsByChainId = {
   GNOSIS_CHIADO: {
-    deposit: parseEther("5"), // 120 xDAI budget for timeout
-    // Average happy path wait time is 22.5 mins, assume no censorship
-    epochPeriod: 600, // 15 min
-    challengePeriod: 600, // 15 min (assume no sequencer backdating)
-    numEpochTimeout: 24, // 6 hours
-    claimDelay: 2,
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
-    routerAddress: ethers.constants.AddressZero, // TODO: FIX ME, address on Goerli
+    deposit: parseEther("0.001"),
+    epochPeriod: 1800, // 60 min
+    claimDelay: 0, // Assume no sequencer backdating
+    challengePeriod: 0, // 30 min
+    numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
+    arbitrumInbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
+    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
     senderChainId: 421613,
   },
   HARDHAT: {
@@ -30,7 +29,6 @@ const paramsByChainId = {
     numEpochTimeout: 24, // 6 hours
     claimDelay: 2,
     amb: ethers.constants.AddressZero,
-    routerAddress: ethers.constants.AddressZero,
     maxMissingBlocks: 10000000000000,
     senderChainId: 421613,
   },
@@ -52,7 +50,13 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks } =
+  const routerNetworks = {
+    GNOSIS_MAINNET: config.networks.mainnet,
+    GNOSIS_CHIADO: config.networks.goerli,
+    HARDHAT: config.networks.localhost,
+  };
+
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, maxMissingBlocks } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -76,7 +80,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         claimDelay,
         veaInboxAddress,
         amb,
-        routerAddress,
+        ethers.constants.AddressZero,
         maxMissingBlocks,
       ],
       log: true,
@@ -93,15 +97,23 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
+    const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
+    let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
+
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
-    await deploy("VeaOutboxArbToGnosisDevnet", {
+    const routerAddress = getContractAddress(deployer, nonceRouter);
+    console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
+
+    const txn = await deploy("VeaOutboxArbToGnosisDevnet", {
       from: deployer,
       args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks],
       log: true,
       ...gasOptions,
     });
+
+    console.log("VeaOutboxArbToGnosisDevnet deployed to:", txn.address);
   };
 
   // ----------------------------------------------------------------------------------------------

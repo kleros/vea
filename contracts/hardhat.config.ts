@@ -117,6 +117,7 @@ const config: HardhatUserConfig = {
       tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
         arbitrumGoerli: "arbitrumGoerli",
+        chiado: "chiado",
       },
     },
     mainnet: {
@@ -128,6 +129,7 @@ const config: HardhatUserConfig = {
       tags: ["production", "outbox", "layer1"],
       companionNetworks: {
         arbitrum: "arbitrum",
+        gnosischain: "gnosischain",
       },
     },
   },

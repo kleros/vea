@@ -18,17 +18,17 @@ import "./interfaces/IRouterArbToOpt.sol";
 import "./interfaces/IVeaOutboxArbToOpt.sol";
 
 /**
- * Router on Ethereum from Arbitrum to Gnosis Chain.
+ * Router on Ethereum from Arbitrum to Optimism.
  */
-contract RouterArbToGnosis is IRouterArbToOpt {
+contract RouterArbToOptimism is IRouterArbToOpt {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
 
     IInbox public immutable inboxOpt; // The address of the Optimism Inbox contract.
     IInbox public immutable inboxArb; // The address of the Optimism Inbox contract.
-    address public immutable sender; // The address of the sender on Arbitrum.
-    address public immutable receiver; // The address of the Receiver on Gnosis Chain.
+    address public immutable veaInbox; // The address of the veaInbox on Arbitrum.
+    address public immutable veaOutbox; // The address of the veaOutbox on Gnosis Chain.
 
     // ************************************* //
     // *              Events               * //
@@ -45,14 +45,14 @@ contract RouterArbToGnosis is IRouterArbToOpt {
      * @dev Constructor.
      * @param _inboxArb The address of the arbitrum inbox contract on Ethereum.
      * @param _inboxOpt The address of the optimism inbox contract on Ethereum.
-     * @param _sender The safe bridge sender on Arbitrum.
-     * @param _receiver The fast bridge receiver on Gnosis Chain.
+     * @param _veaInbox The veaInbox on Arbitrum.
+     * @param _veaOutbox The veaOutbox on Gnosis Chain.
      */
-    constructor(IInbox _inboxArb, IInbox _inboxOpt, address _sender, address _receiver) {
-        inboxOpt = _inboxOpt;
+    constructor(IInbox _inboxArb, IInbox _inboxOpt, address _veaInbox, address _veaOutbox) {
         inboxArb = _inboxArb;
-        sender = _sender;
-        receiver = _receiver;
+        inboxOpt = _inboxOpt;
+        veaInbox = _veaInbox;
+        veaOutbox = _veaOutbox;
     }
 
     /**
@@ -64,7 +64,7 @@ contract RouterArbToGnosis is IRouterArbToOpt {
     function route(uint256 epoch, bytes32 stateroot) external {
         IBridge bridge = inboxArb.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
-        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
+        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "Sender only.");
 
         bytes memory data = abi.encodeCall(IVeaOutboxArbToOpt.resolveDisputedClaim, (epoch, stateroot));
 

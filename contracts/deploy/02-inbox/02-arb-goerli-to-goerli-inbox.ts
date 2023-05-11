@@ -8,7 +8,7 @@ enum SenderChains {
 
 const paramsByChainId = {
   ARBITRUM_GOERLI: {
-    epochPeriod: 3600, // 1 hour
+    epochPeriod: 1800, // 1 hour
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes

@@ -11,11 +11,11 @@ enum ReceiverChains {
 
 const paramsByChainId = {
   ETHEREUM_GOERLI: {
-    deposit: parseEther("0.01"), // 0.1 eth, 120 eth budget for timeout
-    // Average happy path wait time is 1 hour (30 min, 90 min), assume no censorship
-    epochPeriod: 3600, // 60 min
-    claimDelay: 0, // Assume sequencer online
-    challengePeriod: 1800, // 1800, 30 min (assume no sequencer backdating)
+    deposit: parseEther("0.001"),
+    // Average happy path wait time is 1 hour (30 min, 90 min), happy path only
+    epochPeriod: 1800, // 30 min
+    claimDelay: 0, // Assume no sequencer backdating
+    challengePeriod: 0, // 0 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
     arbitrumInbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",

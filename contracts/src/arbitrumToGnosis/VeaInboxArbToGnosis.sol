@@ -37,7 +37,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
      */
     event SnapshotSent(uint256 indexed epochSent, bytes32 ticketId);
 
-    IArbSys public constant ARB_SYS = IArbSys(address(100));
+    IArbSys internal constant ARB_SYS = IArbSys(address(100));
 
     uint256 public immutable epochPeriod; // Epochs mark the period between stateroot snapshots
     address public immutable router; // The router on ethereum.

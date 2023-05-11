@@ -1,0 +1,229 @@
+{
+  "address": "0xAb53e341121448Ae259Da8fa17f216Cb0e21199C",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IInbox",
+          "name": "_inbox",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IAMB",
+          "name": "_amb",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_veaInbox",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_veaOutbox",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "ticketID",
+          "type": "bytes32"
+        }
+      ],
+      "name": "Routed",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "amb",
+      "outputs": [
+        {
+          "internalType": "contract IAMB",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "inbox",
+      "outputs": [
+        {
+          "internalType": "contract IInbox",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "stateroot",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumber",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum IVeaOutboxArbToGnosis.Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct IVeaOutboxArbToGnosis.Claim",
+          "name": "claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "route",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "veaInbox",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "veaOutbox",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x2335d44b98943a8074521176c4e3691379153584efb329b70a707fefab731ac1",
+  "receipt": {
+    "to": null,
+    "from": "0x407DDEC61d69b212498B140a26da70AE1C879f5a",
+    "contractAddress": "0xAb53e341121448Ae259Da8fa17f216Cb0e21199C",
+    "transactionIndex": 35,
+    "gasUsed": "429293",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x83241311e030c15773e33a2c30ea0d337d1a6009be4addfb298bd591d2134e02",
+    "transactionHash": "0x2335d44b98943a8074521176c4e3691379153584efb329b70a707fefab731ac1",
+    "logs": [],
+    "blockNumber": 8980749,
+    "cumulativeGasUsed": "7520120",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
+    "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    "0xAb53e341121448Ae259Da8fa17f216Cb0e21199C",
+    "0xAb53e341121448Ae259Da8fa17f216Cb0e21199C"
+  ],
+  "numDeployments": 5,
+  "solcInputHash": "8465405fab4f1b72bf97837af00087d1",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.18+commit.87f61d96\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract IInbox\",\"name\":\"_inbox\",\"type\":\"address\"},{\"internalType\":\"contract IAMB\",\"name\":\"_amb\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_veaInbox\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_veaOutbox\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"ticketID\",\"type\":\"bytes32\"}],\"name\":\"Routed\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"amb\",\"outputs\":[{\"internalType\":\"contract IAMB\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"inbox\",\"outputs\":[{\"internalType\":\"contract IInbox\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"stateroot\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestamp\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumber\",\"type\":\"uint32\"},{\"internalType\":\"enum IVeaOutboxArbToGnosis.Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct IVeaOutboxArbToGnosis.Claim\",\"name\":\"claim\",\"type\":\"tuple\"}],\"name\":\"route\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"veaInbox\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"veaOutbox\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"events\":{\"Routed(uint256,bytes32)\":{\"details\":\"Event emitted when a message is relayed to another Safe Bridge.\",\"params\":{\"epoch\":\"The epoch of the batch requested to send.\",\"ticketID\":\"The unique identifier provided by the underlying canonical bridge.\"}}},\"kind\":\"dev\",\"methods\":{\"constructor\":{\"details\":\"Constructor.\",\"params\":{\"_amb\":\"The address of the AMB contract on Ethereum.\",\"_inbox\":\"The address of the inbox contract on Ethereum.\",\"_veaInbox\":\"The veaInbox on Arbitrum.\",\"_veaOutbox\":\"The veaOutbox on Gnosis Chain.\"}},\"route(uint256,bytes32,(bytes32,address,uint32,uint32,uint8,address))\":{\"details\":\"Resolves any challenge of the optimistic claim for '_epoch'.\",\"params\":{\"epoch\":\"The epoch to verify.\",\"stateroot\":\"The true batch merkle root for the epoch.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"route(uint256,bytes32,(bytes32,address,uint32,uint32,uint8,address))\":{\"notice\":\"Note: Access restricted to arbitrum canonical bridge.\"}},\"notice\":\"Router on Ethereum from Arbitrum to Gnosis Chain.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/arbitrumToGnosis/RouterArbToGnosis.sol\":\"RouterArbToGnosis\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/arbitrumToGnosis/RouterArbToGnosis.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@shotaronowhere, @jaybuidl]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity 0.8.18;\\n\\nimport \\\"../canonical/gnosis-chain/IAMB.sol\\\";\\nimport \\\"../canonical/arbitrum/IInbox.sol\\\";\\nimport \\\"../canonical/arbitrum/IOutbox.sol\\\";\\nimport \\\"./interfaces/IRouterArbToGnosis.sol\\\";\\nimport \\\"./interfaces/IVeaOutboxArbToGnosis.sol\\\";\\n\\n/**\\n * Router on Ethereum from Arbitrum to Gnosis Chain.\\n */\\ncontract RouterArbToGnosis is IRouterArbToGnosis {\\n    // ************************************* //\\n    // *             Storage               * //\\n    // ************************************* //\\n\\n    IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.\\n    IAMB public immutable amb; // The address of the AMB contract on Ethereum.\\n    address public immutable veaInbox; // The address of the veaInbox on Arbitrum.\\n    address public immutable veaOutbox; // The address of the veaOutbox on Gnosis Chain.\\n\\n    // ************************************* //\\n    // *              Events               * //\\n    // ************************************* //\\n\\n    /**\\n     * @dev Event emitted when a message is relayed to another Safe Bridge.\\n     * @param epoch The epoch of the batch requested to send.\\n     * @param ticketID The unique identifier provided by the underlying canonical bridge.\\n     */\\n    event Routed(uint256 indexed epoch, bytes32 ticketID);\\n\\n    /**\\n     * @dev Constructor.\\n     * @param _inbox The address of the inbox contract on Ethereum.\\n     * @param _amb The address of the AMB contract on Ethereum.\\n     * @param _veaInbox The veaInbox on Arbitrum.\\n     * @param _veaOutbox The veaOutbox on Gnosis Chain.\\n     */\\n    constructor(IInbox _inbox, IAMB _amb, address _veaInbox, address _veaOutbox) {\\n        inbox = _inbox;\\n        amb = _amb;\\n        veaInbox = _veaInbox;\\n        veaOutbox = _veaOutbox;\\n    }\\n\\n    /**\\n     * Note: Access restricted to arbitrum canonical bridge.\\n     * @dev Resolves any challenge of the optimistic claim for '_epoch'.\\n     * @param epoch The epoch to verify.\\n     * @param stateroot The true batch merkle root for the epoch.\\n     */\\n    function route(uint256 epoch, bytes32 stateroot, IVeaOutboxArbToGnosis.Claim calldata claim) external {\\n        IBridge bridge = inbox.bridge();\\n        require(msg.sender == address(bridge), \\\"Not from bridge.\\\");\\n        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, \\\"veaInbox only.\\\");\\n\\n        bytes memory data = abi.encodeCall(IVeaOutboxArbToGnosis.resolveDisputedClaim, (epoch, stateroot, claim));\\n\\n        // replace maxGasPerTx with reasonable level for production deployment\\n        bytes32 ticketID = amb.requireToPassMessage(veaOutbox, data, amb.maxGasPerTx());\\n        emit Routed(epoch, ticketID);\\n    }\\n}\\n\",\"keccak256\":\"0xf5213d00803218568cf715bb2cc58b57bb85115bbda2d8d9af60f40e008a5682\",\"license\":\"MIT\"},\"src/arbitrumToGnosis/interfaces/IRouterArbToGnosis.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\nimport \\\"./IVeaOutboxArbToGnosis.sol\\\";\\n\\npragma solidity 0.8.18;\\n\\ninterface IRouterArbToGnosis {\\n    /**\\n     * Note: Access restricted to canonical bridge.\\n     * @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.\\n     * @param epoch The epoch to verify.\\n     * @param stateRoot The true state root for the epoch.\\n     */\\n    function route(uint256 epoch, bytes32 stateRoot, IVeaOutboxArbToGnosis.Claim memory claim) external;\\n}\\n\",\"keccak256\":\"0x0b876b04f6b543204ad4e80442448a855de69ffb8004400099d7443d559ace89\",\"license\":\"MIT\"},\"src/arbitrumToGnosis/interfaces/IVeaOutboxArbToGnosis.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/**\\n *  @authors: [@jaybuidl, @shotaronowhere]\\n *  @reviewers: []\\n *  @auditors: []\\n *  @bounties: []\\n *  @deployments: []\\n */\\n\\npragma solidity 0.8.18;\\n\\ninterface IVeaOutboxArbToGnosis {\\n    enum Party {\\n        None,\\n        Claimer,\\n        Challenger\\n    }\\n\\n    struct Claim {\\n        bytes32 stateRoot;\\n        address claimer;\\n        uint32 timestamp;\\n        uint32 blocknumber;\\n        Party honest;\\n        address challenger;\\n    }\\n\\n    /**\\n     * Note: Gateways expect first argument of message call to be the inbox sender, used for authenitcation.\\n     * @dev Verifies and relays the message.\\n     * @param proof The merkle proof to prove the message.\\n     * @param msgId The zero based index of the message in the inbox.\\n     * @param to The address to send the message to.\\n     * @param message The message to relay.\\n     */\\n    function sendMessage(bytes32[] calldata proof, uint64 msgId, address to, bytes calldata message) external;\\n\\n    /**\\n     * Note: Access restricted to canonical bridge.\\n     * @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.\\n     * @param epoch The epoch to verify.\\n     * @param stateRoot The true state root for the epoch.\\n     */\\n    function resolveDisputedClaim(uint256 epoch, bytes32 stateRoot, Claim memory claim) external;\\n}\\n\",\"keccak256\":\"0x2487511f80f5dd577c2af37cfcc295e213aa54bf0295adc4ab436f9b623005e2\",\"license\":\"MIT\"},\"src/canonical/arbitrum/IInbox.sol\":{\"content\":\"// SPDX-License-Identifier: Apache-2.0\\n\\n/*\\n * Copyright 2019-2021, Offchain Labs, Inc.\\n *\\n * Licensed under the Apache License, Version 2.0 (the \\\"License\\\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *    http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \\\"AS IS\\\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\n\\npragma solidity 0.8.18;\\n\\ninterface IInbox {\\n    function sendL2Message(bytes calldata messageData) external returns (uint256);\\n\\n    function sendUnsignedTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        uint256 nonce,\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (uint256);\\n\\n    function sendContractTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (uint256);\\n\\n    function sendL1FundedUnsignedTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        uint256 nonce,\\n        address destAddr,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function sendL1FundedContractTransaction(\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        address destAddr,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function createRetryableTicket(\\n        address destAddr,\\n        uint256 arbTxCallValue,\\n        uint256 maxSubmissionCost,\\n        address submissionRefundAddress,\\n        address valueRefundAddress,\\n        uint256 maxGas,\\n        uint256 gasPriceBid,\\n        bytes calldata data\\n    ) external payable returns (uint256);\\n\\n    function depositEth(uint256 maxSubmissionCost) external payable returns (uint256);\\n\\n    function bridge() external view returns (IBridge);\\n}\\n\\ninterface IBridge {\\n    event MessageDelivered(\\n        uint256 indexed messageIndex,\\n        bytes32 indexed beforeInboxAcc,\\n        address inbox,\\n        uint8 kind,\\n        address sender,\\n        bytes32 messageDataHash\\n    );\\n\\n    function deliverMessageToInbox(\\n        uint8 kind,\\n        address sender,\\n        bytes32 messageDataHash\\n    ) external payable returns (uint256);\\n\\n    function executeCall(\\n        address destAddr,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external returns (bool success, bytes memory returnData);\\n\\n    // These are only callable by the admin\\n    function setInbox(address inbox, bool enabled) external;\\n\\n    function setOutbox(address inbox, bool enabled) external;\\n\\n    // View functions\\n\\n    function activeOutbox() external view returns (address);\\n\\n    function allowedInboxes(address inbox) external view returns (bool);\\n\\n    function allowedOutboxes(address outbox) external view returns (bool);\\n\\n    function inboxAccs(uint256 index) external view returns (bytes32);\\n\\n    function messageCount() external view returns (uint256);\\n}\\n\\ninterface IMessageProvider {\\n    event InboxMessageDelivered(uint256 indexed messageNum, bytes data);\\n\\n    event InboxMessageDeliveredFromOrigin(uint256 indexed messageNum);\\n}\\n\",\"keccak256\":\"0x59ff3db18cc32f9cbf892502c06a634199ac4d7a8cacdbff26d77aafab552332\",\"license\":\"Apache-2.0\"},\"src/canonical/arbitrum/IOutbox.sol\":{\"content\":\"// SPDX-License-Identifier: Apache-2.0\\n\\n/*\\n * Copyright 2021, Offchain Labs, Inc.\\n *\\n * Licensed under the Apache License, Version 2.0 (the \\\"License\\\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *    http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \\\"AS IS\\\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\n\\npragma solidity 0.8.18;\\n\\ninterface IOutbox {\\n    event OutboxEntryCreated(uint256 indexed batchNum, uint256 outboxIndex, bytes32 outputRoot, uint256 numInBatch);\\n\\n    function l2ToL1Sender() external view returns (address);\\n\\n    function l2ToL1Block() external view returns (uint256);\\n\\n    function l2ToL1EthBlock() external view returns (uint256);\\n\\n    function l2ToL1Timestamp() external view returns (uint256);\\n\\n    function processOutgoingMessages(bytes calldata sendsData, uint256[] calldata sendLengths) external;\\n}\\n\",\"keccak256\":\"0x918ea164cd2f6782bf69ac170afef7dfedf34389246ec19226670a1b3f6fe4f2\",\"license\":\"Apache-2.0\"},\"src/canonical/gnosis-chain/IAMB.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// Complete IAMB Interface\\n// https://github.com/poanetwork/tokenbridge-contracts/blob/master/contracts/interfaces/IAMB.sol\\n\\npragma solidity 0.8.18;\\n\\ninterface IAMB {\\n    function requireToPassMessage(address _contract, bytes memory _data, uint256 _gas) external returns (bytes32);\\n\\n    function maxGasPerTx() external view returns (uint256);\\n\\n    function messageSender() external view returns (address);\\n\\n    function messageSourceChainId() external view returns (uint256);\\n\\n    function messageId() external view returns (bytes32);\\n\\n    function transactionHash() external view returns (bytes32);\\n\\n    function messageCallStatus(bytes32 _messageId) external view returns (bool);\\n\\n    function failedMessageDataHash(bytes32 _messageId) external view returns (bytes32);\\n\\n    function failedMessageReceiver(bytes32 _messageId) external view returns (address);\\n\\n    function failedMessageSender(bytes32 _messageId) external view returns (address);\\n\\n    function requireToConfirmMessage(address _contract, bytes memory _data, uint256 _gas) external returns (bytes32);\\n\\n    function requireToGetInformation(bytes32 _requestSelector, bytes memory _data) external returns (bytes32);\\n\\n    function sourceChainId() external view returns (uint256);\\n\\n    function destinationChainId() external view returns (uint256);\\n}\\n\",\"keccak256\":\"0x749416bebe4a03bf8b9c7686062520f6f4d63d8c800fb2a07bb858084ba3fa65\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x61010060405234801561001157600080fd5b506040516107da3803806107da8339810160408190526100309161006a565b6001600160a01b0393841660805291831660a052821660c0521660e0526100c9565b6001600160a01b038116811461006757600080fd5b50565b6000806000806080858703121561008057600080fd5b845161008b81610052565b602086015190945061009c81610052565b60408601519093506100ad81610052565b60608601519092506100be81610052565b939692955090935050565b60805160a05160c05160e0516106bf61011b6000396000818160e001526103bc0152600081816061015261020101526000818160a40152610393015260008181610107015261012d01526106bf6000f3fe608060405234801561001057600080fd5b50600436106100575760003560e01c806302d3e2361461005c5780631062b39a1461009f578063b9457b07146100c6578063dea580b9146100db578063fb0e722b14610102575b600080fd5b6100837f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200160405180910390f35b6100837f000000000000000000000000000000000000000000000000000000000000000081565b6100d96100d43660046104ce565b610129565b005b6100837f000000000000000000000000000000000000000000000000000000000000000081565b6100837f000000000000000000000000000000000000000000000000000000000000000081565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663e78cea926040518163ffffffff1660e01b8152600401602060405180830381865afa158015610189573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101ad9190610528565b9050336001600160a01b038216146101ff5760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b60448201526064015b60405180910390fd5b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663ab5d89436040518163ffffffff1660e01b8152600401602060405180830381865afa158015610267573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061028b9190610528565b6001600160a01b03166380648b026040518163ffffffff1660e01b8152600401602060405180830381865afa1580156102c8573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102ec9190610528565b6001600160a01b0316146103335760405162461bcd60e51b815260206004820152600e60248201526d3b32b0a4b73137bc1037b7363c9760911b60448201526064016101f6565b600084848460405160240161034a93929190610570565b60408051601f19818403018152918152602080830180516001600160e01b0316631ee9e40360e21b179052815163e5789d0360e01b815291519293506000926001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169263dc8601b3927f0000000000000000000000000000000000000000000000000000000000000000928792869263e5789d03926004808401938290030181865afa158015610405573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610429919061060b565b6040518463ffffffff1660e01b815260040161044793929190610624565b6020604051808303816000875af1158015610466573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061048a919061060b565b9050857f888a9bef5168f83425ebe9503cb6d29081cf58d52c60126f8a85a22c9d993554826040516104be91815260200190565b60405180910390a2505050505050565b60008060008385036101008112156104e557600080fd5b843593506020850135925060c0603f198201121561050257600080fd5b506040840190509250925092565b6001600160a01b038116811461052557600080fd5b50565b60006020828403121561053a57600080fd5b815161054581610510565b9392505050565b803561055781610510565b919050565b803563ffffffff8116811461055757600080fd5b83815260208082018490528235604083015261010082019083013561059481610510565b6001600160a01b031660608301526105ae6040840161055c565b63ffffffff8082166080850152806105c86060870161055c565b1660a085015250506080830135600381106105e257600080fd5b60c08301526105f360a0840161054c565b6001600160a01b03811660e084015250949350505050565b60006020828403121561061d57600080fd5b5051919050565b60018060a01b038416815260006020606081840152845180606085015260005b8181101561066057868101830151858201608001528201610644565b506000608082860101526080601f19601f8301168501019250505082604083015294935050505056fea264697066735822122072ff07f6e9d8c7f3ec602e0eb14a3c4e1e8ebeb8c25657eb2e83d9f6254302f064736f6c63430008120033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100575760003560e01c806302d3e2361461005c5780631062b39a1461009f578063b9457b07146100c6578063dea580b9146100db578063fb0e722b14610102575b600080fd5b6100837f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200160405180910390f35b6100837f000000000000000000000000000000000000000000000000000000000000000081565b6100d96100d43660046104ce565b610129565b005b6100837f000000000000000000000000000000000000000000000000000000000000000081565b6100837f000000000000000000000000000000000000000000000000000000000000000081565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663e78cea926040518163ffffffff1660e01b8152600401602060405180830381865afa158015610189573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101ad9190610528565b9050336001600160a01b038216146101ff5760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b60448201526064015b60405180910390fd5b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663ab5d89436040518163ffffffff1660e01b8152600401602060405180830381865afa158015610267573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061028b9190610528565b6001600160a01b03166380648b026040518163ffffffff1660e01b8152600401602060405180830381865afa1580156102c8573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102ec9190610528565b6001600160a01b0316146103335760405162461bcd60e51b815260206004820152600e60248201526d3b32b0a4b73137bc1037b7363c9760911b60448201526064016101f6565b600084848460405160240161034a93929190610570565b60408051601f19818403018152918152602080830180516001600160e01b0316631ee9e40360e21b179052815163e5789d0360e01b815291519293506000926001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169263dc8601b3927f0000000000000000000000000000000000000000000000000000000000000000928792869263e5789d03926004808401938290030181865afa158015610405573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610429919061060b565b6040518463ffffffff1660e01b815260040161044793929190610624565b6020604051808303816000875af1158015610466573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061048a919061060b565b9050857f888a9bef5168f83425ebe9503cb6d29081cf58d52c60126f8a85a22c9d993554826040516104be91815260200190565b60405180910390a2505050505050565b60008060008385036101008112156104e557600080fd5b843593506020850135925060c0603f198201121561050257600080fd5b506040840190509250925092565b6001600160a01b038116811461052557600080fd5b50565b60006020828403121561053a57600080fd5b815161054581610510565b9392505050565b803561055781610510565b919050565b803563ffffffff8116811461055757600080fd5b83815260208082018490528235604083015261010082019083013561059481610510565b6001600160a01b031660608301526105ae6040840161055c565b63ffffffff8082166080850152806105c86060870161055c565b1660a085015250506080830135600381106105e257600080fd5b60c08301526105f360a0840161054c565b6001600160a01b03811660e084015250949350505050565b60006020828403121561061d57600080fd5b5051919050565b60018060a01b038416815260006020606081840152845180606085015260005b8181101561066057868101830151858201608001528201610644565b506000608082860101526080601f19601f8301168501019250505082604083015294935050505056fea264697066735822122072ff07f6e9d8c7f3ec602e0eb14a3c4e1e8ebeb8c25657eb2e83d9f6254302f064736f6c63430008120033",
+  "devdoc": {
+    "events": {
+      "Routed(uint256,bytes32)": {
+        "details": "Event emitted when a message is relayed to another Safe Bridge.",
+        "params": {
+          "epoch": "The epoch of the batch requested to send.",
+          "ticketID": "The unique identifier provided by the underlying canonical bridge."
+        }
+      }
+    },
+    "kind": "dev",
+    "methods": {
+      "constructor": {
+        "details": "Constructor.",
+        "params": {
+          "_amb": "The address of the AMB contract on Ethereum.",
+          "_inbox": "The address of the inbox contract on Ethereum.",
+          "_veaInbox": "The veaInbox on Arbitrum.",
+          "_veaOutbox": "The veaOutbox on Gnosis Chain."
+        }
+      },
+      "route(uint256,bytes32,(bytes32,address,uint32,uint32,uint8,address))": {
+        "details": "Resolves any challenge of the optimistic claim for '_epoch'.",
+        "params": {
+          "epoch": "The epoch to verify.",
+          "stateroot": "The true batch merkle root for the epoch."
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "route(uint256,bytes32,(bytes32,address,uint32,uint32,uint8,address))": {
+        "notice": "Note: Access restricted to arbitrum canonical bridge."
+      }
+    },
+    "notice": "Router on Ethereum from Arbitrum to Gnosis Chain.",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

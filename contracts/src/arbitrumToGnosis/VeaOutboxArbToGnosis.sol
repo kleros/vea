@@ -176,7 +176,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
      * @dev Resolves the optimistic claim for '_epoch'.
      * @param epoch The epoch of the optimistic claim.
      */
-    function validateSnapshot(uint256 epoch, Claim memory claim) external OnlyBridgeRunning {
+    function validateSnapshot(uint256 epoch, Claim memory claim) external virtual OnlyBridgeRunning {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
 
         unchecked {
@@ -297,7 +297,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
      * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
      * @param epoch The epoch associated with the claim deposit to withraw.
      */
-    function withdrawClaimDeposit(uint256 epoch, Claim calldata claim) external {
+    function withdrawClaimDeposit(uint256 epoch, Claim calldata claim) external virtual {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
         require(claim.honest == Party.Claimer, "Claim failed.");
 
