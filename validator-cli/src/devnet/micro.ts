@@ -63,8 +63,8 @@ require("dotenv").config();
   let lastSavedCountChiado = logsChiado.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : 0;
 
   while (1) {
-    happyPath(veaInboxArbGoerliToGoerli, epochPeriod, lastSavedCount, veaOutboxGoerli, deposit);
-    happyPath(veaInboxArbGoerliToChiado, epochPeriod, lastSavedCountChiado, veaOutboxChiado, deposit);
+    await happyPath(veaInboxArbGoerliToGoerli, epochPeriod, lastSavedCount, veaOutboxGoerli, deposit);
+    await happyPath(veaInboxArbGoerliToChiado, epochPeriod, lastSavedCountChiado, veaOutboxChiado, deposit);
     currentTS = Math.floor(Date.now() / 1000);
     const delayAmount = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 30000;
     console.log("waiting for the next epoch. . .", Math.floor(delayAmount / 1000), "seconds");
