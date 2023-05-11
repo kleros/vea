@@ -31,11 +31,12 @@ require("dotenv").config();
     claimableEpoch++;
   }
 
-  // only search back 2 weeks
-  const searchBlock = Math.max(0, (await arbGoerliProvider.getBlockNumber()) - Math.floor(1209600 / 5));
+  // only search back ~2 weeks
+  // not really correct since l2 blocks are different, but just an estimate
+  const searchBlock = Math.max(0, (await arbGoerliProvider.getBlockNumber()) - Math.floor(1209600 / 12));
 
   const logs = await arbGoerliProvider.getLogs({
-    address: process.env.VEAINBOX_ADDRESS,
+    address: process.env.VEAINBOX_ARBGOERLI_TO_CHIADO_ADDRESS,
     topics: veaInboxArbGoerliToChiado.filters.SnapshotSaved(null).topics,
     fromBlock: searchBlock,
   });

@@ -92,18 +92,10 @@ const getProofIndices = (nonce: number, count: number) => {
 
 const getSubgraph = (chainid: number): string => {
   switch (chainid) {
-    case 1:
-      return "vea-inbox-mainnet";
-    case 42161:
-      return "vea-inbox-arbitrum";
-    case 100:
-      return "vea-inbox-gnosis";
     case 5:
-      return "vea-inbox-goerli";
-    case 421613:
-      return "vea-inbox-arbitrum-goerli";
+      return "vea-inbox-arbgoerli-to-goerli";
     case 10200:
-      return "vea-inbox-chiado";
+      return "vea-inbox-arbgoerli-to-chiado";
     default:
       throw new Error("Invalid chainid");
   }

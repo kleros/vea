@@ -33,6 +33,7 @@ require("dotenv").config();
   }
 
   // only search back 2 weeks
+  // not really correct since l2 blocks are different, but just an estimate
   const searchBlock = Math.max(0, (await arbGoerliProvider.getBlockNumber()) - Math.floor(1209600 / 12));
 
   const logs = await arbGoerliProvider.getLogs({
@@ -55,6 +56,7 @@ require("dotenv").config();
         // should take snapshot
         console.log("inbox updated: taking snapshot. . .");
         const txn = await veaInboxArbGoerliToGoerli.saveSnapshot();
+        await delay(1 * 60 * 1000);
         const snapshot = await veaInboxArbGoerliToGoerli.snapshots(claimableEpoch);
         console.log(`Snapshot Txn: ${txn.hash}`);
         lastSavedCount = inboxCount;
