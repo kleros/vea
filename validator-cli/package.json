@@ -11,6 +11,7 @@
   },
   "scripts": {
     "start": "npx ts-node ./src/ArbToEth/watcher.ts",
+    "start-devnet": "npx ts-node ./src/devnet/micro.ts",
     "start-chiado-devnet": "npx ts-node ./src/devnet/arbToChiado/happyPath.ts",
     "start-goerli-devnet": "npx ts-node ./src/devnet/arbToGoerli/happyPath.ts"
   },
