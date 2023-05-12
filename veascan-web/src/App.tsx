@@ -54,6 +54,7 @@ const App = () => {
               numPages={numPages!}
               currentPage={currentPage}
               callback={handlePageChange}
+              disableNumbers
             />
           )}
         </>
