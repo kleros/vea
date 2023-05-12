@@ -1,6 +1,7 @@
 import { getVeaInboxArbToEthProvider, getVeaOutboxArbToEthDevnetProvider } from "../utils/ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "ethers";
+import { VeaInboxArbToEth, VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
 
 require("dotenv").config();
 
@@ -59,12 +60,18 @@ require("dotenv").config();
     fromBlock: searchBlock,
   });
 
-  let lastSavedCount = logs.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : 0;
-  let lastSavedCountChiado = logsChiado.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : 0;
+  let lastSavedCount = logs.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : BigNumber.from(0);
+  let lastSavedCountChiado = logsChiado.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : BigNumber.from(0);
 
   while (1) {
-    await happyPath(veaInboxArbGoerliToGoerli, epochPeriod, lastSavedCount, veaOutboxGoerli, deposit);
-    await happyPath(veaInboxArbGoerliToChiado, epochPeriod, lastSavedCountChiado, veaOutboxChiado, deposit);
+    lastSavedCount = await happyPath(veaInboxArbGoerliToGoerli, epochPeriod, lastSavedCount, veaOutboxGoerli, deposit);
+    lastSavedCountChiado = await happyPath(
+      veaInboxArbGoerliToChiado,
+      epochPeriod,
+      lastSavedCountChiado,
+      veaOutboxChiado,
+      deposit
+    );
     currentTS = Math.floor(Date.now() / 1000);
     const delayAmount = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 30000;
     console.log("waiting for the next epoch. . .", Math.floor(delayAmount / 1000), "seconds");
@@ -76,39 +83,51 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function happyPath(veaInboxArbGoerliToGoerli, epochPeriod, lastSavedCount, veaOutboxGoerli, deposit) {
+async function happyPath(
+  veaInbox: VeaInboxArbToEth,
+  epochPeriod: number,
+  lastSavedCount: BigNumber,
+  veaOutbox: VeaOutboxArbToEthDevnet,
+  deposit: BigNumber
+): Promise<BigNumber> {
   let currentTS = Math.floor(Date.now() / 1000);
   let claimableEpoch = Math.floor(currentTS / epochPeriod);
-  const snapshot = await veaInboxArbGoerliToGoerli.snapshots(claimableEpoch);
+  let newCount = lastSavedCount;
+  const snapshot = await veaInbox.snapshots(claimableEpoch);
 
   if (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
     // check if snapshot should be taken
-    const inboxCount = await veaInboxArbGoerliToGoerli.count();
-    if (inboxCount > lastSavedCount) {
+    const inboxCount = await veaInbox.count();
+    if (inboxCount.gt(lastSavedCount)) {
       // should take snapshot
       console.log("inbox updated: taking snapshot. . .");
-      const txn = await veaInboxArbGoerliToGoerli.saveSnapshot();
+      const txn = await veaInbox.saveSnapshot();
+      console.log("SaveSnapshot Txn: ", txn.hash);
+      console.log("New snapshot message count: ", txn.data[0]);
+      newCount = BigNumber.from(txn.data[0]);
       delay(10000);
-      let snapshot = await veaInboxArbGoerliToGoerli.snapshots(claimableEpoch);
+      let snapshot = await veaInbox.snapshots(claimableEpoch);
       while (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
         console.log("waiting for snapshot to be saved. . .");
-        snapshot = await veaInboxArbGoerliToGoerli.snapshots(claimableEpoch);
+        snapshot = await veaInbox.snapshots(claimableEpoch);
         delay(30000);
       }
       console.log(`Snapshot Txn: ${txn.hash}`);
       lastSavedCount = inboxCount;
-      const txnOutbox = await veaOutboxGoerli.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
+      const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
       console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
     } else {
       console.log("inbox not updated: not taking snapshot. . .");
     }
   } else {
     console.log("snapshot already taken. . .");
-    const latestVerifiedEpoch = await veaOutboxGoerli.latestVerifiedEpoch();
+    const latestVerifiedEpoch = await veaOutbox.latestVerifiedEpoch();
     if (latestVerifiedEpoch.toNumber() < claimableEpoch) {
       console.log("advancing devnet state. . .");
-      const txnOutbox = await veaOutboxGoerli.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
+      const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
       console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
     }
   }
+
+  return newCount;
 }
