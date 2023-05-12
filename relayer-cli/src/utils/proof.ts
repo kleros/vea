@@ -23,25 +23,6 @@ const getMessageDataToRelay = async (chainid: number, nonce: number) => {
   }
 };
 
-const getProof = async (chainid: number, nonce: number) => {
-  try {
-    const subgraph = getSubgraph(chainid);
-
-    const result = await request(
-      `https://api.thegraph.com/subgraphs/name/shotaronowhere/${subgraph}`,
-      `{
-                snapshotSaveds(first: 1, orderBy: count) {
-                  count
-                }
-              }`
-    );
-    return await getProofAtCount(chainid, nonce, Number(result["snapshotSaveds"][0].count));
-  } catch (e) {
-    console.log(e);
-    return [];
-  }
-};
-
 const getProofAtCount = async (chainid: number, nonce: number, count: number): Promise<string[]> => {
   const proofIndices = getProofIndices(nonce, count);
 
@@ -101,4 +82,4 @@ const getSubgraph = (chainid: number): string => {
   }
 };
 
-export { getProof, getProofAtCount, getMessageDataToRelay };
+export { getProofAtCount, getSubgraph, getMessageDataToRelay };
