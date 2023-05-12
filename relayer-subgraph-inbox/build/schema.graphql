@@ -1,11 +1,3 @@
-type Hearbeat @entity(immutable: true) {
-  id: Bytes!
-  ticketId: Bytes! # bytes32
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
 type MessageSent @entity(immutable: true) {
   id: Bytes!
   nonce: BigInt! # uint64

@@ -270,6 +270,10 @@ export class Receiver extends Entity {
     let value = this.get("messages");
     return value!.toBytesArray();
   }
+
+  set messages(value: Array<Bytes>) {
+    this.set("messages", Value.fromBytesArray(value));
+  }
 }
 
 export class Sender extends Entity {
@@ -306,6 +310,10 @@ export class Sender extends Entity {
   get messages(): Array<Bytes> {
     let value = this.get("messages");
     return value!.toBytesArray();
+  }
+
+  set messages(value: Array<Bytes>) {
+    this.set("messages", Value.fromBytesArray(value));
   }
 }
 
@@ -358,6 +366,15 @@ export class SnapshotSaved extends Entity {
 
   set epoch(value: BigInt) {
     this.set("epoch", Value.fromBigInt(value));
+  }
+
+  get count(): BigInt {
+    let value = this.get("count");
+    return value!.toBigInt();
+  }
+
+  set count(value: BigInt) {
+    this.set("count", Value.fromBigInt(value));
   }
 
   get blockNumber(): BigInt {

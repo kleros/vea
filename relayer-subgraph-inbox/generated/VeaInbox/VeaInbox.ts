@@ -10,24 +10,6 @@ import {
   BigInt,
 } from "@graphprotocol/graph-ts";
 
-export class Hearbeat extends ethereum.Event {
-  get params(): Hearbeat__Params {
-    return new Hearbeat__Params(this);
-  }
-}
-
-export class Hearbeat__Params {
-  _event: Hearbeat;
-
-  constructor(event: Hearbeat) {
-    this._event = event;
-  }
-
-  get ticketId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-}
-
 export class MessageSent extends ethereum.Event {
   get params(): MessageSent__Params {
     return new MessageSent__Params(this);
@@ -59,8 +41,8 @@ export class SnapshotSaved__Params {
     this._event = event;
   }
 
-  get stateRoot(): Bytes {
-    return this._event.parameters[0].value.toBytes();
+  get count(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
   }
 }
 
@@ -89,21 +71,6 @@ export class SnapshotSent__Params {
 export class VeaInbox extends ethereum.SmartContract {
   static bind(address: Address): VeaInbox {
     return new VeaInbox("VeaInbox", address);
-  }
-
-  ARB_SYS(): Address {
-    let result = super.call("ARB_SYS", "ARB_SYS():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_ARB_SYS(): ethereum.CallResult<Address> {
-    let result = super.tryCall("ARB_SYS", "ARB_SYS():(address)", []);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
   count(): BigInt {
@@ -285,32 +252,6 @@ export class SaveSnapshotCall__Outputs {
   }
 }
 
-export class SendHeartbeatCall extends ethereum.Call {
-  get inputs(): SendHeartbeatCall__Inputs {
-    return new SendHeartbeatCall__Inputs(this);
-  }
-
-  get outputs(): SendHeartbeatCall__Outputs {
-    return new SendHeartbeatCall__Outputs(this);
-  }
-}
-
-export class SendHeartbeatCall__Inputs {
-  _call: SendHeartbeatCall;
-
-  constructor(call: SendHeartbeatCall) {
-    this._call = call;
-  }
-}
-
-export class SendHeartbeatCall__Outputs {
-  _call: SendHeartbeatCall;
-
-  constructor(call: SendHeartbeatCall) {
-    this._call = call;
-  }
-}
-
 export class SendMessageCall extends ethereum.Call {
   get inputs(): SendMessageCall__Inputs {
     return new SendMessageCall__Inputs(this);
@@ -373,6 +314,12 @@ export class SendSnapshotCall__Inputs {
   get epochSend(): BigInt {
     return this._call.inputValues[0].value.toBigInt();
   }
+
+  get claim(): SendSnapshotCallClaimStruct {
+    return changetype<SendSnapshotCallClaimStruct>(
+      this._call.inputValues[1].value.toTuple()
+    );
+  }
 }
 
 export class SendSnapshotCall__Outputs {
@@ -380,5 +327,31 @@ export class SendSnapshotCall__Outputs {
 
   constructor(call: SendSnapshotCall) {
     this._call = call;
+  }
+}
+
+export class SendSnapshotCallClaimStruct extends ethereum.Tuple {
+  get stateRoot(): Bytes {
+    return this[0].toBytes();
+  }
+
+  get claimer(): Address {
+    return this[1].toAddress();
+  }
+
+  get timestamp(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get blocknumber(): BigInt {
+    return this[3].toBigInt();
+  }
+
+  get honest(): i32 {
+    return this[4].toI32();
+  }
+
+  get challenger(): Address {
+    return this[5].toAddress();
   }
 }

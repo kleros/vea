@@ -19,6 +19,7 @@
     "contracts",
     "relayer-subgraph-inbox",
     "validator-cli",
+    "relayer-cli",
     "veascan-web",
     "veascan-subgraph-inbox",
     "veascan-subgraph-outbox"

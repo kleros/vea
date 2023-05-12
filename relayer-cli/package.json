@@ -1,0 +1,25 @@
+{
+  "name": "@kleros/vea-relayer-cli",
+  "license": "MIT",
+  "packageManager": "yarn@3.3.1",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "volta": {
+    "node": "16.20.0",
+    "yarn": "3.3.1"
+  },
+  "scripts": {
+    "start-chiado-devnet": "npx ts-node ./src/devnet/arbToChiado/happyPath.ts",
+    "start-goerli-devnet": "npx ts-node ./src/devnet/arbToGoerli/happyPath.ts"
+  },
+  "dependencies": {
+    "@kleros/vea-contracts": "workspace:^",
+    "@typechain/ethers-v5": "^10.2.0",
+    "dotenv": "^16.0.3",
+    "pm2": "^5.2.2",
+    "typescript": "^4.9.5",
+    "web3": "^1.8.2",
+    "web3-batched-send": "^1.0.3"
+  }
+}
