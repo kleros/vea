@@ -30,7 +30,7 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
 
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable challengePeriod; // Claim challenge timewindow.
-    uint256 public immutable claimDelay; // Can only claim for epochs after this delay. eg 1 => claims about epoch 1 can be made in epoch 2.
+    uint256 public immutable claimDelay; // Can only claim for epochs after this delay (seconds)
 
     uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.
     uint256 public immutable maxMissingBlocks; // The maximum number of blocks that can be missing in a challenge period.
@@ -157,6 +157,7 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     /**
      * @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
      * @param epoch The epoch of the claim to challenge.
+     * @param claim The claim associated with the epoch.
      */
     function challenge(uint256 epoch, Claim memory claim) external payable virtual {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
@@ -176,6 +177,7 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     /**
      * @dev Resolves the optimistic claim for '_epoch'.
      * @param epoch The epoch of the optimistic claim.
+     * @param claim The claim associated with the epoch.
      */
     function validateSnapshot(uint256 epoch, Claim memory claim) external virtual OnlyBridgeRunning {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
@@ -207,6 +209,7 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
      * @dev Resolves any challenge of the optimistic claim for '_epoch'.
      * @param epoch The epoch to verify.
      * @param _stateRoot The true state root for the epoch.
+     * @param claim The claim associated with the epoch (optional).
      */
     function resolveDisputedClaim(
         uint256 epoch,
@@ -298,6 +301,7 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     /**
      * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
      * @param epoch The epoch associated with the claim deposit to withraw.
+     * @param claim The claim associated with the epoch.
      */
     function withdrawClaimDeposit(uint256 epoch, Claim calldata claim) external virtual {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
@@ -316,6 +320,7 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     /**
      * @dev Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.
      * @param epoch The epoch associated with the challenge deposit to withraw.
+     * @param claim The claim associated with the epoch.
      */
     function withdrawChallengeDeposit(uint256 epoch, Claim calldata claim) external {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
@@ -330,6 +335,7 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     /**
      * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
      * @param epoch The epoch associated with the claim deposit to withraw.
+     * @param claim The claim associated with the epoch.
      */
     function withdrawClaimerEscapeHatch(uint256 epoch, Claim memory claim) external OnlyBridgeShutdown {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
@@ -347,8 +353,9 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
     }
 
     /**
-     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
+     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the challenger to withdraw their deposit.
      * @param epoch The epoch associated with the claim deposit to withraw.
+     * @param claim The claim associated with the epoch.
      */
     function withdrawChallengerEscapeHatch(uint256 epoch, Claim memory claim) external OnlyBridgeShutdown {
         require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
@@ -365,6 +372,11 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
         }
     }
 
+    /**
+     * @dev Hashes the claim.
+     * @param claim The claim to hash.
+     * @return The hash of the claim.
+     */
     function hashClaim(Claim memory claim) public pure returns (bytes32) {
         return
             keccak256(
@@ -379,6 +391,11 @@ contract VeaOutboxArbToEth is IVeaOutboxArbToEth {
             );
     }
 
+    /**
+     * @dev Claim passed censorship test
+     * @param claim The claim to test.
+     * @return True if the claim passed the censorship test.
+     */
     function passedTest(Claim calldata claim) external view returns (bool) {
         uint256 expectedBlocks = uint256(claim.blocknumber) + (block.timestamp - uint256(claim.timestamp)) / slotTime;
         uint256 actualBlocks = block.number;
