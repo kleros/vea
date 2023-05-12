@@ -102,17 +102,13 @@ async function happyPath(
       // should take snapshot
       console.log("inbox updated: taking snapshot. . .");
       const txn = await veaInbox.saveSnapshot();
-      console.log("SaveSnapshot Txn: ", txn.hash);
-      console.log("New snapshot message count: ", txn.data[0]);
-      newCount = BigNumber.from(txn.data[0]);
-      delay(10000);
-      let snapshot = await veaInbox.snapshots(claimableEpoch);
-      while (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
-        console.log("waiting for snapshot to be saved. . .");
-        snapshot = await veaInbox.snapshots(claimableEpoch);
-        delay(30000);
-      }
+      const receipt = await txn.wait();
+
+      newCount = BigNumber.from(receipt.logs[0].data);
+
+      const snapshot = await veaInbox.snapshots(claimableEpoch);
       console.log(`Snapshot Txn: ${txn.hash}`);
+      console.log("snapshot count: ", receipt.logs[0].data);
       lastSavedCount = inboxCount;
       const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
       console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
