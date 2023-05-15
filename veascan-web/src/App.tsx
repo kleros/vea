@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import styled from "styled-components";
 import { useList } from "react-use";
 import { BigNumber } from "ethers";
 import { StandardPagination } from "@kleros/ui-components-library";
@@ -9,6 +10,11 @@ import { useSnapshots, getSnapshotId } from "hooks/useSnapshots";
 import { mapDataForAccordion } from "utils/mapDataForAccordion";
 
 const SNAPSHOTS_PER_PAGE = 5;
+
+const StyledPagination = styled(StandardPagination)`
+  margin-top: 32px;
+  margin-left: auto;
+`;
 
 interface IPageTracking {
   timestamp: string;
@@ -50,11 +56,11 @@ const App = () => {
         <>
           <SnapshotAccordion items={mapDataForAccordion(data.snapshots)} />
           {numPages && numPages > 0 && (
-            <StandardPagination
+            <StyledPagination
               numPages={numPages!}
               currentPage={currentPage}
               callback={handlePageChange}
-              disableNumbers
+              hideNumbers
             />
           )}
         </>
