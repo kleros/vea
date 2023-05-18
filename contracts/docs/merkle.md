@@ -20,67 +20,66 @@ The bits of the count of the number of elements in the tree indicates the index 
 
 ## Notation
 
-$$H(m_n):= keccak256(keccak256(m_n)))$$
+$$H(n):= keccak(keccak(m_n)))$$
 
 represents the double hash of a message $m_n$. 
 
 The parent root hash of a pair of messages $m_n$ and $m_{n+1}$ is given by, where n is odd and n represents a one-based index of the messages (eg the first message is $m_1$), we have
 
-$$H(m_n,m_{n+1}):=
+$$H(n,{n+1}):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak256(concat(H(m_{n+1}), H(m_n))), & \text{if } H(m_n) > H(m_{n+1}) \\
-    keccak256(concat(H(m_n), H(m_{n+1}))), & \text{else}
+    keccak(H(n+1)\mathbin{\|} H(n)), & \text{if } H(m_n) > H(n+1) \\
+    keccak(H(n)\mathbin{\|}H(n+1)), & \text{else}
 \end{cases}$$
 
 where we first sort the leaves before concatenating and hashing.
 
 for example
 
-$$H(m_1,m_2):=
+$$H(1,2):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak256(concat(H(m_2),H(m_1))), & \text{if } H(m_1) > H(m_2) \\
-    keccak256(concat(H(m_1), H(m_2))), & \text{else}
+    keccak(H(2) \mathbin{\|}H(1)), & \text{if } H(1) > H(2) \\
+    keccak(H(1)\mathbin{\|} H(2)), & \text{else}
 \end{cases}$$
 
-$$H(m_3,m_4):=
+$$H(3,4):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak256(concat(H(m_4),H(m_3))), & \text{if } H(m_3) > H(m_4) \\
-    keccak256(concat(H(m_3), H(m_4))), & \text{else}
+    keccak(H(4)\mathbin{\|}H(3)), & \text{if } H(3) > H(4) \\
+    keccak(H(3)\mathbin{\|}H(4)), & \text{else}
 \end{cases}$$
 
 More generally, we can define the interior nodes for the case where $n \text{ mod } 2^h = 1$ for any integer $h > 1$,
 
-$$H(m_n,m_{n+2^h-1}):=
+$$H(n,n+2^h-1):=
 \begin{cases}
-    % Specify the function value and condition for each case
-    keccak256(concat(H(m_{n+2^{h-1}},m_{n+2^h-1}),H(m_n,m_{n+2^{h-1}-1}))), & \text{if } H(m_n,m_{n+2^{h-1}}) > H(m_{n+2^{h-1}},m_{n+2^h}) \\
-    keccak256(concat(H(m_n,m_{n+2^{h-1}-1}), H(m_{n+2^{h-1}},m_{n+2^h-1}))), & \text{else}
+keccak(H(n+2^{h-1},n+2^h-1)\mathbin{\|}H(n,n+2^{h-1}-1)), & \text{if } H(n,n+2^{h-1}-1))) > H(n+2^{h-1},n+2^h-1) \\
+keccak(H(n,n+2^{h-1}-1)\mathbin{\|} H(n+2^{h-1},n+2^h-1)), & \text{else}
 \end{cases}$$
 
 for example
 
-$$H(m_1,m_4):=
+$$H(1,4):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak256(concat(H(m_3,m_4),H(m_1,m_2))), & \text{if } H(m_1,m_2) > H(m_3,m_4) \\
-    keccak256(concat(H(m_1,m_2), H(m_3,m_4))), & \text{else}
+    keccak(H(3,4)\mathbin{\|}H(1,2))), & \text{if } H(1,2) > H(3,4) \\
+    keccak(H(1,2)\mathbin{\|}H(3,4))), & \text{else}
 \end{cases}$$
 
-$$H(m_5,m_8):=
+$$H(5,8):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak256(concat(H(m_7,m_8),H(m_5,m_6))), & \text{if } H(m_5,m_6) > H(m_7,m_8) \\
-    keccak256(concat(H(m_5,m_6), H(m_7,m_8))), & \text{else}
+    keccak(H(7,8)\mathbin{\|}H(5,6))), & \text{if } H(5,6) > H(7,8) \\
+    keccak(H(5,6)\mathbin{\|} H(7,8))), & \text{else}
 \end{cases}$$
 
-$$H(m_1,m_8):=
+$$H(1,8):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak256(concat(H(m_5,m_8),H(m_1,m_4))), & \text{if } H(m_1,m_2) > H(m_3,m_4) \\
-    keccak256(concat(H(m_1,m_4), H(m_5,m_8))), & \text{else}
+    keccak(H(5,8)\mathbin{\|}H(1,4))), & \text{if } H(1,2) > H(3,4) \\
+    keccak(H(1,4)\mathbin{\|} H(5,8))), & \text{else}
 \end{cases}$$
 
 ## Visual Example
