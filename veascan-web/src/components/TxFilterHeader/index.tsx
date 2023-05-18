@@ -1,10 +1,9 @@
-import { IChain, supportedChains } from "consts/bridges";
-import React, { FC } from "react";
+import React from "react";
 import styled, { css } from "styled-components";
-import Globe from "tsx:svgs/icons/globe.svg";
 import { smallScreenStyle } from "styles/smallScreenStyle";
 import { theme } from "styles/themes";
 import { FilterDropdown } from "./FilterDropdown";
+import NetworkFilters from "./NetworkFilters";
 
 const STATUS_ITEMS = [
   { text: "All", dot: theme.color.white, value: 1 },
@@ -17,14 +16,6 @@ const STATUS_ITEMS = [
   { text: "Resolving", dot: theme.color.teal, value: 8 },
   { text: "Resolved", dot: theme.color.green, value: 9 },
 ];
-
-const CHAIN_ITEMS = [{ text: "All Networks", Icon: Globe, value: 1 }].concat(
-  supportedChains.map((chain: IChain, i: number) => ({
-    text: chain.name,
-    Icon: chain.logo,
-    value: i + 2,
-  }))
-);
 
 const HeaderText = styled.h5`
   font-size: 24px;
@@ -54,16 +45,6 @@ const FilterHeader = styled.div`
   ${smallScreenStyle(css`
     margin-left: calc(0px + (33) * (100vw - 370px) / (1250 - 370));
     gap: 12px;
-  `)}
-`;
-
-const NetworkFilters = styled.div`
-  display: flex;
-  gap: 50px;
-  position: relative;
-  right: 40px;
-  ${smallScreenStyle(css`
-    right: 0px;
   `)}
 `;
 
@@ -98,7 +79,7 @@ const EpochAndTimeTag = styled.div`
   `)}
 `;
 
-const TxFilterHeader: FC = () => {
+const TxFilterHeader: React.FC = () => {
   return (
     <SnapshotHeader>
       <HeaderText>Latest Snapshots</HeaderText>
@@ -107,25 +88,7 @@ const TxFilterHeader: FC = () => {
           <small>Epoch ID</small>
           <small>Timestamp</small>
         </EpochAndTimeTag>
-        <NetworkFilters>
-          <DropdownTag>
-            <small>From: </small>
-            <FilterDropdown
-              isAlignRight={false}
-              isSimpleButton
-              itemData={CHAIN_ITEMS}
-            />
-          </DropdownTag>
-
-          <DropdownTag>
-            <small>To: </small>
-            <FilterDropdown
-              isAlignRight={false}
-              isSimpleButton
-              itemData={CHAIN_ITEMS}
-            />
-          </DropdownTag>
-        </NetworkFilters>
+        <NetworkFilters />
         <DropdownTag>
           <small>Status: </small>
           <FilterDropdown

@@ -1,6 +1,6 @@
 import VeaInboxArbitrumGoerli from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json";
 import VeaOutboxGoerli from "@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json";
-import { Chain, arbitrumGoerli, goerli } from "@wagmi/chains";
+import { Chain, arbitrumGoerli, goerli, mainnet } from "@wagmi/chains";
 import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
 import Ethereum from "tsx:svgs/chains/ethereum.svg";
 
@@ -11,6 +11,7 @@ export interface IChain extends Chain {
 export const supportedChains = [
   { ...arbitrumGoerli, logo: Arbitrum },
   { ...goerli, logo: Ethereum },
+  { ...mainnet, logo: Ethereum },
 ];
 
 export const getChain = (id: number): IChain =>
@@ -28,6 +29,16 @@ interface IBridge {
 export const bridges: IBridge[] = [
   {
     from: arbitrumGoerli.id,
+    to: goerli.id,
+    inboxAddress: VeaInboxArbitrumGoerli.address as `0x${string}`,
+    inboxEndpoint:
+      "https://api.thegraph.com/subgraphs/name/alcercu/veascantest",
+    outboxAddress: VeaOutboxGoerli.address as `0x${string}`,
+    outboxEndpoint:
+      "https://api.thegraph.com/subgraphs/name/alcercu/veascan-outbox-goerli",
+  },
+  {
+    from: mainnet.id,
     to: goerli.id,
     inboxAddress: VeaInboxArbitrumGoerli.address as `0x${string}`,
     inboxEndpoint:

@@ -1,8 +1,8 @@
+import React from "react";
 import Layout from "components/Layout";
 import SnapshotAccordion from "components/SnapshotAccordion/SnapshotAccordion";
 import TxFilterHeader from "components/TxFilterHeader";
 import { useSnapshots } from "hooks/useSnapshots";
-import React from "react";
 import { mapDataForAccordion } from "utils/mapDataForAccordion";
 
 const App = () => {
