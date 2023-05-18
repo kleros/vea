@@ -78,7 +78,7 @@ $$H(5,8):=
 $$H(1,8):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak(H(5,8)\mathbin{\|\|}H(1,4))), & \text{if } H(1,2) > H(3,4) \\
+    keccak(H(5,8)\mathbin{\|\|}H(1,4))), & \text{if } H(1,4) > H(5,8) \\
     keccak(H(1,4)\mathbin{\|\|} H(5,8))), & \text{else}
 \end{cases}$$
 
