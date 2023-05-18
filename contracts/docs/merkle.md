@@ -29,34 +29,34 @@ The parent root hash of a pair of messages $m_n$ and $m_{n+1}$ is given by, wher
 $$H(n,{n+1}):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak(H(n+1)\mathbin{\|} H(n)), & \text{if } H(m_n) > H(n+1) \\
-    keccak(H(n)\mathbin{\|}H(n+1)), & \text{else}
+    keccak(H(n+1)\mathbin{\|\|} H(n)), & \text{if } H(m_n) > H(n+1) \\
+    keccak(H(n)\mathbin{\|\|}H(n+1)), & \text{else}
 \end{cases}$$
 
-where we first sort the leaves before concatenating and hashing.
+where we first sort the leaves before concatenating, denoted by $\mathbin{\|\|}$ and hashing.
 
 for example
 
 $$H(1,2):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak(H(2) \mathbin{\|}H(1)), & \text{if } H(1) > H(2) \\
-    keccak(H(1)\mathbin{\|} H(2)), & \text{else}
+    keccak(H(2) \mathbin{\|\|}H(1)), & \text{if } H(1) > H(2) \\
+    keccak(H(1)\mathbin{\|\|} H(2)), & \text{else}
 \end{cases}$$
 
 $$H(3,4):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak(H(4)\mathbin{\|}H(3)), & \text{if } H(3) > H(4) \\
-    keccak(H(3)\mathbin{\|}H(4)), & \text{else}
+    keccak(H(4)\mathbin{\|\|}H(3)), & \text{if } H(3) > H(4) \\
+    keccak(H(3)\mathbin{\|\|}H(4)), & \text{else}
 \end{cases}$$
 
 More generally, we can define the interior nodes for the case where $n \text{ mod } 2^h = 1$ for any integer $h > 1$,
 
 $$H(n,n+2^h-1):=
 \begin{cases}
-keccak(H(n+2^{h-1},n+2^h-1)\mathbin{\|}H(n,n+2^{h-1}-1)), & \text{if } H(n,n+2^{h-1}-1))) > H(n+2^{h-1},n+2^h-1) \\
-keccak(H(n,n+2^{h-1}-1)\mathbin{\|} H(n+2^{h-1},n+2^h-1)), & \text{else}
+keccak(H(n+2^{h-1},n+2^h-1)\mathbin{\|\|}H(n,n+2^{h-1}-1)), & \text{if } H(n,n+2^{h-1}-1))) > H(n+2^{h-1},n+2^h-1) \\
+keccak(H(n,n+2^{h-1}-1)\mathbin{\|\|} H(n+2^{h-1},n+2^h-1)), & \text{else}
 \end{cases}$$
 
 for example
@@ -64,22 +64,22 @@ for example
 $$H(1,4):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak(H(3,4)\mathbin{\|}H(1,2))), & \text{if } H(1,2) > H(3,4) \\
-    keccak(H(1,2)\mathbin{\|}H(3,4))), & \text{else}
+    keccak(H(3,4)\mathbin{\|\|}H(1,2))), & \text{if } H(1,2) > H(3,4) \\
+    keccak(H(1,2)\mathbin{\|\|}H(3,4))), & \text{else}
 \end{cases}$$
 
 $$H(5,8):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak(H(7,8)\mathbin{\|}H(5,6))), & \text{if } H(5,6) > H(7,8) \\
-    keccak(H(5,6)\mathbin{\|} H(7,8))), & \text{else}
+    keccak(H(7,8)\mathbin{\|\|}H(5,6))), & \text{if } H(5,6) > H(7,8) \\
+    keccak(H(5,6)\mathbin{\|\|} H(7,8))), & \text{else}
 \end{cases}$$
 
 $$H(1,8):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak(H(5,8)\mathbin{\|}H(1,4))), & \text{if } H(1,2) > H(3,4) \\
-    keccak(H(1,4)\mathbin{\|} H(5,8))), & \text{else}
+    keccak(H(5,8)\mathbin{\|\|}H(1,4))), & \text{if } H(1,2) > H(3,4) \\
+    keccak(H(1,4)\mathbin{\|\|} H(5,8))), & \text{else}
 \end{cases}$$
 
 ## Visual Example
