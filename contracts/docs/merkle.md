@@ -29,7 +29,7 @@ The parent root hash of a pair of messages $m_n$ and $m_{n+1}$ is given by, wher
 $$H(n,{n+1}):=
 \begin{cases}
     % Specify the function value and condition for each case
-    keccak(H(n+1)\mathbin{\|\|} H(n)), & \text{if } H(m_n) > H(n+1) \\
+    keccak(H(n+1)\mathbin{\|\|} H(n)), & \text{if } H(n) > H(n+1) \\
     keccak(H(n)\mathbin{\|\|}H(n+1)), & \text{else}
 \end{cases}$$
 
