@@ -22,9 +22,9 @@ The bits of the count of the number of elements in the tree indicates the index 
 
 $$H(m_n):= keccak256(keccak256(m_n)))$$
 
-represents the hash of a message $m_n$. 
+represents the double hash of a message $m_n$. 
 
-The parent root of a pair of messages $m_n$ and $m_{n+1}$ is given by, where n is odd and n represents a one-based index of the messages (eg the first message is $m_1$), we have
+The parent root hash of a pair of messages $m_n$ and $m_{n+1}$ is given by, where n is odd and n represents a one-based index of the messages (eg the first message is $m_1$), we have
 
 $$H(m_n,m_{n+1}):=
 \begin{cases}
@@ -33,7 +33,7 @@ $$H(m_n,m_{n+1}):=
     keccak256(concat(H(m_n), H(m_{n+1}))), & \text{else}
 \end{cases}$$
 
-where we first sort the messages before concatenating and hashing.
+where we first sort the leaves before concatenating and hashing.
 
 for example
 
