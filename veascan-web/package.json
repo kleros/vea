@@ -23,6 +23,7 @@
     "src": "./src",
     "hooks": "./src/hooks",
     "consts": "./src/consts",
+    "contexts": "./src/contexts",
     "styles": "./src/styles",
     "svgs": "./src/assets/svgs",
     "utils": "./src/utils",

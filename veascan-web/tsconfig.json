@@ -17,6 +17,9 @@
       "consts*": [
         "./src/consts*"
       ],
+      "contexts*": [
+        "./src/contexts*"
+      ],
       "styles*": [
         "./src/styles*"
       ],
