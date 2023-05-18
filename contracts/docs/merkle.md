@@ -95,7 +95,7 @@ Then the table below describes the inbox state for the above tree
 
 ## Inbox State Examples & Properties
 
-Then the table below describes the inbox state for the first few insertions. Note H(n,m) sorts n with respect to m. This is a typical and arbitrary ordering convention chosen for convinience.
+Then the table below describes the inbox state for the first few insertions.
 
 | Count | Inbox[2] | Inbox[1] | Inbox[0] |
 |-------|:--------:|:--------:|:--------:|
