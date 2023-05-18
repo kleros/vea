@@ -18,15 +18,83 @@ The [inbox](https://github.com/kleros/vea/blob/c78180985507611b3f6b69c2863a7a36e
 
 The bits of the count of the number of elements in the tree indicates the index of subtree in the inbox which represents.
 
-Using a notion where,
+## Notation
 
-H(n):= keccak256(keccak256(n)))
+$$H(m_n):= keccak256(keccak256(m_n)))$$
 
-H(n,m):= n>m? keccak256(n concat m): keccak256(m concat n)
+represents the hash of a message $m_n$. 
 
+The parent root of a pair of messages $m_n$ and $m_{n+1}$ is given by, where n is odd and n represents a one-based index of the messages (eg the first message is $m_1$), we have
+
+$$H(m_n,m_{n+1}):=
+\begin{cases}
+    % Specify the function value and condition for each case
+    keccak256(concat(H(m_{n+1}), H(m_n))), & \text{if } H(m_n) > H(m_{n+1}) \\
+    keccak256(concat(H(m_n), H(m_{n+1}))), & \text{else}
+\end{cases}$$
+
+where we first sort the messages before concatenating and hashing.
+
+for example
+
+$$H(m_1,m_2):=
+\begin{cases}
+    % Specify the function value and condition for each case
+    keccak256(concat(H(m_2),H(m_1))), & \text{if } H(m_1) > H(m_2) \\
+    keccak256(concat(H(m_1), H(m_2))), & \text{else}
+\end{cases}$$
+
+$$H(m_3,m_4):=
+\begin{cases}
+    % Specify the function value and condition for each case
+    keccak256(concat(H(m_4),H(m_3))), & \text{if } H(m_3) > H(m_4) \\
+    keccak256(concat(H(m_3), H(m_4))), & \text{else}
+\end{cases}$$
+
+More generally, we can define the interior nodes for the case where $n \text{ mod } 2^h = 1$ for any integer $h > 1$,
+
+$$H(m_n,m_{n+2^h-1}):=
+\begin{cases}
+    % Specify the function value and condition for each case
+    keccak256(concat(H(m_{n+2^{h-1}},m_{n+2^h-1}),H(m_n,m_{n+2^{h-1}-1}))), & \text{if } H(m_n,m_{n+2^{h-1}}) > H(m_{n+2^{h-1}},m_{n+2^h}) \\
+    keccak256(concat(H(m_n,m_{n+2^{h-1}-1}), H(m_{n+2^{h-1}},m_{n+2^h-1}))), & \text{else}
+\end{cases}$$
+
+for example
+
+$$H(m_1,m_4):=
+\begin{cases}
+    % Specify the function value and condition for each case
+    keccak256(concat(H(m_3,m_4),H(m_1,m_2))), & \text{if } H(m_1,m_2) > H(m_3,m_4) \\
+    keccak256(concat(H(m_1,m_2), H(m_3,m_4))), & \text{else}
+\end{cases}$$
+
+$$H(m_5,m_8):=
+\begin{cases}
+    % Specify the function value and condition for each case
+    keccak256(concat(H(m_7,m_8),H(m_5,m_6))), & \text{if } H(m_5,m_6) > H(m_7,m_8) \\
+    keccak256(concat(H(m_5,m_6), H(m_7,m_8))), & \text{else}
+\end{cases}$$
+
+$$H(m_1,m_8):=
+\begin{cases}
+    % Specify the function value and condition for each case
+    keccak256(concat(H(m_5,m_8),H(m_1,m_4))), & \text{if } H(m_1,m_2) > H(m_3,m_4) \\
+    keccak256(concat(H(m_1,m_4), H(m_5,m_8))), & \text{else}
+\end{cases}$$
+
+## Visual Example
 
 <p align="center"><img width="662" alt="image" src="https://user-images.githubusercontent.com/10378902/236891420-d771eb2a-1b40-4570-be5c-a9cbd0d08da4.png"></p>
 
+
+Then the table below describes the inbox state for the above tree
+
+| Count | Inbox[2] | Inbox[1] | Inbox[0] |
+|-------|:--------:|:--------:|:--------:|
+| 0b011 |    ---   |  H(1,2)  |   H(3)   |
+
+## Inbox State Examples & Properties
 
 Then the table below describes the inbox state for the first few insertions. Note H(n,m) sorts n with respect to m. This is a typical and arbitrary ordering convention chosen for convinience.
 
@@ -38,9 +106,13 @@ Then the table below describes the inbox state for the first few insertions. Not
 | 0b100 |  H(1,4)  | "H(1,2)" |  "H(3)"  |
 | 0b101 |  H(1,4)  | "H(1,2)" |   H(5)   |
 
+Note some properties:
+
 - the smallest non-zero bit in the binary representation of count is the largest index of inbox modified.
 - the non-zero bits of count indicate the "on" indicies of inbox. eg, for count - 0b010, inbox[0] is set to H(1). However inbox[1] = H(1,2), so inbox[0] is not needed to continue appending to the tree data structure. From the perspective of data availability, we can forget about H(1), for that reason it is represented in quotation marks.
 - to calculate the root, only the "on bits" contribute, hashed together from the lowest index to the highest.
+
+These above properties motivate the inbox implementation.
 
 # Other resources
 
