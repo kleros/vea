@@ -1,21 +1,9 @@
 import React from "react";
 import styled, { css } from "styled-components";
 import { smallScreenStyle } from "styles/smallScreenStyle";
-import { theme } from "styles/themes";
+import { useFiltersContext } from "contexts/FiltersContext";
 import { FilterDropdown } from "./FilterDropdown";
 import NetworkFilters from "./NetworkFilters";
-
-const STATUS_ITEMS = [
-  { text: "All", dot: theme.color.white, value: 1 },
-  { text: "Invalid", dot: theme.color.lightRed, value: 2 },
-  { text: "Taken", dot: theme.color.lightYellow, value: 3 },
-  { text: "Claimed", dot: theme.color.turquoise, value: 4 },
-  { text: "Challenged", dot: theme.color.lightPurple, value: 5 },
-  { text: "Verified", dot: theme.color.darkBlue, value: 6 },
-  { text: "Expired", dot: theme.color.smoke, value: 7 },
-  { text: "Resolving", dot: theme.color.teal, value: 8 },
-  { text: "Resolved", dot: theme.color.green, value: 9 },
-];
 
 const HeaderText = styled.h5`
   font-size: 24px;
@@ -80,6 +68,7 @@ const EpochAndTimeTag = styled.div`
 `;
 
 const TxFilterHeader: React.FC = () => {
+  const { statusItems, statusFilter, setStatusFilter } = useFiltersContext();
   return (
     <SnapshotHeader>
       <HeaderText>Latest Snapshots</HeaderText>
@@ -92,9 +81,11 @@ const TxFilterHeader: React.FC = () => {
         <DropdownTag>
           <small>Status: </small>
           <FilterDropdown
+            value={statusFilter}
             isAlignRight={true}
             isSimpleButton
-            itemData={STATUS_ITEMS}
+            itemData={statusItems}
+            callback={setStatusFilter}
           />
         </DropdownTag>
       </FilterHeader>

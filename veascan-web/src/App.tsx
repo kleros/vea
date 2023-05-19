@@ -32,9 +32,7 @@ const App = () => {
     pageTracking.at(-1)?.timestamp,
     SNAPSHOTS_PER_PAGE
   );
-  const numPages = data?.totalSnapshots
-    .div(BigNumber.from(SNAPSHOTS_PER_PAGE))
-    .toNumber();
+  const numPages = 100;
   const handlePageChange = useCallback(
     (newPage: number) => {
       if (newPage > currentPage)
