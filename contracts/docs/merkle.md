@@ -73,15 +73,15 @@ Another example, showing the inbox state step by step for 7 insertions.
 | 0b110 |  H(1,4)  | H(5,6) |   "H(5)"   |
 | 0b111 |  H(1,4)  | H(5,6) |   H(7)   |
 
-Note some properties about the on bit ("1") in count:
+Note some properties about the on bits ("1s") in count:
 
-- The only index of inbox modified in each step is the smallest bit in count.
+- The LSB of count is the only index of inbox modified in each step.
 
-- The bits of count indicate the essential, unique data to represent the tree. 
+- The on bits of count indicate the minimal data to represent the tree. 
 
-For example, when count = 0b010, inbox[0] is set to H(1). However inbox[1] = H(1,2) which implicitly represents H(1), so inbox[0] is not needed to continue appending to the tree data structure. From the perspective of data availability, we can forget about H(1) in the slot represented by inbox[0]. For that reason it is represented in quotation marks and can be overwritten in future steps, reusing the dirty inbox slot for efficiency.
+For example, when count = 0b010, inbox[0] is set to H(1). However inbox[1] = H(1,2) which implicitly includes H(1), so inbox[0] is not needed to encode the tree. From the perspective of data availability, we can forget about H(1) in the slot represented by inbox[0]. For that reason it is represented in quotation marks and can be overwritten in future steps, reusing the dirty inbox slot for efficiency.
 
-- The bits of count indicate the indices of the inbox which represent the full state of the tree. In other words, to calculate the root, we hash together the data in each inbox slot from the lowest index to the highest.
+Moreover, to calculate the root, we hash together the data in each inbox slot corresponding to an on bit in count, from the lowest index to the highest.
 
 examples:
 
@@ -99,7 +99,7 @@ These above properties motivate the inbox implementation.
 
 # Other resources
 
-Here are some useful resources to better understand merkle mountain ranges. Note that the notation and indices used in the below resources differs from the notation used in this document. Resources are meant to be illustrative and supplemental, not a 1:1 correspondence with this document.
+Here are some useful resources to better understand merkle mountain ranges. The notation and indices used in the below resources differs from the notation used in this document. Resources are meant to be illustrative and supplemental.
 
 - [opentimestamps/opentimestamps-server](https://github.com/opentimestamps/opentimestamps-server/blob/master/doc/merkle-mountain-range.md)
 - [mimblewimble/grin](https://github.com/mimblewimble/grin/blob/master/doc/mmr.md)
