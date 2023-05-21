@@ -75,27 +75,25 @@ Another example, showing the inbox state step by step for 7 insertions.
 
 Note some properties about the on bits ("1s") in count:
 
-- The LSB of count is the only index of inbox modified in each step.
+- The LSB of count corresponds to the modified inbox index.
 
 - The on bits of count indicate the minimal data to represent the tree. 
 
 For example, when count = 0b010, inbox[0] is set to H(1). However inbox[1] = H(1,2) which implicitly includes H(1), so inbox[0] is not needed to encode the tree. From the perspective of data availability, we can forget about H(1) in the slot represented by inbox[0]. For that reason it is represented in quotation marks and can be overwritten in future steps, reusing the dirty inbox slot for efficiency.
 
-Moreover, to calculate the root, we hash together the data in each inbox slot corresponding to an on bit in count, from the lowest index to the highest.
+## Calculating the root examples
 
-examples:
+To calculate the root, we hash together the data in each inbox slot corresponding to an on bit in count, from the lowest index to the highest.
 
-| Count | root |
-|-------|:--------:|
-| 0b001 |    inbox[0]   |
-| 0b010 |    inbox[1]   |
-| 0b011 |    H(inbox[1],inbox[0])   |
-| 0b100 |  inbox[2]  |
-| 0b101 |  H(inbox[2],inbox[0])  |
-| 0b110 |  H(inbox[2],inbox[1])  |
-| 0b111 |  H(inbox[2],H(inbox[1],inbox[0]))  |
-
-These above properties motivate the inbox implementation.
+| Count | Inbox[2] | Inbox[1] | Inbox[0] | root |
+|-------|:--------:|:--------:|:--------:|:--------:|
+| 0b001 |    ---   |    ---   |   H(1)   |H(1)
+| 0b010 |    ---   |  H(1,2)  |  "H(1)"  |H(1,2)
+| 0b011 |    ---   |  H(1,2)  |   H(3)   |H( H(3) , H(1,2) )
+| 0b100 |  H(1,4)  | "H(1,2)" |  "H(3)"  |H(1,4)
+| 0b101 |  H(1,4)  | "H(1,2)" |   H(5)   |H( H(1,4) , H(5) )
+| 0b110 |  H(1,4)  | H(5,6) |   "H(5)"   |H( H(1,4) , H(5,6) )
+| 0b111 |  H(1,4)  | H(5,6) |   H(7)   |H( H(1,4) , H( H(5,6), H(7) ) )
 
 # Other resources
 
