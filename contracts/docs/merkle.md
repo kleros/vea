@@ -1,6 +1,6 @@
 # Motivation
 
-Merkle trees are a common tool for data storage. All messages sent through vea are inserted into an append only merkle tree. 
+Merkle trees are a common tool for data storage. All messages sent through vea are inserted into an append-only merkle tree. 
 
 An optimistic mechanism transfers the root of the tree, then messages can be relayed by proving inclusion in the merkle tree represented by the root (merkle proofs). These proofs are a logarithmic size of the number of messages in the tree.
 
@@ -46,14 +46,14 @@ $$H(3,4):= keccak(H(3) \mathbin{\|\|}H(4))$$
 
 $$H(1,4):= keccak(H(1,2) \mathbin{\|\|}H(3,4))$$
 
-Note that we should sort hash pairs before hasing. eg. if $H(2) < H(1)$, $H(1,2) = keccak(H(2) \mathbin{\|\|}H(1))$, above we neglect the sorting notation for clarity and simplicity.
+Note that we should sort hash pairs before hasing. eg. if $H(2) < H(1)$, $H(1,2) = keccak(H(2) \mathbin{\|\|}H(1))$, above we neglect the sorting notation for brevity.
 
 ## Visual Example
 
 <p align="center"><img width="662" alt="image" src="https://user-images.githubusercontent.com/10378902/236891420-d771eb2a-1b40-4570-be5c-a9cbd0d08da4.png"></p>
 
 
-Then the table below describes the inbox state for the above tree
+The table below describes the inbox state for the tree illustrated above.
 
 | Count | Inbox[2] | Inbox[1] | Inbox[0] |
 |-------|:--------:|:--------:|:--------:|
