@@ -75,7 +75,7 @@ Another example, showing the inbox state step by step for 7 insertions.
 
 Note some properties about the on bits ("1s") in count:
 
-- The LSB of count corresponds to the modified inbox index.
+- The fist set bit of count corresponds to the modified inbox index.
 
 - The on bits of count indicate the minimal data to represent the tree. 
 
