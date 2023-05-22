@@ -12,23 +12,23 @@ pragma solidity 0.8.18;
 
 // import "../canonical/optimism/IInboxOpt.sol";
 // TODO: implement Optimism messaging.
-import "../canonical/arbitrum/IInbox.sol";
+import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "./interfaces/IRouterArbToOpt.sol";
-import "./interfaces/IVeaOutboxArbToOpt.sol";
+import "../interfaces/routers/IRouterToOptimisticRollup.sol";
+import "../interfaces/outboxes/IVeaOutboxOptimisticRollup.sol";
 
 /**
  * Router on Ethereum from Arbitrum to Optimism.
  */
-contract RouterArbToOptimism is IRouterArbToOpt {
+contract RouterArbToOptimism is IRouterToOptimisticRollup {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
 
-    IInbox public immutable inboxOpt; // The address of the Optimism Inbox contract.
-    IInbox public immutable inboxArb; // The address of the Optimism Inbox contract.
+    //IInbox public immutable inboxOpt; // The address of the Optimism Inbox contract.
+    IBridge public immutable bridge; // The address of the Arbitrum bridge contract.
     address public immutable veaInbox; // The address of the veaInbox on Arbitrum.
-    address public immutable veaOutbox; // The address of the veaOutbox on Gnosis Chain.
+    address public immutable veaOutbox; // The address of the veaOutbox on Optimism.
 
     // ************************************* //
     // *              Events               * //
@@ -43,16 +43,17 @@ contract RouterArbToOptimism is IRouterArbToOpt {
 
     /**
      * @dev Constructor.
-     * @param _inboxArb The address of the arbitrum inbox contract on Ethereum.
-     * @param _inboxOpt The address of the optimism inbox contract on Ethereum.
+     * @param _bridge The address of the arbitrum bridge contract on Ethereum.
      * @param _veaInbox The veaInbox on Arbitrum.
      * @param _veaOutbox The veaOutbox on Gnosis Chain.
+     * //param _inboxOpt The address of the optimism inbox contract on Ethereum.
      */
-    constructor(IInbox _inboxArb, IInbox _inboxOpt, address _veaInbox, address _veaOutbox) {
-        inboxArb = _inboxArb;
-        inboxOpt = _inboxOpt;
+    constructor(IBridge _bridge, address _veaInbox, address _veaOutbox) {
+        //IInbox _inboxOpt)}
+        bridge = _bridge;
         veaInbox = _veaInbox;
         veaOutbox = _veaOutbox;
+        //inboxOpt = _inboxOpt;
     }
 
     /**
@@ -62,11 +63,17 @@ contract RouterArbToOptimism is IRouterArbToOpt {
      * @param stateroot The true batch merkle root for the epoch.
      */
     function route(uint256 epoch, bytes32 stateroot) external {
-        IBridge bridge = inboxArb.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
-        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "Sender only.");
 
-        bytes memory data = abi.encodeCall(IVeaOutboxArbToOpt.resolveDisputedClaim, (epoch, stateroot));
+        // L2 -> L1 message sender authentication
+        // docs: https://developer.arbitrum.io/arbos/l2-to-l1-messaging/
+        // examples:
+        // https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/ethereum/GreeterL1.sol#L50
+        // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/dfef6a68ee18dbd2e1f5a099061a3b8a0e404485/contracts/crosschain/arbitrum/LibArbitrumL1.sol#L34
+
+        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "veaInbox only.");
+
+        bytes memory data = abi.encodeCall(IVeaOutboxOptimisticRollup.resolveDisputedClaim, (epoch, stateroot));
 
         // TODO: Send message to Optimism.
     }

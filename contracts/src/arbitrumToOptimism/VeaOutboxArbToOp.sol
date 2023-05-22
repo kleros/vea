@@ -10,28 +10,17 @@
 
 pragma solidity 0.8.18;
 
-import "../canonical/arbitrum/IInbox.sol";
+// TODO adapt for optimism
+// warning: this is a work in progress
+import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "./interfaces/IVeaOutboxArbToOpt.sol";
+import "../interfaces/outboxes/IVeaOutboxOptimisticRollup.sol";
 
 /**
  * Vea Bridge Outbox From Arbitrum to Optimism.
  */
-contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
-    struct Claim {
-        bytes32 stateRoot;
-        address bridger;
-        uint32 timestamp;
-        uint32 blocknumber;
-        bool honest;
-    }
-
-    struct Challenge {
-        address challenger;
-        bool honest;
-    }
-
-    IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.
+contract VeaOutboxArbToOpt is IVeaOutboxOptimisticRollup {
+    IBridge public immutable bridge; // The address of the Arbitrum bridge contract.
     address public immutable veaInbox; // The address of the veaInbox on arbitrum.
 
     uint256 public immutable deposit; // The deposit required to submit a claim or challenge
@@ -54,6 +43,19 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
     mapping(uint256 => Claim) public claims; // epoch => claim
     mapping(uint256 => Challenge) public challenges; // epoch => challenge
     mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap
+
+    struct Claim {
+        bytes32 stateRoot;
+        address bridger;
+        uint32 timestamp;
+        uint32 blocknumber;
+        bool honest;
+    }
+
+    struct Challenge {
+        address challenger;
+        bool honest;
+    }
 
     /**
      * @dev Watcher check this event to challenge fraud.
@@ -103,7 +105,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
      * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
      * @param _claimDelay The number of epochs a claim can be submitted for.
      * @param _veaInbox The address of the inbox contract on Arbitrum.
-     * @param _inbox The address of the inbox contract on Ethereum.
+     * @param _bridge The address of the arbitrum bridge contract on Ethereum.
      * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
      */
     constructor(
@@ -113,7 +115,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         uint256 _timeoutEpochs,
         uint256 _claimDelay,
         address _veaInbox,
-        address _inbox,
+        address _bridge,
         uint256 _maxMissingBlocks
     ) {
         deposit = _deposit;
@@ -122,7 +124,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         timeoutEpochs = _timeoutEpochs;
         claimDelay = _claimDelay;
         veaInbox = _veaInbox;
-        inbox = IInbox(_inbox);
+        bridge = IBridge(_bridge);
         maxMissingBlocks = _maxMissingBlocks;
 
         // claimant and challenger are not sybil resistant
@@ -140,7 +142,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
     // ************************************* //
 
     /**
-     * @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.
+     * @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
      * @param _epoch The epoch for which the claim is made.
      * @param _stateRoot The state root to claim.
      */
@@ -221,7 +223,6 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
      * @param _stateRoot The true state root for the epoch.
      */
     function resolveDisputedClaim(uint256 epoch, bytes32 _stateRoot) external virtual OnlyBridgeRunning {
-        IBridge bridge = inbox.bridge();
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "Sender only.");
 
@@ -321,9 +322,9 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         if (challenges[epoch].challenger != address(0)) {
             delete challenges[epoch];
             payable(burnAddress).send(burn);
-            payable(bridger).send(depositPlusReward); // User is responsibility for accepting ETH.
+            payable(bridger).send(depositPlusReward); // User is responsible for accepting ETH.
         } else {
-            payable(bridger).send(deposit); // User is responsibility for accepting ETH.
+            payable(bridger).send(deposit); // User is responsible for accepting ETH.
         }
     }
 
@@ -344,7 +345,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
         delete claims[epoch];
 
         payable(burnAddress).send(burn); // half burnt
-        payable(challenger).send(depositPlusReward); // User is responsibility for accepting ETH.
+        payable(challenger).send(depositPlusReward); // User is responsible for accepting ETH.
     }
 
     /**
@@ -359,7 +360,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
 
         delete claims[epoch];
 
-        payable(bridger).send(deposit); // User is responsibility for accepting ETH.
+        payable(bridger).send(deposit); // User is responsible for accepting ETH.
     }
 
     /**
@@ -374,7 +375,7 @@ contract VeaOutboxArbToOpt is IVeaOutboxArbToOpt {
 
         delete challenges[epoch];
 
-        payable(challenger).send(deposit); // User is responsibility for accepting ETH.
+        payable(challenger).send(deposit); // User is responsible for accepting ETH.
     }
 
     function passedTest(uint256 epoch) external view returns (bool) {

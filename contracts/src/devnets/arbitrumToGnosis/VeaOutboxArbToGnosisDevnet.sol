@@ -21,7 +21,7 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
     }
 
     /**
-     * @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.
+     * @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
      * @param _epoch The epoch for which the claim is made.
      * @param _stateRoot The state root to claim.
      */
@@ -82,9 +82,9 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
 
         if (claim.challenger != address(0)) {
             payable(burnAddress).send(burn);
-            payable(claim.claimer).send(depositPlusReward); // User is responsibility for accepting ETH.
+            payable(claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.
         } else {
-            payable(claim.claimer).send(deposit); // User is responsibility for accepting ETH.
+            payable(claim.claimer).send(deposit); // User is responsible for accepting ETH.
         }
     }
 

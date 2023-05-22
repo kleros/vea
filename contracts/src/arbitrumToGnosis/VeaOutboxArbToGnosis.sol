@@ -11,21 +11,23 @@
 pragma solidity 0.8.18;
 
 import "../canonical/gnosis-chain/IAMB.sol";
-import "./interfaces/IVeaOutboxArbToGnosis.sol";
+import "../interfaces/outboxes/IVeaOutboxEthChain.sol";
 
 /**
  * Vea Bridge Outbox From Arbitrum to Gnosis.
+ * Note: This contract is deployed on Gnosis.
  */
-contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
+contract VeaOutboxArbToGnosis is IVeaOutboxEthChain {
     IAMB public immutable amb; // The address of the AMB contract on Gnosis.
-    address public immutable router; // The address of the router from Arbitrum to Gnosis on ethereum.
+    address public immutable routerArbToGnosis; // The address of the router from Arbitrum to Gnosis on ethereum.
 
-    uint256 public immutable deposit; // The deposit required to submit a claim or challenge
+    uint256 public immutable deposit; // The deposit in wei required to submit a claim or challenge
     uint256 internal immutable burn; // The amount of wei to burn. deposit / 2
     uint256 internal immutable depositPlusReward; // 2 * deposit - burn
-    address internal constant burnAddress = address(0x0000000000000000000000000000000000000000);
+    address internal constant burnAddress = address(0);
 
     uint256 internal constant slotTime = 5; // Gnosis 5 second slot time
+    bytes32 internal constant routerChainId = bytes32(uint256(1)); // Router chain is Ethereum L1
 
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable challengePeriod; // Claim challenge timewindow.
@@ -38,12 +40,12 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
     uint256 public latestVerifiedEpoch;
 
     mapping(uint256 => bytes32) public claimHashes; // epoch => claim
-    mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap
+    mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
 
     /**
      * @dev Watcher check this event to challenge fraud.
      * @param claimer The address of the claimer.
-     * @param stateRoot The state root of the challenged claim.
+     * @param stateRoot The state root of the claim.
      */
     event Claimed(address indexed claimer, bytes32 stateRoot);
 
@@ -82,13 +84,14 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
 
     /**
      * @dev Constructor.
+     * Note: epochPeriod must match the VeaInboxArbToGnosis contract deployment on Arbitrum, since it's on a different chain, we can't read it and trust the deployer to set a correct value
      * @param _deposit The deposit amount to submit a claim in wei.
      * @param _epochPeriod The duration of each epoch.
      * @param _challengePeriod The duration of the period allowing to challenge a claim.
      * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-     * @param _claimDelay The number of epochs a claim can be submitted for.
+     * @param _claimDelay The number of epochs after which the claim can be submitted.
      * @param _amb The address of the AMB contract on Gnosis.
-     * @param _router The address of the challenge resolver router contract on Ethereum.
+     * @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Ethereum.
      * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
      */
     constructor(
@@ -98,7 +101,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
         uint256 _timeoutEpochs,
         uint256 _claimDelay,
         IAMB _amb,
-        address _router,
+        address _routerArbToGnosis,
         uint256 _maxMissingBlocks
     ) {
         deposit = _deposit;
@@ -107,7 +110,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
         timeoutEpochs = _timeoutEpochs;
         claimDelay = _claimDelay;
         amb = _amb;
-        router = _router;
+        routerArbToGnosis = _routerArbToGnosis;
         maxMissingBlocks = _maxMissingBlocks;
 
         // claimant and challenger are not sybil resistant
@@ -117,6 +120,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
 
         latestVerifiedEpoch = block.timestamp / epochPeriod - 1;
 
+        // claimDelay should never be set this high, but we santiy check to prevent underflow
         require(claimDelay <= block.timestamp, "Invalid epochClaimDelay.");
     }
 
@@ -125,21 +129,21 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
     // ************************************* //
 
     /**
-     * @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.
-     * @param _epoch The epoch for which the claim is made.
+     * @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
+     * @param epoch The epoch for which the claim is made.
      * @param _stateRoot The state root to claim.
      */
-    function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
+    function claim(uint256 epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
         unchecked {
-            require((block.timestamp - claimDelay) / epochPeriod == _epoch, "Invalid epoch.");
+            require((block.timestamp - claimDelay) / epochPeriod == epoch, "Invalid epoch.");
         }
 
         require(_stateRoot != bytes32(0), "Invalid claim.");
-        require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
+        require(claimHashes[epoch] == bytes32(0), "Claim already made.");
 
-        claimHashes[_epoch] = hashClaim(
+        claimHashes[epoch] = hashClaim(
             Claim({
                 stateRoot: _stateRoot,
                 claimer: msg.sender,
@@ -204,19 +208,23 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
     }
 
     /**
-     * Note: Access restricted to arbitrum  bridge.
+     * Note: Access restricted to AMB.
      * @dev Resolves any challenge of the optimistic claim for '_epoch'.
      * @param epoch The epoch to verify.
      * @param _stateRoot The true state root for the epoch.
-     * @param claim The claim associated with the epoch (optional).
+     * @param claim The claim associated with the epoch.
      */
     function resolveDisputedClaim(
         uint256 epoch,
         bytes32 _stateRoot,
         Claim memory claim
     ) external virtual OnlyBridgeRunning {
+        // Ethereum -> Gnosis message authentication with the AMB, the canonical Ethereum <-> Gnosis bridge.
+        // https://docs.tokenbridge.net/amb-bridge/development-of-a-cross-chain-application/how-to-develop-xchain-apps-by-amb#receive-a-method-call-from-the-amb-bridge
+
         require(msg.sender == address(amb), "Not from bridge.");
-        require(amb.messageSender() == router, "Not from router.");
+        require(routerChainId == amb.messageSourceChainId(), "Invalid chain id.");
+        require(routerArbToGnosis == amb.messageSender(), "Not from router.");
 
         if (epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {
             latestVerifiedEpoch = epoch;
@@ -238,7 +246,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
      * @dev Verifies and relays the message. UNTRUSTED.
      * @param proof The merkle proof to prove the message.
      * @param msgId The zero based index of the message in the inbox.
-     * @param to The address of the contract on the receiving chain which receives the calldata.
+     * @param to The address of the contract on Gnosis to call.
      * @param message The message encoded with header from VeaInbox.
      */
     function sendMessage(bytes32[] calldata proof, uint64 msgId, address to, bytes calldata message) external {
@@ -275,7 +283,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
 
         require(stateRoot == nodeHash, "Invalid proof.");
 
-        // msgId is the zero based index of the message in the inbox and is the same index to prevent replay
+        // msgId is the zero-based index of the message in the inbox.
+        // msgId is also used as an index in the relayed bitmap to prevent replay.
+        // Note: a bitmap is used instead of a simple boolean mapping to save 15k gas per message.
 
         uint256 relayIndex = msgId >> 8;
         uint256 offset;
@@ -297,7 +307,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
     }
 
     /**
-     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
+     * @dev Sends the deposit back to the Claimer if successful. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
      * @param epoch The epoch associated with the claim deposit to withraw.
      * @param claim The claim associated with the epoch.
      */
@@ -309,14 +319,14 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
 
         if (claim.challenger != address(0)) {
             payable(burnAddress).send(burn);
-            payable(claim.claimer).send(depositPlusReward); // User is responsibility for accepting ETH.
+            payable(claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.
         } else {
-            payable(claim.claimer).send(deposit); // User is responsibility for accepting ETH.
+            payable(claim.claimer).send(deposit); // User is responsible for accepting ETH.
         }
     }
 
     /**
-     * @dev Sends the deposit back to the Challenger if their challenge is successful. Includes a portion of the Bridger's deposit.
+     * @dev Sends the deposit back to the Challenger if successful. Includes a portion of the Bridger's deposit.
      * @param epoch The epoch associated with the challenge deposit to withraw.
      * @param claim The claim associated with the epoch.
      */
@@ -327,7 +337,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
         delete claimHashes[epoch];
 
         payable(burnAddress).send(burn); // half burnt
-        payable(claim.challenger).send(depositPlusReward); // User is responsibility for accepting ETH.
+        payable(claim.challenger).send(depositPlusReward); // User is responsible for accepting ETH.
     }
 
     /**
@@ -342,16 +352,18 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
         if (claim.claimer != address(0)) {
             if (claim.challenger == address(0)) {
                 delete claimHashes[epoch];
+                payable(claim.claimer).send(deposit); // User is responsible for accepting ETH.
             } else {
+                address claimer = claim.claimer;
                 claim.claimer = address(0);
                 claimHashes[epoch] == hashClaim(claim);
+                payable(claimer).send(deposit); // User is responsible for accepting ETH.
             }
-            payable(claim.claimer).send(deposit); // User is responsibility for accepting ETH.
         }
     }
 
     /**
-     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
+     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the challenger to withdraw their deposit.
      * @param epoch The epoch associated with the claim deposit to withraw.
      * @param claim The claim associated with the epoch.
      */
@@ -362,22 +374,24 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
         if (claim.challenger != address(0)) {
             if (claim.claimer == address(0)) {
                 delete claimHashes[epoch];
+                payable(claim.challenger).send(deposit); // User is responsible for accepting ETH.
             } else {
+                address challenger = claim.challenger;
                 claim.challenger = address(0);
                 claimHashes[epoch] == hashClaim(claim);
+                payable(challenger).send(deposit); // User is responsible for accepting ETH.
             }
-            payable(claim.challenger).send(deposit); // User is responsibility for accepting ETH.
         }
     }
 
     /**
      * @dev Hashes the claim.
      * @param claim The claim to hash.
-     * @return The hash of the claim.
+     * @return hashedClaim The hash of the claim.
      */
-    function hashClaim(Claim memory claim) public pure returns (bytes32) {
+    function hashClaim(Claim memory claim) public pure returns (bytes32 hashedClaim) {
         return
-            keccak256(
+            hashedClaim = keccak256(
                 abi.encodePacked(
                     claim.stateRoot,
                     claim.claimer,
@@ -392,11 +406,11 @@ contract VeaOutboxArbToGnosis is IVeaOutboxArbToGnosis {
     /**
      * @dev Claim passed censorship test
      * @param claim The claim to test.
-     * @return True if the claim passed the censorship test.
+     * @return testPassed True if the claim passed the censorship test.
      */
-    function passedTest(Claim calldata claim) external view returns (bool) {
+    function passedTest(Claim calldata claim) external view returns (bool testPassed) {
         uint256 expectedBlocks = uint256(claim.blocknumber) + (block.timestamp - uint256(claim.timestamp)) / slotTime;
         uint256 actualBlocks = block.number;
-        return (expectedBlocks <= actualBlocks + maxMissingBlocks);
+        testPassed = (expectedBlocks <= actualBlocks + maxMissingBlocks);
     }
 }

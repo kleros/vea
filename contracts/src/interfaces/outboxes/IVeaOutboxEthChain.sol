@@ -10,7 +10,10 @@
 
 pragma solidity 0.8.18;
 
-interface IVeaOutboxArbToGnosis {
+/**
+ * @dev Interface of the Vea Outbox on Ethereum-like L1 chains eg Ethereum, Gnosis, Polygon POS
+ */
+interface IVeaOutboxEthChain {
     enum Party {
         None,
         Claimer,
@@ -27,7 +30,7 @@ interface IVeaOutboxArbToGnosis {
     }
 
     /**
-     * Note: Gateways expect first argument of message call to be the inbox sender, used for authenitcation.
+     * Note: Gateways expect first argument of message call to be the arbitrum message sender, used for authentication.
      * @dev Verifies and relays the message.
      * @param proof The merkle proof to prove the message.
      * @param msgId The zero based index of the message in the inbox.
@@ -41,6 +44,7 @@ interface IVeaOutboxArbToGnosis {
      * @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.
      * @param epoch The epoch to verify.
      * @param stateRoot The true state root for the epoch.
+     * @param claim The claim associated with the epoch.
      */
     function resolveDisputedClaim(uint256 epoch, bytes32 stateRoot, Claim memory claim) external;
 }

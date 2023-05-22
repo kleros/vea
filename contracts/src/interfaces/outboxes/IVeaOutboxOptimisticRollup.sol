@@ -10,9 +10,12 @@
 
 pragma solidity 0.8.18;
 
-interface IVeaOutboxArbToOpt {
+/**
+ * @dev Interface of the Vea Outbox on Optimistic Rollups eg. Arbitrum, Optimism, Base, Specular, etc.
+ */
+interface IVeaOutboxOptimisticRollup {
     /**
-     * Note: Gateways expect first argument of message call to be the inbox sender, used for authenitcation.
+     * Note: Gateways expect first argument of message call to be the inbox sender, used for authentication.
      * @dev Verifies and relays the message.
      * @param proof The merkle proof to prove the message.
      * @param msgId The zero based index of the message in the inbox.

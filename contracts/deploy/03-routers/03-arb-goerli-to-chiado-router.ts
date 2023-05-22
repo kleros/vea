@@ -9,15 +9,11 @@ enum RouterChains {
 
 const paramsByChainId = {
   ETHEREUM_GOERLI: {
-    arbitrumInbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
+    arbitrumBridge: "0xC1Ebd02f738644983b6C4B2d440b8e77DdE276Bd", // https://developer.arbitrum.io/useful-addresses
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
   },
-  ETHEREUM_MAINNET: {
-    arbitrumInbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
-    amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
-  },
   HARDHAT: {
-    arbitrumInbox: ethers.constants.AddressZero,
+    arbitrumBridge: ethers.constants.AddressZero,
     amb: ethers.constants.AddressZero,
   },
 };
@@ -32,7 +28,7 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
   console.log("deployer: %s", deployer);
 
-  const { arbitrumInbox, amb } = paramsByChainId[RouterChains[chainId]];
+  const { arbitrumBridge, amb } = paramsByChainId[RouterChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
@@ -42,7 +38,7 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const router = await deploy("RouterArbToGnosisDevnet", {
       from: deployer,
       contract: "RouterArbToGnosis",
-      args: [arbitrumInbox, amb, veaInbox.address, veaOutbox.address],
+      args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address],
     });
   };
 
@@ -54,7 +50,7 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const router = await deploy("RouterArbToGnosisDevnet", {
       from: deployer,
       contract: "RouterArbToGnosis",
-      args: [arbitrumInbox, amb, veaInbox.address, veaOutbox.address],
+      args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address],
       log: true,
     });
 

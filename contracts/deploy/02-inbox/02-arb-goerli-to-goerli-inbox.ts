@@ -56,15 +56,9 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       log: true,
     });
 
-    const bridge = await deploy("BridgeMock", {
+    await deploy("BridgeMock", {
       from: deployer,
       args: [outbox.address],
-      log: true,
-    });
-
-    await deploy("InboxMock", {
-      from: deployer,
-      args: [bridge.address],
       log: true,
     });
   };

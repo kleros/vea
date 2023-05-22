@@ -21,7 +21,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
     }
 
     /**
-     * @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.
+     * @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
      * @param _epoch The epoch for which the claim is made.
      * @param _stateRoot The state root to claim.
      */
@@ -82,9 +82,9 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
 
         if (claim.challenger != address(0)) {
             payable(burnAddress).send(burn);
-            payable(claim.claimer).send(depositPlusReward); // User is responsibility for accepting ETH.
+            payable(claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.
         } else {
-            payable(claim.claimer).send(deposit); // User is responsibility for accepting ETH.
+            payable(claim.claimer).send(deposit); // User is responsible for accepting ETH.
         }
     }
 
@@ -156,7 +156,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
      * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
      * @param _epochClaimDelay The number of epochs a claim can be submitted for.
      * @param _veaInbox The address of the inbox contract on Arbitrum.
-     * @param _inbox The address of the inbox contract on Ethereum.
+     * @param _bridge The address of the Arbitrum bridge contract on Ethereum.
      * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
      */
     constructor(
@@ -166,7 +166,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         uint256 _timeoutEpochs,
         uint256 _epochClaimDelay,
         address _veaInbox,
-        address _inbox,
+        address _bridge,
         uint256 _maxMissingBlocks
     )
         VeaOutboxArbToEth(
@@ -176,7 +176,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
             _timeoutEpochs,
             _epochClaimDelay,
             _veaInbox,
-            _inbox,
+            _bridge,
             _maxMissingBlocks
         )
     {

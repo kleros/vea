@@ -13,7 +13,7 @@ contract MockAMB is IAMB {
     bytes32 public transactionHash;
     bytes32 public messageId;
     uint64 public nonce;
-    uint256 public messageSourceChainId;
+    bytes32 public messageSourceChainId;
     mapping(bytes32 => bool) public messageCallStatus;
     mapping(bytes32 => address) public failedMessageSender;
     mapping(bytes32 => address) public failedMessageReceiver;
@@ -35,12 +35,12 @@ contract MockAMB is IAMB {
         messageSender = _sender;
         messageId = _messageId;
         transactionHash = _messageId;
-        messageSourceChainId = 1337;
+        messageSourceChainId = bytes32(uint256(1337));
         (bool status, ) = _contract.call{gas: _gas}(_data);
         messageSender = address(0);
         messageId = bytes32(0);
         transactionHash = bytes32(0);
-        messageSourceChainId = 0;
+        messageSourceChainId = bytes32(uint256(0));
 
         messageCallStatus[_messageId] = status;
         if (!status) {

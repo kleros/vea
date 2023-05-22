@@ -17,7 +17,6 @@ const paramsByChainId = {
     challengePeriod: 0, // 30 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
-    arbitrumInbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
     senderChainId: 421613,
   },

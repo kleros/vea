@@ -10,7 +10,7 @@
 
 pragma solidity 0.8.18;
 
-import "../../interfaces/IVeaInbox.sol";
+import "../../interfaces/inboxes/IVeaInbox.sol";
 
 /**
  * Vea Inbox veaInboxSaveSnapshot Calldata Optimization.

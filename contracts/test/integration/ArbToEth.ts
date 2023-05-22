@@ -9,7 +9,7 @@ import {
   ReceiverGatewayMock,
   VeaInboxMockArbToEth as VeaInboxMock,
   SenderGatewayMock,
-  InboxMock,
+  BridgeMock,
   ArbSysMock,
 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -34,7 +34,7 @@ describe("Integration tests", async () => {
   let veaInbox: VeaInboxMock;
   let senderGateway: SenderGatewayMock;
   let veaOutbox: VeaOutboxMock;
-  let inbox: InboxMock;
+  let bridge: BridgeMock;
   let arbsysMock: ArbSysMock;
 
   before("Initialize wallets", async () => {
@@ -53,7 +53,7 @@ describe("Integration tests", async () => {
     receiverGateway = (await ethers.getContract("ReceiverGateway")) as ReceiverGatewayMock;
     veaInbox = (await ethers.getContract("VeaInbox")) as VeaInboxMock;
     senderGateway = (await ethers.getContract("SenderGateway")) as SenderGatewayMock;
-    inbox = (await ethers.getContract("InboxMock")) as InboxMock;
+    bridge = (await ethers.getContract("BridgeMock")) as BridgeMock;
     arbsysMock = (await ethers.getContract("ArbSysMock")) as ArbSysMock;
   });
 
@@ -72,7 +72,7 @@ describe("Integration tests", async () => {
     expect(await veaOutbox.epochPeriod()).to.equal(EPOCH_PERIOD);
     expect(await veaOutbox.challengePeriod()).to.equal(CHALLENGE_PERIOD);
     expect(await veaOutbox.veaInbox()).to.equal(veaInbox.address);
-    expect(await veaOutbox.inbox()).to.equal(inbox.address);
+    expect(await veaOutbox.bridge()).to.equal(bridge.address);
 
     // ReceiverGateway
     expect(await receiverGateway.veaOutbox()).to.equal(veaOutbox.address);
@@ -88,6 +88,9 @@ describe("Integration tests", async () => {
       const sendMessageTx3 = await senderGateway.sendMessage(data);
       const sendMessageTx4 = await senderGateway.sendMessage(data);
       const sendMessageTx5 = await senderGateway.sendMessage(data);
+      const sendMessageTx6 = await senderGateway.sendMessage(data);
+      const sendMessageTx7 = await senderGateway.sendMessage(data);
+      await veaInbox.connect(bridger).saveSnapshot();
     });
 
     it("should send the batch", async () => {

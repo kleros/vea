@@ -64,7 +64,7 @@ contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
 
     /**
      * @dev Constructor.
-     * @param _arbSys The mocked IArbSys.
+     * @param _arbSys The mocked ArbSys.
      * @param _deposit The deposit amount to submit a claim in wei.
      * @param _epochPeriod The duration of each epoch.
      * @param _challengePeriod The duration of the period allowing to challenge a claim.

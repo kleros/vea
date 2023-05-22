@@ -10,7 +10,7 @@
 
 pragma solidity 0.8.18;
 
-import "./IVeaInbox.sol";
+import "../inboxes/IVeaInbox.sol";
 
 interface ISenderGateway {
     function veaInbox() external view returns (IVeaInbox);
