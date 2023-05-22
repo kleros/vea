@@ -1,5 +1,5 @@
 import { BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
-import { Snapshot, Message, Refs, Fallback } from "../generated/schema";
+import { Snapshot, Message, Ref, Fallback } from "../generated/schema";
 import {
   MessageSent,
   SnapshotSaved,
@@ -35,12 +35,12 @@ export function handleMessageSent(event: MessageSent): void {
 }
 
 function getCurrentSnapshot(): Snapshot {
-  let refs = Refs.load("0");
-  if (!refs) {
-    refs = new Refs("0");
-    refs.currentSnapshotIndex = BigInt.fromI32(0);
-    refs.nextMessageIndex = BigInt.fromI32(0);
-    refs.save();
+  let ref = Ref.load("0");
+  if (!ref) {
+    ref = new Ref("0");
+    ref.currentSnapshotIndex = BigInt.fromI32(0);
+    ref.nextMessageIndex = BigInt.fromI32(0);
+    ref.save();
     const snapshot = new Snapshot("0");
     snapshot.numberMessages = BigInt.fromI32(0);
     snapshot.taken = false;
@@ -48,21 +48,21 @@ function getCurrentSnapshot(): Snapshot {
     snapshot.save();
     return snapshot;
   }
-  return Snapshot.load(refs.currentSnapshotIndex.toString())!;
+  return Snapshot.load(ref.currentSnapshotIndex.toString())!;
 }
 
 function useNextMessageIndex(): BigInt {
-  let refs = Refs.load("0");
-  if (!refs) {
-    refs = new Refs("0");
-    refs.currentSnapshotIndex = BigInt.fromI32(0);
-    refs.nextMessageIndex = BigInt.fromI32(1);
-    refs.save();
+  let ref = Ref.load("0");
+  if (!ref) {
+    ref = new Ref("0");
+    ref.currentSnapshotIndex = BigInt.fromI32(0);
+    ref.nextMessageIndex = BigInt.fromI32(1);
+    ref.save();
     return BigInt.fromI32(0);
   }
-  const messageIndex = refs.nextMessageIndex;
-  refs.nextMessageIndex = refs.nextMessageIndex.plus(BigInt.fromI32(1));
-  refs.save();
+  const messageIndex = ref.nextMessageIndex;
+  ref.nextMessageIndex = ref.nextMessageIndex.plus(BigInt.fromI32(1));
+  ref.save();
   return messageIndex;
 }
 
@@ -83,9 +83,9 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
   currentSnapshot.save();
 
   // Create a new snapshot entity to be the current snapshot.
-  const refs = Refs.load("0")!;
+  const ref = Ref.load("0")!;
   const newSnapshot = new Snapshot(
-    refs.currentSnapshotIndex.plus(BigInt.fromI32(1)).toString()
+    ref.currentSnapshotIndex.plus(BigInt.fromI32(1)).toString()
   );
   newSnapshot.numberMessages = BigInt.fromI32(0);
   newSnapshot.taken = false;
@@ -93,8 +93,8 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
   newSnapshot.save();
 
   // Update the value of currentSnapshotIndex to point to the new snapshot.
-  refs.currentSnapshotIndex = refs.currentSnapshotIndex.plus(BigInt.fromI32(1));
-  refs.save();
+  ref.currentSnapshotIndex = ref.currentSnapshotIndex.plus(BigInt.fromI32(1));
+  ref.save();
 }
 
 export function handleSnapshotSent(event: SnapshotSent): void {
@@ -103,13 +103,13 @@ export function handleSnapshotSent(event: SnapshotSent): void {
     epochSent.plus(event.block.timestamp).toString()
   );
   let snapshot: Snapshot | null;
-  const refs = Refs.load("0")!;
+  const ref = Ref.load("0")!;
   fallback.timestamp = event.block.timestamp;
   fallback.txHash = event.transaction.hash;
   fallback.executor = event.transaction.from;
   fallback.ticketId = event.params.ticketId;
 
-  for (let i = refs.currentSnapshotIndex.toI32(); i >= 0; i--) {
+  for (let i = ref.currentSnapshotIndex.toI32(); i >= 0; i--) {
     const snapshotId = BigInt.fromI32(i).toString();
     snapshot = Snapshot.load(snapshotId);
 

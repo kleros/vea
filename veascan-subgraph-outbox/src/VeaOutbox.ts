@@ -10,12 +10,13 @@ import {
   Challenge,
   Claim,
   Message,
-  Refs,
+  Ref,
   Verification,
 } from "../generated/schema";
 
 export function handleClaimed(event: Claimed): void {
-  const claim = getNextClaim();
+  const claimIndex = useClaimIndex();
+  const claim = new Claim(claimIndex.toString());
   const outbox = VeaOutbox.bind(event.address);
   const claimDelay = outbox.claimDelay();
   const epochPeriod = outbox.epochPeriod();
@@ -31,10 +32,10 @@ export function handleClaimed(event: Claimed): void {
 }
 
 export function handleChallenged(event: Challenged): void {
-  const refs = getRefs();
+  const ref = getRef();
   let outterClaim: Claim | null = null;
   for (
-    let i = refs.totalClaims;
+    let i = ref.totalClaims.minus(BigInt.fromI32(1));
     i.ge(BigInt.fromI32(0));
     i.minus(BigInt.fromI32(1))
   ) {
@@ -61,26 +62,21 @@ export function handleChallenged(event: Challenged): void {
 }
 
 export function handleVerified(event: Verified): void {
-  const refs = getRefs();
+  const ref = getRef();
   for (
-    let i = refs.totalClaims;
+    let i = ref.totalClaims.minus(BigInt.fromI32(1));
     i.ge(BigInt.fromI32(0));
     i.minus(BigInt.fromI32(1))
   ) {
     const claim = Claim.load(i.toString());
-    if (!claim) continue;
-    if (claim.honest) break;
-    if (claim.epoch.equals(event.params.epoch)) {
-      const verification = new Verification(claim.id);
-      verification.claim = claim.id;
+    if (claim!.epoch.equals(event.params.epoch)) {
+      const verification = new Verification(claim!.id);
+      verification.claim = claim!.id;
       verification.timestamp = event.block.timestamp;
       verification.caller = event.transaction.from;
       verification.txHash = event.transaction.hash;
       verification.save();
-    }
-    if (claim.epoch.le(event.params.epoch)) {
-      claim.honest = true;
-      claim.save();
+      break;
     }
   }
 }
@@ -94,34 +90,31 @@ export function handleMessageRelayed(event: MessageRelayed): void {
   message.save();
 }
 
-function getNextClaim(): Claim {
-  const claimIndex = getNextClaimIndex();
-  return new Claim(claimIndex.toString());
-}
-
-function getNextClaimIndex(): BigInt {
-  const refs = getRefs();
-  const claimIndex = refs.totalClaims;
-  refs.totalClaims = refs.totalClaims.plus(BigInt.fromI32(1));
+function useClaimIndex(): BigInt {
+  const ref = getRef();
+  const claimIndex = ref.totalClaims;
+  ref.totalClaims = ref.totalClaims.plus(BigInt.fromI32(1));
+  ref.save();
   return claimIndex;
 }
 
 function useChallengeIndex(): BigInt {
-  const refs = getRefs();
-  const challengeIndex = refs.totalChallenges;
-  refs.totalChallenges = refs.totalChallenges.plus(BigInt.fromI32(1));
+  const ref = getRef();
+  const challengeIndex = ref.totalChallenges;
+  ref.totalChallenges = ref.totalChallenges.plus(BigInt.fromI32(1));
+  ref.save();
   return challengeIndex;
 }
 
-function getRefs(): Refs {
-  let refs = Refs.load("0");
-  if (refs) return refs;
+function getRef(): Ref {
+  let ref = Ref.load("0");
+  if (ref) return ref;
   else {
-    refs = new Refs("0");
-    refs.totalClaims = BigInt.fromI32(0);
-    refs.totalMessages = BigInt.fromI32(0);
-    refs.totalChallenges = BigInt.fromI32(0);
-    refs.save();
-    return refs;
+    ref = new Ref("0");
+    ref.totalClaims = BigInt.fromI32(0);
+    ref.totalMessages = BigInt.fromI32(0);
+    ref.totalChallenges = BigInt.fromI32(0);
+    ref.save();
+    return ref;
   }
 }

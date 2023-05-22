@@ -67,7 +67,7 @@
     "typescript": "^4.9.5"
   },
   "dependencies": {
-    "@kleros/ui-components-library": "^2.2.1",
+    "@kleros/ui-components-library": "^2.4.0",
     "@kleros/vea-contracts": "workspace:^",
     "@sentry/react": "^7.37.2",
     "@sentry/tracing": "^7.37.2",
