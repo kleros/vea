@@ -35,7 +35,7 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const veaOutbox = await deployments.get("VeaOutboxArbToGnosis");
     const veaInbox = await deployments.get("VeaInboxArbToGnosis");
 
-    const router = await deploy("RouterArbToGnosisDevnet", {
+    const router = await deploy("RouterArbToGnosis", {
       from: deployer,
       contract: "RouterArbToGnosis",
       args: [arbitrumInbox, amb, veaInbox.address, veaOutbox.address],

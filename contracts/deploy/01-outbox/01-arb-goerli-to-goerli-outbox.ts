@@ -44,7 +44,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const senderNetworks = {
-    ETHEREUM_MAINNET: config.networks.arbitrum,
     ETHEREUM_GOERLI: config.networks.arbitrumGoerli,
     HARDHAT: config.networks.localhost,
   };

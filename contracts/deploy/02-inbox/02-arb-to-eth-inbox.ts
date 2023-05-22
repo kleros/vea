@@ -11,10 +11,6 @@ const paramsByChainId = {
     epochPeriod: 43200, // 12 hours
     companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.mainnet,
   },
-  ARBITRUM_GOERLI: {
-    epochPeriod: 1800, // 30 minutes
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.goerli,
-  },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
   },

@@ -6,7 +6,6 @@ import { ethers } from "hardhat";
 
 enum ReceiverChains {
   GNOSIS_MAINNET = 100,
-  GNOSIS_CHIADO = 10200,
   HARDHAT = 31337,
 }
 
@@ -48,13 +47,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const senderNetworks = {
     GNOSIS_MAINNET: config.networks.arbitrum,
-    GNOSIS_CHIADO: config.networks.arbitrumGoerli,
     HARDHAT: config.networks.localhost,
   };
 
   const routerNetworks = {
     GNOSIS_MAINNET: config.networks.mainnet,
-    GNOSIS_CHIADO: config.networks.goerli,
     HARDHAT: config.networks.localhost,
   };
 
@@ -103,13 +100,13 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const routerAddress = getContractAddress(deployer, nonceRouter);
     console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
 
-    const txn = await deploy("VeaOutboxArbToGnosisDevnet", {
+    const txn = await deploy("VeaOutboxArbToGnosis", {
       from: deployer,
       args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks],
       log: true,
     });
 
-    console.log("VeaOutboxArbToGnosisDevnet deployed to:", txn.address);
+    console.log("VeaOutboxArbToGnosis deployed to:", txn.address);
   };
 
   // ----------------------------------------------------------------------------------------------

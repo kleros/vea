@@ -44,13 +44,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const senderNetworks = {
-    GNOSIS_MAINNET: config.networks.arbitrum,
     GNOSIS_CHIADO: config.networks.arbitrumGoerli,
     HARDHAT: config.networks.localhost,
   };
 
   const routerNetworks = {
-    GNOSIS_MAINNET: config.networks.mainnet,
     GNOSIS_CHIADO: config.networks.goerli,
     HARDHAT: config.networks.localhost,
   };
