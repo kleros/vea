@@ -493,7 +493,8 @@ export type Query = {
   fallbacks: Array<Fallback>;
   message?: Maybe<Message>;
   messages: Array<Message>;
-  refs: Array<Refs>;
+  ref?: Maybe<Ref>;
+  refs: Array<Ref>;
   snapshot?: Maybe<Snapshot>;
   snapshots: Array<Snapshot>;
   verification?: Maybe<Verification>;
@@ -568,14 +569,20 @@ export type QueryMessagesArgs = {
   where?: InputMaybe<Message_Filter>;
 };
 
+export type QueryRefArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars["ID"];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
 export type QueryRefsArgs = {
   block?: InputMaybe<Block_Height>;
   first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Refs_OrderBy>;
+  orderBy?: InputMaybe<Ref_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars["Int"]>;
   subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Refs_Filter>;
+  where?: InputMaybe<Ref_Filter>;
 };
 
 export type QuerySnapshotArgs = {
@@ -610,8 +617,8 @@ export type QueryVerificationsArgs = {
   where?: InputMaybe<Verification_Filter>;
 };
 
-export type Refs = {
-  __typename?: "Refs";
+export type Ref = {
+  __typename?: "Ref";
   currentSnapshotIndex: Scalars["BigInt"];
   id: Scalars["ID"];
   nextMessageIndex: Scalars["BigInt"];
@@ -620,10 +627,10 @@ export type Refs = {
   totalMessages: Scalars["BigInt"];
 };
 
-export type Refs_Filter = {
+export type Ref_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<Refs_Filter>>>;
+  and?: InputMaybe<Array<InputMaybe<Ref_Filter>>>;
   currentSnapshotIndex?: InputMaybe<Scalars["BigInt"]>;
   currentSnapshotIndex_gt?: InputMaybe<Scalars["BigInt"]>;
   currentSnapshotIndex_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -648,7 +655,7 @@ export type Refs_Filter = {
   nextMessageIndex_lte?: InputMaybe<Scalars["BigInt"]>;
   nextMessageIndex_not?: InputMaybe<Scalars["BigInt"]>;
   nextMessageIndex_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
-  or?: InputMaybe<Array<InputMaybe<Refs_Filter>>>;
+  or?: InputMaybe<Array<InputMaybe<Ref_Filter>>>;
   totalChallenges?: InputMaybe<Scalars["BigInt"]>;
   totalChallenges_gt?: InputMaybe<Scalars["BigInt"]>;
   totalChallenges_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -675,7 +682,7 @@ export type Refs_Filter = {
   totalMessages_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
 };
 
-export enum Refs_OrderBy {
+export enum Ref_OrderBy {
   CurrentSnapshotIndex = "currentSnapshotIndex",
   Id = "id",
   NextMessageIndex = "nextMessageIndex",
@@ -820,7 +827,8 @@ export type Subscription = {
   fallbacks: Array<Fallback>;
   message?: Maybe<Message>;
   messages: Array<Message>;
-  refs: Array<Refs>;
+  ref?: Maybe<Ref>;
+  refs: Array<Ref>;
   snapshot?: Maybe<Snapshot>;
   snapshots: Array<Snapshot>;
   verification?: Maybe<Verification>;
@@ -895,14 +903,20 @@ export type SubscriptionMessagesArgs = {
   where?: InputMaybe<Message_Filter>;
 };
 
+export type SubscriptionRefArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars["ID"];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
 export type SubscriptionRefsArgs = {
   block?: InputMaybe<Block_Height>;
   first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Refs_OrderBy>;
+  orderBy?: InputMaybe<Ref_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars["Int"]>;
   subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Refs_Filter>;
+  where?: InputMaybe<Ref_Filter>;
 };
 
 export type SubscriptionSnapshotArgs = {
@@ -1130,6 +1144,7 @@ export type GetRelayQuery = {
 
 export type GetSnapshotsQueryVariables = Exact<{
   lastTimestamp: Scalars["BigInt"];
+  snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
 }>;
 
 export type GetSnapshotsQuery = {
@@ -1153,6 +1168,7 @@ export type GetSnapshotsQuery = {
       ticketId: any;
     }>;
   }>;
+  ref?: { __typename?: "Ref"; currentSnapshotIndex: any } | null;
 };
 
 export const GetClaimDocument = {
@@ -1469,6 +1485,14 @@ export const GetSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -1480,7 +1504,10 @@ export const GetSnapshotsDocument = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "5" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotsPerPage" },
+                },
               },
               {
                 kind: "Argument",
@@ -1490,7 +1517,7 @@ export const GetSnapshotsDocument = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "orderDirection" },
-                value: { kind: "EnumValue", value: "asc" },
+                value: { kind: "EnumValue", value: "desc" },
               },
               {
                 kind: "Argument",
@@ -1566,6 +1593,26 @@ export const GetSnapshotsDocument = {
                       },
                     ],
                   },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "ref" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: { kind: "StringValue", value: "0", block: false },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "currentSnapshotIndex" },
                 },
               ],
             },

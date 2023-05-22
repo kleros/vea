@@ -31,7 +31,7 @@ type Fallback @entity {
   ticketId: Bytes!
 }
 
-type Refs @entity {
+type Ref @entity {
   id: ID!
   currentSnapshotIndex: BigInt!
   nextMessageIndex: BigInt!
