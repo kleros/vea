@@ -9,7 +9,7 @@
 
 ## Chiado (GoldSky)
 
-- [Subgraph endpoint](https://api.goldsky.com/api/public/project_clh3hizxpga0j49w059761yga/subgraphs/kleros/veascan-outbox-chiado/gn)
+- [Subgraph endpoint](https://api.goldsky.com/api/public/project_clh3hizxpga0j49w059761yga/subgraphs/kleros-veascan-outbox-chiado/latest/gn)
 
 ## Build
 
