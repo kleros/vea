@@ -3,7 +3,6 @@ import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
   ARBITRUM = 42161,
-  ARBITRUM_GOERLI = 421613,
   HARDHAT = 31337,
 }
 const paramsByChainId = {

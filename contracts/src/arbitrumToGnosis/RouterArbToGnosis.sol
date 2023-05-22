@@ -13,13 +13,13 @@ pragma solidity 0.8.18;
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "../interfaces/routers/IRouterToEthChain.sol";
-import "../interfaces/outboxes/IVeaOutboxEthChain.sol";
+import "../interfaces/routers/IRouterToAltL1.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
 /**
  * Router on Ethereum from Arbitrum to Gnosis Chain.
  */
-contract RouterArbToGnosis is IRouterToEthChain {
+contract RouterArbToGnosis is IRouterToAltL1 {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
@@ -60,7 +60,7 @@ contract RouterArbToGnosis is IRouterToEthChain {
      * @param epoch The epoch to verify.
      * @param stateroot The true batch merkle root for the epoch.
      */
-    function route(uint256 epoch, bytes32 stateroot, IVeaOutboxEthChain.Claim calldata claim) external {
+    function route(uint256 epoch, bytes32 stateroot, Claim calldata claim) external {
         // Arbitrum -> Ethereum message sender authentication
         // docs: https://developer.arbitrum.io/arbos/l2-to-l1-messaging/
         // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/ethereum/GreeterL1.sol#L50
@@ -73,7 +73,7 @@ contract RouterArbToGnosis is IRouterToEthChain {
         // Ethereum -> Gnosis message passing with the AMB, the canonical Ethereum <-> Gnosis bridge.
         // https://docs.tokenbridge.net/amb-bridge/development-of-a-cross-chain-application/how-to-develop-xchain-apps-by-amb#receive-a-method-call-from-the-amb-bridge
 
-        bytes memory data = abi.encodeCall(IVeaOutboxEthChain.resolveDisputedClaim, (epoch, stateroot, claim));
+        bytes memory data = abi.encodeCall(IVeaOutboxOnL1.resolveDisputedClaim, (epoch, stateroot, claim));
         // Note: using maxGasPerTx here means the relaying txn on Gnosis will need to pass that (large) amount of gas, though almost all will be unused and refunded. This is preferred over hardcoding a gas limit.
         bytes32 ticketID = amb.requireToPassMessage(veaOutbox, data, amb.maxGasPerTx());
         emit Routed(epoch, ticketID);

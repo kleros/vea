@@ -12,12 +12,12 @@ pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "../interfaces/outboxes/IVeaOutboxEthChain.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
 /**
  * Vea Bridge Outbox From Arbitrum to Ethereum.
  */
-contract VeaOutboxArbToEth is IVeaOutboxEthChain {
+contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     IBridge public immutable bridge; // The address of the Arbitrum bridge contract.
     address public immutable veaInbox; // The address of the veaInbox on arbitrum.
 

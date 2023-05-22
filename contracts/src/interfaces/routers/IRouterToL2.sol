@@ -10,7 +10,10 @@
 
 pragma solidity 0.8.18;
 
-interface IRouterToOptimisticRollup {
+/**
+ * @dev Interface of the Vea Router on Ethereum L1 which routes messages to L2s like Arbitrum, Optimism, Base, Specular where storage is expensive.
+ */
+interface IRouterToL2 {
     /**
      * Note: Access restricted to canonical bridge.
      * @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.

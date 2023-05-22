@@ -14,13 +14,13 @@ pragma solidity 0.8.18;
 // TODO: implement Optimism messaging.
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "../interfaces/routers/IRouterToOptimisticRollup.sol";
-import "../interfaces/outboxes/IVeaOutboxOptimisticRollup.sol";
+import "../interfaces/routers/IRouterToL2.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL2.sol";
 
 /**
  * Router on Ethereum from Arbitrum to Optimism.
  */
-contract RouterArbToOptimism is IRouterToOptimisticRollup {
+contract RouterArbToOptimism is IRouterToL2 {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
@@ -73,7 +73,7 @@ contract RouterArbToOptimism is IRouterToOptimisticRollup {
 
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "veaInbox only.");
 
-        bytes memory data = abi.encodeCall(IVeaOutboxOptimisticRollup.resolveDisputedClaim, (epoch, stateroot));
+        bytes memory data = abi.encodeCall(IVeaOutboxOnL2.resolveDisputedClaim, (epoch, stateroot));
 
         // TODO: Send message to Optimism.
     }

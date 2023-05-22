@@ -10,25 +10,12 @@
 
 pragma solidity 0.8.18;
 
+import "../types/VeaClaim.sol";
+
 /**
- * @dev Interface of the Vea Outbox on Ethereum-like L1 chains eg Ethereum, Gnosis, Polygon POS
+ * @dev Interface of the Vea Outbox on L1 chains like Ethereum, Gnosis, Polygon POS where storage is expensive.
  */
-interface IVeaOutboxEthChain {
-    enum Party {
-        None,
-        Claimer,
-        Challenger
-    }
-
-    struct Claim {
-        bytes32 stateRoot;
-        address claimer;
-        uint32 timestamp;
-        uint32 blocknumber;
-        Party honest;
-        address challenger;
-    }
-
+interface IVeaOutboxOnL1 {
     /**
      * Note: Gateways expect first argument of message call to be the arbitrum message sender, used for authentication.
      * @dev Verifies and relays the message.

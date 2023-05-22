@@ -14,12 +14,12 @@ pragma solidity 0.8.18;
 // warning: this is a work in progress
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "../interfaces/outboxes/IVeaOutboxOptimisticRollup.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL2.sol";
 
 /**
  * Vea Bridge Outbox From Arbitrum to Optimism.
  */
-contract VeaOutboxArbToOpt is IVeaOutboxOptimisticRollup {
+contract VeaOutboxArbToOpt is IVeaOutboxOnL2 {
     IBridge public immutable bridge; // The address of the Arbitrum bridge contract.
     address public immutable veaInbox; // The address of the veaInbox on arbitrum.
 

@@ -12,7 +12,7 @@ pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/inboxes/IVeaInbox.sol";
-import "../interfaces/outboxes/IVeaOutboxEthChain.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
 /**
  * Vea Bridge Inbox From Arbitrum to Ethereum.
@@ -213,12 +213,12 @@ contract VeaInboxArbToEth is IVeaInbox {
      * @param epoch The epoch of the snapshot requested to send.
      * @param claim The claim associated with the epoch.
      */
-    function sendSnapshot(uint256 epoch, IVeaOutboxEthChain.Claim memory claim) external virtual {
+    function sendSnapshot(uint256 epoch, Claim memory claim) external virtual {
         unchecked {
             require(epoch < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(IVeaOutboxEthChain.resolveDisputedClaim, (epoch, snapshots[epoch], claim));
+        bytes memory data = abi.encodeCall(IVeaOutboxOnL1.resolveDisputedClaim, (epoch, snapshots[epoch], claim));
 
         // Arbitrum -> Ethereum message with native bridge
         // docs: https://developer.arbitrum.io/for-devs/cross-chain-messsaging#arbitrum-to-ethereum-messaging

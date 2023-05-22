@@ -11,13 +11,13 @@
 pragma solidity 0.8.18;
 
 import "../canonical/gnosis-chain/IAMB.sol";
-import "../interfaces/outboxes/IVeaOutboxEthChain.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
 /**
  * Vea Bridge Outbox From Arbitrum to Gnosis.
  * Note: This contract is deployed on Gnosis.
  */
-contract VeaOutboxArbToGnosis is IVeaOutboxEthChain {
+contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     IAMB public immutable amb; // The address of the AMB contract on Gnosis.
     address public immutable routerArbToGnosis; // The address of the router from Arbitrum to Gnosis on ethereum.
 
