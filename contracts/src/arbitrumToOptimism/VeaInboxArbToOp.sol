@@ -11,8 +11,8 @@
 pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
-import "../interfaces/IVeaInbox.sol";
-import "./interfaces/IVeaOutboxArbToOpt.sol";
+import "../interfaces/inboxes/IVeaInbox.sol";
+import "../interfaces/outboxes/IVeaOutboxOptimisticRollup.sol";
 
 /**
  * Vea Bridge Inbox From Arbitrum to Optimism.
@@ -20,7 +20,7 @@ import "./interfaces/IVeaOutboxArbToOpt.sol";
 contract VeaInboxArbToOpt is IVeaInbox {
     /**
      * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
-     * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, data), outbox relays to.call(data)
+     * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)
      */
     event MessageSent(bytes nodeData);
 
@@ -31,13 +31,13 @@ contract VeaInboxArbToOpt is IVeaInbox {
     event SnapshotSaved(uint256 count);
 
     /**
-     * @dev The event is emitted when a snapshot through the canonical arbiturm bridge.
+     * @dev The event is emitted when a snapshot is sent through the canonical arbitrum bridge.
      * @param epochSent The epoch of the snapshot.
      * @param ticketId The ticketId of the L2->L1 message.
      */
     event SnapshotSent(uint256 indexed epochSent, bytes32 ticketId);
 
-    IArbSys public constant ARB_SYS = IArbSys(address(100));
+    IArbSys internal constant ARB_SYS = IArbSys(address(100));
 
     uint256 public immutable epochPeriod; // Epochs mark the period between stateroot snapshots
     address public immutable veaOutbox; // The vea outbox on ethereum.
@@ -206,7 +206,10 @@ contract VeaInboxArbToOpt is IVeaInbox {
             require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(IVeaOutboxArbToOpt.resolveDisputedClaim, (epochSend, snapshots[epochSend]));
+        bytes memory data = abi.encodeCall(
+            IVeaOutboxOptimisticRollup.resolveDisputedClaim,
+            (epochSend, snapshots[epochSend])
+        );
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
 

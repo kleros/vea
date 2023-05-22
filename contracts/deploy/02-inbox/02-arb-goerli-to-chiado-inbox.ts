@@ -8,7 +8,7 @@ enum SenderChains {
 
 const paramsByChainId = {
   ARBITRUM_GOERLI: {
-    epochPeriod: 1800, // 30 minutes
+    epochPeriod: 1800, // 1 hour
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -28,21 +28,23 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
 
-  const veaOutboxGnosis = await hre.companionNetworks.chiado.deployments.get("VeaOutboxGnosis");
+  const veaOutboxGnosis = await hre.companionNetworks.chiado.deployments.get("VeaOutboxArbToGnosisDevnet");
 
-  await deploy("VeaInboxArbToGnosisDevnet", {
+  const inbox = await deploy("VeaInboxArbToGnosisDevnet", {
     from: deployer,
     contract: "VeaInboxArbToGnosis",
     args: [epochPeriod, veaOutboxGnosis.address],
     log: true,
   });
+
+  console.log("VeaInboxArbToGnosisDevnet deployed to: %s", inbox.address);
 };
 
 deployInbox.tags = ["ArbGoerliToChiadoInbox"];
 deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !(chainId === 42161 || chainId === 31337);
+  return !(chainId === 421613 || chainId === 31337);
 };
 deployInbox.runAtTheEnd = true;
 

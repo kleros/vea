@@ -1,54 +1,70 @@
-import { getVeaInboxArbToEth, getVeaOutboxArbToEth, getEvents } from "./ethers";
+import { getVeaOutboxArbToEthProvider, getVeaInboxArbToEth } from "../utils/ethers";
+import { JsonRpcProvider } from "@ethersproject/providers";
 
 require("dotenv").config();
 
-(async () => {
+const watch = async () => {
+  const l1provider = new JsonRpcProvider(process.env.RPC_VEAOUTBOX);
+
+  const veaOutbox = getVeaOutboxArbToEthProvider(process.env.VEAOUTBOX_ADDRESS, process.env.PRIVATE_KEY, l1provider);
+
   const veaInbox = getVeaInboxArbToEth(process.env.VEAINBOX_ADDRESS, process.env.PRIVATE_KEY, process.env.RPC_VEAINBOX);
 
-  const veaOutbox = getVeaOutboxArbToEth(
-    process.env.VEAOUTBOX_ADDRESS,
-    process.env.PRIVATE_KEY,
-    process.env.RPC_VEAOUTBOX
-  );
-
   const deposit = await veaOutbox.deposit();
-  const challengePeriod = (await veaOutbox.challengePeriod()).toNumber();
   const epochPeriod = (await veaOutbox.epochPeriod()).toNumber();
+  const claimDelay = (await veaOutbox.claimDelay()).toNumber();
+  const challengePeriod = (await veaOutbox.challengePeriod()).toNumber();
 
-  /*
-  const filter = web3_veaOutbox.filters["MessageRelayed(uint64)"];
-  const events = await getEvents(web3_veaOutbox.address, 0, "latest", filter);
-  console.log(events)
-  return;*/
+  const currentBlockNumber = await l1provider.getBlockNumber();
+  const challengableTimeStart = Math.floor(Date.now() / 1000) - challengePeriod;
+  const challengableBlockStart = currentBlockNumber - Math.ceil((challengePeriod * 2) / 12);
 
-  const currentTS = Math.floor(Date.now() / 1000);
-  const currentEpoch = Math.floor(currentTS / epochPeriod);
-  const challengableEpochStart = Math.floor((currentTS - challengePeriod) / epochPeriod);
+  const logs = await l1provider.getLogs({
+    address: process.env.VEAOUTBOX_ADDRESS,
+    topics: veaOutbox.filters.Claimed(null, null).topics,
+    fromBlock: challengableBlockStart,
+  });
 
-  console.log(`Current Timestamp: ${currentTS}`);
-  console.log(`Current Epoch: ${currentEpoch}`);
-  console.log(`Epoch Period: ${epochPeriod}`);
-  console.log(`Challenge Period: ${challengePeriod}`);
-  console.log(`---`);
-
-  let cursor = challengableEpochStart;
-  while (cursor <= currentEpoch) {
-    const claim = await veaOutbox.claims(cursor);
-
-    if (claim.bridger != "0x0000000000000000000000000000000000000000") {
-      const merkleroot = await veaInbox.snapshots(cursor);
-
-      if (merkleroot !== claim.stateRoot) {
-        console.log(`Epoch ${cursor}: *INVALID CLAIM*`);
-        const challenge = await veaOutbox.challenges(cursor);
-
-        if (challenge.challenger == "0x0000000000000000000000000000000000000000") {
-          const txn = await veaOutbox.challenge(cursor, { value: deposit });
-          console.log(`Epoch ${cursor}: Challenged`);
-          console.log(`Challenge Txn: ${txn}`);
+  for (let i = 0; i < logs.length; i++) {
+    const log = logs[i];
+    const claimedTimestamp = (await l1provider.getBlock(log.blockNumber)).timestamp;
+    console.log({
+      stateRoot: log.data,
+      claimer: "0x" + log.topics[1].substring(26),
+      timestamp: claimedTimestamp,
+      blocknumber: log.blockNumber,
+      honest: "0",
+      challenger: "0x0000000000000000000000000000000000000000",
+    });
+    if (claimedTimestamp < challengableTimeStart) {
+      continue;
+    } else {
+      const claimedStateRoot = log.data;
+      const claimedEpoch = Math.floor((claimedTimestamp - claimDelay) / epochPeriod);
+      const inboxStateRoot = await veaInbox.snapshots(claimedEpoch);
+      if (claimedStateRoot !== inboxStateRoot) {
+        console.log(`Challenging claim ${claimedStateRoot} at epoch ${claimedEpoch}.`);
+        const unchallengedClaim = {
+          stateRoot: claimedStateRoot,
+          claimer: "0x" + log.topics[1].substring(26),
+          timestamp: claimedTimestamp,
+          blocknumber: log.blockNumber,
+          honest: "0",
+          challenger: "0x0000000000000000000000000000000000000000",
+        };
+        const unchallengedClaimHash = await veaOutbox.hashClaim(unchallengedClaim);
+        const claimHash = await veaOutbox.claimHashes(claimedEpoch);
+        console.log(unchallengedClaim);
+        console.log(unchallengedClaimHash);
+        console.log(claimHash);
+        console.log(claimedEpoch);
+        if (unchallengedClaimHash == claimHash) {
+          const txn = await veaOutbox.challenge(claimedEpoch, unchallengedClaim, { value: deposit });
+          console.log(`Challenge Txn: ${txn.hash}`);
         }
       }
-    } else console.log(`Epoch ${cursor}: No claim.`);
-    cursor++;
+    }
   }
-})();
+};
+
+export default watch;

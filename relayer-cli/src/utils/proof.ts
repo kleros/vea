@@ -1,11 +1,11 @@
 import request from "graphql-request";
 
-const relay = async (arbProvider, arbSigner, ethProvider, ethSigner) => {};
-
-const getMessageDataToRelay = async (nonce: number) => {
+const getMessageDataToRelay = async (chainid: number, nonce: number) => {
   try {
+    const subgraph = getSubgraph(chainid);
+
     const result = await request(
-      "https://api.thegraph.com/subgraphs/name/shotaronowhere/vea-inbox-arbitrum",
+      `https://api.thegraph.com/subgraphs/name/shotaronowhere/${subgraph}`,
       `{
                 messageSents(first: 5, where: {nonce: ${nonce}}) {
                 nonce
@@ -23,24 +23,7 @@ const getMessageDataToRelay = async (nonce: number) => {
   }
 };
 
-const getProof = async (nonce: number) => {
-  try {
-    const result = await request(
-      "https://api.thegraph.com/subgraphs/name/shotaronowhere/vea-inbox-arbitrum            ",
-      `{
-                snapshotSaveds(first: 1, orderBy: count) {
-                  count
-                }
-              }`
-    );
-    return await getProofAtCount(nonce, Number(result["snapshotSaveds"][0].count));
-  } catch (e) {
-    console.log(e);
-    return [];
-  }
-};
-
-const getProofAtCount = async (nonce: number, count: number) => {
+const getProofAtCount = async (chainid: number, nonce: number, count: number): Promise<string[]> => {
   const proofIndices = getProofIndices(nonce, count);
 
   let query = "{";
@@ -52,10 +35,9 @@ const getProofAtCount = async (nonce: number, count: number) => {
   query += "}";
 
   try {
-    const result = await request(
-      "https://api.thegraph.com/subgraphs/name/shotaronowhere/vea-inbox-arbitrum            ",
-      query
-    );
+    const subgraph = getSubgraph(chainid);
+
+    const result = await request(`https://api.thegraph.com/subgraphs/name/shotaronowhere/${subgraph}`, query);
 
     const proof = [];
 
@@ -89,4 +71,15 @@ const getProofIndices = (nonce: number, count: number) => {
   return proof;
 };
 
-export { getProof, getProofAtCount, getMessageDataToRelay };
+const getSubgraph = (chainid: number): string => {
+  switch (chainid) {
+    case 5:
+      return "vea-inbox-arbgoerli-to-goerli";
+    case 10200:
+      return "vea-inbox-arbgoerli-to-chiado";
+    default:
+      throw new Error("Invalid chainid");
+  }
+};
+
+export { getProofAtCount, getSubgraph, getMessageDataToRelay };

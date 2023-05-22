@@ -13,14 +13,19 @@ pragma solidity 0.8.18;
 import "../../arbitrumToEth/VeaOutboxArbToEth.sol";
 
 contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
-    address public immutable testnetOperator;
+    address public testnetOperator;
+
+    function changeTestnetOperator(address _testnetOperator) external {
+        require(msg.sender == testnetOperator, "Invalid Testnet Operator");
+        testnetOperator = _testnetOperator;
+    }
 
     /**
-     * @dev Submit a claim about the the _stateRoot at _epoch and submit a deposit.
+     * @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
      * @param _epoch The epoch for which the claim is made.
      * @param _stateRoot The state root to claim.
      */
-    function claim(uint256 _epoch, bytes32 _stateRoot) external payable override {
+    function claim(uint256 _epoch, bytes32 _stateRoot) public payable override {
         require(msg.value >= deposit, "Insufficient claim deposit.");
         require(msg.sender == testnetOperator, "Invalid Testnet Operator");
 
@@ -66,6 +71,84 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
     }
 
     /**
+     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
+     * @param epoch The epoch associated with the claim deposit to withraw.
+     */
+    function withdrawClaimDeposit(uint256 epoch, Claim memory claim) public override {
+        require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
+        require(claim.honest == Party.Claimer, "Claim failed.");
+
+        delete claimHashes[epoch];
+
+        if (claim.challenger != address(0)) {
+            payable(burnAddress).send(burn);
+            payable(claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.
+        } else {
+            payable(claim.claimer).send(deposit); // User is responsible for accepting ETH.
+        }
+    }
+
+    /**
+     * @dev Resolves the optimistic claim for '_epoch'.
+     * @param epoch The epoch of the optimistic claim.
+     */
+    function validateSnapshot(uint256 epoch, Claim memory claim) public override OnlyBridgeRunning {
+        require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
+
+        unchecked {
+            require(claim.timestamp + challengePeriod <= block.timestamp, "Challenge period has not yet elapsed.");
+            require(
+                // expected blocks <= actual blocks + maxMissingBlocks
+                uint256(claim.blocknumber) + (block.timestamp - uint256(claim.timestamp)) / slotTime <=
+                    block.number + maxMissingBlocks,
+                "Too many missing blocks. Possible censorship attack. Use canonical bridge."
+            );
+        }
+
+        require(claim.challenger == address(0), "Claim is challenged.");
+
+        if (epoch > latestVerifiedEpoch) {
+            latestVerifiedEpoch = epoch;
+            stateRoot = claim.stateRoot;
+            emit Verified(epoch);
+        }
+
+        claim.honest = Party.Claimer;
+        claimHashes[epoch] = hashClaim(claim);
+    }
+
+    /**
+     * @dev Testnet operator utility function to claim, validate and withdraw.
+     * @param epoch The epoch for which the claim is made.
+     * @param stateroot The state root to claim.
+     */
+    function devnetAdvanceState(uint256 epoch, bytes32 stateroot) external payable {
+        claim(epoch, stateroot);
+        validateSnapshot(
+            epoch,
+            Claim({
+                stateRoot: stateroot,
+                claimer: msg.sender,
+                timestamp: uint32(block.timestamp),
+                blocknumber: uint32(block.number),
+                honest: Party.None,
+                challenger: address(0)
+            })
+        );
+        withdrawClaimDeposit(
+            epoch,
+            Claim({
+                stateRoot: stateroot,
+                claimer: msg.sender,
+                timestamp: uint32(block.timestamp),
+                blocknumber: uint32(block.number),
+                honest: Party.Claimer,
+                challenger: address(0)
+            })
+        );
+    }
+
+    /**
      * @dev Constructor.
      * @param _deposit The deposit amount to submit a claim in wei.
      * @param _epochPeriod The duration of each epoch.
@@ -73,7 +156,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
      * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
      * @param _epochClaimDelay The number of epochs a claim can be submitted for.
      * @param _veaInbox The address of the inbox contract on Arbitrum.
-     * @param _inbox The address of the inbox contract on Ethereum.
+     * @param _bridge The address of the Arbitrum bridge contract on Ethereum.
      * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
      */
     constructor(
@@ -83,7 +166,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         uint256 _timeoutEpochs,
         uint256 _epochClaimDelay,
         address _veaInbox,
-        address _inbox,
+        address _bridge,
         uint256 _maxMissingBlocks
     )
         VeaOutboxArbToEth(
@@ -93,7 +176,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
             _timeoutEpochs,
             _epochClaimDelay,
             _veaInbox,
-            _inbox,
+            _bridge,
             _maxMissingBlocks
         )
     {

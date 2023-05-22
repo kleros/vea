@@ -11,23 +11,23 @@
 pragma solidity 0.8.18;
 
 import "../canonical/gnosis-chain/IAMB.sol";
-import "../canonical/arbitrum/IInbox.sol";
+import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "./interfaces/IRouterArbToGnosis.sol";
-import "./interfaces/IVeaOutboxArbToGnosis.sol";
+import "../interfaces/routers/IRouterToEthChain.sol";
+import "../interfaces/outboxes/IVeaOutboxEthChain.sol";
 
 /**
  * Router on Ethereum from Arbitrum to Gnosis Chain.
  */
-contract RouterArbToGnosis is IRouterArbToGnosis {
+contract RouterArbToGnosis is IRouterToEthChain {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
 
-    IInbox public immutable inbox; // The address of the Arbitrum Inbox contract.
+    IBridge public immutable bridge; // The address of the Arbitrum bridge contract.
     IAMB public immutable amb; // The address of the AMB contract on Ethereum.
-    address public immutable sender; // The address of the sender on Arbitrum.
-    address public immutable receiver; // The address of the Receiver on Gnosis Chain.
+    address public immutable veaInbox; // The address of the veaInbox on Arbitrum.
+    address public immutable veaOutbox; // The address of the veaOutbox on Gnosis Chain.
 
     // ************************************* //
     // *              Events               * //
@@ -42,16 +42,16 @@ contract RouterArbToGnosis is IRouterArbToGnosis {
 
     /**
      * @dev Constructor.
-     * @param _inbox The address of the inbox contract on Ethereum.
+     * @param _bridge The address of the arbitrum bridge contract on Ethereum.
      * @param _amb The address of the AMB contract on Ethereum.
-     * @param _sender The safe bridge sender on Arbitrum.
-     * @param _receiver The fast bridge receiver on Gnosis Chain.
+     * @param _veaInbox The veaInbox on Arbitrum.
+     * @param _veaOutbox The veaOutbox on Gnosis Chain.
      */
-    constructor(IInbox _inbox, IAMB _amb, address _sender, address _receiver) {
-        inbox = _inbox;
+    constructor(IBridge _bridge, IAMB _amb, address _veaInbox, address _veaOutbox) {
+        bridge = _bridge;
         amb = _amb;
-        sender = _sender;
-        receiver = _receiver;
+        veaInbox = _veaInbox;
+        veaOutbox = _veaOutbox;
     }
 
     /**
@@ -60,15 +60,22 @@ contract RouterArbToGnosis is IRouterArbToGnosis {
      * @param epoch The epoch to verify.
      * @param stateroot The true batch merkle root for the epoch.
      */
-    function route(uint256 epoch, bytes32 stateroot, IVeaOutboxArbToGnosis.Claim calldata claim) external {
-        IBridge bridge = inbox.bridge();
+    function route(uint256 epoch, bytes32 stateroot, IVeaOutboxEthChain.Claim calldata claim) external {
+        // Arbitrum -> Ethereum message sender authentication
+        // docs: https://developer.arbitrum.io/arbos/l2-to-l1-messaging/
+        // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/ethereum/GreeterL1.sol#L50
+        // example: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/dfef6a68ee18dbd2e1f5a099061a3b8a0e404485/contracts/crosschain/arbitrum/LibArbitrumL1.sol#L34
+        // note: we use the bridge address as a source of truth for the activeOutbox address
+
         require(msg.sender == address(bridge), "Not from bridge.");
-        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == sender, "Sender only.");
+        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "veaInbox only.");
 
-        bytes memory data = abi.encodeCall(IVeaOutboxArbToGnosis.resolveDisputedClaim, (epoch, stateroot, claim));
+        // Ethereum -> Gnosis message passing with the AMB, the canonical Ethereum <-> Gnosis bridge.
+        // https://docs.tokenbridge.net/amb-bridge/development-of-a-cross-chain-application/how-to-develop-xchain-apps-by-amb#receive-a-method-call-from-the-amb-bridge
 
-        // replace maxGasPerTx with reasonable level for production deployment
-        bytes32 ticketID = amb.requireToPassMessage(receiver, data, amb.maxGasPerTx());
+        bytes memory data = abi.encodeCall(IVeaOutboxEthChain.resolveDisputedClaim, (epoch, stateroot, claim));
+        // Note: using maxGasPerTx here means the relaying txn on Gnosis will need to pass that (large) amount of gas, though almost all will be unused and refunded. This is preferred over hardcoding a gas limit.
+        bytes32 ticketID = amb.requireToPassMessage(veaOutbox, data, amb.maxGasPerTx());
         emit Routed(epoch, ticketID);
     }
 }

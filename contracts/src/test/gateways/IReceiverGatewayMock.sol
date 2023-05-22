@@ -10,7 +10,7 @@
 
 pragma solidity 0.8.18;
 
-import "../../interfaces/IReceiverGateway.sol";
+import "../../interfaces/gateways/IReceiverGateway.sol";
 
 interface IReceiverGatewayMock is IReceiverGateway {
     /**
