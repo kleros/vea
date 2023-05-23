@@ -1,7 +1,8 @@
-import { getChain } from "consts/bridges";
 import React from "react";
 import styled, { css } from "styled-components";
+import { useCopyToClipboard } from "react-use";
 import { smallScreenStyle } from "styles/smallScreenStyle";
+import { getChain } from "consts/bridges";
 import Copy from "tsx:svgs/icons/copy.svg";
 
 interface Field {
@@ -207,28 +208,12 @@ const TxCard: React.FC<TxCardProps> = ({
                           {section.value}
                         </DataText>
                       </a>{" "}
-                      {section.isCopy && (
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(section.value!);
-                          }}
-                        >
-                          <Icon as={Copy} />
-                        </button>
-                      )}
+                      {section.isCopy && <CopyButton value={section.value!} />}
                     </div>
                   ) : (
                     <div className="tx-copy-div">
                       <DataText>{section.value} </DataText>
-                      {section.isCopy && (
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(section.value!);
-                          }}
-                        >
-                          <Icon as={Copy} />
-                        </button>
-                      )}
+                      {section.isCopy && <CopyButton value={section.value!} />}
                     </div>
                   )}
                 </ValueDiv>
@@ -239,6 +224,15 @@ const TxCard: React.FC<TxCardProps> = ({
       </div>
       <hr className="border" />
     </StyledDiv>
+  );
+};
+
+export const CopyButton: React.FC<{ value: string }> = ({ value }) => {
+  const [_, copyToClipboard] = useCopyToClipboard();
+  return (
+    <button onClick={() => copyToClipboard(value)}>
+      <Icon as={Copy} />
+    </button>
   );
 };
 
