@@ -1959,22 +1959,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/typescript-operations@npm:^2.5.13":
-  version: 2.5.13
-  resolution: "@graphql-codegen/typescript-operations@npm:2.5.13"
-  dependencies:
-    "@graphql-codegen/plugin-helpers": ^3.1.2
-    "@graphql-codegen/typescript": ^2.8.8
-    "@graphql-codegen/visitor-plugin-common": 2.13.8
-    auto-bind: ~4.0.0
-    tslib: ~2.4.0
-  peerDependencies:
-    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: c36d75b1b0101d8e6e65949e7ad6b068b3595d95d35c20c3d2506f35b5b11c00ca91d7b0c40005de3a6c38fa6a858e27ab4729b1068721eafe79d90b5d721cfc
-  languageName: node
-  linkType: hard
-
-"@graphql-codegen/typescript-operations@npm:^3.0.3":
+"@graphql-codegen/typescript-operations@npm:^3.0.3, @graphql-codegen/typescript-operations@npm:^3.0.4":
   version: 3.0.4
   resolution: "@graphql-codegen/typescript-operations@npm:3.0.4"
   dependencies:
@@ -3436,7 +3421,7 @@ __metadata:
     "@graphql-codegen/cli": ^3.3.1
     "@graphql-codegen/client-preset": ^3.0.0
     "@graphql-codegen/typescript": ^2.8.8
-    "@graphql-codegen/typescript-operations": ^2.5.13
+    "@graphql-codegen/typescript-operations": ^3.0.4
     "@kleros/ui-components-library": ^2.4.0
     "@kleros/vea-contracts": "workspace:^"
     "@parcel/transformer-svg-react": ^2.8.3
