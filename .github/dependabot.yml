@@ -39,3 +39,33 @@ updates:
       - jaybuidl
       - alcercu
     
+
+  - package-ecosystem: npm
+    directory: /contracts
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /relayer-subgraph-inbox
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /validator-cli
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /veascan-subgraph-inbox
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /veascan-subgraph-outbox
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /veascan-web
+    schedule:
+      interval: daily
