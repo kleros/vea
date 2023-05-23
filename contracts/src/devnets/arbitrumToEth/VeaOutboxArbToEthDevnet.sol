@@ -1,47 +1,37 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@jaybuidl, @shotaronowhere]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
 import "../../arbitrumToEth/VeaOutboxArbToEth.sol";
 
-/**
- * Vea Outbox From ArbitrumGoerli to Goerli.
- * Note: This contract is deployed on Goerli.
- * Note: This contract is permissioned for developer testing (devnet).
- */
+/// @dev Vea Outbox From ArbitrumGoerli to Goerli.
+/// Note: This contract is deployed on Goerli.
+/// Note: This contract is permissioned for developer testing (devnet).
 contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
     address public devnetOperator; // permissioned devnet operator
 
-    /**
-     * @dev Requires that the sender is the devnet operator.
-     */
+    /// @dev Requires that the sender is the devnet operator.
     modifier onlyByDevnetOperator() {
         require(devnetOperator == msg.sender);
         _;
     }
 
-    /**
-     * @dev Changes the devnet operator.
-     * @param _devnetOperator The new testnet operator.
-     */
+    /// @dev Changes the devnet operator.
+    /// @param _devnetOperator The new testnet operator.
     function changeDevnetOperator(address _devnetOperator) external onlyByDevnetOperator {
         require(msg.sender == devnetOperator, "Invalid Testnet Operator");
         devnetOperator = _devnetOperator;
     }
 
-    /**
-     * @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
-     * @param _epoch The epoch for which the claim is made.
-     * @param _stateRoot The state root to claim.
-     */
+    /// @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
+    /// @param _epoch The epoch for which the claim is made.
+    /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) public payable override onlyByDevnetOperator {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
@@ -66,11 +56,9 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         emit Claimed(msg.sender, _stateRoot);
     }
 
-    /**
-     * @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
-     * @param _epoch The epoch of the claim to challenge.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
+    /// @param _epoch The epoch of the claim to challenge.
+    /// @param _claim The claim associated with the epoch.
     function challenge(uint256 _epoch, Claim memory _claim) external payable override onlyByDevnetOperator {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.challenger == address(0), "Claim already challenged.");
@@ -86,11 +74,9 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         emit Challenged(_epoch, msg.sender);
     }
 
-    /**
-     * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
-     * @param _claim The claim associated with the epoch.
-     * @param _epoch The epoch associated with the claim deposit to withraw.
-     */
+    /// @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
+    /// @param _claim The claim associated with the epoch.
+    /// @param _epoch The epoch associated with the claim deposit to withraw.
     function withdrawClaimDeposit(uint256 _epoch, Claim memory _claim) public override {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.honest == Party.Claimer, "Claim failed.");
@@ -105,11 +91,9 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         }
     }
 
-    /**
-     * @dev Resolves the optimistic claim for '_epoch'.
-     * @param epoch The epoch of the optimistic claim.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// @dev Resolves the optimistic claim for '_epoch'.
+    /// @param epoch The epoch of the optimistic claim.
+    /// @param _claim The claim associated with the epoch.
     function validateSnapshot(uint256 epoch, Claim memory _claim) public override OnlyBridgeRunning {
         require(claimHashes[epoch] == hashClaim(_claim), "Invalid claim.");
 
@@ -135,11 +119,9 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         claimHashes[epoch] = hashClaim(_claim);
     }
 
-    /**
-     * @dev Testnet operator utility function to claim, validate and withdraw.
-     * @param _epoch The epoch for which the claim is made.
-     * @param _stateroot The state root to claim.
-     */
+    /// @dev Testnet operator utility function to claim, validate and withdraw.
+    /// @param _epoch The epoch for which the claim is made.
+    /// @param _stateroot The state root to claim.
     function devnetAdvanceState(uint256 _epoch, bytes32 _stateroot) external payable {
         claim(_epoch, _stateroot);
         validateSnapshot(
@@ -166,17 +148,15 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         );
     }
 
-    /**
-     * @dev Constructor.
-     * @param _deposit The deposit amount to submit a claim in wei.
-     * @param _epochPeriod The duration of each epoch.
-     * @param _challengePeriod The duration of the period allowing to challenge a claim.
-     * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-     * @param _epochClaimDelay The number of epochs a claim can be submitted for.
-     * @param _veaInboxArbToEthDevnet The address of the devnet vea inbox on Arbitrum to Ethereum.
-     * @param _bridge The address of the Arbitrum bridge contract on Ethereum.
-     * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
-     */
+    /// @dev Constructor.
+    /// @param _deposit The deposit amount to submit a claim in wei.
+    /// @param _epochPeriod The duration of each epoch.
+    /// @param _challengePeriod The duration of the period allowing to challenge a claim.
+    /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
+    /// @param _epochClaimDelay The number of epochs a claim can be submitted for.
+    /// @param _veaInboxArbToEthDevnet The address of the devnet vea inbox on Arbitrum to Ethereum.
+    /// @param _bridge The address of the Arbitrum bridge contract on Ethereum.
+    /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,

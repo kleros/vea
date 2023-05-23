@@ -1,22 +1,18 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@shotaronowhere, @adi274]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@shotaronowhere, @adi274]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
 import "./IReceiverGatewayMock.sol";
 import "../../interfaces/gateways/ISenderGateway.sol";
 
-/**
- * Sender Gateway
- * Counterpart of `ReceiverGatewayMock`
- */
+/// Sender Gateway
+/// Counterpart of `ReceiverGatewayMock`
 contract SenderGatewayMock is ISenderGateway {
     IVeaInbox public immutable veaInbox;
     address public override receiverGateway;

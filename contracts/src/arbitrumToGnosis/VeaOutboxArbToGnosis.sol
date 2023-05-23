@@ -1,22 +1,18 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@jaybuidl, @shotaronowhere]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
-/**
- * Vea Outbox From Arbitrum to Gnosis.
- * Note: This contract is deployed on Gnosis.
- */
+/// @dev Vea Outbox From Arbitrum to Gnosis.
+/// Note: This contract is deployed on Gnosis.
 contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     // ************************************* //
     // *             Storage               * //
@@ -50,30 +46,22 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     // *              Events               * //
     // ************************************* //
 
-    /**
-     * @dev Watcher check this event to challenge fraud.
-     * @param _claimer The address of the claimer.
-     * @param _stateRoot The state root of the claim.
-     */
+    /// @dev Watcher check this event to challenge fraud.
+    /// @param _claimer The address of the claimer.
+    /// @param _stateRoot The state root of the claim.
     event Claimed(address indexed _claimer, bytes32 _stateRoot);
 
-    /**
-     * @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
-     * @param _epoch The epoch associated with the challenged claim.
-     * @param _challenger The address of the challenger.
-     */
+    /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
+    /// @param _epoch The epoch associated with the challenged claim.
+    /// @param _challenger The address of the challenger.
     event Challenged(uint256 _epoch, address indexed _challenger);
 
-    /**
-     * @dev This event indicates that a message has been relayed.
-     * @param _msgId The msgId of the message that was relayed.
-     */
+    /// @dev This event indicates that a message has been relayed.
+    /// @param _msgId The msgId of the message that was relayed.
     event MessageRelayed(uint64 _msgId);
 
-    /**
-     * @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
-     * @param _epoch The epoch that was verified.
-     */
+    /// @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
+    /// @param _epoch The epoch that was verified.
     event Verified(uint256 _epoch);
 
     // ************************************* //
@@ -94,18 +82,16 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         _;
     }
 
-    /**
-     * @dev Constructor.
-     * Note: epochPeriod must match the VeaInboxArbToGnosis contract deployment on Arbitrum, since it's on a different chain, we can't read it and trust the deployer to set a correct value
-     * @param _deposit The deposit amount to submit a claim in wei.
-     * @param _epochPeriod The duration of each epoch.
-     * @param _challengePeriod The duration of the period allowing to challenge a claim.
-     * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-     * @param _claimDelay The number of epochs after which the claim can be submitted.
-     * @param _amb The address of the AMB contract on Gnosis.
-     * @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Ethereum.
-     * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
-     */
+    /// @dev Constructor.
+    /// Note: epochPeriod must match the VeaInboxArbToGnosis contract deployment on Arbitrum, since it's on a different chain, we can't read it and trust the deployer to set a correct value
+    /// @param _deposit The deposit amount to submit a claim in wei.
+    /// @param _epochPeriod The duration of each epoch.
+    /// @param _challengePeriod The duration of the period allowing to challenge a claim.
+    /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
+    /// @param _claimDelay The number of epochs after which the claim can be submitted.
+    /// @param _amb The address of the AMB contract on Gnosis.
+    /// @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Ethereum.
+    /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -140,11 +126,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     // *         State Modifiers           * //
     // ************************************* //
 
-    /**
-     * @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
-     * @param _epoch The epoch for which the claim is made.
-     * @param _stateRoot The state root to claim.
-     */
+    /// @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
+    /// @param _epoch The epoch for which the claim is made.
+    /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
@@ -169,11 +153,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         emit Claimed(msg.sender, _stateRoot);
     }
 
-    /**
-     * @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
-     * @param _epoch The epoch of the claim to challenge.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
+    /// @param _epoch The epoch of the claim to challenge.
+    /// @param _claim The claim associated with the epoch.
     function challenge(uint256 _epoch, Claim memory _claim) external payable virtual {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.challenger == address(0), "Claim already challenged.");
@@ -189,11 +171,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         emit Challenged(_epoch, msg.sender);
     }
 
-    /**
-     * @dev Resolves the optimistic claim for '_epoch'.
-     * @param _epoch The epoch of the optimistic claim.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// @dev Resolves the optimistic claim for '_epoch'.
+    /// @param _epoch The epoch of the optimistic claim.
+    /// @param _claim The claim associated with the epoch.
     function validateSnapshot(uint256 _epoch, Claim memory _claim) external virtual OnlyBridgeRunning {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
 
@@ -219,13 +199,11 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         claimHashes[_epoch] = hashClaim(_claim);
     }
 
-    /**
-     * Note: Access restricted to AMB.
-     * @dev Resolves any challenge of the optimistic claim for '_epoch'.
-     * @param _epoch The epoch to verify.
-     * @param _stateRoot The true state root for the epoch.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// Note: Access restricted to AMB.
+    /// @dev Resolves any challenge of the optimistic claim for '_epoch'.
+    /// @param _epoch The epoch to verify.
+    /// @param _stateRoot The true state root for the epoch.
+    /// @param _claim The claim associated with the epoch.
     function resolveDisputedClaim(
         uint256 _epoch,
         bytes32 _stateRoot,
@@ -254,13 +232,11 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         }
     }
 
-    /**
-     * @dev Verifies and relays the message. UNTRUSTED.
-     * @param _proof The merkle proof to prove the message.
-     * @param _msgId The zero based index of the message in the inbox.
-     * @param _to The address of the contract on Gnosis to call.
-     * @param _message The message encoded with header from VeaInbox.
-     */
+    /// @dev Verifies and relays the message. UNTRUSTED.
+    /// @param _proof The merkle proof to prove the message.
+    /// @param _msgId The zero based index of the message in the inbox.
+    /// @param _to The address of the contract on Gnosis to call.
+    /// @param _message The message encoded with header from VeaInbox.
     function sendMessage(bytes32[] calldata _proof, uint64 _msgId, address _to, bytes calldata _message) external {
         require(_proof.length < 64, "Proof too long.");
 
@@ -318,11 +294,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         emit MessageRelayed(_msgId);
     }
 
-    /**
-     * @dev Sends the deposit back to the Claimer if successful. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
-     * @param _epoch The epoch associated with the claim deposit to withraw.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// @dev Sends the deposit back to the Claimer if successful. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
+    /// @param _epoch The epoch associated with the claim deposit to withraw.
+    /// @param _claim The claim associated with the epoch.
     function withdrawClaimDeposit(uint256 _epoch, Claim calldata _claim) external virtual {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.honest == Party.Claimer, "Claim failed.");
@@ -337,11 +311,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         }
     }
 
-    /**
-     * @dev Sends the deposit back to the Challenger if successful. Includes a portion of the Bridger's deposit.
-     * @param _epoch The epoch associated with the challenge deposit to withraw.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// @dev Sends the deposit back to the Challenger if successful. Includes a portion of the Bridger's deposit.
+    /// @param _epoch The epoch associated with the challenge deposit to withraw.
+    /// @param _claim The claim associated with the epoch.
     function withdrawChallengeDeposit(uint256 _epoch, Claim calldata _claim) external {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.honest == Party.Challenger, "Challenge failed.");
@@ -352,11 +324,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         payable(_claim.challenger).send(depositPlusReward); // User is responsible for accepting ETH.
     }
 
-    /**
-     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
-     * @param _epoch The epoch associated with the claim deposit to withraw.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
+    /// @param _epoch The epoch associated with the claim deposit to withraw.
+    /// @param _claim The claim associated with the epoch.
     function withdrawClaimerEscapeHatch(uint256 _epoch, Claim memory _claim) external OnlyBridgeShutdown {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.honest == Party.None, "Claim resolved.");
@@ -374,11 +344,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         }
     }
 
-    /**
-     * @dev When bridge is shutdown, no claim disputes can be resolved. This allows the challenger to withdraw their deposit.
-     * @param _epoch The epoch associated with the claim deposit to withraw.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// @dev When bridge is shutdown, no claim disputes can be resolved. This allows the challenger to withdraw their deposit.
+    /// @param _epoch The epoch associated with the claim deposit to withraw.
+    /// @param _claim The claim associated with the epoch.
     function withdrawChallengerEscapeHatch(uint256 _epoch, Claim memory _claim) external OnlyBridgeShutdown {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.honest == Party.None, "Claim resolved.");
@@ -400,11 +368,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     // *           Pure / Views            * //
     // ************************************* //
 
-    /**
-     * @dev Hashes the claim.
-     * @param _claim The claim to hash.
-     * @return hashedClaim The hash of the claim.
-     */
+    /// @dev Hashes the claim.
+    /// @param _claim The claim to hash.
+    /// @return hashedClaim The hash of the claim.
     function hashClaim(Claim memory _claim) public pure returns (bytes32 hashedClaim) {
         return
             hashedClaim = keccak256(
@@ -419,11 +385,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
             );
     }
 
-    /**
-     * @dev Claim passed censorship test
-     * @param _claim The claim to test.
-     * @return testPassed True if the claim passed the censorship test.
-     */
+    /// @dev Claim passed censorship test
+    /// @param _claim The claim to test.
+    /// @return testPassed True if the claim passed the censorship test.
     function passedTest(Claim calldata _claim) external view returns (bool testPassed) {
         uint256 expectedBlocks = uint256(_claim.blocknumber) +
             (block.timestamp - uint256(_claim.timestamp)) /

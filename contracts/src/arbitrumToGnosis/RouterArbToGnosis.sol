@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@shotaronowhere, @jaybuidl]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@shotaronowhere, @jaybuidl]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
@@ -16,10 +14,8 @@ import "../canonical/arbitrum/IOutbox.sol";
 import "../interfaces/routers/IRouterToL1.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
-/**
- * Router from Arbitrum to Gnosis Chain.
- * Note: This contract is deployed on Ethereum.
- */
+/// @dev Router from Arbitrum to Gnosis Chain.
+/// Note: This contract is deployed on Ethereum.
 contract RouterArbToGnosis is IRouterToL1 {
     // ************************************* //
     // *             Storage               * //
@@ -34,20 +30,16 @@ contract RouterArbToGnosis is IRouterToL1 {
     // *              Events               * //
     // ************************************* //
 
-    /**
-     * @dev Event emitted when a message is relayed to another Safe Bridge.
-     * @param _epoch The epoch of the batch requested to send.
-     * @param _ticketID The unique identifier provided by the underlying canonical bridge.
-     */
+    /// @dev Event emitted when a message is relayed to another Safe Bridge.
+    /// @param _epoch The epoch of the batch requested to send.
+    /// @param _ticketID The unique identifier provided by the underlying canonical bridge.
     event Routed(uint256 indexed _epoch, bytes32 _ticketID);
 
-    /**
-     * @dev Constructor.
-     * @param _bridge The address of the arbitrum bridge contract on Ethereum.
-     * @param _amb The address of the AMB contract on Ethereum.
-     * @param _veaInboxArbToGnosis The vea inbox on Arbitrum.
-     * @param _veaOutboxArbToGnosis The vea outbox on Gnosis Chain.
-     */
+    /// @dev Constructor.
+    /// @param _bridge The address of the arbitrum bridge contract on Ethereum.
+    /// @param _amb The address of the AMB contract on Ethereum.
+    /// @param _veaInboxArbToGnosis The vea inbox on Arbitrum.
+    /// @param _veaOutboxArbToGnosis The vea outbox on Gnosis Chain.
     constructor(IBridge _bridge, IAMB _amb, address _veaInboxArbToGnosis, address _veaOutboxArbToGnosis) {
         bridge = _bridge;
         amb = _amb;
@@ -59,13 +51,11 @@ contract RouterArbToGnosis is IRouterToL1 {
     // *         State Modifiers           * //
     // ************************************* //
 
-    /**
-     * Note: Access restricted to arbitrum canonical bridge.
-     * @dev Resolves any challenge of the optimistic claim for '_epoch'.
-     * @param _epoch The epoch to verify.
-     * @param _stateroot The true batch merkle root for the epoch.
-     * @param _claim The claim associated with the epoch.
-     */
+    /// Note: Access restricted to arbitrum canonical bridge.
+    /// @dev Resolves any challenge of the optimistic claim for '_epoch'.
+    /// @param _epoch The epoch to verify.
+    /// @param _stateroot The true batch merkle root for the epoch.
+    /// @param _claim The claim associated with the epoch.
     function route(uint256 _epoch, bytes32 _stateroot, Claim calldata _claim) external {
         // Arbitrum -> Ethereum message sender authentication
         // docs: https://developer.arbitrum.io/arbos/l2-to-l1-messaging/
