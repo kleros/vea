@@ -1,6 +1,6 @@
 {
   "scanSettings": {
-    "baseBranches": []
+    "baseBranches": ["dev", "master"]
   },
   "checkRunSettings": {
     "vulnerableCheckRunConclusionLevel": "failure",
@@ -9,6 +9,8 @@
   },
   "issueSettings": {
     "minSeverityLevel": "LOW",
-    "issueType": "DEPENDENCY"
+    "issueType": "DEPENDENCY",
+    "customLabels": ["Type: Security🛡️" "dependencies"],
+    "assignees": ["jaybuidl"
   }
 }
