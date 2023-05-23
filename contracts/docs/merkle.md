@@ -36,7 +36,7 @@ H(n) represents the n-th leaf which is the double hash of the n-th message $m_n$
 
 H(n,m) represents an interior node of the tree which is the merkle root representing the leaves H(n), H(n+1), ..., H(m).
 
-The parent of a pair of nodes is produced by first sort the nodes before concatenating, and hashing.
+The parent of a pair of nodes is calculated by sorting & concatenating the nodes, and hashing the result.
 
 for example
 
