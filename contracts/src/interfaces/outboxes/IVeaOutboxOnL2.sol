@@ -11,9 +11,9 @@
 pragma solidity 0.8.18;
 
 /**
- * @dev Interface of the Vea Outbox on Optimistic Rollups eg. Arbitrum, Optimism, Base, Specular, etc.
+ * @dev Interface of the Vea Outbox on L2s like Arbitrum, Optimism, Base, Specular where storage is inexpensive.
  */
-interface IVeaOutboxOptimisticRollup {
+interface IVeaOutboxOnL2 {
     /**
      * Note: Gateways expect first argument of message call to be the inbox sender, used for authentication.
      * @dev Verifies and relays the message.

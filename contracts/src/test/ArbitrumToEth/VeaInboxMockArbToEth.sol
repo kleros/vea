@@ -22,15 +22,15 @@ contract VeaInboxMockArbToEth is VeaInboxArbToEth {
     /**
      * @dev Sends the state root using Arbitrum's canonical bridge.
      */
-    function sendSnapshot(uint256 _epochSnapshot, IVeaOutboxEthChain.Claim calldata claim) external override {
+    function sendSnapshot(uint256 _epochSnapshot, Claim calldata claim) external override {
         uint256 epoch = uint256(block.timestamp) / epochPeriod;
         require(_epochSnapshot <= epoch, "Epoch in the future.");
         bytes memory data = abi.encodeCall(
-            IVeaOutboxEthChain.resolveDisputedClaim,
+            IVeaOutboxOnL1.resolveDisputedClaim,
             (_epochSnapshot, snapshots[_epochSnapshot], claim)
         );
 
-        bytes32 ticketID = bytes32(arbSys.sendTxToL1(veaOutbox, data));
+        bytes32 ticketID = bytes32(arbSys.sendTxToL1(veaOutboxArbToEth, data));
 
         emit SnapshotSent(_epochSnapshot, ticketID);
     }

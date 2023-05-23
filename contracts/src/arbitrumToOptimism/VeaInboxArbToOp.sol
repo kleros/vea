@@ -12,7 +12,7 @@ pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/inboxes/IVeaInbox.sol";
-import "../interfaces/outboxes/IVeaOutboxOptimisticRollup.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL2.sol";
 
 /**
  * Vea Bridge Inbox From Arbitrum to Optimism.
@@ -206,10 +206,7 @@ contract VeaInboxArbToOpt is IVeaInbox {
             require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(
-            IVeaOutboxOptimisticRollup.resolveDisputedClaim,
-            (epochSend, snapshots[epochSend])
-        );
+        bytes memory data = abi.encodeCall(IVeaOutboxOnL2.resolveDisputedClaim, (epochSend, snapshots[epochSend]));
 
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
 

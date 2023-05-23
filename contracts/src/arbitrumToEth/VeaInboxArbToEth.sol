@@ -12,18 +12,23 @@ pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/inboxes/IVeaInbox.sol";
-import "../interfaces/outboxes/IVeaOutboxEthChain.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
 /**
- * Vea Bridge Inbox From Arbitrum to Ethereum.
+ * Vea Inbox From Arbitrum to Ethereum.
  * Note: This contract is deployed on Arbitrum.
  */
 contract VeaInboxArbToEth is IVeaInbox {
-    // Arbitrum precompile ArbSys for L2->L1 messaging: https://developer.arbitrum.io/arbos/precompiles#arbsys
+    // ************************************* //
+    // *             Storage               * //
+    // ************************************* //
+
+    // Arbitrum precompile ArbSys, used for L2->L1 messaging.
+    // docs: https://developer.arbitrum.io/arbos/precompiles#arbsys
     IArbSys internal constant ARB_SYS = IArbSys(address(100));
 
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
-    address public immutable veaOutbox; // The vea outbox on ethereum.
+    address public immutable veaOutboxArbToEth; // The vea outbox on ethereum.
 
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
 
@@ -32,6 +37,10 @@ contract VeaInboxArbToEth is IVeaInbox {
 
     bytes32[64] public inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.
     uint64 public count; // count of messages in the merkle tree
+
+    // ************************************* //
+    // *              Events               * //
+    // ************************************* //
 
     /**
      * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
@@ -56,21 +65,25 @@ contract VeaInboxArbToEth is IVeaInbox {
      * @dev Constructor.
      * Note: epochPeriod must match the VeaOutboxArbToEth contract deployment on Ethereum, since it's on a different chain, we can't read it and trust the deployer to set a correct value
      * @param _epochPeriod The duration in seconds between epochs.
-     * @param _veaOutbox The veaOutbox on ethereum.
+     * @param _veaOutboxArbToEth The veaOutbox on ethereum.
      */
-    constructor(uint256 _epochPeriod, address _veaOutbox) {
+    constructor(uint256 _epochPeriod, address _veaOutboxArbToEth) {
         epochPeriod = _epochPeriod;
-        veaOutbox = _veaOutbox;
+        veaOutboxArbToEth = _veaOutboxArbToEth;
 
         // epochPeriod should never be set this small, but we check non-zero value as a sanity check to avoid division by zero
         require(_epochPeriod > 0, "Epoch period must be greater than 0.");
     }
 
+    // ************************************* //
+    // *         State Modifiers           * //
+    // ************************************* //
+
     /**
      * @dev Sends an arbitrary message to Ethereum.
      * `O(log(count))` where count is the number of messages already sent.
-     * Note: Amortized cost is O(1).
-     * Note: See merkle.md for more details on how the merkle tree state is managed by the inbox.
+     * Amortized cost is constant.
+     * Note: See merkle tree docs for details how inbox manages state.
      * @param to The address of the contract on the receiving chain which receives the calldata.
      * @param fnSelector The function selector of the receiving contract.
      * @param data The message calldata, abi.encode(param1, param2, ...)
@@ -133,10 +146,9 @@ contract VeaInboxArbToEth is IVeaInbox {
     }
 
     /**
-     * Saves snapshot of state root.
-     * Note: See merkle.md for more details on how the merkle tree is managed.
+     * @dev Saves snapshot of state root. Snapshots can be saved a maximum of once per epoch.
      * `O(log(count))` where count number of messages in the inbox.
-     * @dev Snapshots can be saved a maximum of once per epoch.
+     * Note: See merkle tree docs for details how inbox manages state.
      */
     function saveSnapshot() external {
         uint256 epoch;
@@ -213,17 +225,17 @@ contract VeaInboxArbToEth is IVeaInbox {
      * @param epoch The epoch of the snapshot requested to send.
      * @param claim The claim associated with the epoch.
      */
-    function sendSnapshot(uint256 epoch, IVeaOutboxEthChain.Claim memory claim) external virtual {
+    function sendSnapshot(uint256 epoch, Claim memory claim) external virtual {
         unchecked {
             require(epoch < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(IVeaOutboxEthChain.resolveDisputedClaim, (epoch, snapshots[epoch], claim));
+        bytes memory data = abi.encodeCall(IVeaOutboxOnL1.resolveDisputedClaim, (epoch, snapshots[epoch], claim));
 
         // Arbitrum -> Ethereum message with native bridge
         // docs: https://developer.arbitrum.io/for-devs/cross-chain-messsaging#arbitrum-to-ethereum-messaging
         // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/arbitrum/GreeterL2.sol#L25
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutbox, data));
+        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(veaOutboxArbToEth, data));
 
         emit SnapshotSent(epoch, ticketID);
     }

@@ -12,14 +12,19 @@ pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
-import "../interfaces/outboxes/IVeaOutboxEthChain.sol";
+import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
 /**
- * Vea Bridge Outbox From Arbitrum to Ethereum.
+ * Vea Outbox From Arbitrum to Ethereum.
+ * Note: This contract is deployed on Ethereum.
  */
-contract VeaOutboxArbToEth is IVeaOutboxEthChain {
+contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
+    // ************************************* //
+    // *             Storage               * //
+    // ************************************* //
+
     IBridge public immutable bridge; // The address of the Arbitrum bridge contract.
-    address public immutable veaInbox; // The address of the veaInbox on arbitrum.
+    address public immutable veaInboxArbToEth; // The address of the vea inbox on arbitrum.
 
     uint256 public immutable deposit; // The deposit in wei required to submit a claim or challenge
     uint256 internal immutable burn; // The amount of wei to burn. deposit / 2
@@ -40,6 +45,10 @@ contract VeaOutboxArbToEth is IVeaOutboxEthChain {
 
     mapping(uint256 => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+
+    // ************************************* //
+    // *              Events               * //
+    // ************************************* //
 
     /**
      * @dev Watcher check this event to challenge fraud.
@@ -67,6 +76,10 @@ contract VeaOutboxArbToEth is IVeaOutboxEthChain {
      */
     event Verified(uint256 epoch);
 
+    // ************************************* //
+    // *        Function Modifiers         * //
+    // ************************************* //
+
     modifier OnlyBridgeRunning() {
         unchecked {
             require(block.timestamp / epochPeriod <= latestVerifiedEpoch + timeoutEpochs, "Bridge Shutdown.");
@@ -76,7 +89,7 @@ contract VeaOutboxArbToEth is IVeaOutboxEthChain {
 
     modifier OnlyBridgeShutdown() {
         unchecked {
-            require(latestVerifiedEpoch + timeoutEpochs < block.timestamp / epochPeriod, "Bridge Running.");
+            require(block.timestamp / epochPeriod > latestVerifiedEpoch + timeoutEpochs, "Bridge Running.");
         }
         _;
     }
@@ -89,7 +102,7 @@ contract VeaOutboxArbToEth is IVeaOutboxEthChain {
      * @param _challengePeriod The duration of the period allowing to challenge a claim.
      * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
      * @param _claimDelay The number of epochs after which the claim can be submitted.
-     * @param _veaInbox The address of the inbox contract on Arbitrum.
+     * @param _veaInboxArbToEth The address of the inbox contract on Arbitrum.
      * @param _bridge The address of the arbitrum bridge contract on Ethereum.
      * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
      */
@@ -99,7 +112,7 @@ contract VeaOutboxArbToEth is IVeaOutboxEthChain {
         uint256 _challengePeriod,
         uint256 _timeoutEpochs,
         uint256 _claimDelay,
-        address _veaInbox,
+        address _veaInboxArbToEth,
         address _bridge,
         uint256 _maxMissingBlocks
     ) {
@@ -109,7 +122,7 @@ contract VeaOutboxArbToEth is IVeaOutboxEthChain {
         challengePeriod = _challengePeriod;
         timeoutEpochs = _timeoutEpochs;
         claimDelay = _claimDelay;
-        veaInbox = _veaInbox;
+        veaInboxArbToEth = _veaInboxArbToEth;
         bridge = IBridge(_bridge);
         maxMissingBlocks = _maxMissingBlocks;
 
@@ -226,7 +239,7 @@ contract VeaOutboxArbToEth is IVeaOutboxEthChain {
         // note: we use the bridge address as a source of truth for the activeOutbox address
 
         require(msg.sender == address(bridge), "Not from bridge.");
-        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInbox, "veaInbox only.");
+        require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInboxArbToEth, "veaInbox only.");
 
         if (epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {
             latestVerifiedEpoch = epoch;
@@ -385,6 +398,10 @@ contract VeaOutboxArbToEth is IVeaOutboxEthChain {
             }
         }
     }
+
+    // ************************************* //
+    // *           Pure / Views            * //
+    // ************************************* //
 
     /**
      * @dev Hashes the claim.

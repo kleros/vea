@@ -39,6 +39,8 @@
     "start-local": "hardhat node --tags ArbToEthOutbox,ArbToEthInbox",
     "deploy": "hardhat deploy",
     "deploy-local": "hardhat deploy --tags ArbToEthOutbox,ArbToEthInbox --network localhost",
+    "etherscan-verify": "hardhat etherscan-verify",
+    "sourcify": "hardhat sourcify --write-failing-metadata",
     "size": "hardhat size-contracts --no-compile",
     "watch": "hardhat watch",
     "docgen": "hardhat docgen",
