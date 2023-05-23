@@ -116,10 +116,14 @@ If you miss that, you can always go to the `deployments/<network>` directory and
 yarn test
 ```
 
-#### 4. Verify the Source Code for Contracts
+#### 4. Verify the Source Code
 
 This must be done for each network separately.
 
 ```bash
-yarn hardhat --network <arbitrumGoerli|arbitrum|goerli|mainnet|chiado|gnosischain> etherscan-verify
+# explorer
+yarn etherscan-verify --network <arbitrumGoerli|arbitrum|goerli|mainnet|chiado|gnosischain>
+
+# sourcify
+yarn sourcify --network <arbitrumGoerli|arbitrum|goerli|mainnet|chiado|gnosischain>
 ```
