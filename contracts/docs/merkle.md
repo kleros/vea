@@ -46,7 +46,7 @@ $$H(3,4):= keccak(H(3) \mathbin{\|\|}H(4))$$
 
 $$H(1,4):= keccak(H(1,2) \mathbin{\|\|}H(3,4))$$
 
-Note that we should sort hash pairs before hasing. eg. if $H(2) < H(1)$, $H(1,2) = keccak(H(2) \mathbin{\|\|}H(1))$, above we neglect the sorting notation for brevity.
+Note that we should sort hash pairs before hashing. eg. if $H(2) < H(1)$, $H(1,2) = keccak(H(2) \mathbin{\|\|}H(1))$, above we neglect the sorting notation for brevity.
 
 ## Visual Example
 
