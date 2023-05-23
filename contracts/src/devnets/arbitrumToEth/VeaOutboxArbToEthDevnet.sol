@@ -12,12 +12,29 @@ pragma solidity 0.8.18;
 
 import "../../arbitrumToEth/VeaOutboxArbToEth.sol";
 
+/**
+ * Vea Outbox From ArbitrumGoerli to Goerli.
+ * Note: This contract is deployed on Goerli.
+ * Note: This contract is permissioned for developer testing (devnet).
+ */
 contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
-    address public testnetOperator;
+    address public devnetOperator; // permissioned devnet operator
 
-    function changeTestnetOperator(address _testnetOperator) external {
-        require(msg.sender == testnetOperator, "Invalid Testnet Operator");
-        testnetOperator = _testnetOperator;
+    /**
+     * @dev Requires that the sender is the devnet operator.
+     */
+    modifier onlyByDevnetOperator() {
+        require(devnetOperator == msg.sender);
+        _;
+    }
+
+    /**
+     * @dev Changes the devnet operator.
+     * @param _devnetOperator The new testnet operator.
+     */
+    function changeDevnetOperator(address _devnetOperator) external onlyByDevnetOperator {
+        require(msg.sender == devnetOperator, "Invalid Testnet Operator");
+        devnetOperator = _devnetOperator;
     }
 
     /**
@@ -25,9 +42,8 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
      * @param _epoch The epoch for which the claim is made.
      * @param _stateRoot The state root to claim.
      */
-    function claim(uint256 _epoch, bytes32 _stateRoot) public payable override {
+    function claim(uint256 _epoch, bytes32 _stateRoot) public payable override onlyByDevnetOperator {
         require(msg.value >= deposit, "Insufficient claim deposit.");
-        require(msg.sender == testnetOperator, "Invalid Testnet Operator");
 
         unchecked {
             require((block.timestamp - claimDelay) / epochPeriod == _epoch, "Invalid epoch.");
@@ -52,82 +68,84 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
 
     /**
      * @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
-     * @param epoch The epoch of the claim to challenge.
+     * @param _epoch The epoch of the claim to challenge.
+     * @param _claim The claim associated with the epoch.
      */
-    function challenge(uint256 epoch, Claim memory claim) external payable override {
-        require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
-        require(claim.challenger == address(0), "Claim already challenged.");
+    function challenge(uint256 _epoch, Claim memory _claim) external payable override onlyByDevnetOperator {
+        require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
+        require(_claim.challenger == address(0), "Claim already challenged.");
         require(msg.value >= deposit, "Insufficient challenge deposit.");
-        require(msg.sender == testnetOperator, "Invalid Testnet Operator");
 
         unchecked {
-            require(block.timestamp < uint256(claim.timestamp) + challengePeriod, "Challenge period elapsed.");
+            require(block.timestamp < uint256(_claim.timestamp) + challengePeriod, "Challenge period elapsed.");
         }
 
-        claim.challenger = msg.sender;
-        claimHashes[epoch] = hashClaim(claim);
+        _claim.challenger = msg.sender;
+        claimHashes[_epoch] = hashClaim(_claim);
 
-        emit Challenged(epoch, msg.sender);
+        emit Challenged(_epoch, msg.sender);
     }
 
     /**
      * @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
-     * @param epoch The epoch associated with the claim deposit to withraw.
+     * @param _claim The claim associated with the epoch.
+     * @param _epoch The epoch associated with the claim deposit to withraw.
      */
-    function withdrawClaimDeposit(uint256 epoch, Claim memory claim) public override {
-        require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
-        require(claim.honest == Party.Claimer, "Claim failed.");
+    function withdrawClaimDeposit(uint256 _epoch, Claim memory _claim) public override {
+        require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
+        require(_claim.honest == Party.Claimer, "Claim failed.");
 
-        delete claimHashes[epoch];
+        delete claimHashes[_epoch];
 
-        if (claim.challenger != address(0)) {
-            payable(burnAddress).send(burn);
-            payable(claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.
+        if (_claim.challenger != address(0)) {
+            payable(BURN_ADDRESS).send(burn);
+            payable(_claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.
         } else {
-            payable(claim.claimer).send(deposit); // User is responsible for accepting ETH.
+            payable(_claim.claimer).send(deposit); // User is responsible for accepting ETH.
         }
     }
 
     /**
      * @dev Resolves the optimistic claim for '_epoch'.
      * @param epoch The epoch of the optimistic claim.
+     * @param _claim The claim associated with the epoch.
      */
-    function validateSnapshot(uint256 epoch, Claim memory claim) public override OnlyBridgeRunning {
-        require(claimHashes[epoch] == hashClaim(claim), "Invalid claim.");
+    function validateSnapshot(uint256 epoch, Claim memory _claim) public override OnlyBridgeRunning {
+        require(claimHashes[epoch] == hashClaim(_claim), "Invalid claim.");
 
         unchecked {
-            require(claim.timestamp + challengePeriod <= block.timestamp, "Challenge period has not yet elapsed.");
+            require(_claim.timestamp + challengePeriod <= block.timestamp, "Challenge period has not yet elapsed.");
             require(
                 // expected blocks <= actual blocks + maxMissingBlocks
-                uint256(claim.blocknumber) + (block.timestamp - uint256(claim.timestamp)) / slotTime <=
+                uint256(_claim.blocknumber) + (block.timestamp - uint256(_claim.timestamp)) / SLOT_TIME <=
                     block.number + maxMissingBlocks,
                 "Too many missing blocks. Possible censorship attack. Use canonical bridge."
             );
         }
 
-        require(claim.challenger == address(0), "Claim is challenged.");
+        require(_claim.challenger == address(0), "Claim is challenged.");
 
         if (epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = epoch;
-            stateRoot = claim.stateRoot;
+            stateRoot = _claim.stateRoot;
             emit Verified(epoch);
         }
 
-        claim.honest = Party.Claimer;
-        claimHashes[epoch] = hashClaim(claim);
+        _claim.honest = Party.Claimer;
+        claimHashes[epoch] = hashClaim(_claim);
     }
 
     /**
      * @dev Testnet operator utility function to claim, validate and withdraw.
-     * @param epoch The epoch for which the claim is made.
-     * @param stateroot The state root to claim.
+     * @param _epoch The epoch for which the claim is made.
+     * @param _stateroot The state root to claim.
      */
-    function devnetAdvanceState(uint256 epoch, bytes32 stateroot) external payable {
-        claim(epoch, stateroot);
+    function devnetAdvanceState(uint256 _epoch, bytes32 _stateroot) external payable {
+        claim(_epoch, _stateroot);
         validateSnapshot(
-            epoch,
+            _epoch,
             Claim({
-                stateRoot: stateroot,
+                stateRoot: _stateroot,
                 claimer: msg.sender,
                 timestamp: uint32(block.timestamp),
                 blocknumber: uint32(block.number),
@@ -136,9 +154,9 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
             })
         );
         withdrawClaimDeposit(
-            epoch,
+            _epoch,
             Claim({
-                stateRoot: stateroot,
+                stateRoot: _stateroot,
                 claimer: msg.sender,
                 timestamp: uint32(block.timestamp),
                 blocknumber: uint32(block.number),
@@ -155,7 +173,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
      * @param _challengePeriod The duration of the period allowing to challenge a claim.
      * @param _timeoutEpochs The epochs before the bridge is considered shutdown.
      * @param _epochClaimDelay The number of epochs a claim can be submitted for.
-     * @param _veaInbox The address of the inbox contract on Arbitrum.
+     * @param _veaInboxArbToEthDevnet The address of the devnet vea inbox on Arbitrum to Ethereum.
      * @param _bridge The address of the Arbitrum bridge contract on Ethereum.
      * @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
      */
@@ -165,7 +183,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         uint256 _challengePeriod,
         uint256 _timeoutEpochs,
         uint256 _epochClaimDelay,
-        address _veaInbox,
+        address _veaInboxArbToEthDevnet,
         address _bridge,
         uint256 _maxMissingBlocks
     )
@@ -175,11 +193,11 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
             _challengePeriod,
             _timeoutEpochs,
             _epochClaimDelay,
-            _veaInbox,
+            _veaInboxArbToEthDevnet,
             _bridge,
             _maxMissingBlocks
         )
     {
-        testnetOperator = msg.sender;
+        devnetOperator = msg.sender;
     }
 }

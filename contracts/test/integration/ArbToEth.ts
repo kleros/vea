@@ -65,13 +65,13 @@ describe("Integration tests", async () => {
     // veaInbox
     expect(await veaInbox.arbSys()).to.equal(arbsysMock.address);
     expect(await veaInbox.epochPeriod()).to.equal(EPOCH_PERIOD);
-    expect(await veaInbox.veaOutbox()).to.equal(veaOutbox.address);
+    expect(await veaInbox.veaOutboxArbToEth()).to.equal(veaOutbox.address);
 
     // veaOutbox
     expect(await veaOutbox.deposit()).to.equal(TEN_ETH);
     expect(await veaOutbox.epochPeriod()).to.equal(EPOCH_PERIOD);
     expect(await veaOutbox.challengePeriod()).to.equal(CHALLENGE_PERIOD);
-    expect(await veaOutbox.veaInbox()).to.equal(veaInbox.address);
+    expect(await veaOutbox.veaInboxArbToEth()).to.equal(veaInbox.address);
     expect(await veaOutbox.bridge()).to.equal(bridge.address);
 
     // ReceiverGateway
@@ -223,13 +223,13 @@ describe("Integration tests", async () => {
       await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args.nodeData;
+      const msg = MessageSentEvent[0].args._nodeData;
 
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
 
-      const msg2 = MessageSentEvent[1].args.nodeData;
+      const msg2 = MessageSentEvent[1].args._nodeData;
 
       let nodes: string[] = [];
 
@@ -285,7 +285,7 @@ describe("Integration tests", async () => {
       await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args.nodeData;
+      const msg = MessageSentEvent[0].args._nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
@@ -343,7 +343,7 @@ describe("Integration tests", async () => {
       await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args.nodeData;
+      const msg = MessageSentEvent[0].args._nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
@@ -554,7 +554,7 @@ describe("Integration tests", async () => {
       await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args.nodeData;
+      const msg = MessageSentEvent[0].args._nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);
@@ -667,7 +667,7 @@ describe("Integration tests", async () => {
       await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args.nodeData;
+      const msg = MessageSentEvent[0].args._nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
       const msgData = "0x" + msg.slice(58);

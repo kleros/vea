@@ -36,10 +36,10 @@ contract RouterArbToGnosis is IRouterToL1 {
 
     /**
      * @dev Event emitted when a message is relayed to another Safe Bridge.
-     * @param epoch The epoch of the batch requested to send.
-     * @param ticketID The unique identifier provided by the underlying canonical bridge.
+     * @param _epoch The epoch of the batch requested to send.
+     * @param _ticketID The unique identifier provided by the underlying canonical bridge.
      */
-    event Routed(uint256 indexed epoch, bytes32 ticketID);
+    event Routed(uint256 indexed _epoch, bytes32 _ticketID);
 
     /**
      * @dev Constructor.
@@ -62,10 +62,11 @@ contract RouterArbToGnosis is IRouterToL1 {
     /**
      * Note: Access restricted to arbitrum canonical bridge.
      * @dev Resolves any challenge of the optimistic claim for '_epoch'.
-     * @param epoch The epoch to verify.
-     * @param stateroot The true batch merkle root for the epoch.
+     * @param _epoch The epoch to verify.
+     * @param _stateroot The true batch merkle root for the epoch.
+     * @param _claim The claim associated with the epoch.
      */
-    function route(uint256 epoch, bytes32 stateroot, Claim calldata claim) external {
+    function route(uint256 _epoch, bytes32 _stateroot, Claim calldata _claim) external {
         // Arbitrum -> Ethereum message sender authentication
         // docs: https://developer.arbitrum.io/arbos/l2-to-l1-messaging/
         // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/ethereum/GreeterL1.sol#L50
@@ -78,9 +79,9 @@ contract RouterArbToGnosis is IRouterToL1 {
         // Ethereum -> Gnosis message passing with the AMB, the canonical Ethereum <-> Gnosis bridge.
         // https://docs.tokenbridge.net/amb-bridge/development-of-a-cross-chain-application/how-to-develop-xchain-apps-by-amb#receive-a-method-call-from-the-amb-bridge
 
-        bytes memory data = abi.encodeCall(IVeaOutboxOnL1.resolveDisputedClaim, (epoch, stateroot, claim));
+        bytes memory data = abi.encodeCall(IVeaOutboxOnL1.resolveDisputedClaim, (_epoch, _stateroot, _claim));
         // Note: using maxGasPerTx here means the relaying txn on Gnosis will need to pass that (large) amount of gas, though almost all will be unused and refunded. This is preferred over hardcoding a gas limit.
         bytes32 ticketID = amb.requireToPassMessage(veaOutboxArbToGnosis, data, amb.maxGasPerTx());
-        emit Routed(epoch, ticketID);
+        emit Routed(_epoch, ticketID);
     }
 }

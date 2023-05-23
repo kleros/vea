@@ -22,8 +22,8 @@ interface IRouterToL2 {
     /**
      * Note: Access restricted to canonical sending-chain bridge.
      * @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.
-     * @param epoch The epoch to verify.
-     * @param stateRoot The true state root for the epoch.
+     * @param _epoch The epoch to verify.
+     * @param _stateRoot The true state root for the epoch.
      */
-    function route(uint256 epoch, bytes32 stateRoot) external;
+    function route(uint256 _epoch, bytes32 _stateRoot) external;
 }

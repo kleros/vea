@@ -43,22 +43,22 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
     /**
      * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
-     * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)
+     * @param _nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)
      */
-    event MessageSent(bytes nodeData);
+    event MessageSent(bytes _nodeData);
 
     /**
      * The bridgers can watch this event to claim the stateRoot on the veaOutbox.
-     * @param count The count of messages in the merkle tree.
+     * @param _count The count of messages in the merkle tree.
      */
-    event SnapshotSaved(uint64 count);
+    event SnapshotSaved(uint64 _count);
 
     /**
      * @dev The event is emitted when a snapshot is sent through the canonical arbitrum bridge.
-     * @param epochSent The epoch of the snapshot.
-     * @param ticketId The ticketId of the L2->L1 message.
+     * @param _epochSent The epoch of the snapshot.
+     * @param _ticketId The ticketId of the L2->L1 message.
      */
-    event SnapshotSent(uint256 indexed epochSent, bytes32 ticketId);
+    event SnapshotSent(uint256 indexed _epochSent, bytes32 _ticketId);
 
     /**
      * @dev Constructor.
@@ -83,12 +83,12 @@ contract VeaInboxArbToGnosis is IVeaInbox {
      * `O(log(count))` where count is the number of messages already sent.
      * Amortized cost is constant.
      * Note: See merkle tree documentation for details how inbox manages state.
-     * @param to The address of the contract on the receiving chain which receives the calldata.
-     * @param fnSelector The function selector of the receiving contract.
-     * @param data The message calldata, abi.encode(param1, param2, ...)
+     * @param _to The address of the contract on the receiving chain which receives the calldata.
+     * @param _fnSelector The function selector of the receiving contract.
+     * @param _data The message calldata, abi.encode(param1, param2, ...)
      * @return msgId The zero based index of the message in the inbox.
      */
-    function sendMessage(address to, bytes4 fnSelector, bytes memory data) external override returns (uint64) {
+    function sendMessage(address _to, bytes4 _fnSelector, bytes memory _data) external override returns (uint64) {
         uint64 oldCount = count;
 
         // Given arbitrum's speed limit of 7 million gas / second, it would take atleast 8 million years of full blocks to overflow.
@@ -97,12 +97,12 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
         bytes memory nodeData = abi.encodePacked(
             oldCount,
-            to,
+            _to,
             // data for outbox relay
             abi.encodePacked( // abi.encodeWithSelector(fnSelector, msg.sender, data)
-                fnSelector,
+                _fnSelector,
                 bytes32(uint256(uint160(msg.sender))), // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
-                data
+                _data
             )
         );
 
@@ -197,23 +197,23 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     /**
      * @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing a pair of children nodes, left and right.
      * note: EVM scratch space is used to efficiently calculate hashes.
-     * @param left The left hash.
-     * @param right The right hash.
+     * @param _left The left hash.
+     * @param _right The right hash.
      * @return parent The parent hash.
      */
-    function sortConcatAndHash(bytes32 left, bytes32 right) internal pure returns (bytes32 parent) {
+    function sortConcatAndHash(bytes32 _left, bytes32 _right) internal pure returns (bytes32 parent) {
         // sort sibling hashes as a convention for efficient proof validation
-        if (left < right) {
+        if (_left < _right) {
             // efficient hash using EVM scratch space
             assembly {
-                mstore(0x00, left)
-                mstore(0x20, right)
+                mstore(0x00, _left)
+                mstore(0x20, _right)
                 parent := keccak256(0x00, 0x40)
             }
         } else {
             assembly {
-                mstore(0x00, right)
-                mstore(0x20, left)
+                mstore(0x00, _right)
+                mstore(0x20, _left)
                 parent := keccak256(0x00, 0x40)
             }
         }
@@ -221,21 +221,21 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
     /**
      * @dev Sends the state root snapshot using Arbitrum's canonical bridge.
-     * @param epoch The epoch of the snapshot requested to send.
-     * @param claim The claim associated with the epoch
+     * @param _epoch The epoch of the snapshot requested to send.
+     * @param _claim The claim associated with the epoch
      */
-    function sendSnapshot(uint256 epoch, Claim memory claim) external virtual {
+    function sendSnapshot(uint256 _epoch, Claim memory _claim) external virtual {
         unchecked {
-            require(epoch < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
+            require(_epoch < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(IRouterToL1.route, (epoch, snapshots[epoch], claim));
+        bytes memory data = abi.encodeCall(IRouterToL1.route, (_epoch, snapshots[_epoch], _claim));
 
         // Arbitrum -> Ethereum message with native bridge
         // docs: https://developer.arbitrum.io/for-devs/cross-chain-messsaging#arbitrum-to-ethereum-messaging
         // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/arbitrum/GreeterL2.sol#L25
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));
 
-        emit SnapshotSent(epoch, ticketID);
+        emit SnapshotSent(_epoch, ticketID);
     }
 }
