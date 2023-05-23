@@ -16,8 +16,8 @@
     "build": "graph build",
     "build:goerli": "yarn update:goerli && graph build",
     "build:chiado": "yarn update:chiado && graph build",
-    "deploy:goerli": "yarn update:goerli && graph deploy --node https://api.thegraph.com/deploy/ kleros/veascan-outbox-goerli",
-    "deploy:chiado": "yarn update:chiado && goldsky subgraph deploy kleros/veascan-outbox-chiado",
+    "deploy:goerli": "yarn build:goerli && yarn graph deploy --node https://api.thegraph.com/deploy/ kleros/veascan-outbox-goerli",
+    "deploy:chiado": "yarn build:chiado && goldsky subgraph deploy kleros-veascan-outbox-chiado/latest",
     "create-local": "graph create --node http://localhost:8020/ kleros/veascan-outbox",
     "remove-local": "graph remove --node http://localhost:8020/ kleros/veascan-outbox",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/veascan-subgraph-outbox"

@@ -9,19 +9,27 @@ on:
     branches:
       - "*"
       
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@128a63446a954579617e875aaab7d2978154e969 # v2.4.0
+      with:
+        egress-policy: audit
+
     - name: Setup Node.js environment
-      uses: actions/setup-node@v3.6.0
+      uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
       with:
         node-version: 16.x   
         
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
     
     - name: Cache node modules
-      uses: actions/cache@v3.3.1
+      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
       env:
         cache-name: cache-node-modules
       with:
@@ -52,7 +60,7 @@ jobs:
       working-directory: contracts
 
     - name: Upload a build artifact
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:    
         name: code-coverage-report    
         path: contracts/coverage
