@@ -12,13 +12,17 @@ pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/inboxes/IVeaInbox.sol";
-import "../interfaces/routers/IRouterToAltL1.sol";
+import "../interfaces/routers/IRouterToL1.sol";
 
 /**
- * Vea Bridge Inbox From Arbitrum to Gnosis.
+ * Vea Inbox From Arbitrum to Gnosis.
  * Note: This contract is deployed on the Arbitrum.
  */
 contract VeaInboxArbToGnosis is IVeaInbox {
+    // ************************************* //
+    // *             Storage               * //
+    // ************************************* //
+
     // Arbitrum precompile ArbSys for L2->L1 messaging: https://developer.arbitrum.io/arbos/precompiles#arbsys
     IArbSys internal constant ARB_SYS = IArbSys(address(100));
 
@@ -28,10 +32,14 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
 
     // Inbox represents minimum data availability to maintain incremental merkle tree.
-    // Supports a max of 2^64 - 1 messages. See merkle.md more details on inbox data management.
+    // Supports a max of 2^64 - 1 messages. See merkle tree docs for details how inbox manages state.
 
     bytes32[64] public inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.
     uint64 public count; // count of messages in the merkle tree
+
+    // ************************************* //
+    // *              Events               * //
+    // ************************************* //
 
     /**
      * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
@@ -66,11 +74,15 @@ contract VeaInboxArbToGnosis is IVeaInbox {
         require(_epochPeriod > 0, "Epoch period must be greater than 0.");
     }
 
+    // ************************************* //
+    // *         State Modifiers           * //
+    // ************************************* //
+
     /**
      * @dev Sends an arbitrary message to Gnosis.
      * `O(log(count))` where count is the number of messages already sent.
-     * Note: Amortized cost is O(1).
-     * Note: See merkle.md for more details on how the merkle tree state is managed by the inbox.
+     * Amortized cost is constant.
+     * Note: See merkle tree documentation for details how inbox manages state.
      * @param to The address of the contract on the receiving chain which receives the calldata.
      * @param fnSelector The function selector of the receiving contract.
      * @param data The message calldata, abi.encode(param1, param2, ...)
@@ -133,10 +145,9 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     }
 
     /**
-     * Saves snapshot of state root.
-     * Note: See merkle.md for more details on how the merkle tree is managed.
+     * @dev Saves snapshot of state root. Snapshots can be saved a maximum of once per epoch.
      * `O(log(count))` where count number of messages in the inbox.
-     * @dev Snapshots can be saved a maximum of once per epoch.
+     * Note: See merkle tree docs for details how inbox manages state.
      */
     function saveSnapshot() external {
         uint256 epoch;
@@ -218,7 +229,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
             require(epoch < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(IRouterToAltL1.route, (epoch, snapshots[epoch], claim));
+        bytes memory data = abi.encodeCall(IRouterToL1.route, (epoch, snapshots[epoch], claim));
 
         // Arbitrum -> Ethereum message with native bridge
         // docs: https://developer.arbitrum.io/for-devs/cross-chain-messsaging#arbitrum-to-ethereum-messaging

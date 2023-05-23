@@ -14,10 +14,14 @@ import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
 /**
- * Vea Bridge Outbox From Arbitrum to Gnosis.
+ * Vea Outbox From Arbitrum to Gnosis.
  * Note: This contract is deployed on Gnosis.
  */
 contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
+    // ************************************* //
+    // *             Storage               * //
+    // ************************************* //
+
     IAMB public immutable amb; // The address of the AMB contract on Gnosis.
     address public immutable routerArbToGnosis; // The address of the router from Arbitrum to Gnosis on ethereum.
 
@@ -41,6 +45,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
 
     mapping(uint256 => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+
+    // ************************************* //
+    // *              Events               * //
+    // ************************************* //
 
     /**
      * @dev Watcher check this event to challenge fraud.
@@ -68,6 +76,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
      */
     event Verified(uint256 epoch);
 
+    // ************************************* //
+    // *        Function Modifiers         * //
+    // ************************************* //
+
     modifier OnlyBridgeRunning() {
         unchecked {
             require(block.timestamp / epochPeriod <= latestVerifiedEpoch + timeoutEpochs, "Bridge Shutdown.");
@@ -77,7 +89,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
 
     modifier OnlyBridgeShutdown() {
         unchecked {
-            require(latestVerifiedEpoch + timeoutEpochs < block.timestamp / epochPeriod, "Bridge Running.");
+            require(block.timestamp / epochPeriod > latestVerifiedEpoch + timeoutEpochs, "Bridge Running.");
         }
         _;
     }
@@ -383,6 +395,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
             }
         }
     }
+
+    // ************************************* //
+    // *           Pure / Views            * //
+    // ************************************* //
 
     /**
      * @dev Hashes the claim.

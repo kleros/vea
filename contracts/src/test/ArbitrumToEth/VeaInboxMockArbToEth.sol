@@ -30,7 +30,7 @@ contract VeaInboxMockArbToEth is VeaInboxArbToEth {
             (_epochSnapshot, snapshots[_epochSnapshot], claim)
         );
 
-        bytes32 ticketID = bytes32(arbSys.sendTxToL1(veaOutbox, data));
+        bytes32 ticketID = bytes32(arbSys.sendTxToL1(veaOutboxArbToEth, data));
 
         emit SnapshotSent(_epochSnapshot, ticketID);
     }
