@@ -15,6 +15,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@arbitrum/sdk@npm:^3.1.2":
+  version: 3.1.3
+  resolution: "@arbitrum/sdk@npm:3.1.3"
+  dependencies:
+    "@ethersproject/address": ^5.0.8
+    "@ethersproject/bignumber": ^5.1.1
+    "@ethersproject/bytes": ^5.0.8
+    ethers: ^5.1.0
+  checksum: 1b3527090b302c3f65d61abca61c18cc1e99fa5e7cd80160bcc62f467e1c99af2ade4cc5ee088f0bb6b7672628c094e8aa02158cb314cba5a17d94676d911feb
+  languageName: node
+  linkType: hard
+
 "@ardatan/relay-compiler@npm:12.0.0":
   version: 12.0.0
   resolution: "@ardatan/relay-compiler@npm:12.0.0"
@@ -1167,7 +1179,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/address@npm:5.7.0, @ethersproject/address@npm:^5.0.4, @ethersproject/address@npm:^5.7.0":
+"@ethersproject/address@npm:5.7.0, @ethersproject/address@npm:^5.0.4, @ethersproject/address@npm:^5.0.8, @ethersproject/address@npm:^5.7.0":
   version: 5.7.0
   resolution: "@ethersproject/address@npm:5.7.0"
   dependencies:
@@ -1199,7 +1211,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/bignumber@npm:5.7.0, @ethersproject/bignumber@npm:^5.0.7, @ethersproject/bignumber@npm:^5.7.0":
+"@ethersproject/bignumber@npm:5.7.0, @ethersproject/bignumber@npm:^5.0.7, @ethersproject/bignumber@npm:^5.1.1, @ethersproject/bignumber@npm:^5.7.0":
   version: 5.7.0
   resolution: "@ethersproject/bignumber@npm:5.7.0"
   dependencies:
@@ -1210,7 +1222,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/bytes@npm:5.7.0, @ethersproject/bytes@npm:^5.0.4, @ethersproject/bytes@npm:^5.7.0":
+"@ethersproject/bytes@npm:5.7.0, @ethersproject/bytes@npm:^5.0.4, @ethersproject/bytes@npm:^5.0.8, @ethersproject/bytes@npm:^5.7.0":
   version: 5.7.0
   resolution: "@ethersproject/bytes@npm:5.7.0"
   dependencies:
@@ -3385,6 +3397,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@kleros/vea-relayer-cli@workspace:relayer-cli":
+  version: 0.0.0-use.local
+  resolution: "@kleros/vea-relayer-cli@workspace:relayer-cli"
+  dependencies:
+    "@kleros/vea-contracts": "workspace:^"
+    "@typechain/ethers-v5": ^10.2.0
+    dotenv: ^16.0.3
+    pm2: ^5.2.2
+    typescript: ^4.9.5
+    web3: ^1.8.2
+    web3-batched-send: ^1.0.3
+  languageName: unknown
+  linkType: soft
+
 "@kleros/vea-relayer-subgraph-inbox@workspace:relayer-subgraph-inbox":
   version: 0.0.0-use.local
   resolution: "@kleros/vea-relayer-subgraph-inbox@workspace:relayer-subgraph-inbox"
@@ -3400,12 +3426,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@kleros/vea-validator-cli@workspace:validator-cli"
   dependencies:
+    "@arbitrum/sdk": ^3.1.2
     "@kleros/vea-contracts": "workspace:^"
     "@typechain/ethers-v5": ^10.2.0
     dotenv: ^16.0.3
-    pm2: ^5.3.0
+    pm2: ^5.2.2
     typescript: ^4.9.5
     web3: ^1.10.0
+    web3-batched-send: ^1.0.3
   languageName: unknown
   linkType: soft
 
@@ -10625,7 +10653,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^5.0.0, ethers@npm:^5.5.3, ethers@npm:^5.6.1, ethers@npm:^5.7.1, ethers@npm:^5.7.2":
+"ethers@npm:^5.0.0, ethers@npm:^5.1.0, ethers@npm:^5.5.3, ethers@npm:^5.6.1, ethers@npm:^5.7.1, ethers@npm:^5.7.2":
   version: 5.7.2
   resolution: "ethers@npm:5.7.2"
   dependencies:
@@ -11471,6 +11499,15 @@ __metadata:
     readable-stream: 1.1.x
     xregexp: 2.0.0
   checksum: ddd313c1d44eb7429f3a7d77a0155dc8fe86a4c64dca58f395632333ce4b4e74c61413c6e0ef66ea3f3d32d905952fbb6d028c7117d522f793eb1fa282e17357
+  languageName: node
+  linkType: hard
+
+"function-batch@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "function-batch@npm:1.1.2"
+  dependencies:
+    lodash: ^4.0.8
+  checksum: 61515786250cf953094594c36560e288f63ad973e23879822bb3072efcc4fcb9204132e76af20208cc7bb8c1e941f656a6b9fd47a2397754966ba25a5c0aba26
   languageName: node
   linkType: hard
 
@@ -14841,7 +14878,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:4.17.21, lodash@npm:^4.17.11, lodash@npm:^4.17.14, lodash@npm:^4.17.15, lodash@npm:^4.17.16, lodash@npm:^4.17.19, lodash@npm:^4.17.20, lodash@npm:^4.17.21, lodash@npm:~4.17.0":
+"lodash@npm:4.17.21, lodash@npm:^4.0.8, lodash@npm:^4.17.11, lodash@npm:^4.17.14, lodash@npm:^4.17.15, lodash@npm:^4.17.16, lodash@npm:^4.17.19, lodash@npm:^4.17.20, lodash@npm:^4.17.21, lodash@npm:~4.17.0":
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: eb835a2e51d381e561e508ce932ea50a8e5a68f4ebdd771ea240d3048244a8d13658acbd502cd4829768c56f2e16bdd4340b9ea141297d472517b83868e677f7
@@ -17212,7 +17249,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pm2@npm:^5.3.0":
+"pm2@npm:^5.2.2":
   version: 5.3.0
   resolution: "pm2@npm:5.3.0"
   dependencies:
@@ -21443,6 +21480,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"web3-batched-send@npm:^1.0.3":
+  version: 1.0.3
+  resolution: "web3-batched-send@npm:1.0.3"
+  dependencies:
+    function-batch: ^1.1.2
+  peerDependencies:
+    web3: ^1.0.0-beta.46
+  checksum: 6d13b6e9ee268886664bc67b1881906777f820fa6bbb00f4aaff632c674d574b914cf04ff7ab4c98fd86f1ce3d152c90d302d648454720fdc5b184dab959f70f
+  languageName: node
+  linkType: hard
+
 "web3-bzz@npm:1.10.0":
   version: 1.10.0
   resolution: "web3-bzz@npm:1.10.0"
@@ -21739,7 +21787,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"web3@npm:^1.10.0":
+"web3@npm:^1.10.0, web3@npm:^1.8.2":
   version: 1.10.0
   resolution: "web3@npm:1.10.0"
   dependencies:

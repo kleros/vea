@@ -6,32 +6,19 @@ import { ethers } from "hardhat";
 
 enum ReceiverChains {
   GNOSIS_MAINNET = 100,
-  GNOSIS_CHIADO = 10200,
   HARDHAT = 31337,
 }
+
 const paramsByChainId = {
   GNOSIS_MAINNET: {
     deposit: parseEther("20000"), // 200,000 xDAI budget to start, enough for 10 days till timeout
-    // Average happy path wait time is 31 hours
+    // Average happy path wait time is 42 hours (36 - 48 hours)
     epochPeriod: 43200, // 12 hours
-    challengePeriod: 90000, // 24 hours (sequencer backdating) + 1 hour buffer
-    numEpochTimeout: 20, // 10 days
-    claimDelay: 3, // 24 hours (sequencer backdating) + 1 hour buffer
+    claimDelay: 108000, // 30 hours (24 hours sequencer backdating + 6 hour buffer)
+    challengePeriod: 21600, // 6 hours
+    numEpochTimeout: 42, // 21 days
     amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
-    routerAddress: ethers.constants.AddressZero, // TODO: FIX ME, address on Ethereum mainnet
-    maxMissingBlocks: 10000000000000,
-    senderChainId: 421613,
-  },
-  GNOSIS_CHIADO: {
-    deposit: parseEther("5"), // 120 xDAI budget for timeout
-    // Average happy path wait time is 22.5 mins, assume no censorship
-    epochPeriod: 600, // 15 min
-    challengePeriod: 600, // 15 min (assume no sequencer backdating)
-    numEpochTimeout: 24, // 6 hours
-    claimDelay: 2,
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
-    routerAddress: ethers.constants.AddressZero, // TODO: FIX ME, address on Goerli
-    maxMissingBlocks: 10000000000000,
+    maxMissingBlocks: 709, // 709 in 4320 slots, assumes 20% honest validators
     senderChainId: 421613,
   },
   HARDHAT: {
@@ -60,11 +47,15 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const senderNetworks = {
     GNOSIS_MAINNET: config.networks.arbitrum,
-    GNOSIS_CHIADO: config.networks.arbitrumGoerli,
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks } =
+  const routerNetworks = {
+    GNOSIS_MAINNET: config.networks.mainnet,
+    HARDHAT: config.networks.localhost,
+  };
+
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, maxMissingBlocks } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -88,7 +79,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         claimDelay,
         veaInboxAddress,
         amb,
-        routerAddress,
+        ethers.constants.AddressZero,
         maxMissingBlocks,
       ],
       log: true,
@@ -97,18 +88,25 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    console.log(config.networks);
     const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
+
+    const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
+    let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
 
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
-    await deploy("VeaOutboxArbToGnosis", {
+    const routerAddress = getContractAddress(deployer, nonceRouter);
+    console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
+
+    const txn = await deploy("VeaOutboxArbToGnosis", {
       from: deployer,
       args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks],
       log: true,
     });
+
+    console.log("VeaOutboxArbToGnosis deployed to:", txn.address);
   };
 
   // ----------------------------------------------------------------------------------------------

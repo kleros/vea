@@ -18,7 +18,7 @@ const paramsByChainId = {
     numEpochTimeout: 42, // 21 days
     maxMissingBlocks: 108, // 108 in 1800 slots
     senderChainId: 42161,
-    arbitrumInbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
+    arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
   },
   /*
   // if maxTimeVariation on seuqencer is 4 hours. . .
@@ -31,7 +31,7 @@ const paramsByChainId = {
     numEpochTimeout: 42, // 21 days
     maxMissingBlocks: 40, // 900 in 1800 slots
     senderChainId: 42161,
-    arbitrumInbox: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f",
+    arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
   },*/
   HARDHAT: {
     deposit: parseEther("10"), // 120 eth budget for timeout
@@ -42,7 +42,7 @@ const paramsByChainId = {
     numEpochTimeout: 10000000000000, // 6 hours
     senderChainId: 31337,
     maxMissingBlocks: 10000000000000,
-    arbitrumInbox: ethers.constants.AddressZero,
+    arbitrumBridge: ethers.constants.AddressZero,
   },
 };
 
@@ -58,11 +58,10 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const senderNetworks = {
     ETHEREUM_MAINNET: config.networks.arbitrum,
-    ETHEREUM_GOERLI: config.networks.arbitrumGoerli,
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, maxMissingBlocks, arbitrumInbox } =
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, maxMissingBlocks, arbitrumBridge } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -83,10 +82,10 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future VeaInbox for nonce %d: %s", nonce, veaInboxAddress);
-    nonce += 4;
+    nonce += 3;
 
-    const inboxAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future inboxAddress for nonce %d: %s", nonce, inboxAddress);
+    const bridgeAddress = getContractAddress(deployer, nonce);
+    console.log("calculated future inboxAddress for nonce %d: %s", nonce, bridgeAddress);
 
     const veaOutbox = await deploy("VeaOutbox", {
       from: deployer,
@@ -99,7 +98,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         numEpochTimeout,
         claimDelay,
         veaInboxAddress,
-        inboxAddress,
+        bridgeAddress,
         maxMissingBlocks,
       ],
       log: true,
@@ -134,7 +133,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
           numEpochTimeout,
           claimDelay,
           veaInboxAddress,
-          arbitrumInbox,
+          arbitrumBridge,
           maxMissingBlocks,
         ],
         log: true,

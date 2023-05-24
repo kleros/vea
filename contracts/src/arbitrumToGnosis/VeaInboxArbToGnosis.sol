@@ -1,85 +1,94 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@jaybuidl, @shotaronowhere]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
 import "../canonical/arbitrum/IArbSys.sol";
-import "../interfaces/IVeaInbox.sol";
-import "./interfaces/IRouterArbToGnosis.sol";
+import "../interfaces/inboxes/IVeaInbox.sol";
+import "../interfaces/routers/IRouterToL1.sol";
 
-/**
- * Vea Bridge Inbox From Arbitrum to Gnosis.
- */
+/// @dev Vea Inbox From Arbitrum to Gnosis.
+/// Note: This contract is deployed on the Arbitrum.
 contract VeaInboxArbToGnosis is IVeaInbox {
-    /**
-     * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
-     * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, data), outbox relays to.call(data)
-     */
-    event MessageSent(bytes nodeData);
+    // ************************************* //
+    // *             Storage               * //
+    // ************************************* //
 
-    /**
-     * The bridgers can watch this event to claim the stateRoot on the veaOutbox.
-     * @param count The count of messages in the merkle tree
-     */
-    event SnapshotSaved(uint256 count);
-
-    /**
-     * @dev The event is emitted when a snapshot through the canonical arbiturm bridge.
-     * @param epochSent The epoch of the snapshot.
-     * @param ticketId The ticketId of the L2->L1 message.
-     */
-    event SnapshotSent(uint256 indexed epochSent, bytes32 ticketId);
-
-    IArbSys public constant ARB_SYS = IArbSys(address(100));
+    // Arbitrum precompile ArbSys for L2->L1 messaging: https://developer.arbitrum.io/arbos/precompiles#arbsys
+    IArbSys internal constant ARB_SYS = IArbSys(address(100));
 
     uint256 public immutable epochPeriod; // Epochs mark the period between stateroot snapshots
-    address public immutable router; // The router on ethereum.
+    address public immutable routerArbToGnosis; // The router on ethereum.
 
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
 
-    // inbox represents minimum data availability to maintain incremental merkle tree.
-    // supports a max of 2^64 - 1 messages and will *never* overflow, see parameter docs.
+    // Inbox represents minimum data availability to maintain incremental merkle tree.
+    // Supports a max of 2^64 - 1 messages. See merkle tree docs for details how inbox manages state.
 
     bytes32[64] public inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.
-    uint256 public count; // count of messages in the merkle tree
+    uint64 public count; // count of messages in the merkle tree
 
-    /**
-     * @dev Constructor.
-     * @param _epochPeriod The duration in seconds between epochs.
-     * @param _router The router on ethereum.
-     */
-    constructor(uint256 _epochPeriod, address _router) {
+    // ************************************* //
+    // *              Events               * //
+    // ************************************* //
+
+    /// @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
+    /// @param _nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)
+    event MessageSent(bytes _nodeData);
+
+    /// The bridgers can watch this event to claim the stateRoot on the veaOutbox.
+    /// @param _count The count of messages in the merkle tree.
+    event SnapshotSaved(uint64 _count);
+
+    /// @dev The event is emitted when a snapshot is sent through the canonical arbitrum bridge.
+    /// @param _epochSent The epoch of the snapshot.
+    /// @param _ticketId The ticketId of the L2->L1 message.
+    event SnapshotSent(uint256 indexed _epochSent, bytes32 _ticketId);
+
+    /// @dev Constructor.
+    /// Note: epochPeriod must match the VeaOutboxArbToGnosis contract deployment on Gnosis, since it's on a different chain, we can't read it and trust the deployer to set a correct value
+    /// @param _epochPeriod The duration in seconds between epochs.
+    /// @param _routerArbToGnosis The router on Ethereum that routes from Arbitrum to Gnosis.
+    constructor(uint256 _epochPeriod, address _routerArbToGnosis) {
         epochPeriod = _epochPeriod;
-        router = _router;
+        routerArbToGnosis = _routerArbToGnosis;
+
+        // epochPeriod should never be set this small, but we check non-zero value as a sanity check to avoid division by zero
+        require(_epochPeriod > 0, "Epoch period must be greater than 0.");
     }
 
-    /**
-     * @dev Sends an arbitrary message to a receiving chain.
-     * `O(log(count))` where count is the number of messages already sent.
-     * Note: Amortized cost is O(1).
-     * @param to The address of the contract on the receiving chain which receives the calldata.
-     * @param fnSelector The function selector of the receiving contract.
-     * @param data The message calldata, abi.encode(param1, param2, ...)
-     * @return msgId The zero based index of the message in the inbox.
-     */
-    function sendMessage(address to, bytes4 fnSelector, bytes memory data) external override returns (uint64) {
-        uint256 oldCount = count;
+    // ************************************* //
+    // *         State Modifiers           * //
+    // ************************************* //
+
+    /// @dev Sends an arbitrary message to Gnosis.
+    ///      `O(log(count))` where count is the number of messages already sent.
+    ///      Amortized cost is constant.
+    /// Note: See merkle tree documentation for details how inbox manages state.
+    /// @param _to The address of the contract on the receiving chain which receives the calldata.
+    /// @param _fnSelector The function selector of the receiving contract.
+    /// @param _data The message calldata, abi.encode(param1, param2, ...)
+    /// @return msgId The zero based index of the message in the inbox.
+    function sendMessage(address _to, bytes4 _fnSelector, bytes memory _data) external override returns (uint64) {
+        uint64 oldCount = count;
+
+        // Given arbitrum's speed limit of 7 million gas / second, it would take atleast 8 million years of full blocks to overflow.
+        // It *should* be impossible to overflow, but we check to be safe when appending to the tree.
+        require(oldCount < type(uint64).max, "Inbox is full.");
 
         bytes memory nodeData = abi.encodePacked(
-            uint64(oldCount),
-            to,
+            oldCount,
+            _to,
             // data for outbox relay
             abi.encodePacked( // abi.encodeWithSelector(fnSelector, msg.sender, data)
-                fnSelector,
+                _fnSelector,
                 bytes32(uint256(uint160(msg.sender))), // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
-                data
+                _data
             )
         );
 
@@ -102,10 +111,9 @@ contract VeaInboxArbToGnosis is IVeaInbox {
             // x = oldCount + 1; acts as a bit mask to determine if a hash is needed
             // note: x is always non-zero, and x is bit shifted to the right each loop
             // hence this loop will always terminate in a maximum of log_2(oldCount + 1) iterations
-            for (uint256 x = oldCount + 1; x & 1 == 0; x = x >> 1) {
-                bytes32 oldInboxNode = inbox[height];
+            for (uint64 x = oldCount + 1; x & 1 == 0; x = x >> 1) {
                 // sort sibling hashes as a convention for efficient proof validation
-                newInboxNode = sortConcatAndHash(oldInboxNode, newInboxNode);
+                newInboxNode = sortConcatAndHash(inbox[height], newInboxNode);
                 height++;
             }
 
@@ -119,14 +127,12 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
         // old count is the zero indexed leaf position in the tree, acts as a msgId
         // gateways should index these msgIds to later relay proofs
-        return uint64(oldCount);
+        return oldCount;
     }
 
-    /**
-     * Saves snapshot of state root.
-     * `O(log(count))` where count number of messages in the inbox.
-     * @dev Snapshots can be saved a maximum of once per epoch.
-     */
+    /// @dev Saves snapshot of state root. Snapshots can be saved a maximum of once per epoch.
+    ///      `O(log(count))` where count number of messages in the inbox.
+    /// Note: See merkle tree docs for details how inbox manages state.
     function saveSnapshot() external {
         uint256 epoch;
         bytes32 stateRoot;
@@ -144,12 +150,12 @@ contract VeaInboxArbToGnosis is IVeaInbox {
             uint256 x;
 
             // x is bit shifted to the right each loop, hence this loop will always terminate in a maximum of log_2(count) iterations
-            for (x = count; x > 0; x = x >> 1) {
+            for (x = uint256(count); x > 0; x = x >> 1) {
                 if ((x & 1) == 1) {
                     // first hash is special case
                     // inbox stores the root of complete subtrees
                     // eg if count = 4 = 0b100, then the first complete subtree is inbox[2]
-                    // inbox = [H(m_3), H(H(m_1),H(m_2)) H(H(H(m_1),H(m_2)),H(H(m_3),H(m_4)))], we read inbox[2] directly
+                    // inbox = [H(3), H(1,2), H(1,4)], we read inbox[2] directly
 
                     stateRoot = inbox[height];
                     break;
@@ -157,12 +163,12 @@ contract VeaInboxArbToGnosis is IVeaInbox {
                 height++;
             }
 
+            // after the first hash, we can calculate the root incrementally
             for (x = x >> 1; x > 0; x = x >> 1) {
                 height++;
                 if ((x & 1) == 1) {
-                    bytes32 inboxHash = inbox[height];
                     // sort sibling hashes as a convention for efficient proof validation
-                    stateRoot = sortConcatAndHash(inboxHash, stateRoot);
+                    stateRoot = sortConcatAndHash(inbox[height], stateRoot);
                 }
             }
         }
@@ -172,44 +178,44 @@ contract VeaInboxArbToGnosis is IVeaInbox {
         emit SnapshotSaved(count);
     }
 
-    /**
-     * @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing sibling hashes.
-     * note: EVM scratch space is used to efficiently calculate hashes.
-     * @param child_1 The first sibling hash.
-     * @param child_2 The second sibling hash.
-     * @return parent The parent hash.
-     */
-    function sortConcatAndHash(bytes32 child_1, bytes32 child_2) internal pure returns (bytes32 parent) {
+    /// @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing a pair of children nodes, left and right.
+    /// Note: EVM scratch space is used to efficiently calculate hashes.
+    /// @param _left The left hash.
+    /// @param _right The right hash.
+    /// @return parent The parent hash.
+    function sortConcatAndHash(bytes32 _left, bytes32 _right) internal pure returns (bytes32 parent) {
         // sort sibling hashes as a convention for efficient proof validation
-        // efficient hash using EVM scratch space
-        if (child_1 > child_2) {
+        if (_left < _right) {
+            // efficient hash using EVM scratch space
             assembly {
-                mstore(0x00, child_2)
-                mstore(0x20, child_1)
+                mstore(0x00, _left)
+                mstore(0x20, _right)
                 parent := keccak256(0x00, 0x40)
             }
         } else {
             assembly {
-                mstore(0x00, child_1)
-                mstore(0x20, child_2)
+                mstore(0x00, _right)
+                mstore(0x20, _left)
                 parent := keccak256(0x00, 0x40)
             }
         }
     }
 
-    /**
-     * @dev Sends the state root snapshot using Arbitrum's canonical bridge.
-     * @param epochSend The epoch of the snapshot requested to send.
-     */
-    function sendSnapshot(uint256 epochSend, IVeaOutboxArbToGnosis.Claim memory claim) external virtual {
+    /// @dev Sends the state root snapshot using Arbitrum's canonical bridge.
+    /// @param _epoch The epoch of the snapshot requested to send.
+    /// @param _claim The claim associated with the epoch
+    function sendSnapshot(uint256 _epoch, Claim memory _claim) external virtual {
         unchecked {
-            require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
+            require(_epoch < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(IRouterArbToGnosis.route, (epochSend, snapshots[epochSend], claim));
+        bytes memory data = abi.encodeCall(IRouterToL1.route, (_epoch, snapshots[_epoch], _claim));
 
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(router, data));
+        // Arbitrum -> Ethereum message with native bridge
+        // docs: https://developer.arbitrum.io/for-devs/cross-chain-messsaging#arbitrum-to-ethereum-messaging
+        // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/arbitrum/GreeterL2.sol#L25
+        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));
 
-        emit SnapshotSent(epochSend, ticketID);
+        emit SnapshotSent(_epoch, ticketID);
     }
 }

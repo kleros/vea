@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@hrishibhat]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@hrishibhat]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
 import "../../../canonical/arbitrum/IArbSys.sol";
 
-contract ArbSysMock {
+contract ArbSysMock is IArbSys {
     function sendTxToL1(
         address destination,
         bytes calldata calldataForL1

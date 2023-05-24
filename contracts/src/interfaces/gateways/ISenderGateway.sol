@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@jaybuidl, @shotaronowhere]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
-import "./IVeaInbox.sol";
+import "../inboxes/IVeaInbox.sol";
 
 interface ISenderGateway {
     function veaInbox() external view returns (IVeaInbox);

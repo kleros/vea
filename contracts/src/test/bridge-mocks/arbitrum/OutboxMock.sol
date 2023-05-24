@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@hrishibhat, @adi274]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@hrishibhat, @adi274]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
@@ -22,12 +20,4 @@ contract OutboxMock is IOutbox {
     function l2ToL1Sender() external view returns (address) {
         return address(veaInbox);
     }
-
-    function l2ToL1Block() external view returns (uint256) {}
-
-    function l2ToL1EthBlock() external view returns (uint256) {}
-
-    function l2ToL1Timestamp() external view returns (uint256) {}
-
-    function processOutgoingMessages(bytes calldata sendsData, uint256[] calldata sendLengths) external {}
 }

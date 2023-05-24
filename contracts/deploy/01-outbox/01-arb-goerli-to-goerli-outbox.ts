@@ -11,14 +11,14 @@ enum ReceiverChains {
 
 const paramsByChainId = {
   ETHEREUM_GOERLI: {
-    deposit: parseEther("0.01"), // 0.1 eth, 120 eth budget for timeout
-    // Average happy path wait time is 1 hour (30 min, 90 min), assume no censorship
-    epochPeriod: 3600, // 60 min
-    claimDelay: 0, // Assume sequencer online
-    challengePeriod: 1800, // 1800, 30 min (assume no sequencer backdating)
+    deposit: parseEther("0.001"),
+    // Average happy path wait time is 1 hour (30 min, 90 min), happy path only
+    epochPeriod: 1800, // 30 min
+    claimDelay: 0, // Assume no sequencer backdating
+    challengePeriod: 0, // 0 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
-    arbitrumInbox: "0x6BEbC4925716945D46F0Ec336D5C2564F419682C",
+    arbitrumBridge: "0xC1Ebd02f738644983b6C4B2d440b8e77DdE276Bd", // https://developer.arbitrum.io/useful-addresses
   },
   HARDHAT: {
     deposit: parseEther("10"), // 120 eth budget for timeout
@@ -29,7 +29,7 @@ const paramsByChainId = {
     numEpochTimeout: 10000000000000, // 6 hours
     senderChainId: 31337,
     maxMissingBlocks: 10000000000000,
-    arbitrumInbox: ethers.constants.AddressZero,
+    arbitrumBridge: ethers.constants.AddressZero,
   },
 };
 
@@ -44,12 +44,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const senderNetworks = {
-    ETHEREUM_MAINNET: config.networks.arbitrum,
     ETHEREUM_GOERLI: config.networks.arbitrumGoerli,
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, maxMissingBlocks, arbitrumInbox } =
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, maxMissingBlocks, arbitrumBridge } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -70,10 +69,10 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future VeaInbox for nonce %d: %s", nonce, veaInboxAddress);
-    nonce += 4;
+    nonce += 3;
 
-    const inboxAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future inboxAddress for nonce %d: %s", nonce, inboxAddress);
+    const bridgeAddress = getContractAddress(deployer, nonce);
+    console.log("calculated future bridgeAddress for nonce %d: %s", nonce, bridgeAddress);
 
     const veaOutbox = await deploy("VeaOutbox", {
       from: deployer,
@@ -86,7 +85,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         numEpochTimeout,
         claimDelay,
         veaInboxAddress,
-        inboxAddress,
+        bridgeAddress,
         maxMissingBlocks,
       ],
       log: true,
@@ -119,7 +118,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
           numEpochTimeout,
           claimDelay,
           veaInboxAddress,
-          arbitrumInbox,
+          arbitrumBridge,
           maxMissingBlocks,
         ],
         log: true,

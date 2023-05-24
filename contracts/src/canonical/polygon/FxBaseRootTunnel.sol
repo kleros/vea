@@ -20,16 +20,12 @@ contract ICheckpointManager {
         address proposer;
     }
 
-    /**
-     * @notice mapping of checkpoint header numbers to block details
-     * @dev These checkpoints are submited by plasma contracts
-     */
+    /// @notice mapping of checkpoint header numbers to block details
+    /// @dev These checkpoints are submited by plasma contracts
     mapping(uint256 => HeaderBlock) public headerBlocks;
 }
 
-/**
- * @dev Ethereum-side abstract contract of the bidirectional Polygon/Ethereum bridge
- */
+///@dev Ethereum-side abstract contract of the bidirectional Polygon/Ethereum bridge
 abstract contract FxBaseRootTunnel {
     using RLPReader for RLPReader.RLPItem;
     using Merkle for bytes32;
@@ -63,14 +59,12 @@ abstract contract FxBaseRootTunnel {
         fxChildTunnel = _fxChildTunnel;
     }
 
-    /**
-     * @notice Send bytes message to Child Tunnel
-     * @param message bytes message that will be sent to Child Tunnel
-     * some message examples -
-     *   abi.encode(tokenId);
-     *   abi.encode(tokenId, tokenMetadata);
-     *   abi.encode(messageType, messageData);
-     */
+    /// @notice Send bytes message to Child Tunnel
+    /// @param message bytes message that will be sent to Child Tunnel
+    /// some message examples -
+    ///   abi.encode(tokenId);
+    ///   abi.encode(tokenId, tokenMetadata);
+    ///   abi.encode(messageType, messageData);
     function _sendMessageToChild(bytes memory message) internal {
         fxRoot.sendMessageToChild(fxChildTunnel, message);
     }
@@ -151,33 +145,28 @@ abstract contract FxBaseRootTunnel {
         return createdAt;
     }
 
-    /**
-     * @notice receive message from  L2 to L1, validated by proof
-     * @dev This function verifies if the transaction actually happened on child chain
-     *
-     * @param inputData RLP encoded data of the reference tx containing following list of fields
-     *  0 - headerNumber - Checkpoint header block number containing the reference tx
-     *  1 - blockProof - Proof that the block header (in the child chain) is a leaf in the submitted merkle root
-     *  2 - blockNumber - Block number containing the reference tx on child chain
-     *  3 - blockTime - Reference tx block time
-     *  4 - txRoot - Transactions root of block
-     *  5 - receiptRoot - Receipts root of block
-     *  6 - receipt - Receipt of the reference transaction
-     *  7 - receiptProof - Merkle proof of the reference receipt
-     *  8 - branchMask - 32 bits denoting the path of receipt in merkle tree
-     *  9 - receiptLogIndex - Log Index to read from the receipt
-     */
+    /// @notice receive message from  L2 to L1, validated by proof
+    /// @dev This function verifies if the transaction actually happened on child chain
+    /// @param inputData RLP encoded data of the reference tx containing following list of fields
+    ///  0 - headerNumber - Checkpoint header block number containing the reference tx
+    ///  1 - blockProof - Proof that the block header (in the child chain) is a leaf in the submitted merkle root
+    ///  2 - blockNumber - Block number containing the reference tx on child chain
+    ///  3 - blockTime - Reference tx block time
+    ///  4 - txRoot - Transactions root of block
+    ///  5 - receiptRoot - Receipts root of block
+    ///  6 - receipt - Receipt of the reference transaction
+    ///  7 - receiptProof - Merkle proof of the reference receipt
+    ///  8 - branchMask - 32 bits denoting the path of receipt in merkle tree
+    ///  9 - receiptLogIndex - Log Index to read from the receipt
     function receiveMessage(bytes memory inputData) public virtual {
         bytes memory message = _validateAndExtractMessage(inputData);
         _processMessageFromChild(message);
     }
 
-    /**
-     * @notice Process message received from Child Tunnel
-     * @dev function needs to be implemented to handle message as per requirement
-     * This is called by onStateReceive function.
-     * Since it is called via a system call, any event will not be emitted during its execution.
-     * @param message bytes message that was sent from Child Tunnel
-     */
+    /// @notice Process message received from Child Tunnel
+    /// @dev function needs to be implemented to handle message as per requirement
+    /// This is called by onStateReceive function.
+    /// Since it is called via a system call, any event will not be emitted during its execution.
+    /// @param message bytes message that was sent from Child Tunnel
     function _processMessageFromChild(bytes memory message) internal virtual;
 }

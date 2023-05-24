@@ -1,33 +1,14 @@
-// SPDX-License-Identifier: Apache-2.0
-
-/*
- * Copyright 2021, Offchain Labs, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// SPDX-License-Identifier: BUSL-1.1
+// https://github.com/OffchainLabs/nitro-contracts/blob/08ac127e966fa87a4d5ba3d23cd3132b57701132/src/bridge/IBridge.sol
+// proxy: https://etherscan.io/address/0x0B9857ae2D4A3DBe74ffE1d7DF045bb7F96E4840#code
+// implementation: https://etherscan.io/address/0x0ea7372338a589e7f0b00e463a53aa464ef04e17#code
+// interface is pruned for relevant function stubs
 
 pragma solidity 0.8.18;
 
 interface IOutbox {
-    event OutboxEntryCreated(uint256 indexed batchNum, uint256 outboxIndex, bytes32 outputRoot, uint256 numInBatch);
-
+    /// @notice When l2ToL1Sender returns a nonzero address, the message was originated by an L2 account
+    ///         When the return value is zero, that means this is a system message
+    /// @dev the l2ToL1Sender behaves as the tx.origin, the msg.sender should be validated to protect against reentrancies
     function l2ToL1Sender() external view returns (address);
-
-    function l2ToL1Block() external view returns (uint256);
-
-    function l2ToL1EthBlock() external view returns (uint256);
-
-    function l2ToL1Timestamp() external view returns (uint256);
-
-    function processOutgoingMessages(bytes calldata sendsData, uint256[] calldata sendLengths) external;
 }

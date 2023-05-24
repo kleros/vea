@@ -3,17 +3,12 @@ import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
   ARBITRUM = 42161,
-  ARBITRUM_GOERLI = 421613,
   HARDHAT = 31337,
 }
 const paramsByChainId = {
   ARBITRUM: {
     epochPeriod: 43200, // 12 hours
     companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.mainnet,
-  },
-  ARBITRUM_GOERLI: {
-    epochPeriod: 1800, // 30 minutes
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.goerli,
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -61,15 +56,9 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       log: true,
     });
 
-    const bridge = await deploy("BridgeMock", {
+    await deploy("BridgeMock", {
       from: deployer,
       args: [outbox.address],
-      log: true,
-    });
-
-    await deploy("InboxMock", {
-      from: deployer,
-      args: [bridge.address],
       log: true,
     });
   };
