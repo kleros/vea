@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@jaybuidl, @shotaronowhere]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
@@ -14,27 +12,19 @@ import "../canonical/arbitrum/IArbSys.sol";
 import "../interfaces/inboxes/IVeaInbox.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL2.sol";
 
-/**
- * Vea Bridge Inbox From Arbitrum to Optimism.
- */
+/// @dev Vea Bridge Inbox From Arbitrum to Optimism.
 contract VeaInboxArbToOpt is IVeaInbox {
-    /**
-     * @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
-     * @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)
-     */
+    /// @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
+    /// @param nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)
     event MessageSent(bytes nodeData);
 
-    /**
-     * The bridgers can watch this event to claim the stateRoot on the veaOutbox.
-     * @param count The count of messages in the merkle tree
-     */
+    /// The bridgers can watch this event to claim the stateRoot on the veaOutbox.
+    /// @param count The count of messages in the merkle tree
     event SnapshotSaved(uint256 count);
 
-    /**
-     * @dev The event is emitted when a snapshot is sent through the canonical arbitrum bridge.
-     * @param epochSent The epoch of the snapshot.
-     * @param ticketId The ticketId of the L2->L1 message.
-     */
+    /// @dev The event is emitted when a snapshot is sent through the canonical arbitrum bridge.
+    /// @param epochSent The epoch of the snapshot.
+    /// @param ticketId The ticketId of the L2->L1 message.
     event SnapshotSent(uint256 indexed epochSent, bytes32 ticketId);
 
     IArbSys internal constant ARB_SYS = IArbSys(address(100));
@@ -50,25 +40,21 @@ contract VeaInboxArbToOpt is IVeaInbox {
     bytes32[64] public inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.
     uint256 public count; // count of messages in the merkle tree
 
-    /**
-     * @dev Constructor.
-     * @param _epochPeriod The duration in seconds between epochs.
-     * @param _veaOutbox The veaOutbox on ethereum.
-     */
+    /// @dev Constructor.
+    /// @param _epochPeriod The duration in seconds between epochs.
+    /// @param _veaOutbox The veaOutbox on ethereum.
     constructor(uint256 _epochPeriod, address _veaOutbox) {
         epochPeriod = _epochPeriod;
         veaOutbox = _veaOutbox;
     }
 
-    /**
-     * @dev Sends an arbitrary message to a receiving chain.
-     * `O(log(count))` where count is the number of messages already sent.
-     * Note: Amortized cost is O(1).
-     * @param to The address of the contract on the receiving chain which receives the calldata.
-     * @param fnSelector The function selector of the receiving contract.
-     * @param data The message calldata, abi.encode(param1, param2, ...)
-     * @return msgId The zero based index of the message in the inbox.
-     */
+    /// @dev Sends an arbitrary message to a receiving chain.
+    ///      `O(log(count))` where count is the number of messages already sent.
+    /// Note: Amortized cost is O(1).
+    /// @param to The address of the contract on the receiving chain which receives the calldata.
+    /// @param fnSelector The function selector of the receiving contract.
+    /// @param data The message calldata, abi.encode(param1, param2, ...)
+    /// @return msgId The zero based index of the message in the inbox.
     function sendMessage(address to, bytes4 fnSelector, bytes memory data) external override returns (uint64) {
         uint256 oldCount = count;
 
@@ -122,11 +108,9 @@ contract VeaInboxArbToOpt is IVeaInbox {
         return uint64(oldCount);
     }
 
-    /**
-     * Saves snapshot of state root.
-     * `O(log(count))` where count number of messages in the inbox.
-     * @dev Snapshots can be saved a maximum of once per epoch.
-     */
+    /// @dev Snapshots can be saved a maximum of once per epoch.
+    ///      Saves snapshot of state root.
+    ///      `O(log(count))` where count number of messages in the inbox.
     function saveSnapshot() external {
         uint256 epoch;
         bytes32 stateRoot;
@@ -172,13 +156,11 @@ contract VeaInboxArbToOpt is IVeaInbox {
         emit SnapshotSaved(count);
     }
 
-    /**
-     * @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing sibling hashes.
-     * note: EVM scratch space is used to efficiently calculate hashes.
-     * @param child_1 The first sibling hash.
-     * @param child_2 The second sibling hash.
-     * @return parent The parent hash.
-     */
+    /// @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing sibling hashes.
+    /// note: EVM scratch space is used to efficiently calculate hashes.
+    /// @param child_1 The first sibling hash.
+    /// @param child_2 The second sibling hash.
+    /// @return parent The parent hash.
     function sortConcatAndHash(bytes32 child_1, bytes32 child_2) internal pure returns (bytes32 parent) {
         // sort sibling hashes as a convention for efficient proof validation
         // efficient hash using EVM scratch space
@@ -197,10 +179,8 @@ contract VeaInboxArbToOpt is IVeaInbox {
         }
     }
 
-    /**
-     * @dev Sends the state root snapshot using Arbitrum's canonical bridge.
-     * @param epochSend The epoch of the snapshot requested to send.
-     */
+    /// @dev Sends the state root snapshot using Arbitrum's canonical bridge.
+    /// @param epochSend The epoch of the snapshot requested to send.
     function sendSnapshot(uint256 epochSend) external virtual {
         unchecked {
             require(epochSend < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");

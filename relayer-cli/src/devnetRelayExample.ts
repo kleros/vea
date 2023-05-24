@@ -20,13 +20,13 @@ const epochPeriod = 1800; // 30 min
 (async () => {
   while (1) {
     for (const chain_id of chain_ids) {
-      let nonce = initialize(chain_id);
+      let nonce = await initialize(chain_id);
       const senderGateway =
         chain_id === 10200
           ? "0xe6aC8CfF97199A67b8121a3Ce3aC98772f90B94b"
           : "0x177AfBF3cda970024Efa901516735aF9c3B894a4";
       nonce = await relayAllFrom(chain_id, nonce, senderGateway);
-      updateStateFile(chain_id, Math.floor(Date.now() / 1000), nonce);
+      await updateStateFile(chain_id, Math.floor(Date.now() / 1000), nonce);
     }
     const currentTS = Math.floor(Date.now() / 1000);
     const delayAmount = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 300 * 1000;
@@ -35,7 +35,7 @@ const epochPeriod = 1800; // 30 min
   }
 })();
 
-function initialize(chain_id: number): number {
+async function initialize(chain_id: number): Promise<number> {
   if (chain_id !== 5 && chain_id !== 10200) throw new Error("Invalid chainid");
 
   const lock_file_name = "./src/state/" + chain_id + ".pid";
@@ -50,7 +50,7 @@ function initialize(chain_id: number): number {
   if (!fs.existsSync(state_file_name)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
-    updateStateFile(chain_id, tsnow, 0);
+    await updateStateFile(chain_id, tsnow, 0);
   }
 
   // print pwd for debugging

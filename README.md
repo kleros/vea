@@ -9,19 +9,25 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/branch-master-lightgrey">
-  <a href="https://github.com/kleros/vea/actions/workflows/contracts-testing.yml"><img src="https://github.com/kleros/vea/actions/workflows/contracts-testing.yml/badge.svg?branch=master" alt="Contracts Testing"></a>
+  <a href="https://api.securityscorecards.dev/projects/github.com/kleros/vea"><img src="https://api.securityscorecards.dev/projects/github.com/kleros/vea/badge" alt="OpenSSF Scorecard"></a>
   </br>
+  <!-- DEV BRANCH -->
   <img src="https://img.shields.io/badge/branch-dev-lightgrey">
   <a href="https://github.com/kleros/vea/actions/workflows/contracts-testing.yml"><img src="https://github.com/kleros/vea/actions/workflows/contracts-testing.yml/badge.svg?branch=dev" alt="Contracts Testing"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=dev&metric=security_rating" alt="Security Rating"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=dev&metric=alert_status" alt="Quality Gate Status"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=dev&metric=bugs" alt="Bugs"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=dev&metric=reliability_rating" alt="Reliability Rating"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=dev&metric=sqale_rating" alt="Maintainability Rating"></a>
   </br>
-  <a href="https://api.securityscorecards.dev/projects/github.com/kleros/vea"><img src="https://api.securityscorecards.dev/projects/github.com/kleros/vea/badge" alt="OpenSSF Scorecard"></a>
-  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&metric=security_rating" alt="Security Rating"></a>
-  </br>
-  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&metric=alert_status" alt="Quality Gate Status"></a>
-  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&metric=bugs" alt="Bugs"></a>
-  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&metric=reliability_rating" alt="Reliability Rating"></a>
-  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&metric=sqale_rating" alt="Maintainability Rating"></a>
+  <!-- MASTER BRANCH -->
+  <img src="https://img.shields.io/badge/branch-master-lightgrey">
+  <a href="https://github.com/kleros/vea/actions/workflows/contracts-testing.yml"><img src="https://github.com/kleros/vea/actions/workflows/contracts-testing.yml/badge.svg?branch=master" alt="Contracts Testing"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=master&metric=security_rating" alt="Security Rating"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=master&metric=alert_status" alt="Quality Gate Status"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=master&metric=bugs" alt="Bugs"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=master&metric=reliability_rating" alt="Reliability Rating"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kleros_vea"><img src="https://sonarcloud.io/api/project_badges/measure?project=kleros_vea&branch=master&metric=sqale_rating" alt="Maintainability Rating"></a>
 </p>
 
 ---

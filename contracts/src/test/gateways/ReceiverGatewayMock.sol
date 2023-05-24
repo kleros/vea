@@ -1,21 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@shotaronowhere, @adi274]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@shotaronowhere, @adi274]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
 import "./IReceiverGatewayMock.sol";
 
-/**
- * Receiver Gateway Mock
- * Counterpart of `SenderGatewayMock`
- */
+/// Receiver Gateway Mock
+/// Counterpart of `SenderGatewayMock`
 contract ReceiverGatewayMock is IReceiverGatewayMock {
     address public immutable veaOutbox;
     address public immutable override senderGateway;
@@ -34,16 +30,12 @@ contract ReceiverGatewayMock is IReceiverGatewayMock {
         _;
     }
 
-    /**
-     * Receive the message from the sender gateway.
-     */
+    /// Receive the message from the sender gateway.
     function receiveMessage(address messageSender) external onlyFromAuthenticatedVeaSender(messageSender) {
         _receiveMessage();
     }
 
-    /**
-     * Receive the message from the sender gateway.
-     */
+    /// Receive the message from the sender gateway.
     function receiveMessage(
         address messageSender,
         uint256 _data

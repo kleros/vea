@@ -1,26 +1,21 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@shotaronowhere]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@shotaronowhere]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
 pragma solidity 0.8.18;
 
-/**
- *  @title MerkleProof
- *  @author Shotaro N. - <shawtarohgn@gmail.com>
- *  @dev A set of funcitons to verify merkle proofs.
- */
+/// @title MerkleProof
+/// @author Shotaro N. - <shawtarohgn@gmail.com>
+/// @dev A set of funcitons to verify merkle proofs.
 contract MerkleProof {
-    /** @dev Validates membership of leaf in merkle tree with merkle proof.
-     *  @param proof The merkle proof.
-     *  @param leaf The leaf to validate membership in merkle tree.
-     *  @param merkleRoot The root of the merkle tree.
-     */
+    /// @dev Validates membership of leaf in merkle tree with merkle proof.
+    /// @param proof The merkle proof.
+    /// @param leaf The leaf to validate membership in merkle tree.
+    /// @param merkleRoot The root of the merkle tree.
     function _validateProof(bytes32[] memory proof, bytes32 leaf, bytes32 merkleRoot) internal pure returns (bool) {
         unchecked {
             for (uint256 i = 0; i < proof.length; i++) {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 // https://github.com/OffchainLabs/nitro-contracts/blob/08ac127e966fa87a4d5ba3d23cd3132b57701132/src/bridge/IBridge.sol
 // proxy: https://etherscan.io/address/0x0B9857ae2D4A3DBe74ffE1d7DF045bb7F96E4840#code
 // implementation: https://etherscan.io/address/0x0ea7372338a589e7f0b00e463a53aa464ef04e17#code
