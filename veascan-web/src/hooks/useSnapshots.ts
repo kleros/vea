@@ -39,10 +39,9 @@ export const useSnapshots = (
         lastTimestamp,
         fromChain,
         toChain,
-        snapshotsPerPage + 1,
+        snapshotsPerPage,
         queryInfo.query
       );
-      console.log("sortedSnapshots", sortedSnapshots);
       const filteredSnapshots = sortedSnapshots.filter(
         (snapshot) => !shownSnapshots.has(getSnapshotId(snapshot))
       );
@@ -76,7 +75,7 @@ const getSortedSnapshots = async (
       query,
       {
         lastTimestamp,
-        snapshotsPerPage,
+        snapshotsPerPage: snapshotsPerPage + 1,
       }
     )
   );

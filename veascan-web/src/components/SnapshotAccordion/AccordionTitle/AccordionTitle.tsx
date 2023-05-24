@@ -120,11 +120,13 @@ const parseStatus = ({
   resolved,
   resolving,
   challenged,
+  verified,
   claimed,
 }: IStatus): keyof typeof variantColors => {
   if (resolved) return "Resolved";
   if (resolving) return "Resolving";
   if (challenged) return "Challenged";
+  if (verified) return "Verified";
   if (claimed) return "Claimed";
   return "Taken";
 };

@@ -7,7 +7,7 @@ type Claim @entity {
   challenged: Boolean!
   challenge: Challenge @derivedFrom(field: "claim")
   verification: Verification @derivedFrom(field: "claim")
-  honest: Boolean!
+  verified: Boolean!
   txHash: Bytes!
 }
 
@@ -26,6 +26,7 @@ type Verification @entity {
   timestamp: BigInt!
   caller: Bytes!
   txHash: Bytes!
+  transactionIndex: BigInt!
 }
 
 type Message @entity {

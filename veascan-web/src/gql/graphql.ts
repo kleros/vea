@@ -117,11 +117,11 @@ export enum Challenge_OrderBy {
   ClaimBridger = "claim__bridger",
   ClaimChallenged = "claim__challenged",
   ClaimEpoch = "claim__epoch",
-  ClaimHonest = "claim__honest",
   ClaimId = "claim__id",
   ClaimStateroot = "claim__stateroot",
   ClaimTimestamp = "claim__timestamp",
   ClaimTxHash = "claim__txHash",
+  ClaimVerified = "claim__verified",
   Honest = "honest",
   Id = "id",
   Timestamp = "timestamp",
@@ -134,12 +134,12 @@ export type Claim = {
   challenge?: Maybe<Challenge>;
   challenged: Scalars["Boolean"];
   epoch: Scalars["BigInt"];
-  honest: Scalars["Boolean"];
   id: Scalars["ID"];
   stateroot: Scalars["Bytes"];
   timestamp: Scalars["BigInt"];
   txHash: Scalars["Bytes"];
   verification?: Maybe<Verification>;
+  verified: Scalars["Boolean"];
 };
 
 export type Claim_Filter = {
@@ -169,10 +169,6 @@ export type Claim_Filter = {
   epoch_lte?: InputMaybe<Scalars["BigInt"]>;
   epoch_not?: InputMaybe<Scalars["BigInt"]>;
   epoch_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
-  honest?: InputMaybe<Scalars["Boolean"]>;
-  honest_in?: InputMaybe<Array<Scalars["Boolean"]>>;
-  honest_not?: InputMaybe<Scalars["Boolean"]>;
-  honest_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
   id?: InputMaybe<Scalars["ID"]>;
   id_gt?: InputMaybe<Scalars["ID"]>;
   id_gte?: InputMaybe<Scalars["ID"]>;
@@ -211,6 +207,10 @@ export type Claim_Filter = {
   txHash_not_contains?: InputMaybe<Scalars["Bytes"]>;
   txHash_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
   verification_?: InputMaybe<Verification_Filter>;
+  verified?: InputMaybe<Scalars["Boolean"]>;
+  verified_in?: InputMaybe<Array<Scalars["Boolean"]>>;
+  verified_not?: InputMaybe<Scalars["Boolean"]>;
+  verified_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
 };
 
 export enum Claim_OrderBy {
@@ -223,7 +223,6 @@ export enum Claim_OrderBy {
   ChallengeTxHash = "challenge__txHash",
   Challenged = "challenged",
   Epoch = "epoch",
-  Honest = "honest",
   Id = "id",
   Stateroot = "stateroot",
   Timestamp = "timestamp",
@@ -232,7 +231,9 @@ export enum Claim_OrderBy {
   VerificationCaller = "verification__caller",
   VerificationId = "verification__id",
   VerificationTimestamp = "verification__timestamp",
+  VerificationTransactionIndex = "verification__transactionIndex",
   VerificationTxHash = "verification__txHash",
+  Verified = "verified",
 }
 
 export type Fallback = {
@@ -957,6 +958,7 @@ export type Verification = {
   claim: Claim;
   id: Scalars["ID"];
   timestamp: Scalars["BigInt"];
+  transactionIndex: Scalars["BigInt"];
   txHash: Scalars["Bytes"];
 };
 
@@ -1012,6 +1014,14 @@ export type Verification_Filter = {
   timestamp_lte?: InputMaybe<Scalars["BigInt"]>;
   timestamp_not?: InputMaybe<Scalars["BigInt"]>;
   timestamp_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  transactionIndex?: InputMaybe<Scalars["BigInt"]>;
+  transactionIndex_gt?: InputMaybe<Scalars["BigInt"]>;
+  transactionIndex_gte?: InputMaybe<Scalars["BigInt"]>;
+  transactionIndex_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  transactionIndex_lt?: InputMaybe<Scalars["BigInt"]>;
+  transactionIndex_lte?: InputMaybe<Scalars["BigInt"]>;
+  transactionIndex_not?: InputMaybe<Scalars["BigInt"]>;
+  transactionIndex_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
   txHash?: InputMaybe<Scalars["Bytes"]>;
   txHash_contains?: InputMaybe<Scalars["Bytes"]>;
   txHash_gt?: InputMaybe<Scalars["Bytes"]>;
@@ -1030,13 +1040,14 @@ export enum Verification_OrderBy {
   ClaimBridger = "claim__bridger",
   ClaimChallenged = "claim__challenged",
   ClaimEpoch = "claim__epoch",
-  ClaimHonest = "claim__honest",
   ClaimId = "claim__id",
   ClaimStateroot = "claim__stateroot",
   ClaimTimestamp = "claim__timestamp",
   ClaimTxHash = "claim__txHash",
+  ClaimVerified = "claim__verified",
   Id = "id",
   Timestamp = "timestamp",
+  TransactionIndex = "transactionIndex",
   TxHash = "txHash",
 }
 
@@ -1194,8 +1205,8 @@ export type GetClaimQuery = {
     stateroot: any;
     bridger: any;
     challenged: boolean;
+    verified: boolean;
     txHash: any;
-    honest: boolean;
     challenge?: {
       __typename?: "Challenge";
       id: string;
@@ -1228,8 +1239,8 @@ export type GetClaimedSnapshotsQuery = {
     stateroot: any;
     bridger: any;
     challenged: boolean;
+    verified: boolean;
     txHash: any;
-    honest: boolean;
     challenge?: {
       __typename?: "Challenge";
       id: string;
@@ -1262,8 +1273,8 @@ export type GetChallengedSnapshotsQuery = {
     stateroot: any;
     bridger: any;
     challenged: boolean;
+    verified: boolean;
     txHash: any;
-    honest: boolean;
     challenge?: {
       __typename?: "Challenge";
       id: string;
@@ -1296,8 +1307,8 @@ export type GetVerifiedSnapshotsQuery = {
     stateroot: any;
     bridger: any;
     challenged: boolean;
+    verified: boolean;
     txHash: any;
-    honest: boolean;
     challenge?: {
       __typename?: "Challenge";
       id: string;
@@ -1330,8 +1341,8 @@ export type GetResolvedSnapshotsQuery = {
     stateroot: any;
     bridger: any;
     challenged: boolean;
+    verified: boolean;
     txHash: any;
-    honest: boolean;
     challenge?: {
       __typename?: "Challenge";
       id: string;
@@ -2001,6 +2012,7 @@ export const GetClaimDocument = {
                 { kind: "Field", name: { kind: "Name", value: "stateroot" } },
                 { kind: "Field", name: { kind: "Name", value: "bridger" } },
                 { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
                 { kind: "Field", name: { kind: "Name", value: "txHash" } },
                 {
                   kind: "Field",
@@ -2049,7 +2061,6 @@ export const GetClaimDocument = {
                     ],
                   },
                 },
-                { kind: "Field", name: { kind: "Name", value: "honest" } },
               ],
             },
           },
@@ -2130,7 +2141,7 @@ export const GetClaimedSnapshotsDocument = {
                     },
                     {
                       kind: "ObjectField",
-                      name: { kind: "Name", value: "honest" },
+                      name: { kind: "Name", value: "verified" },
                       value: { kind: "BooleanValue", value: false },
                     },
                     {
@@ -2151,6 +2162,7 @@ export const GetClaimedSnapshotsDocument = {
                 { kind: "Field", name: { kind: "Name", value: "stateroot" } },
                 { kind: "Field", name: { kind: "Name", value: "bridger" } },
                 { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
                 { kind: "Field", name: { kind: "Name", value: "txHash" } },
                 {
                   kind: "Field",
@@ -2199,7 +2211,6 @@ export const GetClaimedSnapshotsDocument = {
                     ],
                   },
                 },
-                { kind: "Field", name: { kind: "Name", value: "honest" } },
               ],
             },
           },
@@ -2283,7 +2294,7 @@ export const GetChallengedSnapshotsDocument = {
                     },
                     {
                       kind: "ObjectField",
-                      name: { kind: "Name", value: "honest" },
+                      name: { kind: "Name", value: "verified" },
                       value: { kind: "BooleanValue", value: false },
                     },
                     {
@@ -2304,6 +2315,7 @@ export const GetChallengedSnapshotsDocument = {
                 { kind: "Field", name: { kind: "Name", value: "stateroot" } },
                 { kind: "Field", name: { kind: "Name", value: "bridger" } },
                 { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
                 { kind: "Field", name: { kind: "Name", value: "txHash" } },
                 {
                   kind: "Field",
@@ -2352,7 +2364,6 @@ export const GetChallengedSnapshotsDocument = {
                     ],
                   },
                 },
-                { kind: "Field", name: { kind: "Name", value: "honest" } },
               ],
             },
           },
@@ -2436,7 +2447,7 @@ export const GetVerifiedSnapshotsDocument = {
                     },
                     {
                       kind: "ObjectField",
-                      name: { kind: "Name", value: "honest" },
+                      name: { kind: "Name", value: "verified" },
                       value: { kind: "BooleanValue", value: true },
                     },
                     {
@@ -2457,6 +2468,7 @@ export const GetVerifiedSnapshotsDocument = {
                 { kind: "Field", name: { kind: "Name", value: "stateroot" } },
                 { kind: "Field", name: { kind: "Name", value: "bridger" } },
                 { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
                 { kind: "Field", name: { kind: "Name", value: "txHash" } },
                 {
                   kind: "Field",
@@ -2505,7 +2517,6 @@ export const GetVerifiedSnapshotsDocument = {
                     ],
                   },
                 },
-                { kind: "Field", name: { kind: "Name", value: "honest" } },
               ],
             },
           },
@@ -2589,7 +2600,7 @@ export const GetResolvedSnapshotsDocument = {
                     },
                     {
                       kind: "ObjectField",
-                      name: { kind: "Name", value: "honest" },
+                      name: { kind: "Name", value: "verified" },
                       value: { kind: "BooleanValue", value: true },
                     },
                     {
@@ -2610,6 +2621,7 @@ export const GetResolvedSnapshotsDocument = {
                 { kind: "Field", name: { kind: "Name", value: "stateroot" } },
                 { kind: "Field", name: { kind: "Name", value: "bridger" } },
                 { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
                 { kind: "Field", name: { kind: "Name", value: "txHash" } },
                 {
                   kind: "Field",
@@ -2658,7 +2670,6 @@ export const GetResolvedSnapshotsDocument = {
                     ],
                   },
                 },
-                { kind: "Field", name: { kind: "Name", value: "honest" } },
               ],
             },
           },

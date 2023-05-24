@@ -9,6 +9,7 @@ export const getClaimQuery = graphql(`
       stateroot
       bridger
       challenged
+      verified
       txHash
       challenge {
         id
@@ -22,7 +23,6 @@ export const getClaimQuery = graphql(`
         caller
         txHash
       }
-      honest
     }
   }
 `);
@@ -33,7 +33,11 @@ export const getClaimedSnapshotsQuery = graphql(`
       first: $snapshotsPerPage
       orderBy: timestamp
       orderDirection: desc
-      where: { timestamp_lte: $lastTimestamp, honest: false, challenged: false }
+      where: {
+        timestamp_lte: $lastTimestamp
+        verified: false
+        challenged: false
+      }
     ) {
       id
       epoch
@@ -41,6 +45,7 @@ export const getClaimedSnapshotsQuery = graphql(`
       stateroot
       bridger
       challenged
+      verified
       txHash
       challenge {
         id
@@ -54,7 +59,6 @@ export const getClaimedSnapshotsQuery = graphql(`
         caller
         txHash
       }
-      honest
     }
   }
 `);
@@ -68,7 +72,11 @@ export const getChallengedSnapshotsQuery = graphql(`
       first: $snapshotsPerPage
       orderBy: timestamp
       orderDirection: desc
-      where: { timestamp_lte: $lastTimestamp, honest: false, challenged: true }
+      where: {
+        timestamp_lte: $lastTimestamp
+        verified: false
+        challenged: true
+      }
     ) {
       id
       epoch
@@ -76,6 +84,7 @@ export const getChallengedSnapshotsQuery = graphql(`
       stateroot
       bridger
       challenged
+      verified
       txHash
       challenge {
         id
@@ -89,7 +98,6 @@ export const getChallengedSnapshotsQuery = graphql(`
         caller
         txHash
       }
-      honest
     }
   }
 `);
@@ -100,7 +108,11 @@ export const getVerifiedSnapshotsQuery = graphql(`
       first: $snapshotsPerPage
       orderBy: timestamp
       orderDirection: desc
-      where: { timestamp_lte: $lastTimestamp, honest: true, challenged: false }
+      where: {
+        timestamp_lte: $lastTimestamp
+        verified: true
+        challenged: false
+      }
     ) {
       id
       epoch
@@ -108,6 +120,7 @@ export const getVerifiedSnapshotsQuery = graphql(`
       stateroot
       bridger
       challenged
+      verified
       txHash
       challenge {
         id
@@ -121,7 +134,6 @@ export const getVerifiedSnapshotsQuery = graphql(`
         caller
         txHash
       }
-      honest
     }
   }
 `);
@@ -132,7 +144,7 @@ export const getResolvedSnapshotsQuery = graphql(`
       first: $snapshotsPerPage
       orderBy: timestamp
       orderDirection: desc
-      where: { timestamp_lte: $lastTimestamp, honest: true, challenged: true }
+      where: { timestamp_lte: $lastTimestamp, verified: true, challenged: true }
     ) {
       id
       epoch
@@ -140,6 +152,7 @@ export const getResolvedSnapshotsQuery = graphql(`
       stateroot
       bridger
       challenged
+      verified
       txHash
       challenge {
         id
@@ -153,7 +166,6 @@ export const getResolvedSnapshotsQuery = graphql(`
         caller
         txHash
       }
-      honest
     }
   }
 `);

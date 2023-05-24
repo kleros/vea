@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import styled from "styled-components";
 import { useList } from "react-use";
-import { BigNumber } from "ethers";
 import { StandardPagination } from "@kleros/ui-components-library";
 import Layout from "components/Layout";
 import SnapshotAccordion from "components/SnapshotAccordion/SnapshotAccordion";
@@ -55,7 +54,11 @@ const App = () => {
           <SnapshotAccordion items={mapDataForAccordion(data.snapshots)} />
           {numPages && numPages > 0 && (
             <StyledPagination
-              numPages={numPages!}
+              numPages={
+                data.snapshots.length > SNAPSHOTS_PER_PAGE
+                  ? currentPage + 1
+                  : currentPage
+              }
               currentPage={currentPage}
               callback={handlePageChange}
               hideNumbers

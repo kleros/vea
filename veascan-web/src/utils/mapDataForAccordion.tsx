@@ -4,8 +4,8 @@ import { InboxData, OutboxData } from "hooks/useSnapshots";
 import { formatTimestampToHumanReadable } from "./formatTimestampToHumanReadable";
 
 export interface IStatus {
-  honest: boolean;
   claimed: boolean;
+  verified: boolean;
   challenged: boolean;
   resolving: boolean;
   resolved: boolean;
@@ -30,10 +30,10 @@ export const mapDataForAccordion = (
       snapshotId: inboxData.id,
       status: {
         claimed: typeof outboxData?.txHash !== "undefined",
+        verified: !outboxData?.challenged && outboxData?.verified,
         challenged: outboxData?.challenged,
         resolving: inboxData.resolving,
-        resolved: typeof outboxData?.verification?.txHash !== "undefined",
-        honest: outboxData?.honest,
+        resolved: outboxData?.challenged && outboxData?.verified,
       },
       transactions: [
         {

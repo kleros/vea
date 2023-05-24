@@ -27,7 +27,7 @@ export function handleClaimed(event: Claimed): void {
   claim.timestamp = event.block.timestamp;
   claim.bridger = event.transaction.from; // same as event.params.claimer
   claim.challenged = false;
-  claim.honest = false;
+  claim.verified = false;
   claim.save();
 }
 
@@ -70,11 +70,14 @@ export function handleVerified(event: Verified): void {
   ) {
     const claim = Claim.load(i.toString());
     if (claim!.epoch.equals(event.params.epoch)) {
+      claim!.verified = true;
+      claim!.save();
       const verification = new Verification(claim!.id);
       verification.claim = claim!.id;
       verification.timestamp = event.block.timestamp;
       verification.caller = event.transaction.from;
       verification.txHash = event.transaction.hash;
+      verification.transactionIndex = event.transaction.index;
       verification.save();
       break;
     }
