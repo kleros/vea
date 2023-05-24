@@ -58,20 +58,18 @@ const SnapshotAccordion: React.FC<SnapshotAccordionProps> = ({ items }) => {
   return (
     <StyledSnapshotAccordionGlobal
       items={items.map(
-        ({ epoch, bridgeIndex, snapshotId, status, transactions }, index) => ({
+        ({ epoch, bridgeId, snapshotId, status, transactions }, index) => ({
           key: index,
           title: (
             <AccordionTitle
               epoch={epoch}
-              bridgeIndex={bridgeIndex}
+              bridgeId={bridgeId}
               timestamp={transactions[0].timestamp}
               status={status}
             />
           ),
           body: (
-            <AccordionBody
-              {...{ transactions, snapshotId, bridgeIndex, epoch }}
-            />
+            <AccordionBody {...{ transactions, snapshotId, bridgeId, epoch }} />
           ),
         })
       )}

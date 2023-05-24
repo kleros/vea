@@ -12,7 +12,7 @@ export interface IStatus {
 }
 
 export interface IParsedData {
-  bridgeIndex: number;
+  bridgeId: number;
   epoch: string;
   snapshotId: string;
   status: IStatus;
@@ -23,9 +23,9 @@ export const mapDataForAccordion = (
   snapshotsData: [InboxData, OutboxData][]
 ): IParsedData[] => {
   return snapshotsData.map(([inboxData, outboxData]): IParsedData => {
-    const bridgeInfo = bridges[inboxData?.bridgeIndex];
+    const bridgeInfo = bridges[inboxData?.bridgeId];
     return {
-      bridgeIndex: inboxData.bridgeIndex,
+      bridgeId: inboxData.bridgeId,
       epoch: inboxData.epoch,
       snapshotId: inboxData.id,
       status: {

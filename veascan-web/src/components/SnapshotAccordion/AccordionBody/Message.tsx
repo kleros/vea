@@ -1,4 +1,4 @@
-import { bridges } from "consts/bridges";
+import { getBridge } from "consts/bridges";
 import React, { useEffect, useState } from "react";
 import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
 import MessageHeader from "./MessageHeader";
@@ -7,7 +7,7 @@ import TxCard from "./TxCard";
 interface MessageProps {
   messageInboxData: MessageInboxDataType;
   messageOutboxData: any;
-  bridgeIndex: number;
+  bridgeId: number;
 }
 
 const messageStatusRoles = {
@@ -27,10 +27,10 @@ interface MessageInboxDataType {
 const Message: React.FC<MessageProps> = ({
   messageInboxData,
   messageOutboxData,
-  bridgeIndex,
+  bridgeId,
 }) => {
   const [messageStatus, setMessageStatus] = useState("");
-  const bridgeInfo = bridges[bridgeIndex];
+  const bridgeInfo = getBridge(bridgeId);
 
   useEffect(() => {
     calculateMessageStatus(messageOutboxData);

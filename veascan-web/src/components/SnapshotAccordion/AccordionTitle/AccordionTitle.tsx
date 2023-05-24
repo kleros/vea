@@ -1,4 +1,4 @@
-import { bridges, getChain } from "consts/bridges";
+import { bridges, getBridge, getChain } from "consts/bridges";
 import React from "react";
 import styled from "styled-components";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
@@ -51,7 +51,7 @@ const StyledEpochAndTimestamp = styled.div`
 `;
 
 export interface SnapshotInboxDataType {
-  bridgeIndex: number;
+  bridgeId: number;
   caller: string;
   epoch: string;
   id: string;
@@ -65,18 +65,19 @@ export interface SnapshotInboxDataType {
 
 export interface AccordionTitleProps {
   epoch: string;
-  bridgeIndex: number;
+  bridgeId: number;
   timestamp: string;
   status: IStatus;
 }
 
 const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
   epoch,
-  bridgeIndex,
+  bridgeId,
   timestamp,
   status,
 }) => {
-  const bridgeInfo = bridges[bridgeIndex];
+  const bridgeInfo = getBridge(bridgeId);
+  console.log(bridgeId, bridgeInfo);
   const titleParams = {
     epoch: epoch,
     timestamp: timestamp,

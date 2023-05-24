@@ -1,4 +1,4 @@
-import { bridges } from "consts/bridges";
+import { getBridge } from "consts/bridges";
 import React from "react";
 import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
 import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
@@ -25,7 +25,7 @@ const SnapshotDetails: React.FC<SnapshotDetailsProps> = ({
   snapshotOutboxData,
   snapshotStatus,
 }) => {
-  const bridgeInfo = bridges[snapshotInboxData?.bridgeIndex];
+  const bridgeInfo = getBridge(snapshotInboxData?.bridgeId);
   const snapshotDetailsParams = {
     title: statusRoles[snapshotStatus],
     chain: bridgeInfo?.from,

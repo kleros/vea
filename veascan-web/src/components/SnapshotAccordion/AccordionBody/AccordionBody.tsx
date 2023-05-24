@@ -56,13 +56,13 @@ const StyledButtonsContainer = styled.div`
 `;
 
 export interface AccordionBodyProps {
-  bridgeIndex: number;
+  bridgeId: number;
   snapshotId: string;
   transactions: TxCardProps[];
 }
 
 const AccordionBody: React.FC<AccordionBodyProps> = ({
-  bridgeIndex,
+  bridgeId,
   snapshotId,
   transactions,
 }) => {
@@ -96,7 +96,7 @@ const AccordionBody: React.FC<AccordionBodyProps> = ({
           (txInfo, index) => txInfo && <TxCard key={index} {...txInfo} />
         )
       ) : (
-        <DisplayMessages {...{ snapshotId, bridgeIndex }} />
+        <DisplayMessages {...{ snapshotId, bridgeId }} />
       )}
     </>
   );

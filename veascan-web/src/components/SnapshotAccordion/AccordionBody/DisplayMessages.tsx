@@ -6,7 +6,7 @@ import Message from "./Message";
 
 interface DisplayMessagesProps {
   snapshotId: string;
-  bridgeIndex: number;
+  bridgeId: number;
 }
 
 const MESSAGES_PER_PAGE = 5;
@@ -19,13 +19,13 @@ const PaginationContainer = styled.div`
 
 const DisplayMessages: FC<DisplayMessagesProps> = ({
   snapshotId,
-  bridgeIndex,
+  bridgeId,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data } = useMessages(
     snapshotId,
-    bridgeIndex,
+    bridgeId,
     (currentPage - 1) * MESSAGES_PER_PAGE,
     false
   );
@@ -49,7 +49,7 @@ const DisplayMessages: FC<DisplayMessagesProps> = ({
             key={messageInboxData?.id}
             messageInboxData={messageInboxData}
             messageOutboxData={messageOutboxData}
-            bridgeIndex={bridgeIndex}
+            bridgeId={bridgeId}
           />
         );
       })}

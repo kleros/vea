@@ -6,12 +6,12 @@ import { request } from "../../../node_modules/graphql-request/build/cjs/index";
 
 export const useMessages = (
   snapshot: string,
-  bridgeIndex: number,
+  bridgeId: number,
   skip: number,
   getRelays: boolean
 ) => {
-  return useSWR(`${snapshot}-${bridgeIndex}-${skip}-${getRelays}`, async () => {
-    const { inboxEndpoint, outboxEndpoint } = bridges[bridgeIndex];
+  return useSWR(`${snapshot}-${bridgeId}-${skip}-${getRelays}`, async () => {
+    const { inboxEndpoint, outboxEndpoint } = bridges[bridgeId];
     const [messages, totalMessages] = await request(
       inboxEndpoint,
       getMessagesQuery,
