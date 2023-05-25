@@ -20,6 +20,7 @@
     "relayer-subgraph-inbox",
     "validator-cli",
     "relayer-cli",
+    "vea-sdk",
     "veascan-web",
     "veascan-subgraph-inbox",
     "veascan-subgraph-outbox"
