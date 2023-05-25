@@ -3,8 +3,8 @@ import React from "react";
 import styled, { css } from "styled-components";
 import { smallScreenStyle } from "styles/smallScreenStyle";
 import { IParsedData } from "utils/mapDataForAccordion";
-import AccordionBody from "./AccordionBody/AccordionBody";
-import AccordionTitle from "./AccordionTitle/AccordionTitle";
+import AccordionBody from "./AccordionBody";
+import AccordionTitle from "./AccordionTitle";
 
 const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   display: flex;

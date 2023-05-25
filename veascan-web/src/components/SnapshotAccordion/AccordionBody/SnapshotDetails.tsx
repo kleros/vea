@@ -1,7 +1,7 @@
 import { bridges } from "consts/bridges";
 import React from "react";
 import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
-import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
+import { SnapshotInboxDataType } from "../AccordionTitle";
 
 export const statusRoles = {
   Taken: "Creator",
