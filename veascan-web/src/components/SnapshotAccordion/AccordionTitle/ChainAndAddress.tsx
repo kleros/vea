@@ -36,6 +36,7 @@ const ChainAndAddress: React.FC<{
     <StyledChainAndAddress>
       <ChainIcon as={p.chainObject?.logo} />
       <StyledTruncatedAddress
+        onClick={(event) => event.stopPropagation()}
         href={`${p.chainObject?.blockExplorers?.default.url}/address/${p.address}`}
         target="_blank"
         rel="noreferrer"
