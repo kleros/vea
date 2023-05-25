@@ -63,6 +63,11 @@ As long as there is one honest participant running a working implementation of t
 
 ##### ⚖️ [VeaScan explorer](https://veascan.io)
 
+##### 📦 NPM Packages
+
+- [@kleros/vea-sdk](https://www.npmjs.com/package/@kleros/vea-sdk)
+- [@kleros/vea-contracts](https://www.npmjs.com/package/@kleros/vea-contracts)
+
 ##### 🗃️ Subgraph endpoints
 
 - [Inbox for VeaScan](veascan-subgraph-inbox/README.md#deployments)
@@ -78,10 +83,10 @@ As long as there is one honest participant running a working implementation of t
 | **[relayer-subgraph-inbox](/relayer-subgraph-inbox)**   | Indexing of the bridge inbox for relaying purposes, in particular for the computation of the proof of inclusion of a message in a state root. |
 | **[services](/services)**                               | Supporting services such as a graph-node container.                                                                                           |
 | **[validator-cli](/validator-cli)**                     | Validator implementation in TypeScript capable of fulfilling the roles of Oracle and Challenger.                                              |
+| **[vea-sdk](/vea-sdk)**                                 | SDK for the developers of cross-chain apps on Vea.                                                                                            |
 | **[veascan-subgraph-inbox](/veascan-subgraph-inbox)**   | Indexing of the bridge inbox for retrieval by the Veascan frontend.                                                                           |
 | **[veascan-subgraph-outbox](/veascan-subgraph-outbox)** | Indexing of the bridge outbox for retrieval by the Veascan frontend.                                                                          |
 | **[veascan-web](/veascan-web)**                         | Explorer of snapshot and messages crossing the bridge.                                                                                        |
-|                                                         |                                                                                                                                               |
 
 ## Toolchain:
 
