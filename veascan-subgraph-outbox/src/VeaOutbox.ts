@@ -70,6 +70,19 @@ export function handleVerified(event: Verified): void {
   ) {
     const claim = Claim.load(i.toString());
     if (claim!.epoch.equals(event.params._epoch)) {
+      if (claim!.challenged) {
+        const challenge = Challenge.load(claim!.challenge!);
+        if (event.transaction.input.slice(36, 68) === claim!.stateroot) {
+          claim!.honest = true;
+          challenge!.honest = false;
+        } else {
+          claim!.honest = false;
+          challenge!.honest = true;
+        }
+        challenge!.save();
+      } else {
+        claim!.honest = true;
+      }
       claim!.verified = true;
       claim!.save();
       const verification = new Verification(claim!.id);
@@ -77,7 +90,6 @@ export function handleVerified(event: Verified): void {
       verification.timestamp = event.block.timestamp;
       verification.caller = event.transaction.from;
       verification.txHash = event.transaction.hash;
-      verification.transactionIndex = event.transaction.index;
       verification.save();
       break;
     }
