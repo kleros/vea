@@ -45,7 +45,7 @@ export const useSnapshots = (
       const filteredSnapshots = sortedSnapshots.filter(
         (snapshot) => !shownSnapshots.has(getSnapshotId(snapshot))
       );
-      const pageSnapshots = filteredSnapshots.slice(0, snapshotsPerPage);
+      const pageSnapshots = filteredSnapshots.slice(0, snapshotsPerPage + 1);
       return {
         snapshots: (await Promise.all(
           pageSnapshots.map((snapshot) =>
@@ -90,7 +90,6 @@ const getSortedSnapshots = async (
   const snapshotsWithBridgeId = await Promise.all(queryQueue).then((result) =>
     result.flat()
   );
-  console.log(snapshotsWithBridgeId);
   return {
     sortedSnapshots: snapshotsWithBridgeId.sort(
       (a, b) => parseInt(b.timestamp) - parseInt(a.timestamp)
