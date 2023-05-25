@@ -28,6 +28,7 @@ export function handleClaimed(event: Claimed): void {
   claim.bridger = event.transaction.from; // same as event.params.claimer
   claim.challenged = false;
   claim.verified = false;
+  claim.honest = false;
   claim.save();
 }
 
