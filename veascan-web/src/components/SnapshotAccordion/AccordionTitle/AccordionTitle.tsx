@@ -1,4 +1,4 @@
-import { bridges, getBridge, getChain } from "consts/bridges";
+import { getBridge, getChain } from "consts/bridges";
 import React from "react";
 import styled from "styled-components";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
@@ -77,7 +77,6 @@ const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
   status,
 }) => {
   const bridgeInfo = getBridge(bridgeId);
-  console.log(bridgeId, bridgeInfo);
   const titleParams = {
     epoch: epoch,
     timestamp: timestamp,
