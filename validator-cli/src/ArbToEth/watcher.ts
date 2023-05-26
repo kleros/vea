@@ -1,44 +1,34 @@
 import { getVeaOutboxArbToEthProvider, getVeaInboxArbToEth } from "../utils/ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { arbToEthDevnet, IBridge } from "../utils/contracts";
-import envVar from "../utils/envVar";
-import baseLogger from "../utils/logger";
+
+require("dotenv").config();
 
 const watch = async () => {
-  const bridge: IBridge = arbToEthDevnet;
-  const logger = baseLogger.child({
-    bridge: bridge.label,
-    inbox: bridge.inboxAddress,
-    outbox: bridge.outboxAddress,
-  });
-  logger.info("Watching for claims...");
-  logger.debug("Inbox RPC: %s", bridge.inboxRpc);
-  logger.debug("Outbox RPC: %s", bridge.outboxRpc);
+  const l1provider = new JsonRpcProvider(process.env.RPC_VEAOUTBOX);
 
-  const privateKey = envVar("PRIVATE_KEY");
-  const rpcProviderOutbox = new JsonRpcProvider(bridge.outboxRpc);
-  const veaOutbox = getVeaOutboxArbToEthProvider(bridge.outboxAddress, privateKey, rpcProviderOutbox);
-  const veaInbox = getVeaInboxArbToEth(bridge.inboxAddress, privateKey, bridge.inboxRpc);
+  const veaOutbox = getVeaOutboxArbToEthProvider(process.env.VEAOUTBOX_ADDRESS, process.env.PRIVATE_KEY, l1provider);
+
+  const veaInbox = getVeaInboxArbToEth(process.env.VEAINBOX_ADDRESS, process.env.PRIVATE_KEY, process.env.RPC_VEAINBOX);
 
   const deposit = await veaOutbox.deposit();
   const epochPeriod = (await veaOutbox.epochPeriod()).toNumber();
   const claimDelay = (await veaOutbox.claimDelay()).toNumber();
   const challengePeriod = (await veaOutbox.challengePeriod()).toNumber();
 
-  const currentBlockNumber = await rpcProviderOutbox.getBlockNumber();
-  const challengeableTimeStart = Math.floor(Date.now() / 1000) - challengePeriod;
-  const challengeableBlockStart = currentBlockNumber - Math.ceil((challengePeriod * 2) / 12);
+  const currentBlockNumber = await l1provider.getBlockNumber();
+  const challengableTimeStart = Math.floor(Date.now() / 1000) - challengePeriod;
+  const challengableBlockStart = currentBlockNumber - Math.ceil((challengePeriod * 2) / 12);
 
-  const logs = await rpcProviderOutbox.getLogs({
-    address: bridge.outboxAddress,
+  const logs = await l1provider.getLogs({
+    address: process.env.VEAOUTBOX_ADDRESS,
     topics: veaOutbox.filters.Claimed(null, null).topics,
-    fromBlock: challengeableBlockStart,
+    fromBlock: challengableBlockStart,
   });
-  logger.info("Claim events found: %d", logs.length);
 
-  for (var log of logs) {
-    const claimedTimestamp = (await rpcProviderOutbox.getBlock(log.blockNumber)).timestamp;
-    logger.info({
+  for (let i = 0; i < logs.length; i++) {
+    const log = logs[i];
+    const claimedTimestamp = (await l1provider.getBlock(log.blockNumber)).timestamp;
+    console.log({
       stateRoot: log.data,
       claimer: "0x" + log.topics[1].substring(26),
       timestamp: claimedTimestamp,
@@ -46,14 +36,14 @@ const watch = async () => {
       honest: "0",
       challenger: "0x0000000000000000000000000000000000000000",
     });
-    if (claimedTimestamp < challengeableTimeStart) {
+    if (claimedTimestamp < challengableTimeStart) {
       continue;
     } else {
       const claimedStateRoot = log.data;
       const claimedEpoch = Math.floor((claimedTimestamp - claimDelay) / epochPeriod);
       const inboxStateRoot = await veaInbox.snapshots(claimedEpoch);
       if (claimedStateRoot !== inboxStateRoot) {
-        logger.warn(`Challenging claim ${claimedStateRoot} at epoch ${claimedEpoch}.`);
+        console.log(`Challenging claim ${claimedStateRoot} at epoch ${claimedEpoch}.`);
         const unchallengedClaim = {
           stateRoot: claimedStateRoot,
           claimer: "0x" + log.topics[1].substring(26),
@@ -64,20 +54,17 @@ const watch = async () => {
         };
         const unchallengedClaimHash = await veaOutbox.hashClaim(unchallengedClaim);
         const claimHash = await veaOutbox.claimHashes(claimedEpoch);
-        logger.warn(unchallengedClaim);
-        logger.warn(unchallengedClaimHash);
-        logger.warn(claimHash);
-        logger.warn(claimedEpoch);
+        console.log(unchallengedClaim);
+        console.log(unchallengedClaimHash);
+        console.log(claimHash);
+        console.log(claimedEpoch);
         if (unchallengedClaimHash == claimHash) {
           const txn = await veaOutbox.challenge(claimedEpoch, unchallengedClaim, { value: deposit });
-          logger.warn(`Challenge Txn: ${txn.hash}`);
+          console.log(`Challenge Txn: ${txn.hash}`);
         }
       }
     }
   }
-
-  // TODO: make this env var optional, skip fetch if undefined
-  fetch(envVar("HEARTBEAT_URL"));
 };
 
 export default watch;
