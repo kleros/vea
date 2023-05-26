@@ -11,7 +11,8 @@ enum ReceiverChains {
 const paramsByChainId = {
   ETHEREUM_MAINNET: {
     deposit: parseEther("20"), // 1500 ETH budget to start, enough for 21 days till timeout
-    // Average happy path wait time is 45 hours (42, 48 hours)
+    // Average happy path wait time in normal operation is 2 days 12 hours
+    // min time: 2 days 8 hours. max time: 2 days 16 hours. Rare case can be 3 days.
     epochPeriod: 21600, // 6 hours
     challengePeriod: 86400, // 24 hours
     numEpochTimeout: 84, // 21 days
