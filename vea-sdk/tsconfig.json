@@ -8,9 +8,18 @@
     "declaration": true,
     "sourceMap": true,
     "noImplicitAny": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@kleros/vea-contracts": [
+        "../contracts"
+      ]
+    }
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
   ]
 }

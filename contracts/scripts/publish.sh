@@ -23,7 +23,7 @@ trap _finally EXIT
 yarn version $1
 
 mkdir dist
-cp -pr README.md deployments src/ dist/ 
+cp -pr README.md deployments typechain-types src/ dist/ 
 rm -rf dist/test
 jq 'del(.scripts.prepare)' package.json > dist/package.json
 
