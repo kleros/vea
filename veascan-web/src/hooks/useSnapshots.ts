@@ -5,6 +5,7 @@ import {
   GetClaimQuery,
   GetSnapshotQuery,
   GetSnapshotsQuery,
+  SearchSnapshotsQuery,
 } from "src/gql/graphql";
 import {
   useFiltersContext,
@@ -13,7 +14,7 @@ import {
   isInboxQuery,
 } from "contexts/FiltersContext";
 import { request } from "../../../node_modules/graphql-request/build/cjs/index";
-import { getSnapshotQuery } from "./queries/getInboxData";
+import { getSnapshotQuery, searchSnapshotsQuery } from "./queries/getInboxData";
 import { getClaimQuery } from "./queries/getOutboxData";
 
 export type InboxData = GetSnapshotsQuery["snapshots"][number] & {
@@ -32,12 +33,14 @@ export const useSnapshots = (
   lastTimestamp = "99999999999999",
   snapshotsPerPage = 5
 ) => {
-  const { fromChain, toChain, queryInfo, statusFilter } = useFiltersContext();
+  const { debouncedSearch, fromChain, toChain, queryInfo, statusFilter } =
+    useFiltersContext();
   return useSWR(
-    `${fromChain}-${toChain}-${lastTimestamp}-${statusFilter}`,
+    `${fromChain}-${toChain}-${lastTimestamp}-${statusFilter}-${debouncedSearch}`,
     async (): Promise<IUseSnapshots> => {
       const { sortedSnapshots } = await getSortedSnapshots(
         lastTimestamp,
+        debouncedSearch,
         fromChain,
         toChain,
         snapshotsPerPage,
@@ -50,7 +53,7 @@ export const useSnapshots = (
       return {
         snapshots: (await Promise.all(
           pageSnapshots.map((snapshot) =>
-            getSecondaryData(snapshot, queryInfo.order)
+            getSecondaryData(snapshot, debouncedSearch, queryInfo.order)
           )
         )) as [InboxData, OutboxData][],
         isMorePages: filteredSnapshots.length > snapshotsPerPage,
@@ -61,6 +64,7 @@ export const useSnapshots = (
 
 const getSortedSnapshots = async (
   lastTimestamp: string,
+  debouncedSearch: string,
   from: number,
   to: number,
   snapshotsPerPage: number,
@@ -73,14 +77,19 @@ const getSortedSnapshots = async (
   });
   const queryQueue = filteredBridges.map((bridge) =>
     request(
-      isInboxQuery(query) ? bridge.inboxEndpoint : bridge.outboxEndpoint,
-      query,
+      isInboxQuery(query) || debouncedSearch !== ""
+        ? bridge.inboxEndpoint
+        : bridge.outboxEndpoint,
+      debouncedSearch !== "" ? searchSnapshotsQuery : query,
       {
         lastTimestamp,
         snapshotsPerPage: snapshotsPerPage + 1,
+        value: debouncedSearch,
       }
     ).then((queryResult) => {
-      const snapshots = isInboxQuery(query)
+      const snapshots = debouncedSearch
+        ? (queryResult as SearchSnapshotsQuery).snapshotQuery
+        : isInboxQuery(query)
         ? (queryResult as GetSnapshotsQuery).snapshots
         : (queryResult as GetClaimedSnapshotsQuery).claims;
       return snapshots.map((snapshot) => ({
@@ -101,11 +110,12 @@ const getSortedSnapshots = async (
 
 const getSecondaryData = async (
   snapshot: InboxData | (OutboxData & { bridgeId: number }),
+  debouncedSearch: string,
   order: ORDER
 ) => {
   const isFirstInbox = order === ORDER.firstInbox;
   const secondaryData = await request(
-    isFirstInbox
+    isFirstInbox || debouncedSearch !== ""
       ? getBridge(snapshot.bridgeId).outboxEndpoint
       : getBridge(snapshot.bridgeId).inboxEndpoint,
     isFirstInbox ? getClaimQuery : getSnapshotQuery,

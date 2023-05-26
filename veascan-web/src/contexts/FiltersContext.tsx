@@ -1,5 +1,6 @@
 import React, { useState, createContext, useContext } from "react";
 import { theme } from "styles/themes";
+import { useDebounce } from "react-use";
 import {
   getSnapshotsQuery,
   getResolvingSnapshotsQuery,
@@ -99,6 +100,9 @@ const STATUS_FILTERS: { item: IItem; queryInfo: IQueryInfo }[] = [
 ];
 
 interface IFilters {
+  search: string;
+  setSearch: (arg0: string) => void;
+  debouncedSearch: string;
   fromChain: number;
   toChain: number;
   statusFilter: number;
@@ -110,6 +114,11 @@ interface IFilters {
 }
 
 const Context = createContext<IFilters>({
+  search: "",
+  setSearch: () => {
+    //
+  },
+  debouncedSearch: "",
   fromChain: 0,
   toChain: 0,
   statusFilter: 0,
@@ -132,9 +141,15 @@ export const FiltersContext: React.FC<{ children?: React.ReactNode }> = ({
   const [fromChain, setFromChain] = useState(0);
   const [toChain, setToChain] = useState(0);
   const [statusFilter, setStatusFilter] = useState(0);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useDebounce(() => setDebouncedSearch(search), 500, [search]);
   return (
     <Context.Provider
       value={{
+        search,
+        setSearch,
+        debouncedSearch,
         fromChain,
         toChain,
         setFromChain,

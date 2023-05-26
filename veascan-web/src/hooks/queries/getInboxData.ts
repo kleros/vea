@@ -85,3 +85,25 @@ export const getResolvingSnapshotsQuery = graphql(`
     }
   }
 `);
+
+export const searchSnapshotsQuery = graphql(`
+  query searchSnapshots($value: String!) {
+    snapshotQuery(text: $value) {
+      id
+      epoch
+      caller
+      txHash
+      timestamp
+      stateRoot
+      numberMessages
+      taken
+      resolving
+      fallback(first: 1, orderBy: timestamp, orderDirection: desc) {
+        executor
+        timestamp
+        txHash
+        ticketId
+      }
+    }
+  }
+`);
