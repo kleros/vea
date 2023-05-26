@@ -178,12 +178,12 @@ const TxCard: React.FC<TxCardProps> = ({
     <StyledDiv>
       <Header>{title}</Header>
       <div className="tx-info">
-        {fields.map((section, index) => (
+        {fields.map((section) => (
           <div
             className={` ${
               section.key === "Chain" ? "tx-mobile-chain" : "tx-info-layout"
             }`}
-            key={index}
+            key={section.key}
           >
             <div className="tx-info-titles">
               <InfoText>{section.key}</InfoText>
@@ -208,12 +208,12 @@ const TxCard: React.FC<TxCardProps> = ({
                           {section.value}
                         </DataText>
                       </a>{" "}
-                      {section.isCopy && <CopyButton value={section.value!} />}
+                      {section.isCopy && <CopyButton value={section.value} />}
                     </div>
                   ) : (
                     <div className="tx-copy-div">
                       <DataText>{section.value} </DataText>
-                      {section.isCopy && <CopyButton value={section.value!} />}
+                      {section.isCopy && <CopyButton value={section.value} />}
                     </div>
                   )}
                 </ValueDiv>
