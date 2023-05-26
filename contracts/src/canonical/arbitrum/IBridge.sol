@@ -8,4 +8,6 @@ pragma solidity 0.8.18;
 
 interface IBridge {
     function activeOutbox() external view returns (address);
+
+    function sequencerInbox() external view returns (address);
 }

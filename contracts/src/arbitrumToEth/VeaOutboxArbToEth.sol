@@ -8,6 +8,7 @@
 
 pragma solidity 0.8.18;
 
+import "../canonical/arbitrum/ISequencerInbox.sol";
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
@@ -88,7 +89,6 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     /// @param _epochPeriod The duration of each epoch.
     /// @param _challengePeriod The duration of the period allowing to challenge a claim.
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-    /// @param _claimDelay The number of epochs after which the claim can be submitted.
     /// @param _veaInboxArbToEth The address of the inbox contract on Arbitrum.
     /// @param _bridge The address of the arbitrum bridge contract on Ethereum.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
@@ -97,20 +97,32 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         uint256 _epochPeriod,
         uint256 _challengePeriod,
         uint256 _timeoutEpochs,
-        uint256 _claimDelay,
         address _veaInboxArbToEth,
         address _bridge,
         uint256 _maxMissingBlocks
     ) {
+        // sanity check to prevent underflow the deployer should have set these correctly.
+        require(0 < _epochPeriod && _epochPeriod <= block.timestamp, "Invalid epochPeriod.");
+
         deposit = _deposit;
         // epochPeriod must match the VeaInboxArbToEth contract deployment epochPeriod value.
         epochPeriod = _epochPeriod;
         challengePeriod = _challengePeriod;
         timeoutEpochs = _timeoutEpochs;
-        claimDelay = _claimDelay;
         veaInboxArbToEth = _veaInboxArbToEth;
         bridge = IBridge(_bridge);
         maxMissingBlocks = _maxMissingBlocks;
+
+        ISequencerInbox sequencerInbox = ISequencerInbox(bridge.sequencerInbox());
+        // the maximum asynchronous lag between the L2 and L1 clocks
+        (, , uint256 arbitrumSequencerMaxDelaySeconds, ) = sequencerInbox.maxTimeVariation();
+
+        // adding the epochPeriod for the time for a node to sync
+        // in otherwords, this is the worst case time for an honest node to know the L2 state to claim / challenge
+        claimDelay = arbitrumSequencerMaxDelaySeconds + 2 * epochPeriod;
+
+        // sanity check to prevent underflow
+        require(claimDelay <= block.timestamp, "Invalid claimDelay.");
 
         // claimant and challenger are not sybil resistant
         // must burn half deposit to prevent zero cost griefing
@@ -118,9 +130,6 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         depositPlusReward = 2 * _deposit - burn;
 
         latestVerifiedEpoch = block.timestamp / epochPeriod - 1;
-
-        // claimDelay should never be set this high, but we santiy check to prevent underflow
-        require(claimDelay <= block.timestamp, "Invalid epochClaimDelay.");
     }
 
     // ************************************* //

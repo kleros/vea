@@ -10,29 +10,14 @@ enum ReceiverChains {
 }
 const paramsByChainId = {
   ETHEREUM_MAINNET: {
-    deposit: parseEther("20"), // 1000 ETH budget to start, enough for 21 days till timeout
-    // Average happy path wait time is 42 hours (36, 48 hours)
-    epochPeriod: 43200, // 12 hours
-    claimDelay: 108000, // 30 hours (24 hours sequencer backdating + 6 hour buffer)
-    challengePeriod: 21600, // 6 hours
-    numEpochTimeout: 42, // 21 days
-    maxMissingBlocks: 108, // 108 in 1800 slots
-    senderChainId: 42161,
+    deposit: parseEther("20"), // 1500 ETH budget to start, enough for 21 days till timeout
+    // Average happy path wait time is 45 hours (42, 48 hours)
+    epochPeriod: 21600, // 6 hours
+    challengePeriod: 86400, // 24 hours
+    numEpochTimeout: 84, // 21 days
+    maxMissingBlocks: 601, // 601 in 7200 slots, assumes 10% non-censoring validators
     arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
   },
-  /*
-  // if maxTimeVariation on seuqencer is 4 hours. . .
-  ETHEREUM_MAINNET: {
-    deposit: parseEther("10"), // 1000 ETH budget to start, enough for 21 days till timeout
-    // Average happy path wait time is 12 hours (9, 15 hours)
-    epochPeriod: 43200, // 6 hours
-    claimDelay: 21600, // 6 hours (4 hours sequencer backdating + 2 hour buffer)
-    challengePeriod: 21600, // 3 hours
-    numEpochTimeout: 42, // 21 days
-    maxMissingBlocks: 40, // 900 in 1800 slots
-    senderChainId: 42161,
-    arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
-  },*/
   HARDHAT: {
     deposit: parseEther("10"), // 120 eth budget for timeout
     // Average happy path wait time is 45 mins, assume no censorship
