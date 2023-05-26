@@ -10,18 +10,25 @@
     "yarn": "3.3.1"
   },
   "scripts": {
-    "start": "npx ts-node ./src/ArbToEth/watcher.ts",
-    "start-chiado-devnet": "npx ts-node ./src/devnet/arbToChiado/happyPath.ts",
-    "start-goerli-devnet": "npx ts-node ./src/devnet/arbToGoerli/happyPath.ts"
+    "start": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-fetch ts-node ./src/ArbToEth/index.ts",
+    "pm2:start": "pm2 start 'yarn start' --name watcher --cron '*/10 * * * *' --no-autorestart",
+    "start-chiado-devnet": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-fetch ts-node ./src/devnet/arbToChiado/happyPath.ts",
+    "start-goerli-devnet": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-fetch ts-node ./src/devnet/arbToGoerli/happyPath.ts"
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.1.2",
     "@kleros/vea-contracts": "workspace:^",
+    "@logtail/pino": "^0.4.0",
     "@typechain/ethers-v5": "^10.2.0",
     "dotenv": "^16.0.3",
+    "pino": "^8.14.1",
+    "pino-pretty": "^10.0.0",
     "pm2": "^5.2.2",
-    "typescript": "^4.9.5",
     "web3": "^1.10.0",
     "web3-batched-send": "^1.0.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5"
   }
 }
