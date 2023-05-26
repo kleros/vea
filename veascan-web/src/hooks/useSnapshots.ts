@@ -24,6 +24,7 @@ export type OutboxData = GetClaimQuery["claims"][number];
 
 interface IUseSnapshots {
   snapshots: [InboxData, OutboxData][];
+  isMorePages: boolean;
 }
 
 export const useSnapshots = (
@@ -45,13 +46,14 @@ export const useSnapshots = (
       const filteredSnapshots = sortedSnapshots.filter(
         (snapshot) => !shownSnapshots.has(getSnapshotId(snapshot))
       );
-      const pageSnapshots = filteredSnapshots.slice(0, snapshotsPerPage + 1);
+      const pageSnapshots = filteredSnapshots.slice(0, snapshotsPerPage);
       return {
         snapshots: (await Promise.all(
           pageSnapshots.map((snapshot) =>
             getSecondaryData(snapshot, queryInfo.order)
           )
         )) as [InboxData, OutboxData][],
+        isMorePages: filteredSnapshots.length > snapshotsPerPage,
       };
     }
   );

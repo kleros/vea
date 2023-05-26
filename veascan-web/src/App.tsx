@@ -31,7 +31,6 @@ const App = () => {
     pageTracking.at(-1)?.timestamp,
     SNAPSHOTS_PER_PAGE
   );
-  const numPages = 100;
   const handlePageChange = useCallback(
     (newPage: number) => {
       if (newPage > currentPage)
@@ -52,18 +51,12 @@ const App = () => {
       {data ? (
         <>
           <SnapshotAccordion items={mapDataForAccordion(data.snapshots)} />
-          {numPages && numPages > 0 && (
-            <StyledPagination
-              numPages={
-                data.snapshots.length > SNAPSHOTS_PER_PAGE
-                  ? currentPage + 1
-                  : currentPage
-              }
-              currentPage={currentPage}
-              callback={handlePageChange}
-              hideNumbers
-            />
-          )}
+          <StyledPagination
+            numPages={data.isMorePages ? currentPage + 1 : currentPage}
+            currentPage={currentPage}
+            callback={handlePageChange}
+            hideNumbers
+          />
         </>
       ) : (
         <p>loading...</p>
