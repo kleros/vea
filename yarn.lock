@@ -3357,7 +3357,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kleros/vea-contracts@workspace:^, @kleros/vea-contracts@workspace:contracts":
+"@kleros/vea-contracts@workspace:^, @kleros/vea-contracts@workspace:^0.2.1, @kleros/vea-contracts@workspace:contracts":
   version: 0.0.0-use.local
   resolution: "@kleros/vea-contracts@workspace:contracts"
   dependencies:
@@ -3425,7 +3425,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@kleros/vea-sdk@workspace:vea-sdk"
   dependencies:
-    "@kleros/vea-contracts": "workspace:^"
+    "@kleros/vea-contracts": "workspace:^0.2.1"
     "@logtail/pino": ^0.4.0
     "@typechain/ethers-v5": ^10.2.0
     dotenv: ^16.0.3
