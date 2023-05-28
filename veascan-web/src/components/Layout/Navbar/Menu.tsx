@@ -1,11 +1,11 @@
 import React, { useRef } from "react";
 import styled, { css } from "styled-components";
 import { useClickAway, useToggle } from "react-use";
+import MenuLink from "./MenuLink";
 import QuestionIcon from "tsx:svgs/icons/question.svg";
 import BugIcon from "tsx:svgs/icons/bug.svg";
 import BookIcon from "tsx:svgs/icons/book.svg";
 import OpenBookIcon from "tsx:svgs/icons/open-book.svg";
-import MenuLink from "./MenuLink";
 import { smallScreenStyle } from "styles/smallScreenStyle";
 
 const ITEMS = [

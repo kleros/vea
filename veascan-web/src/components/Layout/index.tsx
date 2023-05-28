@@ -1,9 +1,9 @@
 import React from "react";
 import styled, { css } from "styled-components";
-import { smallScreenStyle } from "styles/smallScreenStyle";
-import { useElementOffsets } from "hooks/useElementOffsets";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import { smallScreenStyle } from "styles/smallScreenStyle";
+import { useElementOffsets } from "hooks/useElementOffsets";
 
 const MiddleContent = styled.div`
   display: flex;

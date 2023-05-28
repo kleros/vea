@@ -1,7 +1,7 @@
+import useSWR from "swr";
 import { bridges } from "consts/bridges";
 import { getMessagesQuery } from "queries/getMessages";
 import { getRelayQuery } from "queries/getRelay";
-import useSWR from "swr";
 import { request } from "../../../node_modules/graphql-request/build/cjs/index";
 
 export const useMessages = (

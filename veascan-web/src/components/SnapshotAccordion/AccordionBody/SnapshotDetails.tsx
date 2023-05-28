@@ -1,7 +1,7 @@
-import { bridges } from "consts/bridges";
 import React from "react";
-import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
+import { bridges } from "consts/bridges";
 import { SnapshotInboxDataType } from "../AccordionTitle/AccordionTitle";
+import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
 
 export const statusRoles = {
   Taken: "Creator",
@@ -12,13 +12,13 @@ export const statusRoles = {
   Resolved: "Fallback Executor",
 };
 
-interface SnapshotDetailsProps {
+interface ISnapshotDetails {
   snapshotInboxData: SnapshotInboxDataType;
   snapshotOutboxData: any;
   snapshotStatus: string;
 }
 
-const SnapshotDetails: React.FC<SnapshotDetailsProps> = ({
+const SnapshotDetails: React.FC<ISnapshotDetails> = ({
   messageInboxData,
   messageOutboxData,
   snapshotInboxData,
