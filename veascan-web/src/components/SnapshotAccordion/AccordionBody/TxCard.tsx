@@ -57,8 +57,8 @@ const DataContainer = styled.div<IDataContainer>`
   gap: 108px;
   width: fit-content;
 
-  ${(props) =>
-    props.section === "Chain"
+  ${({ section }) =>
+    section === "Chain"
       ? smallScreenStyle(css`
           display: flex;
           flex-direction: row;
@@ -87,8 +87,8 @@ interface IDataText {
 }
 
 const DataText = styled.small<IDataText>`
-  ${(props) =>
-    props.url
+  ${({ url }) =>
+    url
       ? css`
           color: ${({ theme }) =>
             theme.klerosUIComponentsPrimaryBlue} !important;
@@ -113,8 +113,8 @@ const ValueDiv = styled.div<IValueDiv>`
     word-break: break-all;
   `)}
 
-  ${(props) =>
-    props.section === "Chain"
+  ${({ section }) =>
+    section === "Chain"
       ? css`
           gap: 4px;
         `
