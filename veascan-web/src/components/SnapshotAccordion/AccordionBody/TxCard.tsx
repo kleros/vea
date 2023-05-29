@@ -30,59 +30,6 @@ const StyledDiv = styled.div`
     margin-left: 2px;
   `)}
 
-  .tx-info-copyable {
-    color: ${({ theme }) => theme.klerosUIComponentsPrimaryBlue} !important;
-    text-decoration: none;
-  }
-  .tx-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    ${smallScreenStyle(css`
-      gap: 16px;
-    `)}
-    width: fit-content;
-  }
-  .tx-mobile-chain {
-    display: grid;
-    grid-row: 2;
-    gap: 108px;
-    width: fit-content;
-
-    ${smallScreenStyle(css`
-      display: flex;
-      flex-direction: row;
-      gap: 16px;
-    `)};
-  }
-  .tx-info-layout {
-    display: grid;
-    grid-row: 2;
-    gap: 108px;
-    ${smallScreenStyle(css`
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    `)}
-    width: fit-content;
-  }
-
-  .tx-info-titles {
-    grid-column-start: 1;
-    display: inline-block;
-    width: 12vw;
-    gap: 4px;
-    ${smallScreenStyle(css`
-      width: auto;
-    `)}
-  }
-  .tx-info-data {
-    grid-column-start: 2;
-    display: flex;
-    flex-direction: column;
-    width: auto;
-    gap: 4px;
-  }
   .border {
     margin: 24px 0px;
     border: 1px solid ${({ theme }) => theme.klerosUIComponentsStroke};
@@ -90,41 +37,90 @@ const StyledDiv = styled.div`
   }
 `;
 
-const InfoText = styled.small`
-  color: ${({ theme }) => theme.color.smoke};
-`;
-const DataText = styled.small`
-  color: ${({ theme }) => theme.klerosUIComponentsPrimaryText};
+const InfoDiv = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  ${smallScreenStyle(css`
+    gap: 16px;
+  `)}
+  width: fit-content;
 `;
 
-const ValueDiv = styled.div`
+interface IDataContainer {
+  section: string;
+}
+
+const DataContainer = styled.div<IDataContainer>`
+  display: grid;
+  grid-row: 2;
+  gap: 108px;
+  width: fit-content;
+
+  ${(props) =>
+    props.section === "Chain"
+      ? smallScreenStyle(css`
+          display: flex;
+          flex-direction: row;
+          gap: 16px;
+        `)
+      : smallScreenStyle(css`
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        `)}
+`;
+
+const InfoText = styled.small`
+  grid-column-start: 1;
+  display: inline-block;
+  width: 12vw;
+  gap: 4px;
+  ${smallScreenStyle(css`
+    width: auto;
+  `)}
+  color: ${({ theme }) => theme.color.smoke};
+`;
+
+interface IDataText {
+  url?: string;
+}
+
+const DataText = styled.small<IDataText>`
+  ${(props) =>
+    props.url
+      ? css`
+          color: ${({ theme }) =>
+            theme.klerosUIComponentsPrimaryBlue} !important;
+          text-decoration: none;
+        `
+      : css`
+          color: ${({ theme }) => theme.klerosUIComponentsPrimaryText};
+        `}
+`;
+
+interface IValueDiv {
+  section: string;
+}
+
+const ValueDiv = styled.div<IValueDiv>`
   display: flex;
   align-items: center;
-  gap: 9px;
 
   ${smallScreenStyle(css`
     width: 100%;
     gap: 4px;
     word-break: break-all;
-    &.chain-info {
-      flex-direction: row;
-      gap: 16px;
-    }
   `)}
 
-  .tx-copy-div {
-    display: flex;
-    gap: 9px;
-    ${smallScreenStyle(css`
-      display: block;
-    `)}
-  }
-  &.chain-info {
-    gap: 4px;
-  }
-  &.copyable {
-    flex-direction: row-reverse;
-  }
+  ${(props) =>
+    props.section === "Chain"
+      ? css`
+          gap: 4px;
+        `
+      : css`
+          gap: 9px;
+        `}
 `;
 
 const Icon = styled.svg`
@@ -138,6 +134,22 @@ const Header = styled.label`
   margin: 36px 0px 24px;
   width: fit-content;
   display: block;
+`;
+
+const DataDiv = styled.div`
+  grid-column-start: 2;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  gap: 4px;
+`;
+
+const CopyableDiv = styled.div`
+  display: flex;
+  gap: 9px;
+  ${smallScreenStyle(css`
+    display: block;
+  `)}
 `;
 
 const TxCard: React.FC<TxCardProps> = ({
@@ -177,51 +189,42 @@ const TxCard: React.FC<TxCardProps> = ({
   return (
     <StyledDiv>
       <Header>{title}</Header>
-      <div className="tx-info">
-        {fields.map((section) => (
-          <div
-            className={` ${
-              section.key === "Chain" ? "tx-mobile-chain" : "tx-info-layout"
-            }`}
-            key={section.key}
-          >
-            <div className="tx-info-titles">
-              <InfoText>{section.key}</InfoText>
-            </div>
-            <div className="tx-info-data">
+      <InfoDiv>
+        {fields.map((section, index) => (
+          <DataContainer section={section.key} key={section.key}>
+            <InfoText>{section.key}</InfoText>
+            <DataDiv>
               {section.key === "Chain" ? (
-                <ValueDiv className="chain-info">
+                <ValueDiv section={section.key}>
                   <Icon as={chainObject?.logo} />
                   <DataText>{section.value}</DataText>
                 </ValueDiv>
               ) : (
-                <ValueDiv>
+                <ValueDiv section={section.key}>
                   {section.url ? (
-                    <div className="tx-copy-div">
+                    <CopyableDiv>
                       <a
                         href={section.url}
                         target="_blank"
                         style={{ textDecoration: "none" }}
                         rel="noreferrer"
                       >
-                        <DataText className="tx-info-copyable">
-                          {section.value}
-                        </DataText>
+                        <DataText url={section.url}>{section.value}</DataText>
                       </a>{" "}
                       {section.isCopy && <CopyButton value={section.value} />}
-                    </div>
+                    </CopyableDiv>
                   ) : (
-                    <div className="tx-copy-div">
+                    <CopyableDiv>
                       <DataText>{section.value} </DataText>
                       {section.isCopy && <CopyButton value={section.value} />}
-                    </div>
+                    </CopyableDiv>
                   )}
                 </ValueDiv>
               )}
-            </div>
-          </div>
+            </DataDiv>
+          </DataContainer>
         ))}
-      </div>
+      </InfoDiv>
       <hr className="border" />
     </StyledDiv>
   );
