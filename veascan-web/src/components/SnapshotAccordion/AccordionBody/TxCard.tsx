@@ -1,9 +1,9 @@
 import React from "react";
 import styled, { css } from "styled-components";
 import { useCopyToClipboard } from "react-use";
-import { smallScreenStyle } from "styles/smallScreenStyle";
-import { getChain } from "consts/bridges";
 import Copy from "tsx:svgs/icons/copy.svg";
+import { getChain } from "consts/bridges";
+import { smallScreenStyle } from "styles/smallScreenStyle";
 
 interface Field {
   key: string;
@@ -12,7 +12,7 @@ interface Field {
   url?: string;
 }
 
-export interface TxCardProps {
+export interface ITxCard {
   title: string;
   chain: number;
   txHash: string;
@@ -152,7 +152,7 @@ const CopyableDiv = styled.div`
   `)}
 `;
 
-const TxCard: React.FC<TxCardProps> = ({
+const TxCard: React.FC<ITxCard> = ({
   title,
   chain,
   txHash,

@@ -1,10 +1,10 @@
-import { IChain, supportedChains } from "consts/bridges";
 import React, { FC } from "react";
 import styled, { css } from "styled-components";
+import { FilterDropdown } from "./FilterDropdown";
 import Globe from "tsx:svgs/icons/globe.svg";
+import { IChain, supportedChains } from "consts/bridges";
 import { smallScreenStyle } from "styles/smallScreenStyle";
 import { theme } from "styles/themes";
-import { FilterDropdown } from "./FilterDropdown";
 
 const STATUS_ITEMS = [
   { text: "All", dot: theme.color.white, value: 1 },

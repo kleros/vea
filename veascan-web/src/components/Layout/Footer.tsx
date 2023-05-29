@@ -1,11 +1,11 @@
-import BuiltByKleros from "components/BuiltByKleros";
 import React from "react";
 import styled, { css } from "styled-components";
-import { smallScreenStyle } from "styles/smallScreenStyle";
+import BuiltByKleros from "components/BuiltByKleros";
 import Lines from "tsx:svgs/footer/lines.svg";
 import IconGithub from "tsx:svgs/icons/github.svg";
 import IconTelegram from "tsx:svgs/icons/telegram.svg";
 import IconTwitter from "tsx:svgs/icons/twitter.svg";
+import { smallScreenStyle } from "styles/smallScreenStyle";
 
 const LINKS = [
   {

@@ -1,9 +1,9 @@
+import useSWR from "swr";
 import { BigNumber } from "ethers";
 import { bridges } from "consts/bridges";
 import { getClaimQuery } from "queries/getClaim";
 import { getSnapshotsQuery } from "queries/getSnapshots";
 import { GetClaimQuery, GetSnapshotsQuery } from "src/gql/graphql";
-import useSWR from "swr";
 import { request } from "../../../node_modules/graphql-request/build/cjs/index";
 
 export type InboxData = GetSnapshotsQuery["snapshots"][number] & {
