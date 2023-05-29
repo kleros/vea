@@ -141,8 +141,6 @@ contract VeaInboxArbToEth is IVeaInbox {
         unchecked {
             epoch = block.timestamp / epochPeriod;
 
-            require(snapshots[epoch] == bytes32(0), "Snapshot already taken for this epoch.");
-
             // calculate the current root of the incremental merkle tree encoded in the inbox
 
             uint256 height;

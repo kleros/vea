@@ -143,24 +143,37 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
         unchecked {
-            require((block.timestamp - claimDelay) / epochPeriod == _epoch, "Invalid epoch.");
+            require(block.timestamp / epochPeriod >= _epoch, "Epoch is in the future.");
+            require((block.timestamp - claimDelay) / epochPeriod <= _epoch, "Epoch is too old.");
         }
 
-        require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
 
         claimHashes[_epoch] = hashClaim(
             Claim({
                 stateRoot: _stateRoot,
                 claimer: msg.sender,
-                timestamp: uint32(block.timestamp),
-                blocknumber: uint32(block.number),
+                timestamp: uint32(0),
+                blocknumber: uint32(0),
                 honest: Party.None,
                 challenger: address(0)
             })
         );
 
         emit Claimed(msg.sender, _stateRoot);
+    }
+
+    /// @dev Start verification for claim for 'epoch'.
+    /// @param _epoch The epoch of the claim to challenge.
+    /// @param _claim The claim associated with the epoch.
+    function startClaimVerification(uint256 _epoch, Claim memory _claim) external payable virtual {
+        require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
+        require(_claim.timestamp == uint32(0), "Claim already challenged.");
+        require((block.timestamp - claimDelay) / epochPeriod >= _epoch, "Epoch is too old.");
+
+        _claim.timestamp = uint32(block.timestamp);
+        _claim.blocknumber = uint32(block.number);
+        claimHashes[_epoch] == hashClaim(_claim);
     }
 
     /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
@@ -172,7 +185,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         require(msg.value >= deposit, "Insufficient challenge deposit.");
 
         unchecked {
-            require(block.timestamp < uint256(_claim.timestamp) + challengePeriod, "Challenge period elapsed.");
+            require(_claim.honest == Party.None, "Claim already verified.");
         }
 
         _claim.challenger = msg.sender;
@@ -188,6 +201,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
 
         unchecked {
+            require(_claim.timestamp != 0, "Claim verification not started.");
             require(_claim.timestamp + challengePeriod < block.timestamp, "Challenge period has not yet elapsed.");
             require(
                 // expected blocks <= actual blocks + maxMissingBlocks
@@ -201,7 +215,9 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
 
         if (_epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = _epoch;
-            stateRoot = _claim.stateRoot;
+            if (_claim.stateRoot != bytes32(0)) {
+                stateRoot = _claim.stateRoot;
+            }
             emit Verified(_epoch);
         }
 
@@ -223,7 +239,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         // docs: https://developer.arbitrum.io/arbos/l2-to-l1-messaging/
         // example: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/dfef6a68ee18dbd2e1f5a099061a3b8a0e404485/contracts/crosschain/arbitrum/LibArbitrumL1.sol#L34
         // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/ethereum/GreeterL1.sol#L50
-        // note: we use the bridge address as a source of truth for the activeOutbox address
+        // note: we call the bridge for the activeOutbox address
 
         require(msg.sender == address(bridge), "Not from bridge.");
         require(IOutbox(bridge.activeOutbox()).l2ToL1Sender() == veaInboxArbToEth, "veaInbox only.");
