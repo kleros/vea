@@ -109,9 +109,9 @@ const Footer: React.FC = () => (
       <StyledBuiltByKleros />
       <Logo>VeA</Logo>
       <SocialMedia>
-        {LINKS.map(({ href, Icon }, i) => (
+        {LINKS.map(({ href, Icon }) => (
           <StyledLink
-            key={i}
+            key={href}
             {...{ href }}
             target="_blank"
             rel="noopener noreferrer"

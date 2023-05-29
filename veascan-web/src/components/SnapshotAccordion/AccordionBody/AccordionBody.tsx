@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Button } from "@kleros/ui-components-library";
 import DisplayMessages from "./DisplayMessages";
-import TxCard, { ITxCard } from "./TxCard";
+import { ITxCard } from "./TxCard";
+import SnapshotDetails from "./SnapshotDetails";
 
 const StyledSnapshotDetailsButton = styled(Button)<{
   snapshotDetailsVisible: boolean;
@@ -92,9 +93,7 @@ const AccordionBody: React.FC<IAccordionBody> = ({
       </StyledButtonsContainer>
 
       {snapshotDetailsVisible ? (
-        Object.values(transactions).map(
-          (txInfo, index) => txInfo && <TxCard key={index} {...txInfo} />
-        )
+        <SnapshotDetails transactions={transactions} />
       ) : (
         <DisplayMessages {...{ snapshotId, bridgeIndex }} />
       )}

@@ -92,8 +92,8 @@ const Menu: React.FC = () => {
       <Wrapper {...{ ref }}>
         <StyledQuestion onClick={() => toggle()} />
         <MenuContainer {...{ isOpen }}>
-          {ITEMS.map((item, i) => (
-            <MenuLink {...item} key={i} />
+          {ITEMS.map((item) => (
+            <MenuLink key={item.text} {...item} />
           ))}
         </MenuContainer>
       </Wrapper>
