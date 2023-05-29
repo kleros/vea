@@ -204,3 +204,23 @@ veascan-subgraph-inbox/generated/*
 veascan-subgraph-inbox/build/*
 validator-subgraph-inbox/generated/*
 validator-subgraph-inbox/build/*
+
+# Hardhat files
+cache
+artifacts
+coverage.json
+
+## Hardhat typechain bindings/types
+typechain
+typechain/**
+typechain-types
+typechain-types/**
+
+# Hardhat deploy files
+contracts/deployments/localhost
+contracts/deployments/hardhat
+contracts/deployments/*/solcInputs/
+
+# POA solidity flattener output
+out/
+

@@ -1,7 +1,10 @@
 {
   "name": "@kleros/vea-contracts",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "Smart contracts for Vea",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/kleros/vea.git"
@@ -47,7 +50,7 @@
     "release:patch": "yarn version patch && yarn npm publish",
     "release:minor": "yarn version minor && yarn npm publish",
     "release:major": "yarn version major && yarn npm publish",
-    "prepublish": "ls -la dist/ >foo && yarn tsc || echo"
+    "prepublish": "./scripts/prepublish.sh"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
@@ -86,12 +89,17 @@
     "@openzeppelin/contracts": "^4.8.3"
   },
   "files": [
-    "dist",
     "src",
     "deployments",
     "typechain-types",
-    "!src/test/**/*",
-    "!typechain-types/test/**/*",
-    "!typechain-types/factories/test/**/*"
+    "!hardhat.config.*",
+    "!src/test",
+    "!typechain-types/test",
+    "!typechain-types/factories/test",
+    "!test",
+    "!deploy",
+    "!deployments/localhost",
+    "!deployments/hardhat",
+    "!deployments/**/solcInputs"
   ]
 }

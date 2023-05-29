@@ -8,7 +8,8 @@
     "declaration": true,
     "sourceMap": true,
     "noImplicitAny": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
   "include": [
     "./src",
@@ -16,6 +17,10 @@
     "./test",
     "./typechain-types",
     "./deploy"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
   ],
   "files": [
     "./hardhat.config.ts"
