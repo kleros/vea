@@ -20,7 +20,7 @@ export const supportedChains = [
 export const getChain = (id: number): IChain =>
   supportedChains.find((chain) => chain.id === id) as IChain;
 
-interface IBridge {
+export interface IBridge {
   id: number;
   from: number;
   to: number;

@@ -87,8 +87,8 @@ export const getResolvingSnapshotsQuery = graphql(`
 `);
 
 export const searchSnapshotsQuery = graphql(`
-  query searchSnapshots($value: String!) {
-    snapshotQuery(text: $value) {
+  query searchSnapshots($snapshotsPerPage: Int, $value: String!) {
+    snapshotQuery(text: $value, first: $snapshotsPerPage) {
       id
       epoch
       caller

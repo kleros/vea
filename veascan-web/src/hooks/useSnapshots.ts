@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { bridges, getBridge } from "consts/bridges";
+import { bridges, getBridge, IBridge } from "consts/bridges";
 import {
   GetClaimedSnapshotsQuery,
   GetClaimQuery,
@@ -36,7 +36,7 @@ export const useSnapshots = (
   const { debouncedSearch, fromChain, toChain, queryInfo, statusFilter } =
     useFiltersContext();
   return useSWR(
-    `${fromChain}-${toChain}-${lastTimestamp}-${statusFilter}-${debouncedSearch}`,
+    `${fromChain}${toChain}${lastTimestamp}${statusFilter}${debouncedSearch}`,
     async (): Promise<IUseSnapshots> => {
       const { sortedSnapshots } = await getSortedSnapshots(
         lastTimestamp,
@@ -77,22 +77,24 @@ const getSortedSnapshots = async (
   });
   const queryQueue = filteredBridges.map((bridge) =>
     request(
-      isInboxQuery(query) || debouncedSearch !== ""
-        ? bridge.inboxEndpoint
-        : bridge.outboxEndpoint,
-      debouncedSearch !== "" ? searchSnapshotsQuery : query,
+      getEndpoint(query, bridge, debouncedSearch),
+      getQueryDocument(query, debouncedSearch),
       {
         lastTimestamp,
         snapshotsPerPage: snapshotsPerPage + 1,
         value: debouncedSearch,
       }
     ).then((queryResult) => {
-      const snapshots = debouncedSearch
-        ? (queryResult as SearchSnapshotsQuery).snapshotQuery
-        : isInboxQuery(query)
-        ? (queryResult as GetSnapshotsQuery).snapshots
-        : (queryResult as GetClaimedSnapshotsQuery).claims;
-      return snapshots.map((snapshot) => ({
+      const getSnapshots = () => {
+        if (debouncedSearch)
+          return (queryResult as SearchSnapshotsQuery).snapshotQuery;
+        else if (isInboxQuery(query))
+          return (queryResult as GetSnapshotsQuery).snapshots;
+        else {
+          return (queryResult as GetClaimedSnapshotsQuery).claims;
+        }
+      };
+      return getSnapshots().map((snapshot) => ({
         ...snapshot,
         bridgeId: bridge.id,
       }));
@@ -107,6 +109,18 @@ const getSortedSnapshots = async (
     ),
   };
 };
+
+const getEndpoint = (
+  query: IQueries,
+  bridge: IBridge,
+  debouncedSearch: string
+) =>
+  isInboxQuery(query) || debouncedSearch
+    ? bridge.inboxEndpoint
+    : bridge.outboxEndpoint;
+
+const getQueryDocument = (query: IQueries, debouncedSearch: string) =>
+  debouncedSearch ? searchSnapshotsQuery : query;
 
 const getSecondaryData = async (
   snapshot: InboxData | (OutboxData & { bridgeId: number }),

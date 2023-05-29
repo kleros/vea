@@ -1227,6 +1227,7 @@ export type GetResolvingSnapshotsQuery = {
 };
 
 export type SearchSnapshotsQueryVariables = Exact<{
+  snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   value: Scalars["String"];
 }>;
 
@@ -1919,6 +1920,14 @@ export const SearchSnapshotsDocument = {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
             name: { kind: "Name", value: "value" },
           },
           type: {
@@ -1943,6 +1952,14 @@ export const SearchSnapshotsDocument = {
                 value: {
                   kind: "Variable",
                   name: { kind: "Name", value: "value" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotsPerPage" },
                 },
               },
             ],
