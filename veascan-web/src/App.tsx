@@ -4,7 +4,7 @@ import { useList } from "react-use";
 import { BigNumber } from "ethers";
 import { StandardPagination } from "@kleros/ui-components-library";
 import Layout from "components/Layout";
-import SnapshotAccordion from "components/SnapshotAccordion/SnapshotAccordion";
+import SnapshotAccordion from "components/SnapshotAccordion";
 import TxFilterHeader from "components/TxFilterHeader";
 import { useSnapshots, getSnapshotId } from "hooks/useSnapshots";
 import { mapDataForAccordion } from "utils/mapDataForAccordion";

@@ -1,8 +1,8 @@
 import React from "react";
-import TxCard, { TxCardProps } from "./TxCard";
+import TxCard, { ITxCard } from "./TxCard";
 
 interface ISnapshotDetails {
-  transactions: TxCardProps[];
+  transactions: ITxCard[];
 }
 
 const SnapshotDetails: React.FC<ISnapshotDetails> = ({ transactions }) => {

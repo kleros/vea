@@ -1,10 +1,10 @@
 import React from "react";
 import styled, { css } from "styled-components";
 import { CustomAccordion } from "@kleros/ui-components-library";
-import AccordionBody from "./AccordionBody/AccordionBody";
-import AccordionTitle from "./AccordionTitle/AccordionTitle";
-import { IParsedData } from "utils/mapDataForAccordion";
 import { smallScreenStyle } from "styles/smallScreenStyle";
+import { IParsedData } from "utils/mapDataForAccordion";
+import AccordionBody from "./AccordionBody";
+import AccordionTitle from "./AccordionTitle";
 
 const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   display: flex;
