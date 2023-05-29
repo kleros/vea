@@ -1,5 +1,4 @@
 name: Contracts Testing
-
 on:
   workflow_dispatch:
   push:

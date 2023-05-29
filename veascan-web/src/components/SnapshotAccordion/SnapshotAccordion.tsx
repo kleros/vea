@@ -1,6 +1,6 @@
-import { CustomAccordion } from "@kleros/ui-components-library";
 import React from "react";
 import styled, { css } from "styled-components";
+import { CustomAccordion } from "@kleros/ui-components-library";
 import { smallScreenStyle } from "styles/smallScreenStyle";
 import { IParsedData } from "utils/mapDataForAccordion";
 import AccordionBody from "./AccordionBody";
@@ -50,11 +50,11 @@ const StyledSnapshotAccordionGlobal = styled(CustomAccordion)`
   }
 `;
 
-interface SnapshotAccordionProps {
+interface ISnapshotAccordion {
   items: IParsedData[];
 }
 
-const SnapshotAccordion: React.FC<SnapshotAccordionProps> = ({ items }) => {
+const SnapshotAccordion: React.FC<ISnapshotAccordion> = ({ items }) => {
   return (
     <StyledSnapshotAccordionGlobal
       items={items.map(

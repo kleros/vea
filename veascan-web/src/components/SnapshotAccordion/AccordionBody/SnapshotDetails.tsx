@@ -1,47 +1,18 @@
-import { bridges } from "consts/bridges";
 import React from "react";
-import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
-import { SnapshotInboxDataType } from "../AccordionTitle";
+import TxCard, { ITxCard } from "./TxCard";
 
-export const statusRoles = {
-  Taken: "Creator",
-  Claimed: "Oracle",
-  Verified: "Verifier",
-  Challenged: "Challenger",
-  Resolving: "Fallback Sender",
-  Resolved: "Fallback Executor",
-};
-
-interface SnapshotDetailsProps {
-  snapshotInboxData: SnapshotInboxDataType;
-  snapshotOutboxData: any;
-  snapshotStatus: string;
+interface ISnapshotDetails {
+  transactions: ITxCard[];
 }
 
-const SnapshotDetails: React.FC<SnapshotDetailsProps> = ({
-  messageInboxData,
-  messageOutboxData,
-  snapshotInboxData,
-  snapshotOutboxData,
-  snapshotStatus,
-}) => {
-  const bridgeInfo = bridges[snapshotInboxData?.bridgeIndex];
-  const snapshotDetailsParams = {
-    title: statusRoles[snapshotStatus],
-    chain: bridgeInfo?.from,
-    txHash: snapshotInboxData?.txHash,
-    timestamp: formatTimestampToHumanReadable(snapshotInboxData?.timestamp),
-    caller: snapshotInboxData?.caller,
-    extraFields: [
-      {
-        key: "State Root",
-        value: snapshotInboxData?.stateRoot,
-        isCopy: true,
-      },
-    ],
-  };
-
-  return <div></div>;
+const SnapshotDetails: React.FC<ISnapshotDetails> = ({ transactions }) => {
+  return (
+    <>
+      {Object.values(transactions).map(
+        (txInfo) => txInfo && <TxCard key={txInfo.title} {...txInfo} />
+      )}
+    </>
+  );
 };
 
 export default SnapshotDetails;

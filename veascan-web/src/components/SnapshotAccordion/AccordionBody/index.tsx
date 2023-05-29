@@ -1,8 +1,9 @@
-import { Button } from "@kleros/ui-components-library";
 import React, { useState } from "react";
 import styled from "styled-components";
+import { Button } from "@kleros/ui-components-library";
 import DisplayMessages from "./DisplayMessages";
-import TxCard, { TxCardProps } from "./TxCard";
+import { ITxCard } from "./TxCard";
+import SnapshotDetails from "./SnapshotDetails";
 
 const StyledSnapshotDetailsButton = styled(Button)<{
   snapshotDetailsVisible: boolean;
@@ -55,13 +56,13 @@ const StyledButtonsContainer = styled.div`
   padding-bottom: 12px;
 `;
 
-export interface AccordionBodyProps {
+export interface IAccordionBody {
   bridgeIndex: number;
   snapshotId: string;
-  transactions: TxCardProps[];
+  transactions: ITxCard[];
 }
 
-const AccordionBody: React.FC<AccordionBodyProps> = ({
+const AccordionBody: React.FC<IAccordionBody> = ({
   bridgeIndex,
   snapshotId,
   transactions,
@@ -92,9 +93,7 @@ const AccordionBody: React.FC<AccordionBodyProps> = ({
       </StyledButtonsContainer>
 
       {snapshotDetailsVisible ? (
-        Object.values(transactions).map(
-          (txInfo, index) => txInfo && <TxCard key={index} {...txInfo} />
-        )
+        <SnapshotDetails transactions={transactions} />
       ) : (
         <DisplayMessages {...{ snapshotId, bridgeIndex }} />
       )}

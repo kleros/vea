@@ -1,8 +1,8 @@
 import React, { forwardRef } from "react";
 import styled, { css } from "styled-components";
-import { smallScreenStyle } from "styles/smallScreenStyle";
 import Menu from "./Menu";
 import SearchBar from "./SearchBar";
+import { smallScreenStyle } from "styles/smallScreenStyle";
 
 const Container = styled.div`
   height: 68px;

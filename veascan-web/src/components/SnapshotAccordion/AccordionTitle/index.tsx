@@ -1,12 +1,12 @@
-import { bridges, getChain } from "consts/bridges";
 import React from "react";
 import styled from "styled-components";
-import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
-import { IStatus } from "utils/mapDataForAccordion";
 import ChainAndAddress from "./ChainAndAddress";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
 import Epoch from "./Epoch";
 import Timestamp from "./Timestamp";
+import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
+import { bridges, getChain } from "consts/bridges";
+import { IStatus } from "utils/mapDataForAccordion";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
@@ -63,14 +63,14 @@ export interface SnapshotInboxDataType {
   txHash: string;
 }
 
-export interface AccordionTitleProps {
+export interface IAccordionTitle {
   epoch: string;
   bridgeIndex: number;
   timestamp: string;
   status: IStatus;
 }
 
-const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
+const SnapshotAccordionTitle: React.FC<IAccordionTitle> = ({
   epoch,
   bridgeIndex,
   timestamp,
