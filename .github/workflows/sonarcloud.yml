@@ -1,3 +1,4 @@
+name: SonarCloud Analysis
 on:
     # Trigger analysis when pushing in master or pull requests, and when creating
     # a pull request.
@@ -8,7 +9,6 @@ on:
     pull_request:
         types: [opened, synchronize, reopened]
 
-name: SonarCloud Analysis
 permissions:
   contents: read
 
