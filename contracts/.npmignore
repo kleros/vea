@@ -1,2 +1,4 @@
-# NOP, just force npm to disregard .gitignore
-# https://docs.npmjs.com/cli/v9/using-npm/developers#keeping-files-out-of-your-package
+scripts
+tsconfig.json
+.env*
+hardhat.config.ts

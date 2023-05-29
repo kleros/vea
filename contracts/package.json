@@ -1,6 +1,6 @@
 {
   "name": "@kleros/vea-contracts",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Smart contracts for Vea",
   "repository": {
     "type": "git",
@@ -32,7 +32,7 @@
   },
   "scripts": {
     "build": "hardhat compile",
-    "clean": "hardhat clean",
+    "clean": "hardhat clean && rm -rf dist typechain-types",
     "check": "hardhat check",
     "test": "TS_NODE_TRANSPILE_ONLY=1 hardhat test",
     "start": "hardhat node --tags nothing",
@@ -44,9 +44,10 @@
     "size": "hardhat size-contracts --no-compile",
     "watch": "hardhat watch",
     "docgen": "hardhat docgen",
-    "release:patch": "scripts/publish.sh patch",
-    "release:minor": "scripts/publish.sh minor",
-    "release:major": "scripts/publish.sh major"
+    "release:patch": "yarn version patch && yarn npm publish",
+    "release:minor": "yarn version minor && yarn npm publish",
+    "release:major": "yarn version major && yarn npm publish",
+    "prepublish": "ls -la dist/ >foo && yarn tsc || echo"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
@@ -83,5 +84,14 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.3"
-  }
+  },
+  "files": [
+    "dist",
+    "src",
+    "deployments",
+    "typechain-types",
+    "!src/test/**/*",
+    "!typechain-types/test/**/*",
+    "!typechain-types/factories/test/**/*"
+  ]
 }
