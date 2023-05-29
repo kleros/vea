@@ -57,7 +57,7 @@ const App = () => {
           <SnapshotAccordion items={mapDataForAccordion(data.snapshots)} />
           {numPages && numPages > 0 && (
             <StyledPagination
-              numPages={numPages!}
+              numPages={numPages}
               currentPage={currentPage}
               callback={handlePageChange}
               hideNumbers
