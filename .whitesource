@@ -8,9 +8,16 @@
     "useMendCheckNames": true
   },
   "issueSettings": {
-    "minSeverityLevel": "LOW",
+    "minSeverityLevel": "MEDIUM",
     "issueType": "DEPENDENCY",
     "customLabels": ["Type: Security🛡️", "dependencies"],
     "assignees": ["jaybuidl"]
+  },
+  "remediateSettings": {
+    "workflowRules": {
+      "enabled": true,
+        "minVulnerabilityScore": 3,
+        "maxVulnerabilityScore": 10
+    }
   }
 }
