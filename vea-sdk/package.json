@@ -1,6 +1,6 @@
 {
   "name": "@kleros/vea-sdk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "SDK for the development of cross-chain apps on Vea",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,7 +35,7 @@
     "prepublish": "yarn tsc || echo"
   },
   "dependencies": {
-    "@kleros/vea-contracts": "workspace:^0.2.1",
+    "@kleros/vea-contracts": "workspace:^0.3.0",
     "@logtail/pino": "^0.4.0",
     "@typechain/ethers-v5": "^10.2.0",
     "dotenv": "^16.0.3",
