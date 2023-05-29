@@ -80,44 +80,6 @@ const SearchBar: React.FC = () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-  // const snapshots = [
-  //   {
-  //     chain: "Arbitrum",
-  //     epoch: "000000",
-  //     txID: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-  //     timestamp: "1680680481",
-  //     caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-  //     stateRoot: "0x1234585f4ecaab46b138ec8d87238da44b32eeab",
-  //   },
-  //   {
-  //     chain: "Gnosis",
-  //     epoch: "99999999999",
-  //     txID: "0x9876585f4ecaab46b138ec8d87238da442eeab9b",
-  //     timestamp: "5580680455",
-  //     caller: "0x9876585f4ecaab46b138ec8d87238da442eeab9b",
-  //     stateRoot: "0x0000085f4ecaab46b138ec8d87238da44b32eeab",
-  //   },
-  // ];
-  //const [searchQuery, setSearchQuery] = useState("");
-  //const [filteredSnapshots, setFilteredSnapshots] = useState<any[]>([]);
-
-  // const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   const { value } = event.target;
-  //   setSearchQuery(value);
-
-  //   const filtered = snapshots.filter((snapshot) => {
-  //     const { epoch, txID, stateRoot } = snapshot;
-  //     const lowerCaseQuery = value.toLowerCase();
-
-  //     return (
-  //       epoch.toLowerCase().includes(lowerCaseQuery) ||
-  //       txID.toLowerCase().includes(lowerCaseQuery) ||
-  //       stateRoot.toLowerCase().includes(lowerCaseQuery)
-  //     );
-  //   });
-
-  //   setFilteredSnapshots(filtered);
-  // };
 
   return (
     <Container>
@@ -125,12 +87,7 @@ const SearchBar: React.FC = () => {
         <SearchIcon as={SearchIconLogo} />
       </SearchIconContainer>
 
-      <StyledInput
-        type="text"
-        //value={searchQuery}
-        //onChange={handleInputChange}
-        placeholder={placeholder}
-      />
+      <StyledInput type="text" placeholder={placeholder} />
     </Container>
   );
 };
