@@ -1,7 +1,7 @@
-import { TxCardProps } from "components/SnapshotAccordion/AccordionBody/TxCard";
+import { ITxCard } from "components/SnapshotAccordion/AccordionBody/TxCard";
 import { bridges } from "consts/bridges";
-import { InboxData, OutboxData } from "hooks/useSnapshots";
 import { formatTimestampToHumanReadable } from "./formatTimestampToHumanReadable";
+import { InboxData, OutboxData } from "hooks/useSnapshots";
 
 export interface IStatus {
   claimed: boolean;
@@ -16,7 +16,7 @@ export interface IParsedData {
   epoch: string;
   snapshotId: string;
   status: IStatus;
-  transactions: TxCardProps[];
+  transactions: ITxCard[];
 }
 
 export const mapDataForAccordion = (

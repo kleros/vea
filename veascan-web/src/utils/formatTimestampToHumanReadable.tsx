@@ -23,8 +23,8 @@ export const formatTimestampToHumanReadable = (
   const hour = date.getHours();
   const minute = "0" + date.getMinutes();
   const second = "0" + date.getSeconds();
-  const formattedDate = `${month} ${day}, ${year} ${hour}:${minute.substr(
+  const formattedDate = `${month} ${day}, ${year} ${hour}:${minute.slice(
     -2
-  )}:${second.substr(-2)} ${hour >= 12 ? "pm" : "am"}`;
+  )}:${second.slice(-2)} ${hour >= 12 ? "pm" : "am"}`;
   return formattedDate;
 };

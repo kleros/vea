@@ -1,10 +1,10 @@
 import React, { FC, useState } from "react";
 import styled from "styled-components";
 import { CompactPagination } from "@kleros/ui-components-library";
-import { useMessages } from "hooks/useMessages";
 import Message from "./Message";
+import { useMessages } from "hooks/useMessages";
 
-interface DisplayMessagesProps {
+interface IDisplayMessages {
   snapshotId: string;
   bridgeId: number;
 }
@@ -17,10 +17,7 @@ const PaginationContainer = styled.div`
   margin: 24px 12px;
 `;
 
-const DisplayMessages: FC<DisplayMessagesProps> = ({
-  snapshotId,
-  bridgeId,
-}) => {
+const DisplayMessages: FC<IDisplayMessages> = ({ snapshotId, bridgeId }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data } = useMessages(

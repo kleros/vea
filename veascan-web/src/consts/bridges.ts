@@ -1,8 +1,8 @@
+import { Chain, arbitrumGoerli, goerli, gnosisChiado } from "@wagmi/chains";
 import VeaInboxArbitrumGoerliGoerli from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json";
 import VeaOutboxArbitrumGoerliGoerli from "@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json";
 import VeaInboxArbitrumGoerliChiado from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToGnosisDevnet.json";
 import VeaOutboxArbitrumGoerliChiado from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
-import { Chain, arbitrumGoerli, goerli, gnosisChiado } from "@wagmi/chains";
 import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
 import Ethereum from "tsx:svgs/chains/ethereum.svg";
 import Gnosis from "tsx:svgs/chains/gnosis.svg";

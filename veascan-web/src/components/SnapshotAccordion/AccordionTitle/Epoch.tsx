@@ -5,10 +5,13 @@ const StyledEpoch = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
   width: 35%;
 `;
-const Epoch: React.FC<{
+
+interface IEpoch {
   epoch: string;
-}> = (p) => {
-  return <StyledEpoch>{p.epoch} </StyledEpoch>;
+}
+
+const Epoch: React.FC<IEpoch> = ({ epoch }) => {
+  return <StyledEpoch>{epoch} </StyledEpoch>;
 };
 
 export default Epoch;

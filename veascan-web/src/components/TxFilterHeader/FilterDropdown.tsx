@@ -10,7 +10,7 @@ interface Item {
   value: number;
 }
 
-interface FilterDropdownProps {
+interface IFilterDropdown {
   isSimpleButton: boolean;
   isAlignRight: boolean;
   itemData: Item[];
@@ -52,7 +52,7 @@ const FilterItem = styled(DropdownSelect)`
   }
 `;
 
-export const FilterDropdown: React.FC<FilterDropdownProps> = ({
+export const FilterDropdown: React.FC<IFilterDropdown> = ({
   isSimpleButton,
   isAlignRight,
   itemData,

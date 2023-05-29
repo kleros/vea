@@ -1,8 +1,8 @@
-import { Tag } from "@kleros/ui-components-library";
 import React from "react";
 import styled from "styled-components";
+import { Tag } from "@kleros/ui-components-library";
 
-interface ColoredLabelProps {
+interface IColoredLabel {
   variant: keyof typeof variantColors;
   text: string;
 }
@@ -32,11 +32,7 @@ const ColorWrapper = styled.div<{ variant: keyof typeof variantColors }>`
   }
 `;
 
-const ColoredLabel: React.FC<ColoredLabelProps> = ({
-  text,
-  variant,
-  ...props
-}) => {
+const ColoredLabel: React.FC<IColoredLabel> = ({ text, variant, ...props }) => {
   return (
     <ColorWrapper {...{ variant, ...props }}>
       <Tag as="div" {...{ text }} />

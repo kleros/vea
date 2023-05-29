@@ -26,18 +26,24 @@ const ChainIcon = styled.svg`
   margin-right: 8px;
   padding-bottom: 2px;
 `;
-const ChainAndAddress: React.FC<{
+
+interface IChainAndAddress {
   chainObject: any;
   address: string;
-}> = (p) => {
-  const truncatedAddress = `${p.address.slice(0, 6)}...${p.address.slice(-4)}`;
+}
+
+const ChainAndAddress: React.FC<IChainAndAddress> = ({
+  chainObject,
+  address,
+}) => {
+  const truncatedAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   return (
     <StyledChainAndAddress>
-      <ChainIcon as={p.chainObject?.logo} />
+      <ChainIcon as={chainObject?.logo} />
       <StyledTruncatedAddress
         onClick={(event) => event.stopPropagation()}
-        href={`${p.chainObject?.blockExplorers?.default.url}/address/${p.address}`}
+        href={`${chainObject?.blockExplorers?.default.url}/address/${address}`}
         target="_blank"
         rel="noreferrer"
       >

@@ -1,10 +1,10 @@
-import { getBridge } from "consts/bridges";
 import React, { useEffect, useState } from "react";
-import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
 import MessageHeader from "./MessageHeader";
 import TxCard from "./TxCard";
+import { getBridge } from "consts/bridges";
+import { formatTimestampToHumanReadable } from "utils/formatTimestampToHumanReadable";
 
-interface MessageProps {
+interface IMessage {
   messageInboxData: MessageInboxDataType;
   messageOutboxData: any;
   bridgeId: number;
@@ -24,7 +24,7 @@ interface MessageInboxDataType {
   txHash: string;
 }
 
-const Message: React.FC<MessageProps> = ({
+const Message: React.FC<IMessage> = ({
   messageInboxData,
   messageOutboxData,
   bridgeId,
