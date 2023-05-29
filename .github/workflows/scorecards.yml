@@ -10,7 +10,7 @@ on:
 
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained
   schedule:
-    - cron: "20 5 * * 7" # Every Sunday at 5:20 AM UTC
+    - cron: "20 5 * * 0" # Every Sunday at 5:20 AM UTC
   push:
     branches:
       - dev
