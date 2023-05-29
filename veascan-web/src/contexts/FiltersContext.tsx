@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from "react";
+import React, { useState, createContext, useContext, useMemo } from "react";
 import { theme } from "styles/themes";
 import { useDebounce } from "react-use";
 import {
@@ -144,27 +144,25 @@ export const FiltersContext: React.FC<{ children?: React.ReactNode }> = ({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useDebounce(() => setDebouncedSearch(search), 500, [search]);
-  return (
-    <Context.Provider
-      value={{
-        search,
-        setSearch,
-        debouncedSearch,
-        fromChain,
-        toChain,
-        setFromChain,
-        setToChain,
-        statusItems: STATUS_FILTERS.map((filter) => filter.item),
-        statusFilter,
-        setStatusFilter,
-        queryInfo: STATUS_FILTERS.find(
-          (filter) => filter.item.value === statusFilter
-        )!.queryInfo,
-      }}
-    >
-      {children}
-    </Context.Provider>
+  const value = useMemo(
+    () => ({
+      search,
+      setSearch,
+      debouncedSearch,
+      fromChain,
+      toChain,
+      setFromChain,
+      setToChain,
+      statusItems: STATUS_FILTERS.map((filter) => filter.item),
+      statusFilter,
+      setStatusFilter,
+      queryInfo: STATUS_FILTERS.find(
+        (filter) => filter.item.value === statusFilter
+      )!.queryInfo,
+    }),
+    [search, debouncedSearch, fromChain, toChain, statusFilter]
   );
+  return <Context.Provider {...{ value }}> {children} </Context.Provider>;
 };
 
 export const useFiltersContext = () => useContext(Context);
