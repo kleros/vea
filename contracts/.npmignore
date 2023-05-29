@@ -1,4 +1,6 @@
-scripts
-tsconfig.json
 .env*
-hardhat.config.ts
+scripts
+deploy
+tsconfig.json
+test
+hardhat.config.*

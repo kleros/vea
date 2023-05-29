@@ -4,20 +4,15 @@
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
-    "outDir": "dist",
+    "outDir": "typechain-types",
     "declaration": true,
     "sourceMap": true,
     "noImplicitAny": false,
     "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "paths": {
-      "@kleros/vea-contracts": [
-        "../contracts"
-      ]
-    }
+    "skipLibCheck": true
   },
   "include": [
-    "src"
+    "./typechain-types"
   ],
   "exclude": [
     "node_modules",
