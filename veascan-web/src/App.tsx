@@ -40,8 +40,10 @@ const App = () => {
   const { fromChain, toChain, statusFilter } = useFiltersContext();
 
   useEffect(() => {
-    clearPageTracking();
-    setCurrentPage(1);
+    if (currentPage !== 1) {
+      clearPageTracking();
+      setCurrentPage(1);
+    }
   }, [fromChain, toChain, statusFilter]);
 
   const handlePageChange = useCallback(
