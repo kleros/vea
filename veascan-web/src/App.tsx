@@ -46,7 +46,6 @@ const App = () => {
 
   const handlePageChange = useCallback(
     (newPage: number) => {
-      console.log("data", data);
       if (newPage > currentPage)
         pushPageTracking({
           timestamp: data?.snapshots.at(-1)?.[0].timestamp,
