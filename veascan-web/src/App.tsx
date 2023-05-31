@@ -65,7 +65,10 @@ const App = () => {
       <TxFilterHeader />
       {data ? (
         <>
-          <SnapshotAccordion items={mapDataForAccordion(data.snapshots)} />
+          <SnapshotAccordion
+            key={currentPage}
+            items={mapDataForAccordion(data.snapshots)}
+          />
           <StyledPagination
             numPages={data.isMorePages ? currentPage + 1 : currentPage}
             currentPage={currentPage}
