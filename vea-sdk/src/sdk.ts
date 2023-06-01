@@ -12,8 +12,6 @@ export class ClientFactory {
     outboxRpc: string,
     loggerOptions?: loggerFactory.LoggerOptions
   ): VeaClient {
-    this.logger = loggerFactory.createLogger(loggerOptions);
-
     const config: VeaClientConfig = {
       bridge,
       inboxRpc: inboxRpc,
@@ -26,6 +24,11 @@ export class ClientFactory {
       bridge.outboxAddress,
       outboxProvider
     );
+    this.logger = loggerFactory.createLogger(loggerOptions).child({
+      bridge: bridge.label,
+      inbox: bridge.inboxAddress,
+      outbox: bridge.outboxAddress,
+    });
     inboxProvider.getNetwork().then((network) => {
       if (network.chainId !== bridge.inboxChainId) throw new Error("Incorrect Inbox RPC");
     });
