@@ -33,7 +33,7 @@ export const getMessageInfo = async (client: VeaClient, messageId: number): Prom
 };
 
 const getCount = async (client: VeaClient): Promise<number> => {
-  const subgraph = client.config.bridge.outboxSubgraph;
+  const subgraph = client.config.bridge.inboxSubgraph;
   const stateRoot = await client.outbox.stateRoot();
   const query = `{
     snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
@@ -58,7 +58,7 @@ const getProofAtCount = async (client: VeaClient, messageId: number, count: numb
 
   const proof: any[] = [];
   try {
-    const subgraph = client.config.bridge.outboxSubgraph;
+    const subgraph = client.config.bridge.inboxSubgraph;
     const result: any = await request(subgraph, query);
     for (let i = 0; i < proofIndices.length; i++) {
       proof.push(result[`layer${i}`][0].hash);
@@ -90,10 +90,10 @@ const getProofIndices = (messageId: number, count: number) => {
 const getMessageDataToRelay = async (client: VeaClient, messageId: number): Promise<[string, string]> => {
   let dataAndTo: [string, string] = ["", ""];
   try {
-    const subgraph = client.config.bridge.outboxSubgraph;
+    const subgraph = client.config.bridge.inboxSubgraph;
     const query = `{
-        messageSents(first: 5, where: {messageId: ${messageId}}) {
-        messageId
+        messageSents(first: 5, where: {nonce: ${messageId}}) {
+        nonce
         to {
             id
         }

@@ -1,8 +1,8 @@
-import VeaInboxArbToGnosisDevnetDeployment from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToGnosisDevnet.json";
-import VeaOutboxArbToGnosisDevnetDeployment from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
+import { address as veaInboxArbToGnosisDevnet } from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToGnosisDevnet.json";
+import { address as veaOutboxArbToGnosisDevnet } from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
 
-import VeaInboxArbToEthDevnetDeployment from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json";
-import VeaOutboxArbToEthDevnetDeployment from "@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json";
+import { address as veaInboxArbToEthDevnet } from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json";
+import { address as veaOutboxArbToEthDevnet } from "@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json";
 
 import {
   VeaInboxArbToEth__factory,
@@ -10,8 +10,8 @@ import {
   VeaOutboxArbToEthDevnet__factory,
 } from "@kleros/vea-contracts/typechain-types";
 
-export type VeaInboxFactory = typeof VeaInboxArbToEth__factory;
-export type VeaOutboxFactory = typeof VeaOutboxArbToGnosisDevnet__factory | typeof VeaOutboxArbToEthDevnet__factory;
+export type VeaInboxFactory = VeaInboxArbToEth__factory;
+export type VeaOutboxFactory = VeaOutboxArbToGnosisDevnet__factory | VeaOutboxArbToEthDevnet__factory;
 
 export type Bridge = {
   label: string;
@@ -33,10 +33,10 @@ export const arbitrumGoerliToChiadoDevnet: Bridge = {
   label: "Arbitrum to Chiado Devnet",
   inboxChainId: 421613,
   outboxChainId: 10200,
-  inboxAddress: VeaInboxArbToGnosisDevnetDeployment.address as `0x${string}`,
-  outboxAddress: VeaOutboxArbToGnosisDevnetDeployment.address as `0x${string}`,
-  inboxFactory: VeaInboxArbToEth__factory,
-  outboxFactory: VeaOutboxArbToGnosisDevnet__factory,
+  inboxAddress: veaInboxArbToGnosisDevnet as `0x${string}`,
+  outboxAddress: veaOutboxArbToGnosisDevnet as `0x${string}`,
+  inboxFactory: new VeaInboxArbToEth__factory(),
+  outboxFactory: new VeaOutboxArbToGnosisDevnet__factory(),
   inboxSubgraph: getSubgraphUrl("vea-inbox-arbgoerli-to-chiado"),
   outboxSubgraph: getSubgraphUrl("FIX ME"), // TODO
 };
@@ -45,10 +45,10 @@ export const arbitrumGoerliToGoerliDevnet: Bridge = {
   label: "Arbitrum to Goerli Devnet",
   inboxChainId: 5,
   outboxChainId: 10200,
-  inboxAddress: VeaInboxArbToEthDevnetDeployment.address as `0x${string}`,
-  outboxAddress: VeaOutboxArbToEthDevnetDeployment.address as `0x${string}`,
-  inboxFactory: VeaInboxArbToEth__factory,
-  outboxFactory: VeaOutboxArbToEthDevnet__factory,
+  inboxAddress: veaInboxArbToEthDevnet as `0x${string}`,
+  outboxAddress: veaOutboxArbToEthDevnet as `0x${string}`,
+  inboxFactory: new VeaInboxArbToEth__factory(),
+  outboxFactory: new VeaOutboxArbToEthDevnet__factory(),
   inboxSubgraph: getSubgraphUrl("vea-inbox-arbgoerli-to-goerli"),
   outboxSubgraph: getSubgraphUrl("FIXME"), // TODO,
 };

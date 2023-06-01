@@ -28,7 +28,7 @@
     "tag": "latest"
   },
   "scripts": {
-    "start": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-fetch ts-node ./src/run.ts",
+    "start": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-fetch ts-node ./examples/index.ts",
     "release:patch": "yarn version patch && yarn npm publish",
     "release:minor": "yarn version minor && yarn npm publish",
     "release:major": "yarn version major && yarn npm publish",
