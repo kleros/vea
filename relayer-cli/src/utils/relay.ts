@@ -2,7 +2,6 @@ import { getProofAtCount, getMessageDataToRelay, getSubgraph } from "./proof";
 import { getVeaOutboxArbToEth } from "./ethers";
 import request from "graphql-request";
 import { VeaInboxArbToEth, VeaOutboxArbToEth } from "@kleros/vea-contracts/typechain-types";
-const fs = require("fs");
 
 require("dotenv").config();
 
