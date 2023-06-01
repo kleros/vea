@@ -43,8 +43,8 @@ export const arbitrumGoerliToChiadoDevnet: Bridge = {
 
 export const arbitrumGoerliToGoerliDevnet: Bridge = {
   label: "Arbitrum to Goerli Devnet",
-  inboxChainId: 5,
-  outboxChainId: 10200,
+  inboxChainId: 421613,
+  outboxChainId: 5,
   inboxAddress: veaInboxArbToEthDevnet as `0x${string}`,
   outboxAddress: veaOutboxArbToEthDevnet as `0x${string}`,
   inboxFactory: new VeaInboxArbToEth__factory(),
