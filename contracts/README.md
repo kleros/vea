@@ -10,17 +10,17 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 #### Goerli
 
-- [RouterArbToGnosisDevnet](https://goerli.etherscan.io/address/0xAb53e341121448Ae259Da8fa17f216Cb0e21199C)
-- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0x906dE43dBef27639b1688Ac46532a16dc07Ce410)
+- [RouterArbToGnosisDevnet](https://goerli.etherscan.io/address/0xD4847f86Ed2E9D03839B15fd0818759861c063a8)
+- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0x9235A379950B9f01fb3e2961C06912A96DCcef0e)
 
 #### Arbitrum Goerli
 
-- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0x906dE43dBef27639b1688Ac46532a16dc07Ce410)
-- [VeaInboxArbToGnosisDevnet](https://goerli.arbiscan.io/address/0xAb53e341121448Ae259Da8fa17f216Cb0e21199C)
+- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0xA3FefC6FeE3fc66B9d9a8BEE794736ab71a74c55)
+- [VeaInboxArbToGnosisDevnet](https://goerli.arbiscan.io/address/0x660daB9A6436A814a6ae3a6f27b309356a4bE78c)
 
 #### Chiado
 
-- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xAb53e341121448Ae259Da8fa17f216Cb0e21199C)
+- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xdFd7aDEb43d46FA3f16FB3e27F7fe85c3f5BD89D)
 
 ## Getting Started
 
