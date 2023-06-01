@@ -1,9 +1,19 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
+import loggerFactory from "./utils/logger";
 import * as Bridges from "./bridges";
 import { VeaClient, VeaClientConfig } from "./client";
 
 export class ClientFactory {
-  private static configure(bridge: Bridges.Bridge, inboxRpc: string, outboxRpc: string): VeaClient {
+  static logger = loggerFactory.createLogger();
+
+  private static configure(
+    bridge: Bridges.Bridge,
+    inboxRpc: string,
+    outboxRpc: string,
+    loggerOptions?: loggerFactory.LoggerOptions
+  ): VeaClient {
+    this.logger = loggerFactory.createLogger(loggerOptions);
+
     const config: VeaClientConfig = {
       bridge,
       inboxRpc: inboxRpc,
@@ -22,14 +32,22 @@ export class ClientFactory {
     outboxProvider.getNetwork().then((network) => {
       if (network.chainId !== bridge.outboxChainId) throw new Error("Incorrect Outbox RPC");
     });
-    return new VeaClient(config, inboxProvider, outboxProvider, veaInbox, veaOutbox);
+    return new VeaClient(config, inboxProvider, outboxProvider, veaInbox, veaOutbox, this.logger);
   }
 
-  static arbitrumGoerliToChiadoDevnet(inboxRpc: string, outboxRpc: string): VeaClient {
-    return this.configure(Bridges.arbitrumGoerliToChiadoDevnet, inboxRpc, outboxRpc);
+  static arbitrumGoerliToChiadoDevnet(
+    inboxRpc: string,
+    outboxRpc: string,
+    loggerOptions?: loggerFactory.LoggerOptions
+  ): VeaClient {
+    return this.configure(Bridges.arbitrumGoerliToChiadoDevnet, inboxRpc, outboxRpc, loggerOptions);
   }
 
-  static arbitrumGoerliToGoerliDevnet(inboxRpc: string, outboxRpc: string): VeaClient {
-    return this.configure(Bridges.arbitrumGoerliToGoerliDevnet, inboxRpc, outboxRpc);
+  static arbitrumGoerliToGoerliDevnet(
+    inboxRpc: string,
+    outboxRpc: string,
+    loggerOptions?: loggerFactory.LoggerOptions
+  ): VeaClient {
+    return this.configure(Bridges.arbitrumGoerliToGoerliDevnet, inboxRpc, outboxRpc, loggerOptions);
   }
 }

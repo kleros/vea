@@ -1,28 +1,36 @@
 import pino from "pino";
-import envVar from "./envVar";
+import { TransportTargetOptions } from "pino";
+import dotenv from "dotenv";
 
-// TODO: make this env var optional, skip fetch if undefined
-const logtailToken = envVar("LOGTAIL_TOKEN");
-const transport = pino.transport({
-  targets: [
-    {
-      target: "@logtail/pino",
-      options: { sourceToken: logtailToken },
-      level: "debug",
-    },
-    {
-      target: "pino-pretty",
-      options: {},
-      level: "debug",
-    },
-  ],
-});
-const logger = pino(
-  {
-    level: envVar("LOG_LEVEL"), // TODO: set it to info if not defined
-    timestamp: pino.stdTimeFunctions.isoTime,
-  },
-  transport
-);
+dotenv.config();
+
+namespace logger {
+  export type LoggerOptions = {
+    level?: string;
+    transportTargetOptions?: TransportTargetOptions;
+  };
+
+  export const createLogger = (options?: LoggerOptions): pino.Logger => {
+    const targets: TransportTargetOptions[] = [
+      {
+        target: "pino-pretty",
+        options: {},
+        level: options?.level ?? "info",
+      },
+    ];
+
+    if (options?.transportTargetOptions) {
+      targets.push(options.transportTargetOptions);
+    }
+
+    return pino(
+      {
+        level: options?.level ?? "info",
+        timestamp: pino.stdTimeFunctions.isoTime,
+      },
+      pino.transport({ targets: targets })
+    );
+  };
+}
 
 export default logger;

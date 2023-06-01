@@ -1,6 +1,7 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ContractTransaction } from "@ethersproject/contracts";
 import { Signer } from "@ethersproject/abstract-signer";
+import { Logger } from "pino";
 import {
   VeaInboxArbToEth,
   VeaOutboxArbToGnosisDevnet,
@@ -20,23 +21,26 @@ export type VeaOutbox = VeaOutboxArbToEthDevnet | VeaOutboxArbToGnosisDevnet;
 
 export class VeaClient {
   readonly config: VeaClientConfig;
-  inboxProvider: JsonRpcProvider;
-  outboxProvider: JsonRpcProvider;
-  inbox: VeaInbox;
-  outbox: VeaOutbox;
+  readonly inboxProvider: JsonRpcProvider;
+  readonly outboxProvider: JsonRpcProvider;
+  readonly inbox: VeaInbox;
+  readonly outbox: VeaOutbox;
+  readonly logger: Logger;
 
   constructor(
     config: VeaClientConfig,
     inboxProvider: JsonRpcProvider,
     outboxProvider: JsonRpcProvider,
     inbox: VeaInboxArbToEth,
-    outbox: VeaOutboxArbToEthDevnet | VeaOutboxArbToGnosisDevnet
+    outbox: VeaOutboxArbToEthDevnet | VeaOutboxArbToGnosisDevnet,
+    logger: Logger
   ) {
     this.config = config;
     this.inboxProvider = inboxProvider;
     this.outboxProvider = outboxProvider;
     this.inbox = inbox;
     this.outbox = outbox;
+    this.logger = logger;
   }
 
   public getMessageInfo = async (messageId: number): Promise<MessageInfo> => {

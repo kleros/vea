@@ -64,7 +64,7 @@ const getProofAtCount = async (client: VeaClient, messageId: number, count: numb
       proof.push(result[`layer${i}`][0].hash);
     }
   } catch (e) {
-    console.log(e);
+    client.logger.error(e, "Error getting proof from subgraph");
   }
   return proof;
 };
@@ -103,7 +103,7 @@ const getMessageDataToRelay = async (client: VeaClient, messageId: number): Prom
     const result: any = await request(subgraph, query);
     dataAndTo = [result[`messageSents`][0].to.id, result[`messageSents`][0].data];
   } catch (e) {
-    console.log(e);
+    client.logger.error(e, "Error getting message data from subgraph");
   }
   return dataAndTo;
 };
