@@ -1,6 +1,6 @@
 {
   "name": "@kleros/vea-sdk",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "SDK for the development of cross-chain apps on Vea",
   "main": "dist/index.js",
   "module": "dist/index.js",
