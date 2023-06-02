@@ -3393,7 +3393,7 @@ __metadata:
     solidity-coverage: ^0.8.2
     ts-node: ^10.9.1
     typechain: ^8.1.1
-    typescript: ^4.9.5
+    typescript: ^5.1.3
   languageName: unknown
   linkType: soft
 
@@ -3405,7 +3405,7 @@ __metadata:
     "@typechain/ethers-v5": ^10.2.0
     dotenv: ^16.0.3
     pm2: ^5.2.2
-    typescript: ^4.9.5
+    typescript: ^5.1.3
     web3: ^1.8.2
     web3-batched-send: ^1.0.3
   languageName: unknown
@@ -3431,7 +3431,7 @@ __metadata:
     "@typechain/ethers-v5": ^10.2.0
     dotenv: ^16.0.3
     pm2: ^5.2.2
-    typescript: ^4.9.5
+    typescript: ^5.1.3
     web3: ^1.10.0
     web3-batched-send: ^1.0.3
   languageName: unknown
@@ -3502,7 +3502,7 @@ __metadata:
     react-use: ^17.4.0
     styled-components: ^5.3.10
     swr: ^2.1.3
-    typescript: ^4.9.5
+    typescript: ^5.1.3
   languageName: unknown
   linkType: soft
 
@@ -20859,7 +20859,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:4.9.5, typescript@npm:^4.9.5":
+"typescript@npm:4.9.5":
   version: 4.9.5
   resolution: "typescript@npm:4.9.5"
   bin:
@@ -20879,7 +20879,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@4.9.5#~builtin<compat/typescript>, typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
+"typescript@npm:^5.1.3":
+  version: 5.1.3
+  resolution: "typescript@npm:5.1.3"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: d9d51862d98efa46534f2800a1071a613751b1585dc78884807d0c179bcd93d6e9d4012a508e276742f5f33c480adefc52ffcafaf9e0e00ab641a14cde9a31c7
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@4.9.5#~builtin<compat/typescript>":
   version: 4.9.5
   resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=ad5954"
   bin:
@@ -20896,6 +20906,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 9ec0a8eed38d46cc2c8794555b7674e413604c56c159f71b8ff21ce7f17334a44127a68724cb2ef8221ff3b19369f8f05654e8a5266621d7d962aeed889bd630
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@^5.1.3#~builtin<compat/typescript>":
+  version: 5.1.3
+  resolution: "typescript@patch:typescript@npm%3A5.1.3#~builtin<compat/typescript>::version=5.1.3&hash=ad5954"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 32a25b2e128a4616f999d4ee502aabb1525d5647bc8955e6edf05d7fbc53af8aa98252e2f6ba80bcedfc0260c982b885f3c09cfac8bb65d2924f3133ad1e1e62
   languageName: node
   linkType: hard
 
