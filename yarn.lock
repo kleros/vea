@@ -3477,7 +3477,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.59.1
     "@typescript-eslint/parser": ^5.59.1
     "@typescript-eslint/utils": ^5.59.1
-    "@wagmi/chains": ^0.2.18
+    "@wagmi/chains": ^1.1.1
     core-js: ^3.30.1
     eslint: ^8.39.0
     eslint-config-prettier: ^8.8.0
@@ -5993,15 +5993,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@wagmi/chains@npm:^0.2.18":
-  version: 0.2.18
-  resolution: "@wagmi/chains@npm:0.2.18"
+"@wagmi/chains@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@wagmi/chains@npm:1.1.1"
   peerDependencies:
-    typescript: ">=4.9.4"
+    typescript: ">=5.0.4"
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 3e88d3dc6e1e397fffae61029bcd5b73e260c3a7aedf4ee3f878cea6fd558b688f00860c1afa831243c4bb88e198fd2ec7c23371c053961664fd8fc2929529b2
+  checksum: b0ecec76066653a5c9ad182f9f9bf9aa0b74e65148660cd72577d69f4cba0c1cfad11d5463943e1e04d35a8ae97738eefc8ad1733e1c0671df667735af008395
   languageName: node
   linkType: hard
 
