@@ -10,10 +10,11 @@ pragma solidity 0.8.18;
 
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
+import "../interfaces/updaters/IArbitrumUpdatable.sol";
 
 /// @dev Vea Outbox From Arbitrum to Gnosis.
 /// Note: This contract is deployed on Gnosis.
-contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
+contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
@@ -25,28 +26,36 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     uint256 internal immutable burn; // The amount of wei to burn. deposit / 2
     uint256 internal immutable depositPlusReward; // 2 * deposit - burn
 
-    address internal constant BURN_ADDRESS = address(0); // address to send burned eth
+    address internal constant BURN_ADDRESS = address(0); // Address to send burned eth
     uint256 internal constant SLOT_TIME = 5; // Gnosis 5 second slot time
-    bytes32 internal constant ROUTER_CHAIN_ID = bytes32(uint256(1)); // Router chain is Ethereum L1
 
+    uint256 public immutable routerChainId; // Router chain id for authentication of messages from the AMB.
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
-    uint256 public immutable challengePeriod; // Claim challenge timewindow.
-    uint256 public immutable claimDelay; // Can only claim for epochs after this delay (seconds)
+    uint256 public immutable minChallengePeriod; // Minimum time window to challenge a claim, even with a malicious sequencer.
 
     uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.
     uint256 public immutable maxMissingBlocks; // The maximum number of blocks that can be missing in a challenge period.
 
-    bytes32 public stateRoot;
-    uint256 public latestVerifiedEpoch;
+    bytes32 public stateRoot; // merkle root of the outbox state
+    uint256 public latestVerifiedEpoch; // The latest epoch that has been verified.
 
     mapping(uint256 => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+
+    uint256 public sequencerLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
+
+    enum CensorshipTestStatus {
+        Failed,
+        Passed,
+        NotStarted,
+        InProgress
+    }
 
     // ************************************* //
     // *              Events               * //
     // ************************************* //
 
-    /// @dev Watcher check this event to challenge fraud.
+    /// @dev Watchers check this event to challenge fraud.
     /// @param _claimer The address of the claimer.
     /// @param _stateRoot The state root of the claim.
     event Claimed(address indexed _claimer, bytes32 _stateRoot);
@@ -60,9 +69,17 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     /// @param _msgId The msgId of the message that was relayed.
     event MessageRelayed(uint64 _msgId);
 
+    /// @dev This event indicates that the censorship test started and all challengers are ready even in the worst case scenario of a malicious sequencer.
+    /// @param _epoch The epoch that started verification.
+    event VerificationStarted(uint256 _epoch);
+
     /// @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
     /// @param _epoch The epoch that was verified.
     event Verified(uint256 _epoch);
+
+    /// @dev This event indicates the sequencer limit updated.
+    /// @param _newSequencerLimit The new maxL2StateSyncDelay.
+    event SequencerLimitUpdateReceived(uint256 _newSequencerLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -70,14 +87,14 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
 
     modifier OnlyBridgeRunning() {
         unchecked {
-            require(block.timestamp / epochPeriod <= latestVerifiedEpoch + timeoutEpochs, "Bridge Shutdown.");
+            require(block.timestamp / epochPeriod - latestVerifiedEpoch <= timeoutEpochs, "Bridge Shutdown.");
         }
         _;
     }
 
     modifier OnlyBridgeShutdown() {
         unchecked {
-            require(block.timestamp / epochPeriod > latestVerifiedEpoch + timeoutEpochs, "Bridge Running.");
+            require(block.timestamp / epochPeriod - latestVerifiedEpoch > timeoutEpochs, "Bridge Running.");
         }
         _;
     }
@@ -86,30 +103,35 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     /// Note: epochPeriod must match the VeaInboxArbToGnosis contract deployment on Arbitrum, since it's on a different chain, we can't read it and trust the deployer to set a correct value
     /// @param _deposit The deposit amount to submit a claim in wei.
     /// @param _epochPeriod The duration of each epoch.
-    /// @param _challengePeriod The duration of the period allowing to challenge a claim.
+    /// @param _minChallengePeriod The minimum time window to challenge a claim.
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-    /// @param _claimDelay The number of epochs after which the claim can be submitted.
     /// @param _amb The address of the AMB contract on Gnosis.
     /// @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Ethereum.
+    /// @param _sequencerLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
+    /// @param _routerChainId The chain id of the routerArbToGnosis.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
-        uint256 _challengePeriod,
+        uint256 _minChallengePeriod,
         uint256 _timeoutEpochs,
-        uint256 _claimDelay,
         IAMB _amb,
         address _routerArbToGnosis,
-        uint256 _maxMissingBlocks
+        uint256 _sequencerLimit,
+        uint256 _maxMissingBlocks,
+        uint256 _routerChainId
     ) {
         deposit = _deposit;
+        // epochPeriod must match the VeaInboxArbToGnosis contract deployment epochPeriod value.
         epochPeriod = _epochPeriod;
-        challengePeriod = _challengePeriod;
         timeoutEpochs = _timeoutEpochs;
-        claimDelay = _claimDelay;
+        minChallengePeriod = _minChallengePeriod;
         amb = _amb;
         routerArbToGnosis = _routerArbToGnosis;
         maxMissingBlocks = _maxMissingBlocks;
+        routerChainId = _routerChainId;
+        // This value is on another chain, so we can't read it, we trust the deployer to set a correct value.
+        sequencerLimit = _sequencerLimit; // MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox
 
         // claimant and challenger are not sybil resistant
         // must burn half deposit to prevent zero cost griefing
@@ -117,9 +139,23 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         depositPlusReward = 2 * _deposit - burn;
 
         latestVerifiedEpoch = block.timestamp / epochPeriod - 1;
+    }
 
-        // claimDelay should never be set this high, but we santiy check to prevent underflow
-        require(claimDelay <= block.timestamp, "Invalid epochClaimDelay.");
+    // ************************************* //
+    // *        Parameter Updates          * //
+    // ************************************* //
+
+    /// @dev Set the maxL2StateSyncDelay by reading from the Arbitrum Bridge
+    /// @param _newSequencerLimit The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.
+    function updateSequencerLimit(uint256 _newSequencerLimit) external {
+        require(msg.sender == address(amb), "Not from bridge.");
+        require(bytes32(routerChainId) == amb.messageSourceChainId(), "Invalid chain id.");
+        require(routerArbToGnosis == amb.messageSender(), "Not from router.");
+
+        if (sequencerLimit != _newSequencerLimit) {
+            sequencerLimit = _newSequencerLimit;
+            emit SequencerLimitUpdateReceived(_newSequencerLimit);
+        }
     }
 
     // ************************************* //
@@ -133,7 +169,13 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
         unchecked {
-            require((block.timestamp - claimDelay) / epochPeriod == _epoch, "Invalid epoch.");
+            require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
+            // Note: block.timestamp should be much larger than sequencerLimit, but we check in case Arbiturm governance updated this value.
+            if (block.timestamp > sequencerLimit) {
+                // Allow claims to be made within the sequencerLimit.
+                // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
+                require(_epoch + 1 >= (block.timestamp - sequencerLimit) / epochPeriod, "Epoch is too old.");
+            }
         }
 
         require(_stateRoot != bytes32(0), "Invalid claim.");
@@ -143,51 +185,79 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
             Claim({
                 stateRoot: _stateRoot,
                 claimer: msg.sender,
-                timestamp: uint32(block.timestamp),
-                blocknumber: uint32(block.number),
+                timestampClaimed: uint32(block.timestamp),
+                timestampVerification: uint32(0),
+                blocknumberVerification: uint32(0),
                 honest: Party.None,
                 challenger: address(0)
             })
         );
 
         emit Claimed(msg.sender, _stateRoot);
+
+        // Refund overpayment.
+        if (msg.value > deposit) {
+            uint256 refund = msg.value - deposit;
+            payable(msg.sender).send(refund); // User is responsible for accepting ETH.
+        }
     }
 
     /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
     /// @param _epoch The epoch of the claim to challenge.
     /// @param _claim The claim associated with the epoch.
-    function challenge(uint256 _epoch, Claim memory _claim) external payable virtual {
+    function challenge(uint256 _epoch, Claim memory _claim) external payable {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
-        require(_claim.challenger == address(0), "Claim already challenged.");
         require(msg.value >= deposit, "Insufficient challenge deposit.");
-
-        unchecked {
-            require(block.timestamp < uint256(_claim.timestamp) + challengePeriod, "Challenge period elapsed.");
-        }
+        require(_claim.challenger == address(0), "Claim already challenged.");
+        require(_claim.honest == Party.None, "Claim already verified.");
 
         _claim.challenger = msg.sender;
         claimHashes[_epoch] = hashClaim(_claim);
 
         emit Challenged(_epoch, msg.sender);
+
+        // Refund overpayment.
+        if (msg.value > deposit) {
+            uint256 refund = msg.value - deposit;
+            payable(msg.sender).send(refund); // User is responsible for accepting ETH.
+        }
+    }
+
+    /// @dev Start verification for claim for 'epoch'.
+    /// @param _epoch The epoch of the claim to challenge.
+    /// @param _claim The claim associated with the epoch.
+    function startVerification(uint256 _epoch, Claim memory _claim) external virtual {
+        require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
+
+        // sequencerLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.
+        // using checked arithmetic incase arbitrum governance sets sequencerLimit to a large value
+        require(
+            block.timestamp >= _claim.timestampClaimed + sequencerLimit + epochPeriod,
+            "Claim must wait atleast maxL2StateSyncDelay."
+        );
+
+        CensorshipTestStatus censorshipTestStatus = censorshipTestStatus(_claim);
+        require(
+            censorshipTestStatus == CensorshipTestStatus.NotStarted ||
+                censorshipTestStatus == CensorshipTestStatus.Failed,
+            "Claim verification in progress or already completed."
+        );
+
+        _claim.timestampVerification = uint32(block.timestamp);
+        _claim.blocknumberVerification = uint32(block.number);
+
+        claimHashes[_epoch] = hashClaim(_claim);
+
+        emit VerificationStarted(_epoch);
     }
 
     /// @dev Resolves the optimistic claim for '_epoch'.
     /// @param _epoch The epoch of the optimistic claim.
     /// @param _claim The claim associated with the epoch.
-    function validateSnapshot(uint256 _epoch, Claim memory _claim) external virtual OnlyBridgeRunning {
+    function verifySnapshot(uint256 _epoch, Claim memory _claim) external virtual OnlyBridgeRunning {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
-
-        unchecked {
-            require(_claim.timestamp + challengePeriod < block.timestamp, "Challenge period has not yet elapsed.");
-            require(
-                // expected blocks <= actual blocks + maxMissingBlocks
-                uint256(_claim.blocknumber) + (block.timestamp - uint256(_claim.timestamp)) / SLOT_TIME <=
-                    block.number + maxMissingBlocks,
-                "Too many missing blocks. Possible censorship attack. Use canonical bridge."
-            );
-        }
-
         require(_claim.challenger == address(0), "Claim is challenged.");
+        require(censorshipTestStatus(_claim) == CensorshipTestStatus.Passed, "Censorship test not passed.");
 
         if (_epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = _epoch;
@@ -212,8 +282,8 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
         // Ethereum -> Gnosis message authentication with the AMB, the canonical Ethereum <-> Gnosis bridge.
         // https://docs.tokenbridge.net/amb-bridge/development-of-a-cross-chain-application/how-to-develop-xchain-apps-by-amb#receive-a-method-call-from-the-amb-bridge
 
-        require(msg.sender == address(amb), "Not from bridge.");
-        require(ROUTER_CHAIN_ID == amb.messageSourceChainId(), "Invalid chain id.");
+        require(msg.sender == address(amb), "Not from native Gnosis AMB bridge.");
+        require(bytes32(routerChainId) == amb.messageSourceChainId(), "Invalid chain id.");
         require(routerArbToGnosis == amb.messageSender(), "Not from router.");
 
         if (_epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {
@@ -222,7 +292,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
             emit Verified(_epoch);
         }
 
-        if (claimHashes[_epoch] == hashClaim(_claim) && _claim.honest == Party.None) {
+        if (claimHashes[_epoch] == hashClaim(_claim)) {
             if (_claim.stateRoot == _stateRoot) {
                 _claim.honest = Party.Claimer;
             } else if (_claim.challenger != address(0)) {
@@ -233,10 +303,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
     }
 
     /// @dev Verifies and relays the message. UNTRUSTED.
-    /// @param _proof The merkle proof to prove the message.
+    /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Gnosis to call.
-    /// @param _message The message encoded with header from VeaInbox.
+    /// @param _message The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
     function sendMessage(bytes32[] calldata _proof, uint64 _msgId, address _to, bytes calldata _message) external {
         require(_proof.length < 64, "Proof too long.");
 
@@ -377,22 +447,46 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1 {
                 abi.encodePacked(
                     _claim.stateRoot,
                     _claim.claimer,
-                    _claim.timestamp,
-                    _claim.blocknumber,
+                    _claim.timestampClaimed,
+                    _claim.timestampVerification,
+                    _claim.blocknumberVerification,
                     _claim.honest,
                     _claim.challenger
                 )
             );
     }
 
-    /// @dev Claim passed censorship test
+    /// @dev Gets the status of the censorship test for claim.
     /// @param _claim The claim to test.
-    /// @return testPassed True if the claim passed the censorship test.
-    function passedTest(Claim calldata _claim) external view returns (bool testPassed) {
-        uint256 expectedBlocks = uint256(_claim.blocknumber) +
-            (block.timestamp - uint256(_claim.timestamp)) /
-            SLOT_TIME;
-        uint256 actualBlocks = block.number;
-        testPassed = (expectedBlocks <= actualBlocks + maxMissingBlocks);
+    /// @return status True if the claim passed the censorship test.
+    function censorshipTestStatus(Claim memory _claim) public view returns (CensorshipTestStatus status) {
+        unchecked {
+            if (uint256(_claim.timestampVerification) == 0) status = CensorshipTestStatus.NotStarted;
+            else if (block.timestamp - uint256(_claim.timestampVerification) < minChallengePeriod)
+                status = CensorshipTestStatus.InProgress;
+            else {
+                uint256 expectedBlocks = uint256(_claim.blocknumberVerification) +
+                    (block.timestamp - uint256(_claim.timestampVerification)) /
+                    SLOT_TIME;
+                uint256 actualBlocks = block.number;
+                if (expectedBlocks - actualBlocks <= maxMissingBlocks) {
+                    status = CensorshipTestStatus.Passed;
+                } else {
+                    status = CensorshipTestStatus.Failed;
+                }
+            }
+        }
+    }
+
+    /// @dev Get the current epoch from the outbox's point of view using the Ethereum L1 clock.
+    /// @return epoch The hash of the claim.
+    function epochNow() external view returns (uint256 epoch) {
+        epoch = block.timestamp / epochPeriod;
+    }
+
+    /// @dev Get the current epoch from the outbox's point of view using the Ethereum L1 clock.
+    /// @return epoch The hash of the claim.
+    function epochAt(uint256 timestamp) external view returns (uint256 epoch) {
+        epoch = timestamp / epochPeriod;
     }
 }

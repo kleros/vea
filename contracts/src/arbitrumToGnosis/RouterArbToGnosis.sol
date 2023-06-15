@@ -11,8 +11,10 @@ pragma solidity 0.8.18;
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
+import "../canonical/arbitrum/ISequencerInbox.sol";
 import "../interfaces/routers/IRouterToL1.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
+import "../interfaces/updaters/IArbitrumUpdatable.sol";
 
 /// @dev Router from Arbitrum to Gnosis Chain.
 /// Note: This contract is deployed on Ethereum.
@@ -26,6 +28,14 @@ contract RouterArbToGnosis is IRouterToL1 {
     address public immutable veaInboxArbToGnosis; // The address of the veaInbox on Arbitrum.
     address public immutable veaOutboxArbToGnosis; // The address of the veaOutbox on Gnosis Chain.
 
+    uint256 public sequencerLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
+    SequencerLimitDecreaseRequest public sequencerLimitDecreaseRequest; // Decreasing the sequencerLimit requires a delay to avoid griefing by sequencer, so we keep track of the request here.
+
+    struct SequencerLimitDecreaseRequest {
+        uint256 requestedSequencerLimit;
+        uint256 timestamp;
+    }
+
     // ************************************* //
     // *              Events               * //
     // ************************************* //
@@ -34,6 +44,18 @@ contract RouterArbToGnosis is IRouterToL1 {
     /// @param _epoch The epoch of the batch requested to send.
     /// @param _ticketID The unique identifier provided by the underlying canonical bridge.
     event Routed(uint256 indexed _epoch, bytes32 _ticketID);
+
+    /// @dev This event indicates a cross-chain message was sent to inform the veaOutbox of the sequencer limit value
+    /// @param _ticketID The ticketID from the AMB of the cross-chain message.
+    event SequencerLimitSent(bytes32 _ticketID);
+
+    /// @dev This event indicates the sequencer limit updated.
+    /// @param _newSequencerLimit The new maxL2StateSyncDelay.
+    event SequencerLimitUpdated(uint256 _newSequencerLimit);
+
+    /// @dev This event indicates that a request to decrease the sequencer limit has been made.
+    /// @param _requestedSequencerLimit The new sequencer limit requested.
+    event SequencerLimitDecreaseRequested(uint256 _requestedSequencerLimit);
 
     /// @dev Constructor.
     /// @param _bridge The address of the arbitrum bridge contract on Ethereum.
@@ -45,6 +67,61 @@ contract RouterArbToGnosis is IRouterToL1 {
         amb = _amb;
         veaInboxArbToGnosis = _veaInboxArbToGnosis;
         veaOutboxArbToGnosis = _veaOutboxArbToGnosis;
+        (, , sequencerLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
+    }
+
+    // ************************************* //
+    // *        Parameter Updates          * //
+    // ************************************* //
+
+    /// @dev Update the sequencerLimit. If decreasing, a delayed request is created for later execution.
+    function updateSequencerLimit() public {
+        // the maximum asynchronous lag between the L2 and L1 clocks
+        (, , uint256 newSequencerLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
+
+        if (newSequencerLimit > sequencerLimit) {
+            // For sequencerLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
+            sequencerLimit = newSequencerLimit;
+            emit SequencerLimitUpdated(newSequencerLimit);
+            sendSequencerLimit();
+        } else if (newSequencerLimit < sequencerLimit) {
+            require(sequencerLimitDecreaseRequest.timestamp == 0, "Sequencer limit decrease request already pending.");
+
+            sequencerLimitDecreaseRequest = SequencerLimitDecreaseRequest({
+                requestedSequencerLimit: newSequencerLimit,
+                timestamp: block.timestamp
+            });
+            emit SequencerLimitDecreaseRequested(newSequencerLimit);
+        }
+    }
+
+    /// @dev execute SequencerLimitDecreaseRequest
+    function executeSequencerLimitDecreaseRequest() external {
+        require(sequencerLimitDecreaseRequest.timestamp != 0, "No pending sequencer limit decrease request.");
+        require(
+            block.timestamp > sequencerLimitDecreaseRequest.timestamp + sequencerLimit,
+            "Sequencer limit decrease request is still pending."
+        );
+
+        uint256 requestedSequencerLimit = sequencerLimitDecreaseRequest.requestedSequencerLimit;
+        delete sequencerLimitDecreaseRequest;
+
+        (, , uint256 currentSequencerLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
+
+        // check the request is still consistent with the arbiturm bridge
+        if (currentSequencerLimit == requestedSequencerLimit) {
+            sequencerLimit = requestedSequencerLimit;
+            emit SequencerLimitUpdated(requestedSequencerLimit);
+            sendSequencerLimit();
+        }
+    }
+
+    /// @dev Calculate the maxL2StateSyncDelay by reading from the Arbitrum Bridge
+    function sendSequencerLimit() internal {
+        bytes memory data = abi.encodeCall(IArbitrumUpdatable.updateSequencerLimit, sequencerLimit);
+        // Note: using maxGasPerTx here means the relaying txn on Gnosis will need to pass that (large) amount of gas, though almost all will be unused and refunded. This is preferred over hardcoding a gas limit.
+        bytes32 ticketID = amb.requireToPassMessage(veaOutboxArbToGnosis, data, amb.maxGasPerTx());
+        emit SequencerLimitSent(ticketID);
     }
 
     // ************************************* //

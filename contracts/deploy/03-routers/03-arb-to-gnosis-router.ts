@@ -4,6 +4,7 @@ import { ethers } from "hardhat";
 
 enum RouterChains {
   ETHEREUM_MAINNET = 1,
+  ETHEREUM_GOERLI = 5,
   HARDHAT = 31337,
 }
 
@@ -11,6 +12,10 @@ const paramsByChainId = {
   ETHEREUM_MAINNET: {
     arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
     amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
+  },
+  ETHEREUM_GOERLI: {
+    arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
+    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
   },
   HARDHAT: {
     arbitrumInbox: ethers.constants.AddressZero,
@@ -28,7 +33,7 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
   console.log("deployer: %s", deployer);
 
-  const { arbitrumInbox, amb } = paramsByChainId[RouterChains[chainId]];
+  const { arbitrumBridge, amb } = paramsByChainId[RouterChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
@@ -38,19 +43,21 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const router = await deploy("RouterArbToGnosis", {
       from: deployer,
       contract: "RouterArbToGnosis",
-      args: [arbitrumInbox, amb, veaInbox.address, veaOutbox.address],
+      args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address],
     });
   };
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await hre.companionNetworks.gnosischain.deployments.get("VeaOutboxArbToGnosis");
-    const veaInbox = await hre.companionNetworks.arbitrum.deployments.get("VeaInboxArbToGnosis");
+    const outboxNetwork = chainId === 1 ? hre.companionNetworks.gnosischain : hre.companionNetworks.chiado;
+    const inboxNetwork = chainId === 1 ? hre.companionNetworks.arbitrum : hre.companionNetworks.arbitrumGoerli;
+    const veaOutbox = await outboxNetwork.deployments.get("VeaOutboxArbToGnosis" + (chainId === 1 ? "" : "Testnet"));
+    const veaInbox = await inboxNetwork.deployments.get("VeaInboxArbToGnosis" + (chainId === 1 ? "" : "Testnet"));
 
-    const router = await deploy("RouterArbToGnosis", {
+    const router = await deploy("RouterArbToGnosis" + (chainId === 1 ? "" : "Testnet"), {
       from: deployer,
       contract: "RouterArbToGnosis",
-      args: [arbitrumInbox, amb, veaInbox.address, veaOutbox.address],
+      args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address],
       log: true,
     });
   };

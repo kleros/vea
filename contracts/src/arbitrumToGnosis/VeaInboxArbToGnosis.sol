@@ -22,7 +22,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     // Arbitrum precompile ArbSys for L2->L1 messaging: https://developer.arbitrum.io/arbos/precompiles#arbsys
     IArbSys internal constant ARB_SYS = IArbSys(address(100));
 
-    uint256 public immutable epochPeriod; // Epochs mark the period between stateroot snapshots
+    uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     address public immutable routerArbToGnosis; // The router on ethereum.
 
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
@@ -38,12 +38,14 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     // ************************************* //
 
     /// @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
-    /// @param _nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)
+    /// @param _nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message).
     event MessageSent(bytes _nodeData);
 
     /// The bridgers can watch this event to claim the stateRoot on the veaOutbox.
+    /// @param _snapshot The snapshot of the merkle tree state root.
+    /// @param _epoch The epoch of the snapshot.
     /// @param _count The count of messages in the merkle tree.
-    event SnapshotSaved(uint64 _count);
+    event SnapshotSaved(bytes32 _snapshot, uint256 _epoch, uint64 _count);
 
     /// @dev The event is emitted when a snapshot is sent through the canonical arbitrum bridge.
     /// @param _epochSent The epoch of the snapshot.
@@ -69,7 +71,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     /// @dev Sends an arbitrary message to Gnosis.
     ///      `O(log(count))` where count is the number of messages already sent.
     ///      Amortized cost is constant.
-    /// Note: See merkle tree documentation for details how inbox manages state.
+    /// Note: See docs for details how inbox manages merkle tree state.
     /// @param _to The address of the contract on the receiving chain which receives the calldata.
     /// @param _fnSelector The function selector of the receiving contract.
     /// @param _data The message calldata, abi.encode(param1, param2, ...)
@@ -84,8 +86,8 @@ contract VeaInboxArbToGnosis is IVeaInbox {
         bytes memory nodeData = abi.encodePacked(
             oldCount,
             _to,
-            // data for outbox relay
-            abi.encodePacked( // abi.encodeWithSelector(fnSelector, msg.sender, data)
+            // _data is abi.encode(param1, param2, ...), we need to encode it again to get the correct leaf data
+            abi.encodePacked( // equivalent to abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
                 _fnSelector,
                 bytes32(uint256(uint160(msg.sender))), // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
                 _data
@@ -140,8 +142,6 @@ contract VeaInboxArbToGnosis is IVeaInbox {
         unchecked {
             epoch = block.timestamp / epochPeriod;
 
-            require(snapshots[epoch] == bytes32(0), "Snapshot already taken for this epoch.");
-
             // calculate the current root of the incremental merkle tree encoded in the inbox
 
             uint256 height;
@@ -175,7 +175,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
         snapshots[epoch] = stateRoot;
 
-        emit SnapshotSaved(count);
+        emit SnapshotSaved(stateRoot, epoch, count);
     }
 
     /// @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing a pair of children nodes, left and right.
@@ -203,7 +203,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
     /// @dev Sends the state root snapshot using Arbitrum's canonical bridge.
     /// @param _epoch The epoch of the snapshot requested to send.
-    /// @param _claim The claim associated with the epoch
+    /// @param _claim The claim associated with the epoch.
     function sendSnapshot(uint256 _epoch, Claim memory _claim) external virtual {
         unchecked {
             require(_epoch < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
@@ -217,5 +217,22 @@ contract VeaInboxArbToGnosis is IVeaInbox {
         bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));
 
         emit SnapshotSent(_epoch, ticketID);
+    }
+
+    // ************************************* //
+    // *           Pure / Views            * //
+    // ************************************* //
+
+    /// @dev Get the current epoch from the inbox's point of view using the Arbitrum L2 clock.
+    /// @return epoch The epoch associated with the current inbox block.timestamp
+    function epochNow() external view returns (uint256 epoch) {
+        epoch = block.timestamp / epochPeriod;
+    }
+
+    /// @dev Get the epoch from the inbox's point of view using timestamp.
+    /// @param _timestamp The timestamp to calculate the epoch from.
+    /// @return epoch The calculated epoch.
+    function epochAt(uint256 _timestamp) external view returns (uint256 epoch) {
+        epoch = _timestamp / epochPeriod;
     }
 }

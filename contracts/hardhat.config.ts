@@ -108,6 +108,22 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    gnosischain: {
+      chainId: 100,
+      url: "https://rpc.gnosischain.net",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      live: true,
+      saveDeployments: true,
+      tags: ["staging", "outbox", "layer1"],
+      companionNetworks: {
+        arbitrumGoerli: "arbitrum",
+      },
+      verify: {
+        etherscan: {
+          apiUrl: "https://blockscout.com/gnosis",
+        },
+      },
+    },
     goerli: {
       chainId: 5,
       url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,

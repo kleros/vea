@@ -9,7 +9,7 @@ enum RouterChains {
 
 const paramsByChainId = {
   ETHEREUM_GOERLI: {
-    arbitrumBridge: "0xC1Ebd02f738644983b6C4B2d440b8e77DdE276Bd", // https://developer.arbitrum.io/useful-addresses
+    arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
   },
   HARDHAT: {

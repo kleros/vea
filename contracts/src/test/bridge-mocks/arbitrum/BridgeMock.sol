@@ -12,8 +12,10 @@ import "../../../canonical/arbitrum/IBridge.sol";
 
 contract BridgeMock is IBridge {
     address public outbox;
+    address public sequencerInbox;
 
-    constructor(address _outbox) {
+    constructor(address _outbox, address _sequencerInbox) {
+        sequencerInbox = _sequencerInbox;
         outbox = _outbox;
     }
 

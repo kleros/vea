@@ -1,0 +1,1249 @@
+{
+  "address": "0x53194Fa828ebEfa5cB515d23CC2467d88f6B0Be2",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_deposit",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_epochPeriod",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_minChallengePeriod",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_timeoutEpochs",
+          "type": "uint256"
+        },
+        {
+          "internalType": "contract IAMB",
+          "name": "_amb",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_routerArbToGnosis",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_sequencerLimit",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxMissingBlocks",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_routerChainId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_challenger",
+          "type": "address"
+        }
+      ],
+      "name": "Challenged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_claimer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "_stateRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "Claimed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "_msgId",
+          "type": "uint64"
+        }
+      ],
+      "name": "MessageRelayed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_newSequencerLimit",
+          "type": "uint256"
+        }
+      ],
+      "name": "SequencerLimitUpdateReceived",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "VerificationStarted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "Verified",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "amb",
+      "outputs": [
+        {
+          "internalType": "contract IAMB",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "censorshipTestStatus",
+      "outputs": [
+        {
+          "internalType": "enum VeaOutboxArbToGnosis.CensorshipTestStatus",
+          "name": "status",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "challenge",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_stateRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "claim",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "claimHashes",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "deposit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "epochAt",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "epochNow",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "epochPeriod",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "hashClaim",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "hashedClaim",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "latestVerifiedEpoch",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxMissingBlocks",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "minChallengePeriod",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "relayed",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_stateRoot",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "resolveDisputedClaim",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "routerArbToGnosis",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "routerChainId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "_proof",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "uint64",
+          "name": "_msgId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_message",
+          "type": "bytes"
+        }
+      ],
+      "name": "sendMessage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "sequencerLimit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "startVerification",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "stateRoot",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "timeoutEpochs",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_newSequencerLimit",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateSequencerLimit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "verifySnapshot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "withdrawChallengeDeposit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "withdrawChallengerEscapeHatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "withdrawClaimDeposit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "withdrawClaimerEscapeHatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xf6612fe40e11c51584f45204d69f623f17485bcf1b93fe57fbd9ccf815918bb1",
+  "receipt": {
+    "to": null,
+    "from": "0x407DDEC61d69b212498B140a26da70AE1C879f5a",
+    "contractAddress": "0x53194Fa828ebEfa5cB515d23CC2467d88f6B0Be2",
+    "transactionIndex": 2,
+    "gasUsed": "2127697",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x15cf7be6705c1c31af30804e20c6eb833b90723cb1234786183a7bb6fdfc73ab",
+    "transactionHash": "0xf6612fe40e11c51584f45204d69f623f17485bcf1b93fe57fbd9ccf815918bb1",
+    "logs": [],
+    "blockNumber": 4472675,
+    "cumulativeGasUsed": "2184685",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "1000000000000000000",
+    3600,
+    10800,
+    1000000,
+    "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    "0xfF2B7048d673767754B798df1702C786E2c59F1F",
+    86400,
+    1000000,
+    5
+  ],
+  "numDeployments": 2,
+  "solcInputHash": "c9836c6cb024801f3104e49f87086294",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.18+commit.87f61d96\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_deposit\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_epochPeriod\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_minChallengePeriod\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_timeoutEpochs\",\"type\":\"uint256\"},{\"internalType\":\"contract IAMB\",\"name\":\"_amb\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_routerArbToGnosis\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_sequencerLimit\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_maxMissingBlocks\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_routerChainId\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_challenger\",\"type\":\"address\"}],\"name\":\"Challenged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_claimer\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"_stateRoot\",\"type\":\"bytes32\"}],\"name\":\"Claimed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"_msgId\",\"type\":\"uint64\"}],\"name\":\"MessageRelayed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_newSequencerLimit\",\"type\":\"uint256\"}],\"name\":\"SequencerLimitUpdateReceived\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"}],\"name\":\"VerificationStarted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"}],\"name\":\"Verified\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"amb\",\"outputs\":[{\"internalType\":\"contract IAMB\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"censorshipTestStatus\",\"outputs\":[{\"internalType\":\"enum VeaOutboxArbToGnosis.CensorshipTestStatus\",\"name\":\"status\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"challenge\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"_stateRoot\",\"type\":\"bytes32\"}],\"name\":\"claim\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"claimHashes\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"epochAt\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochNow\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochPeriod\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"hashClaim\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"hashedClaim\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestVerifiedEpoch\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxMissingBlocks\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minChallengePeriod\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"relayed\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"_stateRoot\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"resolveDisputedClaim\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"routerArbToGnosis\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"routerChainId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"_proof\",\"type\":\"bytes32[]\"},{\"internalType\":\"uint64\",\"name\":\"_msgId\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_message\",\"type\":\"bytes\"}],\"name\":\"sendMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"sequencerLimit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"startVerification\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"stateRoot\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"timeoutEpochs\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newSequencerLimit\",\"type\":\"uint256\"}],\"name\":\"updateSequencerLimit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"verifySnapshot\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"withdrawChallengeDeposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"withdrawChallengerEscapeHatch\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"withdrawClaimDeposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"withdrawClaimerEscapeHatch\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Vea Outbox From Arbitrum to Gnosis. Note: This contract is deployed on Gnosis.\",\"events\":{\"Challenged(uint256,address)\":{\"details\":\"This event indicates that `sendSnapshot(epoch)` should be called in the inbox.\",\"params\":{\"_challenger\":\"The address of the challenger.\",\"_epoch\":\"The epoch associated with the challenged claim.\"}},\"Claimed(address,bytes32)\":{\"details\":\"Watchers check this event to challenge fraud.\",\"params\":{\"_claimer\":\"The address of the claimer.\",\"_stateRoot\":\"The state root of the claim.\"}},\"MessageRelayed(uint64)\":{\"details\":\"This event indicates that a message has been relayed.\",\"params\":{\"_msgId\":\"The msgId of the message that was relayed.\"}},\"SequencerLimitUpdateReceived(uint256)\":{\"details\":\"This event indicates the sequencer limit updated.\",\"params\":{\"_newSequencerLimit\":\"The new maxL2StateSyncDelay.\"}},\"VerificationStarted(uint256)\":{\"details\":\"This event indicates that the censorship test started and all challengers are ready even in the worst case scenario of a malicious sequencer.\",\"params\":{\"_epoch\":\"The epoch that started verification.\"}},\"Verified(uint256)\":{\"details\":\"This events indicates that verification has succeeded. The messages are ready to be relayed.\",\"params\":{\"_epoch\":\"The epoch that was verified.\"}}},\"kind\":\"dev\",\"methods\":{\"censorshipTestStatus((bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Gets the status of the censorship test for claim.\",\"params\":{\"_claim\":\"The claim to test.\"},\"returns\":{\"status\":\"True if the claim passed the censorship test.\"}},\"challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch of the claim to challenge.\"}},\"claim(uint256,bytes32)\":{\"details\":\"Submit a claim about the _stateRoot at _epoch and submit a deposit.\",\"params\":{\"_epoch\":\"The epoch for which the claim is made.\",\"_stateRoot\":\"The state root to claim.\"}},\"constructor\":{\"details\":\"Constructor. Note: epochPeriod must match the VeaInboxArbToGnosis contract deployment on Arbitrum, since it's on a different chain, we can't read it and trust the deployer to set a correct value\",\"params\":{\"_amb\":\"The address of the AMB contract on Gnosis.\",\"_deposit\":\"The deposit amount to submit a claim in wei.\",\"_epochPeriod\":\"The duration of each epoch.\",\"_maxMissingBlocks\":\"The maximum number of blocks that can be missing in a challenge period.\",\"_minChallengePeriod\":\"The minimum time window to challenge a claim.\",\"_routerArbToGnosis\":\"The address of the router on Ethereum that routes from Arbitrum to Ethereum.\",\"_routerChainId\":\"The chain id of the routerArbToGnosis.\",\"_sequencerLimit\":\"The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.\",\"_timeoutEpochs\":\"The epochs before the bridge is considered shutdown.\"}},\"epochAt(uint256)\":{\"details\":\"Get the current epoch from the outbox's point of view using the Ethereum L1 clock.\",\"returns\":{\"epoch\":\"The hash of the claim.\"}},\"epochNow()\":{\"details\":\"Get the current epoch from the outbox's point of view using the Ethereum L1 clock.\",\"returns\":{\"epoch\":\"The hash of the claim.\"}},\"hashClaim((bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Hashes the claim.\",\"params\":{\"_claim\":\"The claim to hash.\"},\"returns\":{\"hashedClaim\":\"The hash of the claim.\"}},\"resolveDisputedClaim(uint256,bytes32,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Resolves any challenge of the optimistic claim for '_epoch'.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch to verify.\",\"_stateRoot\":\"The true state root for the epoch.\"}},\"sendMessage(bytes32[],uint64,address,bytes)\":{\"details\":\"Verifies and relays the message. UNTRUSTED.\",\"params\":{\"_message\":\"The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)\",\"_msgId\":\"The zero based index of the message in the inbox.\",\"_proof\":\"The merkle proof to prove the message inclusion in the inbox state root.\",\"_to\":\"The address of the contract on Gnosis to call.\"}},\"startVerification(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Start verification for claim for 'epoch'.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch of the claim to challenge.\"}},\"updateSequencerLimit(uint256)\":{\"details\":\"Set the maxL2StateSyncDelay by reading from the Arbitrum Bridge\",\"params\":{\"_newSequencerLimit\":\"The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.\"}},\"verifySnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Resolves the optimistic claim for '_epoch'.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch of the optimistic claim.\"}},\"withdrawChallengeDeposit(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Sends the deposit back to the Challenger if successful. Includes a portion of the Bridger's deposit.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch associated with the challenge deposit to withraw.\"}},\"withdrawChallengerEscapeHatch(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"When bridge is shutdown, no claim disputes can be resolved. This allows the challenger to withdraw their deposit.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch associated with the claim deposit to withraw.\"}},\"withdrawClaimDeposit(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Sends the deposit back to the Claimer if successful. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch associated with the claim deposit to withraw.\"}},\"withdrawClaimerEscapeHatch(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch associated with the claim deposit to withraw.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"resolveDisputedClaim(uint256,bytes32,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"notice\":\"Note: Access restricted to AMB.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/arbitrumToGnosis/VeaOutboxArbToGnosis.sol\":\"VeaOutboxArbToGnosis\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/arbitrumToGnosis/VeaOutboxArbToGnosis.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/// @custom:authors: [@jaybuidl, @shotaronowhere]\\n/// @custom:reviewers: []\\n/// @custom:auditors: []\\n/// @custom:bounties: []\\n/// @custom:deployments: []\\n\\npragma solidity 0.8.18;\\n\\nimport \\\"../canonical/gnosis-chain/IAMB.sol\\\";\\nimport \\\"../interfaces/outboxes/IVeaOutboxOnL1.sol\\\";\\nimport \\\"../interfaces/updaters/IArbitrumUpdatable.sol\\\";\\n\\n/// @dev Vea Outbox From Arbitrum to Gnosis.\\n/// Note: This contract is deployed on Gnosis.\\ncontract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {\\n    // ************************************* //\\n    // *             Storage               * //\\n    // ************************************* //\\n\\n    IAMB public immutable amb; // The address of the AMB contract on Gnosis.\\n    address public immutable routerArbToGnosis; // The address of the router from Arbitrum to Gnosis on ethereum.\\n\\n    uint256 public immutable deposit; // The deposit in wei required to submit a claim or challenge\\n    uint256 internal immutable burn; // The amount of wei to burn. deposit / 2\\n    uint256 internal immutable depositPlusReward; // 2 * deposit - burn\\n\\n    address internal constant BURN_ADDRESS = address(0); // Address to send burned eth\\n    uint256 internal constant SLOT_TIME = 5; // Gnosis 5 second slot time\\n\\n    uint256 public immutable routerChainId; // Router chain id for authentication of messages from the AMB.\\n    uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.\\n    uint256 public immutable minChallengePeriod; // Minimum time window to challenge a claim, even with a malicious sequencer.\\n\\n    uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.\\n    uint256 public immutable maxMissingBlocks; // The maximum number of blocks that can be missing in a challenge period.\\n\\n    bytes32 public stateRoot; // merkle root of the outbox state\\n    uint256 public latestVerifiedEpoch; // The latest epoch that has been verified.\\n\\n    mapping(uint256 => bytes32) public claimHashes; // epoch => claim\\n    mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message\\n\\n    uint256 public sequencerLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.\\n\\n    enum CensorshipTestStatus {\\n        Failed,\\n        Passed,\\n        NotStarted,\\n        InProgress\\n    }\\n\\n    // ************************************* //\\n    // *              Events               * //\\n    // ************************************* //\\n\\n    /// @dev Watchers check this event to challenge fraud.\\n    /// @param _claimer The address of the claimer.\\n    /// @param _stateRoot The state root of the claim.\\n    event Claimed(address indexed _claimer, bytes32 _stateRoot);\\n\\n    /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.\\n    /// @param _epoch The epoch associated with the challenged claim.\\n    /// @param _challenger The address of the challenger.\\n    event Challenged(uint256 _epoch, address indexed _challenger);\\n\\n    /// @dev This event indicates that a message has been relayed.\\n    /// @param _msgId The msgId of the message that was relayed.\\n    event MessageRelayed(uint64 _msgId);\\n\\n    /// @dev This event indicates that the censorship test started and all challengers are ready even in the worst case scenario of a malicious sequencer.\\n    /// @param _epoch The epoch that started verification.\\n    event VerificationStarted(uint256 _epoch);\\n\\n    /// @dev This events indicates that verification has succeeded. The messages are ready to be relayed.\\n    /// @param _epoch The epoch that was verified.\\n    event Verified(uint256 _epoch);\\n\\n    /// @dev This event indicates the sequencer limit updated.\\n    /// @param _newSequencerLimit The new maxL2StateSyncDelay.\\n    event SequencerLimitUpdateReceived(uint256 _newSequencerLimit);\\n\\n    // ************************************* //\\n    // *        Function Modifiers         * //\\n    // ************************************* //\\n\\n    modifier OnlyBridgeRunning() {\\n        unchecked {\\n            require(block.timestamp / epochPeriod - latestVerifiedEpoch <= timeoutEpochs, \\\"Bridge Shutdown.\\\");\\n        }\\n        _;\\n    }\\n\\n    modifier OnlyBridgeShutdown() {\\n        unchecked {\\n            require(block.timestamp / epochPeriod - latestVerifiedEpoch > timeoutEpochs, \\\"Bridge Running.\\\");\\n        }\\n        _;\\n    }\\n\\n    /// @dev Constructor.\\n    /// Note: epochPeriod must match the VeaInboxArbToGnosis contract deployment on Arbitrum, since it's on a different chain, we can't read it and trust the deployer to set a correct value\\n    /// @param _deposit The deposit amount to submit a claim in wei.\\n    /// @param _epochPeriod The duration of each epoch.\\n    /// @param _minChallengePeriod The minimum time window to challenge a claim.\\n    /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.\\n    /// @param _amb The address of the AMB contract on Gnosis.\\n    /// @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Ethereum.\\n    /// @param _sequencerLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.\\n    /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.\\n    /// @param _routerChainId The chain id of the routerArbToGnosis.\\n    constructor(\\n        uint256 _deposit,\\n        uint256 _epochPeriod,\\n        uint256 _minChallengePeriod,\\n        uint256 _timeoutEpochs,\\n        IAMB _amb,\\n        address _routerArbToGnosis,\\n        uint256 _sequencerLimit,\\n        uint256 _maxMissingBlocks,\\n        uint256 _routerChainId\\n    ) {\\n        deposit = _deposit;\\n        // epochPeriod must match the VeaInboxArbToGnosis contract deployment epochPeriod value.\\n        epochPeriod = _epochPeriod;\\n        timeoutEpochs = _timeoutEpochs;\\n        minChallengePeriod = _minChallengePeriod;\\n        amb = _amb;\\n        routerArbToGnosis = _routerArbToGnosis;\\n        maxMissingBlocks = _maxMissingBlocks;\\n        routerChainId = _routerChainId;\\n        // This value is on another chain, so we can't read it, we trust the deployer to set a correct value.\\n        sequencerLimit = _sequencerLimit; // MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox\\n\\n        // claimant and challenger are not sybil resistant\\n        // must burn half deposit to prevent zero cost griefing\\n        burn = _deposit / 2;\\n        depositPlusReward = 2 * _deposit - burn;\\n\\n        latestVerifiedEpoch = block.timestamp / epochPeriod - 1;\\n    }\\n\\n    // ************************************* //\\n    // *        Parameter Updates          * //\\n    // ************************************* //\\n\\n    /// @dev Set the maxL2StateSyncDelay by reading from the Arbitrum Bridge\\n    /// @param _newSequencerLimit The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.\\n    function updateSequencerLimit(uint256 _newSequencerLimit) external {\\n        require(msg.sender == address(amb), \\\"Not from bridge.\\\");\\n        require(bytes32(routerChainId) == amb.messageSourceChainId(), \\\"Invalid chain id.\\\");\\n        require(routerArbToGnosis == amb.messageSender(), \\\"Not from router.\\\");\\n\\n        if (sequencerLimit != _newSequencerLimit) {\\n            sequencerLimit = _newSequencerLimit;\\n            emit SequencerLimitUpdateReceived(_newSequencerLimit);\\n        }\\n    }\\n\\n    // ************************************* //\\n    // *         State Modifiers           * //\\n    // ************************************* //\\n\\n    /// @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.\\n    /// @param _epoch The epoch for which the claim is made.\\n    /// @param _stateRoot The state root to claim.\\n    function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {\\n        require(msg.value >= deposit, \\\"Insufficient claim deposit.\\\");\\n\\n        unchecked {\\n            require(_epoch < block.timestamp / epochPeriod, \\\"Epoch has not yet passed.\\\");\\n            // Note: block.timestamp should be much larger than sequencerLimit, but we check in case Arbiturm governance updated this value.\\n            if (block.timestamp > sequencerLimit) {\\n                // Allow claims to be made within the sequencerLimit.\\n                // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.\\n                require(_epoch + 1 >= (block.timestamp - sequencerLimit) / epochPeriod, \\\"Epoch is too old.\\\");\\n            }\\n        }\\n\\n        require(_stateRoot != bytes32(0), \\\"Invalid claim.\\\");\\n        require(claimHashes[_epoch] == bytes32(0), \\\"Claim already made.\\\");\\n\\n        claimHashes[_epoch] = hashClaim(\\n            Claim({\\n                stateRoot: _stateRoot,\\n                claimer: msg.sender,\\n                timestampClaimed: uint32(block.timestamp),\\n                timestampVerification: uint32(0),\\n                blocknumberVerification: uint32(0),\\n                honest: Party.None,\\n                challenger: address(0)\\n            })\\n        );\\n\\n        emit Claimed(msg.sender, _stateRoot);\\n\\n        // Refund overpayment.\\n        if (msg.value > deposit) {\\n            uint256 refund = msg.value - deposit;\\n            payable(msg.sender).send(refund); // User is responsible for accepting ETH.\\n        }\\n    }\\n\\n    /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.\\n    /// @param _epoch The epoch of the claim to challenge.\\n    /// @param _claim The claim associated with the epoch.\\n    function challenge(uint256 _epoch, Claim memory _claim) external payable {\\n        require(claimHashes[_epoch] == hashClaim(_claim), \\\"Invalid claim.\\\");\\n        require(msg.value >= deposit, \\\"Insufficient challenge deposit.\\\");\\n        require(_claim.challenger == address(0), \\\"Claim already challenged.\\\");\\n        require(_claim.honest == Party.None, \\\"Claim already verified.\\\");\\n\\n        _claim.challenger = msg.sender;\\n        claimHashes[_epoch] = hashClaim(_claim);\\n\\n        emit Challenged(_epoch, msg.sender);\\n\\n        // Refund overpayment.\\n        if (msg.value > deposit) {\\n            uint256 refund = msg.value - deposit;\\n            payable(msg.sender).send(refund); // User is responsible for accepting ETH.\\n        }\\n    }\\n\\n    /// @dev Start verification for claim for 'epoch'.\\n    /// @param _epoch The epoch of the claim to challenge.\\n    /// @param _claim The claim associated with the epoch.\\n    function startVerification(uint256 _epoch, Claim memory _claim) external virtual {\\n        require(claimHashes[_epoch] == hashClaim(_claim), \\\"Invalid claim.\\\");\\n\\n        // sequencerLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.\\n        // using checked arithmetic incase arbitrum governance sets sequencerLimit to a large value\\n        require(\\n            block.timestamp >= _claim.timestampClaimed + sequencerLimit + epochPeriod,\\n            \\\"Claim must wait atleast maxL2StateSyncDelay.\\\"\\n        );\\n\\n        CensorshipTestStatus censorshipTestStatus = censorshipTestStatus(_claim);\\n        require(\\n            censorshipTestStatus == CensorshipTestStatus.NotStarted ||\\n                censorshipTestStatus == CensorshipTestStatus.Failed,\\n            \\\"Claim verification in progress or already completed.\\\"\\n        );\\n\\n        _claim.timestampVerification = uint32(block.timestamp);\\n        _claim.blocknumberVerification = uint32(block.number);\\n\\n        claimHashes[_epoch] = hashClaim(_claim);\\n\\n        emit VerificationStarted(_epoch);\\n    }\\n\\n    /// @dev Resolves the optimistic claim for '_epoch'.\\n    /// @param _epoch The epoch of the optimistic claim.\\n    /// @param _claim The claim associated with the epoch.\\n    function verifySnapshot(uint256 _epoch, Claim memory _claim) external virtual OnlyBridgeRunning {\\n        require(claimHashes[_epoch] == hashClaim(_claim), \\\"Invalid claim.\\\");\\n        require(_claim.challenger == address(0), \\\"Claim is challenged.\\\");\\n        require(censorshipTestStatus(_claim) == CensorshipTestStatus.Passed, \\\"Censorship test not passed.\\\");\\n\\n        if (_epoch > latestVerifiedEpoch) {\\n            latestVerifiedEpoch = _epoch;\\n            stateRoot = _claim.stateRoot;\\n            emit Verified(_epoch);\\n        }\\n\\n        _claim.honest = Party.Claimer;\\n        claimHashes[_epoch] = hashClaim(_claim);\\n    }\\n\\n    /// Note: Access restricted to AMB.\\n    /// @dev Resolves any challenge of the optimistic claim for '_epoch'.\\n    /// @param _epoch The epoch to verify.\\n    /// @param _stateRoot The true state root for the epoch.\\n    /// @param _claim The claim associated with the epoch.\\n    function resolveDisputedClaim(\\n        uint256 _epoch,\\n        bytes32 _stateRoot,\\n        Claim memory _claim\\n    ) external virtual OnlyBridgeRunning {\\n        // Ethereum -> Gnosis message authentication with the AMB, the canonical Ethereum <-> Gnosis bridge.\\n        // https://docs.tokenbridge.net/amb-bridge/development-of-a-cross-chain-application/how-to-develop-xchain-apps-by-amb#receive-a-method-call-from-the-amb-bridge\\n\\n        require(msg.sender == address(amb), \\\"Not from native Gnosis AMB bridge.\\\");\\n        require(bytes32(routerChainId) == amb.messageSourceChainId(), \\\"Invalid chain id.\\\");\\n        require(routerArbToGnosis == amb.messageSender(), \\\"Not from router.\\\");\\n\\n        if (_epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {\\n            latestVerifiedEpoch = _epoch;\\n            stateRoot = _stateRoot;\\n            emit Verified(_epoch);\\n        }\\n\\n        if (claimHashes[_epoch] == hashClaim(_claim)) {\\n            if (_claim.stateRoot == _stateRoot) {\\n                _claim.honest = Party.Claimer;\\n            } else if (_claim.challenger != address(0)) {\\n                _claim.honest = Party.Challenger;\\n            }\\n            claimHashes[_epoch] = hashClaim(_claim);\\n        }\\n    }\\n\\n    /// @dev Verifies and relays the message. UNTRUSTED.\\n    /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.\\n    /// @param _msgId The zero based index of the message in the inbox.\\n    /// @param _to The address of the contract on Gnosis to call.\\n    /// @param _message The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)\\n    function sendMessage(bytes32[] calldata _proof, uint64 _msgId, address _to, bytes calldata _message) external {\\n        require(_proof.length < 64, \\\"Proof too long.\\\");\\n\\n        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _message));\\n\\n        // double hashed leaf\\n        // avoids second order preimage attacks\\n        // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/\\n        assembly {\\n            mstore(0x00, nodeHash)\\n            nodeHash := keccak256(0x00, 0x20)\\n        }\\n\\n        unchecked {\\n            for (uint256 i = 0; i < _proof.length; i++) {\\n                bytes32 proofElement = _proof[i];\\n                // sort sibling hashes as a convention for efficient proof validation\\n                if (proofElement > nodeHash)\\n                    assembly {\\n                        mstore(0x00, nodeHash)\\n                        mstore(0x20, proofElement)\\n                        nodeHash := keccak256(0x00, 0x40)\\n                    }\\n                else\\n                    assembly {\\n                        mstore(0x00, proofElement)\\n                        mstore(0x20, nodeHash)\\n                        nodeHash := keccak256(0x00, 0x40)\\n                    }\\n            }\\n        }\\n\\n        require(stateRoot == nodeHash, \\\"Invalid proof.\\\");\\n\\n        // msgId is the zero-based index of the message in the inbox.\\n        // msgId is also used as an index in the relayed bitmap to prevent replay.\\n        // Note: a bitmap is used instead of a simple boolean mapping to save 15k gas per message.\\n\\n        uint256 relayIndex = _msgId >> 8;\\n        uint256 offset;\\n\\n        unchecked {\\n            offset = _msgId % 256;\\n        }\\n\\n        bytes32 replay = relayed[relayIndex];\\n\\n        require(((replay >> offset) & bytes32(uint256(1))) == bytes32(0), \\\"Message already relayed\\\");\\n        relayed[relayIndex] = replay | bytes32(1 << offset);\\n\\n        // UNTRUSTED.\\n        (bool success, ) = _to.call(_message);\\n        require(success, \\\"Failed to call contract\\\");\\n\\n        emit MessageRelayed(_msgId);\\n    }\\n\\n    /// @dev Sends the deposit back to the Claimer if successful. Includes a portion of the Challenger's deposit if unsuccessfully challenged.\\n    /// @param _epoch The epoch associated with the claim deposit to withraw.\\n    /// @param _claim The claim associated with the epoch.\\n    function withdrawClaimDeposit(uint256 _epoch, Claim calldata _claim) external virtual {\\n        require(claimHashes[_epoch] == hashClaim(_claim), \\\"Invalid claim.\\\");\\n        require(_claim.honest == Party.Claimer, \\\"Claim failed.\\\");\\n\\n        delete claimHashes[_epoch];\\n\\n        if (_claim.challenger != address(0)) {\\n            payable(BURN_ADDRESS).send(burn);\\n            payable(_claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.\\n        } else {\\n            payable(_claim.claimer).send(deposit); // User is responsible for accepting ETH.\\n        }\\n    }\\n\\n    /// @dev Sends the deposit back to the Challenger if successful. Includes a portion of the Bridger's deposit.\\n    /// @param _epoch The epoch associated with the challenge deposit to withraw.\\n    /// @param _claim The claim associated with the epoch.\\n    function withdrawChallengeDeposit(uint256 _epoch, Claim calldata _claim) external {\\n        require(claimHashes[_epoch] == hashClaim(_claim), \\\"Invalid claim.\\\");\\n        require(_claim.honest == Party.Challenger, \\\"Challenge failed.\\\");\\n\\n        delete claimHashes[_epoch];\\n\\n        payable(BURN_ADDRESS).send(burn); // half burnt\\n        payable(_claim.challenger).send(depositPlusReward); // User is responsible for accepting ETH.\\n    }\\n\\n    /// @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.\\n    /// @param _epoch The epoch associated with the claim deposit to withraw.\\n    /// @param _claim The claim associated with the epoch.\\n    function withdrawClaimerEscapeHatch(uint256 _epoch, Claim memory _claim) external OnlyBridgeShutdown {\\n        require(claimHashes[_epoch] == hashClaim(_claim), \\\"Invalid claim.\\\");\\n        require(_claim.honest == Party.None, \\\"Claim resolved.\\\");\\n\\n        if (_claim.claimer != address(0)) {\\n            if (_claim.challenger == address(0)) {\\n                delete claimHashes[_epoch];\\n                payable(_claim.claimer).send(deposit); // User is responsible for accepting ETH.\\n            } else {\\n                address claimer = _claim.claimer;\\n                _claim.claimer = address(0);\\n                claimHashes[_epoch] == hashClaim(_claim);\\n                payable(claimer).send(deposit); // User is responsible for accepting ETH.\\n            }\\n        }\\n    }\\n\\n    /// @dev When bridge is shutdown, no claim disputes can be resolved. This allows the challenger to withdraw their deposit.\\n    /// @param _epoch The epoch associated with the claim deposit to withraw.\\n    /// @param _claim The claim associated with the epoch.\\n    function withdrawChallengerEscapeHatch(uint256 _epoch, Claim memory _claim) external OnlyBridgeShutdown {\\n        require(claimHashes[_epoch] == hashClaim(_claim), \\\"Invalid claim.\\\");\\n        require(_claim.honest == Party.None, \\\"Claim resolved.\\\");\\n\\n        if (_claim.challenger != address(0)) {\\n            if (_claim.claimer == address(0)) {\\n                delete claimHashes[_epoch];\\n                payable(_claim.challenger).send(deposit); // User is responsible for accepting ETH.\\n            } else {\\n                address challenger = _claim.challenger;\\n                _claim.challenger = address(0);\\n                claimHashes[_epoch] == hashClaim(_claim);\\n                payable(challenger).send(deposit); // User is responsible for accepting ETH.\\n            }\\n        }\\n    }\\n\\n    // ************************************* //\\n    // *           Pure / Views            * //\\n    // ************************************* //\\n\\n    /// @dev Hashes the claim.\\n    /// @param _claim The claim to hash.\\n    /// @return hashedClaim The hash of the claim.\\n    function hashClaim(Claim memory _claim) public pure returns (bytes32 hashedClaim) {\\n        return\\n            hashedClaim = keccak256(\\n                abi.encodePacked(\\n                    _claim.stateRoot,\\n                    _claim.claimer,\\n                    _claim.timestampClaimed,\\n                    _claim.timestampVerification,\\n                    _claim.blocknumberVerification,\\n                    _claim.honest,\\n                    _claim.challenger\\n                )\\n            );\\n    }\\n\\n    /// @dev Gets the status of the censorship test for claim.\\n    /// @param _claim The claim to test.\\n    /// @return status True if the claim passed the censorship test.\\n    function censorshipTestStatus(Claim memory _claim) public view returns (CensorshipTestStatus status) {\\n        unchecked {\\n            if (uint256(_claim.timestampVerification) == 0) status = CensorshipTestStatus.NotStarted;\\n            else if (block.timestamp - uint256(_claim.timestampVerification) < minChallengePeriod)\\n                status = CensorshipTestStatus.InProgress;\\n            else {\\n                uint256 expectedBlocks = uint256(_claim.blocknumberVerification) +\\n                    (block.timestamp - uint256(_claim.timestampVerification)) /\\n                    SLOT_TIME;\\n                uint256 actualBlocks = block.number;\\n                if (expectedBlocks - actualBlocks <= maxMissingBlocks) {\\n                    status = CensorshipTestStatus.Passed;\\n                } else {\\n                    status = CensorshipTestStatus.Failed;\\n                }\\n            }\\n        }\\n    }\\n\\n    /// @dev Get the current epoch from the outbox's point of view using the Ethereum L1 clock.\\n    /// @return epoch The hash of the claim.\\n    function epochNow() external view returns (uint256 epoch) {\\n        epoch = block.timestamp / epochPeriod;\\n    }\\n\\n    /// @dev Get the current epoch from the outbox's point of view using the Ethereum L1 clock.\\n    /// @return epoch The hash of the claim.\\n    function epochAt(uint256 timestamp) external view returns (uint256 epoch) {\\n        epoch = timestamp / epochPeriod;\\n    }\\n}\\n\",\"keccak256\":\"0x3598855941548dfff854203745983d57b0125c0bdab5b070adb5b0e1725f5245\",\"license\":\"MIT\"},\"src/canonical/gnosis-chain/IAMB.sol\":{\"content\":\"// https://docs.gnosischain.com/bridges/tokenbridge/amb-bridge#gnosis\\n// https://github.com/omni/tokenbridge-contracts/blob/908a48107919d4ab127f9af07d44d47eac91547e/contracts/interfaces/IAMB.sol\\n// interface is pruned for relevant function stubs\\n\\npragma solidity 0.8.18;\\n\\ninterface IAMB {\\n    function requireToPassMessage(address _contract, bytes memory _data, uint256 _gas) external returns (bytes32);\\n\\n    function maxGasPerTx() external view returns (uint256);\\n\\n    function messageSender() external view returns (address);\\n\\n    function messageSourceChainId() external view returns (bytes32);\\n}\\n\",\"keccak256\":\"0x529d45e46ca0c046c32b296b35ae8073c4a999ef37510545ec44d26e78deca0d\"},\"src/interfaces/outboxes/IVeaOutboxOnL1.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/// @custom:authors: [@jaybuidl, @shotaronowhere]\\n/// @custom:reviewers: []\\n/// @custom:auditors: []\\n/// @custom:bounties: []\\n/// @custom:deployments: []\\n\\npragma solidity 0.8.18;\\n\\nimport \\\"../types/VeaClaim.sol\\\";\\n\\n/// @dev Interface of the Vea Outbox on L1 chains like Ethereum, Gnosis, Polygon POS where storage is expensive.\\ninterface IVeaOutboxOnL1 {\\n    /// @dev Verifies and relays the message.\\n    /// Note: Gateways expect first argument of message call to be the arbitrum message sender, used for authentication.\\n    /// @param _proof The merkle proof to prove the message.\\n    /// @param _msgId The zero based index of the message in the inbox.\\n    /// @param _to The address to send the message to.\\n    /// @param _message The message to relay.\\n    function sendMessage(bytes32[] calldata _proof, uint64 _msgId, address _to, bytes calldata _message) external;\\n\\n    /// @dev Resolves any challenge of the optimistic claim for 'epoch' using the canonical bridge.\\n    /// Note: Access restricted to canonical bridge.\\n    /// @param _epoch The epoch to verify.\\n    /// @param _stateRoot The true state root for the epoch.\\n    /// @param _claim The claim associated with the epoch.\\n    function resolveDisputedClaim(uint256 _epoch, bytes32 _stateRoot, Claim memory _claim) external;\\n}\\n\",\"keccak256\":\"0x52f714405dbb6f5953f7e59bf7139742837c2f055fc090971421d931a5289b51\",\"license\":\"MIT\"},\"src/interfaces/types/VeaClaim.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/// @custom:authors: [@jaybuidl, @shotaronowhere]\\n/// @custom:reviewers: []\\n/// @custom:auditors: []\\n/// @custom:bounties: []\\n/// @custom:deployments: []\\n\\npragma solidity 0.8.18;\\n\\nenum Party {\\n    None,\\n    Claimer,\\n    Challenger\\n}\\n\\nstruct Claim {\\n    bytes32 stateRoot;\\n    address claimer;\\n    uint32 timestampClaimed;\\n    uint32 timestampVerification;\\n    uint32 blocknumberVerification;\\n    Party honest;\\n    address challenger;\\n}\\n\",\"keccak256\":\"0x1b25222d0ebdb4beed6cd844ea1f262c89e4c002e7520972e6b79083eeed6418\",\"license\":\"MIT\"},\"src/interfaces/updaters/IArbitrumUpdatable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/// @custom:authors: [@jaybuidl, @shotaronowhere]\\n/// @custom:reviewers: []\\n/// @custom:auditors: []\\n/// @custom:bounties: []\\n/// @custom:deployments: []\\n\\npragma solidity 0.8.18;\\n\\n/// @dev Interface of a contract which is updatable, receiving parameter updates from the Arbitrum Bridge through a cross-chain call.\\n/// @dev eg. Arbitrum (L2) -> Ethereum (L1) -> Gnosis (L1), the veaOutbox on Gnosis will be an IArbitrumUpdateable contract which receives updates from the router on Ethereum.\\ninterface IArbitrumUpdatable {\\n    /// @dev Updates the sequencer limit.\\n    /// Note: Access restricted to ensure the argument is passed from the Arbitrum Sequencer contract.\\n    /// @param _newSequencerLimit The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.\\n    function updateSequencerLimit(uint256 _newSequencerLimit) external;\\n}\\n\",\"keccak256\":\"0x4d59f1de812ac1ddad033f03c7dc34b1325b5b6dd43d26b97cd4e0d2d14c371a\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x6101c06040523480156200001257600080fd5b5060405162002802380380620028028339810160408190526200003591620000ea565b60c08990526101408890526101808690526101608790526001600160a01b03808616608052841660a0526101a082905261012081905260048390556200007d60028a62000183565b60e08190526200008f8a6002620001a6565b6200009b9190620001c6565b6101005261014051600190620000b2904262000183565b620000be9190620001c6565b60015550620001dc975050505050505050565b6001600160a01b0381168114620000e757600080fd5b50565b60008060008060008060008060006101208a8c0312156200010a57600080fd5b8951985060208a0151975060408a0151965060608a0151955060808a01516200013381620000d1565b60a08b01519095506200014681620000d1565b8094505060c08a0151925060e08a015191506101008a015190509295985092959850929598565b634e487b7160e01b600052601160045260246000fd5b600082620001a157634e487b7160e01b600052601260045260246000fd5b500490565b8082028115828204841417620001c057620001c06200016d565b92915050565b81810381811115620001c057620001c06200016d565b60805160a05160c05160e05161010051610120516101405161016051610180516101a0516124bc620003466000396000818161043a0152611f0d01526000818161046e0152818161082d01528181611643015281816118370152611ccc0152600081816104f60152611ea10152600081816104a20152818161085101528181610be201528181610c7e01528181610d060152818161140a015281816115c4015281816116670152818161185b0152611cf001526000818161038d015281816109c80152611b30015260006112210152600081816111ce015261133301526000818161054a0152818161062d015281816107b4015281816107e101528181610c0e01528181611396015281816119a101528181611a080152611e3701526000818161057e01528181610ab50152611c1d015260008181610203015281816108cc0152818161094601528181610a2a01528181611a4c01528181611aae0152611b9201526124bc6000f3fe6080604052600436106101b75760003560e01c806390df63b7116100ec578063b633b9441161008a578063d0e30db011610064578063d0e30db014610538578063d5e6a9df1461056c578063da2b7bc4146105a0578063df19e6ff146105c057600080fd5b8063b633b944146104c4578063c2114a16146104e4578063c299acc41461051857600080fd5b80639c13b6b5116100c65780639c13b6b514610412578063aa22a1c614610428578063b044397e1461045c578063b5b7a1841461049057600080fd5b806390df63b7146103af578063930f28af146103dc5780639588eca2146103fc57600080fd5b806331ddf7431161015957806349b4299e1161013357806349b4299e1461031b5780634a439cfe1461033b578063541adcca1461035b5780638d96fdea1461037b57600080fd5b806331ddf743146102bb5780633ce43cfd146102db5780634788cb38146102fb57600080fd5b8063222ae78611610195578063222ae786146102425780632639c0601461026557806327ee6bdd1461029257806331d14457146102a857600080fd5b806301139b68146101bc5780630f0adca5146101d15780631062b39a146101f1575b600080fd5b6101cf6101ca366004612047565b6105ed565b005b3480156101dd57600080fd5b506101cf6101ec366004612075565b61082b565b3480156101fd57600080fd5b506102257f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b34801561024e57600080fd5b50610257610bdb565b604051908152602001610239565b34801561027157600080fd5b506102576102803660046120ac565b60026020526000908152604090205481565b34801561029e57600080fd5b5061025760015481565b6101cf6102b63660046120c5565b610c0c565b3480156102c757600080fd5b506101cf6102d6366004612148565b610e77565b3480156102e757600080fd5b506101cf6102f636600461220a565b611117565b34801561030757600080fd5b506101cf61031636600461220a565b61125e565b34801561032757600080fd5b506101cf610336366004612047565b6113d3565b34801561034757600080fd5b506102576103563660046120ac565b6115bd565b34801561036757600080fd5b50610257610376366004612243565b6115ef565b34801561038757600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b3480156103bb57600080fd5b506102576103ca3660046120ac565b60036020526000908152604090205481565b3480156103e857600080fd5b506101cf6103f7366004612047565b611641565b34801561040857600080fd5b5061025760005481565b34801561041e57600080fd5b5061025760045481565b34801561043457600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b34801561046857600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b34801561049c57600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b3480156104d057600080fd5b506101cf6104df366004612047565b611835565b3480156104f057600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b34801561052457600080fd5b506101cf6105333660046120ac565b611a41565b34801561054457600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b34801561057857600080fd5b506102257f000000000000000000000000000000000000000000000000000000000000000081565b3480156105ac57600080fd5b506101cf6105bb366004612047565b611cca565b3480156105cc57600080fd5b506105e06105db366004612243565b611e83565b604051610239919061227c565b6105f6816115ef565b6000838152600260205260409020541461062b5760405162461bcd60e51b815260040161062290612296565b60405180910390fd5b7f000000000000000000000000000000000000000000000000000000000000000034101561069b5760405162461bcd60e51b815260206004820152601f60248201527f496e73756666696369656e74206368616c6c656e6765206465706f7369742e006044820152606401610622565b60c08101516001600160a01b0316156106f65760405162461bcd60e51b815260206004820152601960248201527f436c61696d20616c7265616479206368616c6c656e6765642e000000000000006044820152606401610622565b60008160a00151600281111561070e5761070e612266565b1461075b5760405162461bcd60e51b815260206004820152601760248201527f436c61696d20616c72656164792076657269666965642e0000000000000000006044820152606401610622565b3360c082015261076a816115ef565b600083815260026020908152604091829020929092555183815233917fcfe09ca25f55d949baba5e280f5750c9ba4b9048fca5532f916067d433afe4d791015b60405180910390a27f00000000000000000000000000000000000000000000000000000000000000003411156108275760006108067f0000000000000000000000000000000000000000000000000000000000000000346122d4565b604051909150339082156108fc029083906000818181858888f15050505050505b5050565b7f00000000000000000000000000000000000000000000000000000000000000006001547f0000000000000000000000000000000000000000000000000000000000000000428161087e5761087e6122e7565b040311156108c15760405162461bcd60e51b815260206004820152601060248201526f213934b233b29029b43aba3237bbb71760811b6044820152606401610622565b336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146109445760405162461bcd60e51b815260206004820152602260248201527f4e6f742066726f6d206e617469766520476e6f73697320414d42206272696467604482015261329760f11b6064820152608401610622565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316639e307dff6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156109a2573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109c691906122fd565b7f000000000000000000000000000000000000000000000000000000000000000014610a285760405162461bcd60e51b815260206004820152601160248201527024b73b30b634b21031b430b4b71034b21760791b6044820152606401610622565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663d67bdd256040518163ffffffff1660e01b8152600401602060405180830381865afa158015610a86573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610aaa9190612316565b6001600160a01b03167f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031614610b1d5760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b6903937baba32b91760811b6044820152606401610622565b60015483118015610b2d57508115155b15610b7057600183905560008290556040518381527ff786e7f77ede00a02a5464f8f0555798f42ba99a4a920ef2778db8d75e4656f79060200160405180910390a15b610b79816115ef565b60008481526002602052604090205403610bd6578051829003610ba257600160a0820152610bbd565b60c08101516001600160a01b031615610bbd57600260a08201525b610bc6816115ef565b6000848152600260205260409020555b505050565b6000610c077f000000000000000000000000000000000000000000000000000000000000000042612333565b905090565b7f0000000000000000000000000000000000000000000000000000000000000000341015610c7c5760405162461bcd60e51b815260206004820152601b60248201527f496e73756666696369656e7420636c61696d206465706f7369742e00000000006044820152606401610622565b7f00000000000000000000000000000000000000000000000000000000000000004281610cab57610cab6122e7565b048210610cfa5760405162461bcd60e51b815260206004820152601960248201527f45706f636820686173206e6f7420796574207061737365642e000000000000006044820152606401610622565b600454421115610d7e577f0000000000000000000000000000000000000000000000000000000000000000600454420381610d3757610d376122e7565b04826001011015610d7e5760405162461bcd60e51b815260206004820152601160248201527022b837b1b41034b9903a37b79037b6321760791b6044820152606401610622565b80610d9b5760405162461bcd60e51b815260040161062290612296565b60008281526002602052604090205415610ded5760405162461bcd60e51b815260206004820152601360248201527221b630b4b69030b63932b0b23c9036b0b2329760691b6044820152606401610622565b6040805160e0810182528281523360208201524263ffffffff16918101919091526000606082018190526080820181905260a0820181905260c0820152610e33906115ef565b600083815260026020908152604091829020929092555182815233917f91d697238e9aa9f3172d17522c9be529b94a892481554e1ea619369b5b12f39a91016107aa565b60408510610eb95760405162461bcd60e51b815260206004820152600f60248201526e283937b7b3103a37b7903637b7339760891b6044820152606401610622565b600084848484604051602001610ed29493929190612355565b604051602081830303815290604052805190602001209050806000526020600020905060005b86811015610f52576000888883818110610f1457610f14612397565b90506020020135905082811115610f3957826000528060205260406000209250610f49565b8060005282602052604060002092505b50600101610ef8565b508060005414610f955760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b210383937b7b31760911b6044820152606401610622565b600885901c66ffffffffffffff1660008181526003602052604090205460ff87169080821c6001161561100a5760405162461bcd60e51b815260206004820152601760248201527f4d65737361676520616c72656164792072656c617965640000000000000000006044820152606401610622565b6000838152600360205260408082206001851b84179055516001600160a01b0389169061103a90899089906123ad565b6000604051808303816000865af19150503d8060008114611077576040519150601f19603f3d011682016040523d82523d6000602084013e61107c565b606091505b50509050806110cd5760405162461bcd60e51b815260206004820152601760248201527f4661696c656420746f2063616c6c20636f6e74726163740000000000000000006044820152606401610622565b60405167ffffffffffffffff8a1681527f54303fab361bc52c2f1f56ace7351189582264f74ce47a6e7c3f478d64c429439060200160405180910390a15050505050505050505050565b61112961037636839003830183612243565b600083815260026020526040902054146111555760405162461bcd60e51b815260040161062290612296565b600261116760c0830160a084016123bd565b600281111561117857611178612266565b146111b95760405162461bcd60e51b815260206004820152601160248201527021b430b63632b733b2903330b4b632b21760791b6044820152606401610622565b600082815260026020526040808220829055517f000000000000000000000000000000000000000000000000000000000000000080156108fc029183818181858288f15061121393505060e0840191505060c083016123d8565b6001600160a01b03166108fc7f00000000000000000000000000000000000000000000000000000000000000009081150290604051600060405180830381858888f150505050505050565b61127061037636839003830183612243565b6000838152600260205260409020541461129c5760405162461bcd60e51b815260040161062290612296565b60016112ae60c0830160a084016123bd565b60028111156112bf576112bf612266565b146112fc5760405162461bcd60e51b815260206004820152600d60248201526c21b630b4b6903330b4b632b21760991b6044820152606401610622565b600082815260026020526040812081905561131d60e0830160c084016123d8565b6001600160a01b031614611378576040516000907f000000000000000000000000000000000000000000000000000000000000000080156108fc029183818181858288f15061121393505060408401915050602083016123d8565b61138860408201602083016123d8565b6001600160a01b03166108fc7f00000000000000000000000000000000000000000000000000000000000000009081150290604051600060405180830381858888f150505050505050565b6113dc816115ef565b600083815260026020526040902054146114085760405162461bcd60e51b815260040161062290612296565b7f0000000000000000000000000000000000000000000000000000000000000000600454826040015163ffffffff1661144191906123f5565b61144b91906123f5565b4210156114af5760405162461bcd60e51b815260206004820152602c60248201527f436c61696d206d75737420776169742061746c65617374206d61784c3253746160448201526b3a32a9bcb731a232b630bc9760a11b6064820152608401610622565b60006114ba82611e83565b905060028160038111156114d0576114d0612266565b14806114ed575060008160038111156114eb576114eb612266565b145b6115565760405162461bcd60e51b815260206004820152603460248201527f436c61696d20766572696669636174696f6e20696e2070726f6772657373206f604482015273391030b63932b0b23c9031b7b6b83632ba32b21760611b6064820152608401610622565b63ffffffff428116606084015243166080830152611573826115ef565b60008481526002602090815260409182902092909255518481527f37b700b61b9b4710dddb0c3316b2be7ef6088ed4b1d7bfe0fb98be8f9a163e16910160405180910390a1505050565b60006115e97f000000000000000000000000000000000000000000000000000000000000000083612333565b92915050565b80516020808301516040808501516060860151608087015160a088015160c08901519451600098611624989097969101612408565b604051602081830303815290604052805190602001209050919050565b7f00000000000000000000000000000000000000000000000000000000000000006001547f00000000000000000000000000000000000000000000000000000000000000004281611694576116946122e7565b040311156116d75760405162461bcd60e51b815260206004820152601060248201526f213934b233b29029b43aba3237bbb71760811b6044820152606401610622565b6116e0816115ef565b6000838152600260205260409020541461170c5760405162461bcd60e51b815260040161062290612296565b60c08101516001600160a01b03161561175e5760405162461bcd60e51b815260206004820152601460248201527321b630b4b69034b99031b430b63632b733b2b21760611b6044820152606401610622565b600161176982611e83565b600381111561177a5761177a612266565b146117c75760405162461bcd60e51b815260206004820152601b60248201527f43656e736f72736869702074657374206e6f74207061737365642e00000000006044820152606401610622565b60015482111561180f57600182905580516000556040518281527ff786e7f77ede00a02a5464f8f0555798f42ba99a4a920ef2778db8d75e4656f79060200160405180910390a15b600160a082015261181f816115ef565b6000928352600260205260409092209190915550565b7f00000000000000000000000000000000000000000000000000000000000000006001547f00000000000000000000000000000000000000000000000000000000000000004281611888576118886122e7565b0403116118c95760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b6044820152606401610622565b6118d2816115ef565b600083815260026020526040902054146118fe5760405162461bcd60e51b815260040161062290612296565b60008160a00151600281111561191657611916612266565b146119555760405162461bcd60e51b815260206004820152600f60248201526e21b630b4b6903932b9b7b63b32b21760891b6044820152606401610622565b60c08101516001600160a01b0316156108275760208101516001600160a01b03166119d95760008281526002602052604080822082905560c083015190516001600160a01b03909116917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150505050505050565b60c08101805160009091526119ed826115ef565b50600083815260026020526040516001600160a01b038316917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f15050505050505050565b336001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001614611aac5760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b6044820152606401610622565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316639e307dff6040518163ffffffff1660e01b8152600401602060405180830381865afa158015611b0a573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611b2e91906122fd565b7f000000000000000000000000000000000000000000000000000000000000000014611b905760405162461bcd60e51b815260206004820152601160248201527024b73b30b634b21031b430b4b71034b21760791b6044820152606401610622565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663d67bdd256040518163ffffffff1660e01b8152600401602060405180830381865afa158015611bee573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611c129190612316565b6001600160a01b03167f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031614611c855760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b6903937baba32b91760811b6044820152606401610622565b8060045414611cc75760048190556040518181527fe5c620413c3d944fbd314ecc2375b9bdcc721589711a4348d9ecaf966160fa389060200160405180910390a15b50565b7f00000000000000000000000000000000000000000000000000000000000000006001547f00000000000000000000000000000000000000000000000000000000000000004281611d1d57611d1d6122e7565b040311611d5e5760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b6044820152606401610622565b611d67816115ef565b60008381526002602052604090205414611d935760405162461bcd60e51b815260040161062290612296565b60008160a001516002811115611dab57611dab612266565b14611dea5760405162461bcd60e51b815260206004820152600f60248201526e21b630b4b6903932b9b7b63b32b21760891b6044820152606401610622565b60208101516001600160a01b0316156108275760c08101516001600160a01b0316611e6f5760008281526002602090815260408083208390559083015190516001600160a01b03909116917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150505050505050565b60208101805160009091526119ed826115ef565b6000816060015163ffffffff16600003611e9f57506002919050565b7f0000000000000000000000000000000000000000000000000000000000000000826060015163ffffffff1642031015611edb57506003919050565b60006005836060015163ffffffff16420381611ef957611ef96122e7565b608085015163ffffffff16919004019050437f000000000000000000000000000000000000000000000000000000000000000081830311611f3d5760019250611f42565b600092505b50505b919050565b6001600160a01b0381168114611cc757600080fd5b8035611f4581611f4a565b803563ffffffff81168114611f4557600080fd5b803560038110611f4557600080fd5b600060e08284031215611f9f57600080fd5b60405160e0810181811067ffffffffffffffff82111715611fd057634e487b7160e01b600052604160045260246000fd5b60405282358152905080611fe660208401611f5f565b6020820152611ff760408401611f6a565b604082015261200860608401611f6a565b606082015261201960808401611f6a565b608082015261202a60a08401611f7e565b60a082015261203b60c08401611f5f565b60c08201525092915050565b600080610100838503121561205b57600080fd5b8235915061206c8460208501611f8d565b90509250929050565b6000806000610120848603121561208b57600080fd5b83359250602084013591506120a38560408601611f8d565b90509250925092565b6000602082840312156120be57600080fd5b5035919050565b600080604083850312156120d857600080fd5b50508035926020909101359150565b803567ffffffffffffffff81168114611f4557600080fd5b60008083601f84011261211157600080fd5b50813567ffffffffffffffff81111561212957600080fd5b60208301915083602082850101111561214157600080fd5b9250929050565b6000806000806000806080878903121561216157600080fd5b863567ffffffffffffffff8082111561217957600080fd5b818901915089601f83011261218d57600080fd5b81358181111561219c57600080fd5b8a60208260051b85010111156121b157600080fd5b602083019850809750506121c760208a016120e7565b95506121d560408a01611f5f565b945060608901359150808211156121eb57600080fd5b506121f889828a016120ff565b979a9699509497509295939492505050565b60008082840361010081121561221f57600080fd5b8335925060e0601f198201121561223557600080fd5b506020830190509250929050565b600060e0828403121561225557600080fd5b61225f8383611f8d565b9392505050565b634e487b7160e01b600052602160045260246000fd5b602081016004831061229057612290612266565b91905290565b6020808252600e908201526d24b73b30b634b21031b630b4b69760911b604082015260600190565b634e487b7160e01b600052601160045260246000fd5b818103818111156115e9576115e96122be565b634e487b7160e01b600052601260045260246000fd5b60006020828403121561230f57600080fd5b5051919050565b60006020828403121561232857600080fd5b815161225f81611f4a565b60008261235057634e487b7160e01b600052601260045260246000fd5b500490565b60c085901b6001600160c01b0319168152606084901b6bffffffffffffffffffffffff191660088201528183601c83013760009101601c019081529392505050565b634e487b7160e01b600052603260045260246000fd5b8183823760009101908152919050565b6000602082840312156123cf57600080fd5b61225f82611f7e565b6000602082840312156123ea57600080fd5b813561225f81611f4a565b808201808211156115e9576115e96122be565b87815260006bffffffffffffffffffffffff19808960601b16602084015263ffffffff60e01b808960e01b166034850152808860e01b166038850152808760e01b16603c850152506003851061246057612460612266565b60f89490941b60408301525060609190911b90911660418201526055019594505050505056fea26469706673582212201c9f54aa22ba7698fc9ba489f860256f3e64eff6f8b9e65283583a07459d15b264736f6c63430008120033",
+  "deployedBytecode": "0x6080604052600436106101b75760003560e01c806390df63b7116100ec578063b633b9441161008a578063d0e30db011610064578063d0e30db014610538578063d5e6a9df1461056c578063da2b7bc4146105a0578063df19e6ff146105c057600080fd5b8063b633b944146104c4578063c2114a16146104e4578063c299acc41461051857600080fd5b80639c13b6b5116100c65780639c13b6b514610412578063aa22a1c614610428578063b044397e1461045c578063b5b7a1841461049057600080fd5b806390df63b7146103af578063930f28af146103dc5780639588eca2146103fc57600080fd5b806331ddf7431161015957806349b4299e1161013357806349b4299e1461031b5780634a439cfe1461033b578063541adcca1461035b5780638d96fdea1461037b57600080fd5b806331ddf743146102bb5780633ce43cfd146102db5780634788cb38146102fb57600080fd5b8063222ae78611610195578063222ae786146102425780632639c0601461026557806327ee6bdd1461029257806331d14457146102a857600080fd5b806301139b68146101bc5780630f0adca5146101d15780631062b39a146101f1575b600080fd5b6101cf6101ca366004612047565b6105ed565b005b3480156101dd57600080fd5b506101cf6101ec366004612075565b61082b565b3480156101fd57600080fd5b506102257f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b34801561024e57600080fd5b50610257610bdb565b604051908152602001610239565b34801561027157600080fd5b506102576102803660046120ac565b60026020526000908152604090205481565b34801561029e57600080fd5b5061025760015481565b6101cf6102b63660046120c5565b610c0c565b3480156102c757600080fd5b506101cf6102d6366004612148565b610e77565b3480156102e757600080fd5b506101cf6102f636600461220a565b611117565b34801561030757600080fd5b506101cf61031636600461220a565b61125e565b34801561032757600080fd5b506101cf610336366004612047565b6113d3565b34801561034757600080fd5b506102576103563660046120ac565b6115bd565b34801561036757600080fd5b50610257610376366004612243565b6115ef565b34801561038757600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b3480156103bb57600080fd5b506102576103ca3660046120ac565b60036020526000908152604090205481565b3480156103e857600080fd5b506101cf6103f7366004612047565b611641565b34801561040857600080fd5b5061025760005481565b34801561041e57600080fd5b5061025760045481565b34801561043457600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b34801561046857600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b34801561049c57600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b3480156104d057600080fd5b506101cf6104df366004612047565b611835565b3480156104f057600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b34801561052457600080fd5b506101cf6105333660046120ac565b611a41565b34801561054457600080fd5b506102577f000000000000000000000000000000000000000000000000000000000000000081565b34801561057857600080fd5b506102257f000000000000000000000000000000000000000000000000000000000000000081565b3480156105ac57600080fd5b506101cf6105bb366004612047565b611cca565b3480156105cc57600080fd5b506105e06105db366004612243565b611e83565b604051610239919061227c565b6105f6816115ef565b6000838152600260205260409020541461062b5760405162461bcd60e51b815260040161062290612296565b60405180910390fd5b7f000000000000000000000000000000000000000000000000000000000000000034101561069b5760405162461bcd60e51b815260206004820152601f60248201527f496e73756666696369656e74206368616c6c656e6765206465706f7369742e006044820152606401610622565b60c08101516001600160a01b0316156106f65760405162461bcd60e51b815260206004820152601960248201527f436c61696d20616c7265616479206368616c6c656e6765642e000000000000006044820152606401610622565b60008160a00151600281111561070e5761070e612266565b1461075b5760405162461bcd60e51b815260206004820152601760248201527f436c61696d20616c72656164792076657269666965642e0000000000000000006044820152606401610622565b3360c082015261076a816115ef565b600083815260026020908152604091829020929092555183815233917fcfe09ca25f55d949baba5e280f5750c9ba4b9048fca5532f916067d433afe4d791015b60405180910390a27f00000000000000000000000000000000000000000000000000000000000000003411156108275760006108067f0000000000000000000000000000000000000000000000000000000000000000346122d4565b604051909150339082156108fc029083906000818181858888f15050505050505b5050565b7f00000000000000000000000000000000000000000000000000000000000000006001547f0000000000000000000000000000000000000000000000000000000000000000428161087e5761087e6122e7565b040311156108c15760405162461bcd60e51b815260206004820152601060248201526f213934b233b29029b43aba3237bbb71760811b6044820152606401610622565b336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146109445760405162461bcd60e51b815260206004820152602260248201527f4e6f742066726f6d206e617469766520476e6f73697320414d42206272696467604482015261329760f11b6064820152608401610622565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316639e307dff6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156109a2573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109c691906122fd565b7f000000000000000000000000000000000000000000000000000000000000000014610a285760405162461bcd60e51b815260206004820152601160248201527024b73b30b634b21031b430b4b71034b21760791b6044820152606401610622565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663d67bdd256040518163ffffffff1660e01b8152600401602060405180830381865afa158015610a86573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610aaa9190612316565b6001600160a01b03167f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031614610b1d5760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b6903937baba32b91760811b6044820152606401610622565b60015483118015610b2d57508115155b15610b7057600183905560008290556040518381527ff786e7f77ede00a02a5464f8f0555798f42ba99a4a920ef2778db8d75e4656f79060200160405180910390a15b610b79816115ef565b60008481526002602052604090205403610bd6578051829003610ba257600160a0820152610bbd565b60c08101516001600160a01b031615610bbd57600260a08201525b610bc6816115ef565b6000848152600260205260409020555b505050565b6000610c077f000000000000000000000000000000000000000000000000000000000000000042612333565b905090565b7f0000000000000000000000000000000000000000000000000000000000000000341015610c7c5760405162461bcd60e51b815260206004820152601b60248201527f496e73756666696369656e7420636c61696d206465706f7369742e00000000006044820152606401610622565b7f00000000000000000000000000000000000000000000000000000000000000004281610cab57610cab6122e7565b048210610cfa5760405162461bcd60e51b815260206004820152601960248201527f45706f636820686173206e6f7420796574207061737365642e000000000000006044820152606401610622565b600454421115610d7e577f0000000000000000000000000000000000000000000000000000000000000000600454420381610d3757610d376122e7565b04826001011015610d7e5760405162461bcd60e51b815260206004820152601160248201527022b837b1b41034b9903a37b79037b6321760791b6044820152606401610622565b80610d9b5760405162461bcd60e51b815260040161062290612296565b60008281526002602052604090205415610ded5760405162461bcd60e51b815260206004820152601360248201527221b630b4b69030b63932b0b23c9036b0b2329760691b6044820152606401610622565b6040805160e0810182528281523360208201524263ffffffff16918101919091526000606082018190526080820181905260a0820181905260c0820152610e33906115ef565b600083815260026020908152604091829020929092555182815233917f91d697238e9aa9f3172d17522c9be529b94a892481554e1ea619369b5b12f39a91016107aa565b60408510610eb95760405162461bcd60e51b815260206004820152600f60248201526e283937b7b3103a37b7903637b7339760891b6044820152606401610622565b600084848484604051602001610ed29493929190612355565b604051602081830303815290604052805190602001209050806000526020600020905060005b86811015610f52576000888883818110610f1457610f14612397565b90506020020135905082811115610f3957826000528060205260406000209250610f49565b8060005282602052604060002092505b50600101610ef8565b508060005414610f955760405162461bcd60e51b815260206004820152600e60248201526d24b73b30b634b210383937b7b31760911b6044820152606401610622565b600885901c66ffffffffffffff1660008181526003602052604090205460ff87169080821c6001161561100a5760405162461bcd60e51b815260206004820152601760248201527f4d65737361676520616c72656164792072656c617965640000000000000000006044820152606401610622565b6000838152600360205260408082206001851b84179055516001600160a01b0389169061103a90899089906123ad565b6000604051808303816000865af19150503d8060008114611077576040519150601f19603f3d011682016040523d82523d6000602084013e61107c565b606091505b50509050806110cd5760405162461bcd60e51b815260206004820152601760248201527f4661696c656420746f2063616c6c20636f6e74726163740000000000000000006044820152606401610622565b60405167ffffffffffffffff8a1681527f54303fab361bc52c2f1f56ace7351189582264f74ce47a6e7c3f478d64c429439060200160405180910390a15050505050505050505050565b61112961037636839003830183612243565b600083815260026020526040902054146111555760405162461bcd60e51b815260040161062290612296565b600261116760c0830160a084016123bd565b600281111561117857611178612266565b146111b95760405162461bcd60e51b815260206004820152601160248201527021b430b63632b733b2903330b4b632b21760791b6044820152606401610622565b600082815260026020526040808220829055517f000000000000000000000000000000000000000000000000000000000000000080156108fc029183818181858288f15061121393505060e0840191505060c083016123d8565b6001600160a01b03166108fc7f00000000000000000000000000000000000000000000000000000000000000009081150290604051600060405180830381858888f150505050505050565b61127061037636839003830183612243565b6000838152600260205260409020541461129c5760405162461bcd60e51b815260040161062290612296565b60016112ae60c0830160a084016123bd565b60028111156112bf576112bf612266565b146112fc5760405162461bcd60e51b815260206004820152600d60248201526c21b630b4b6903330b4b632b21760991b6044820152606401610622565b600082815260026020526040812081905561131d60e0830160c084016123d8565b6001600160a01b031614611378576040516000907f000000000000000000000000000000000000000000000000000000000000000080156108fc029183818181858288f15061121393505060408401915050602083016123d8565b61138860408201602083016123d8565b6001600160a01b03166108fc7f00000000000000000000000000000000000000000000000000000000000000009081150290604051600060405180830381858888f150505050505050565b6113dc816115ef565b600083815260026020526040902054146114085760405162461bcd60e51b815260040161062290612296565b7f0000000000000000000000000000000000000000000000000000000000000000600454826040015163ffffffff1661144191906123f5565b61144b91906123f5565b4210156114af5760405162461bcd60e51b815260206004820152602c60248201527f436c61696d206d75737420776169742061746c65617374206d61784c3253746160448201526b3a32a9bcb731a232b630bc9760a11b6064820152608401610622565b60006114ba82611e83565b905060028160038111156114d0576114d0612266565b14806114ed575060008160038111156114eb576114eb612266565b145b6115565760405162461bcd60e51b815260206004820152603460248201527f436c61696d20766572696669636174696f6e20696e2070726f6772657373206f604482015273391030b63932b0b23c9031b7b6b83632ba32b21760611b6064820152608401610622565b63ffffffff428116606084015243166080830152611573826115ef565b60008481526002602090815260409182902092909255518481527f37b700b61b9b4710dddb0c3316b2be7ef6088ed4b1d7bfe0fb98be8f9a163e16910160405180910390a1505050565b60006115e97f000000000000000000000000000000000000000000000000000000000000000083612333565b92915050565b80516020808301516040808501516060860151608087015160a088015160c08901519451600098611624989097969101612408565b604051602081830303815290604052805190602001209050919050565b7f00000000000000000000000000000000000000000000000000000000000000006001547f00000000000000000000000000000000000000000000000000000000000000004281611694576116946122e7565b040311156116d75760405162461bcd60e51b815260206004820152601060248201526f213934b233b29029b43aba3237bbb71760811b6044820152606401610622565b6116e0816115ef565b6000838152600260205260409020541461170c5760405162461bcd60e51b815260040161062290612296565b60c08101516001600160a01b03161561175e5760405162461bcd60e51b815260206004820152601460248201527321b630b4b69034b99031b430b63632b733b2b21760611b6044820152606401610622565b600161176982611e83565b600381111561177a5761177a612266565b146117c75760405162461bcd60e51b815260206004820152601b60248201527f43656e736f72736869702074657374206e6f74207061737365642e00000000006044820152606401610622565b60015482111561180f57600182905580516000556040518281527ff786e7f77ede00a02a5464f8f0555798f42ba99a4a920ef2778db8d75e4656f79060200160405180910390a15b600160a082015261181f816115ef565b6000928352600260205260409092209190915550565b7f00000000000000000000000000000000000000000000000000000000000000006001547f00000000000000000000000000000000000000000000000000000000000000004281611888576118886122e7565b0403116118c95760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b6044820152606401610622565b6118d2816115ef565b600083815260026020526040902054146118fe5760405162461bcd60e51b815260040161062290612296565b60008160a00151600281111561191657611916612266565b146119555760405162461bcd60e51b815260206004820152600f60248201526e21b630b4b6903932b9b7b63b32b21760891b6044820152606401610622565b60c08101516001600160a01b0316156108275760208101516001600160a01b03166119d95760008281526002602052604080822082905560c083015190516001600160a01b03909116917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150505050505050565b60c08101805160009091526119ed826115ef565b50600083815260026020526040516001600160a01b038316917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f15050505050505050565b336001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001614611aac5760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b690313934b233b29760811b6044820152606401610622565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316639e307dff6040518163ffffffff1660e01b8152600401602060405180830381865afa158015611b0a573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611b2e91906122fd565b7f000000000000000000000000000000000000000000000000000000000000000014611b905760405162461bcd60e51b815260206004820152601160248201527024b73b30b634b21031b430b4b71034b21760791b6044820152606401610622565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663d67bdd256040518163ffffffff1660e01b8152600401602060405180830381865afa158015611bee573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611c129190612316565b6001600160a01b03167f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031614611c855760405162461bcd60e51b815260206004820152601060248201526f2737ba10333937b6903937baba32b91760811b6044820152606401610622565b8060045414611cc75760048190556040518181527fe5c620413c3d944fbd314ecc2375b9bdcc721589711a4348d9ecaf966160fa389060200160405180910390a15b50565b7f00000000000000000000000000000000000000000000000000000000000000006001547f00000000000000000000000000000000000000000000000000000000000000004281611d1d57611d1d6122e7565b040311611d5e5760405162461bcd60e51b815260206004820152600f60248201526e213934b233b290293ab73734b7339760891b6044820152606401610622565b611d67816115ef565b60008381526002602052604090205414611d935760405162461bcd60e51b815260040161062290612296565b60008160a001516002811115611dab57611dab612266565b14611dea5760405162461bcd60e51b815260206004820152600f60248201526e21b630b4b6903932b9b7b63b32b21760891b6044820152606401610622565b60208101516001600160a01b0316156108275760c08101516001600160a01b0316611e6f5760008281526002602090815260408083208390559083015190516001600160a01b03909116917f000000000000000000000000000000000000000000000000000000000000000080156108fc02929091818181858888f150505050505050565b60208101805160009091526119ed826115ef565b6000816060015163ffffffff16600003611e9f57506002919050565b7f0000000000000000000000000000000000000000000000000000000000000000826060015163ffffffff1642031015611edb57506003919050565b60006005836060015163ffffffff16420381611ef957611ef96122e7565b608085015163ffffffff16919004019050437f000000000000000000000000000000000000000000000000000000000000000081830311611f3d5760019250611f42565b600092505b50505b919050565b6001600160a01b0381168114611cc757600080fd5b8035611f4581611f4a565b803563ffffffff81168114611f4557600080fd5b803560038110611f4557600080fd5b600060e08284031215611f9f57600080fd5b60405160e0810181811067ffffffffffffffff82111715611fd057634e487b7160e01b600052604160045260246000fd5b60405282358152905080611fe660208401611f5f565b6020820152611ff760408401611f6a565b604082015261200860608401611f6a565b606082015261201960808401611f6a565b608082015261202a60a08401611f7e565b60a082015261203b60c08401611f5f565b60c08201525092915050565b600080610100838503121561205b57600080fd5b8235915061206c8460208501611f8d565b90509250929050565b6000806000610120848603121561208b57600080fd5b83359250602084013591506120a38560408601611f8d565b90509250925092565b6000602082840312156120be57600080fd5b5035919050565b600080604083850312156120d857600080fd5b50508035926020909101359150565b803567ffffffffffffffff81168114611f4557600080fd5b60008083601f84011261211157600080fd5b50813567ffffffffffffffff81111561212957600080fd5b60208301915083602082850101111561214157600080fd5b9250929050565b6000806000806000806080878903121561216157600080fd5b863567ffffffffffffffff8082111561217957600080fd5b818901915089601f83011261218d57600080fd5b81358181111561219c57600080fd5b8a60208260051b85010111156121b157600080fd5b602083019850809750506121c760208a016120e7565b95506121d560408a01611f5f565b945060608901359150808211156121eb57600080fd5b506121f889828a016120ff565b979a9699509497509295939492505050565b60008082840361010081121561221f57600080fd5b8335925060e0601f198201121561223557600080fd5b506020830190509250929050565b600060e0828403121561225557600080fd5b61225f8383611f8d565b9392505050565b634e487b7160e01b600052602160045260246000fd5b602081016004831061229057612290612266565b91905290565b6020808252600e908201526d24b73b30b634b21031b630b4b69760911b604082015260600190565b634e487b7160e01b600052601160045260246000fd5b818103818111156115e9576115e96122be565b634e487b7160e01b600052601260045260246000fd5b60006020828403121561230f57600080fd5b5051919050565b60006020828403121561232857600080fd5b815161225f81611f4a565b60008261235057634e487b7160e01b600052601260045260246000fd5b500490565b60c085901b6001600160c01b0319168152606084901b6bffffffffffffffffffffffff191660088201528183601c83013760009101601c019081529392505050565b634e487b7160e01b600052603260045260246000fd5b8183823760009101908152919050565b6000602082840312156123cf57600080fd5b61225f82611f7e565b6000602082840312156123ea57600080fd5b813561225f81611f4a565b808201808211156115e9576115e96122be565b87815260006bffffffffffffffffffffffff19808960601b16602084015263ffffffff60e01b808960e01b166034850152808860e01b166038850152808760e01b16603c850152506003851061246057612460612266565b60f89490941b60408301525060609190911b90911660418201526055019594505050505056fea26469706673582212201c9f54aa22ba7698fc9ba489f860256f3e64eff6f8b9e65283583a07459d15b264736f6c63430008120033",
+  "devdoc": {
+    "details": "Vea Outbox From Arbitrum to Gnosis. Note: This contract is deployed on Gnosis.",
+    "events": {
+      "Challenged(uint256,address)": {
+        "details": "This event indicates that `sendSnapshot(epoch)` should be called in the inbox.",
+        "params": {
+          "_challenger": "The address of the challenger.",
+          "_epoch": "The epoch associated with the challenged claim."
+        }
+      },
+      "Claimed(address,bytes32)": {
+        "details": "Watchers check this event to challenge fraud.",
+        "params": {
+          "_claimer": "The address of the claimer.",
+          "_stateRoot": "The state root of the claim."
+        }
+      },
+      "MessageRelayed(uint64)": {
+        "details": "This event indicates that a message has been relayed.",
+        "params": {
+          "_msgId": "The msgId of the message that was relayed."
+        }
+      },
+      "SequencerLimitUpdateReceived(uint256)": {
+        "details": "This event indicates the sequencer limit updated.",
+        "params": {
+          "_newSequencerLimit": "The new maxL2StateSyncDelay."
+        }
+      },
+      "VerificationStarted(uint256)": {
+        "details": "This event indicates that the censorship test started and all challengers are ready even in the worst case scenario of a malicious sequencer.",
+        "params": {
+          "_epoch": "The epoch that started verification."
+        }
+      },
+      "Verified(uint256)": {
+        "details": "This events indicates that verification has succeeded. The messages are ready to be relayed.",
+        "params": {
+          "_epoch": "The epoch that was verified."
+        }
+      }
+    },
+    "kind": "dev",
+    "methods": {
+      "censorshipTestStatus((bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Gets the status of the censorship test for claim.",
+        "params": {
+          "_claim": "The claim to test."
+        },
+        "returns": {
+          "status": "True if the claim passed the censorship test."
+        }
+      },
+      "challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch of the claim to challenge."
+        }
+      },
+      "claim(uint256,bytes32)": {
+        "details": "Submit a claim about the _stateRoot at _epoch and submit a deposit.",
+        "params": {
+          "_epoch": "The epoch for which the claim is made.",
+          "_stateRoot": "The state root to claim."
+        }
+      },
+      "constructor": {
+        "details": "Constructor. Note: epochPeriod must match the VeaInboxArbToGnosis contract deployment on Arbitrum, since it's on a different chain, we can't read it and trust the deployer to set a correct value",
+        "params": {
+          "_amb": "The address of the AMB contract on Gnosis.",
+          "_deposit": "The deposit amount to submit a claim in wei.",
+          "_epochPeriod": "The duration of each epoch.",
+          "_maxMissingBlocks": "The maximum number of blocks that can be missing in a challenge period.",
+          "_minChallengePeriod": "The minimum time window to challenge a claim.",
+          "_routerArbToGnosis": "The address of the router on Ethereum that routes from Arbitrum to Ethereum.",
+          "_routerChainId": "The chain id of the routerArbToGnosis.",
+          "_sequencerLimit": "The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.",
+          "_timeoutEpochs": "The epochs before the bridge is considered shutdown."
+        }
+      },
+      "epochAt(uint256)": {
+        "details": "Get the current epoch from the outbox's point of view using the Ethereum L1 clock.",
+        "returns": {
+          "epoch": "The hash of the claim."
+        }
+      },
+      "epochNow()": {
+        "details": "Get the current epoch from the outbox's point of view using the Ethereum L1 clock.",
+        "returns": {
+          "epoch": "The hash of the claim."
+        }
+      },
+      "hashClaim((bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Hashes the claim.",
+        "params": {
+          "_claim": "The claim to hash."
+        },
+        "returns": {
+          "hashedClaim": "The hash of the claim."
+        }
+      },
+      "resolveDisputedClaim(uint256,bytes32,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Resolves any challenge of the optimistic claim for '_epoch'.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch to verify.",
+          "_stateRoot": "The true state root for the epoch."
+        }
+      },
+      "sendMessage(bytes32[],uint64,address,bytes)": {
+        "details": "Verifies and relays the message. UNTRUSTED.",
+        "params": {
+          "_message": "The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)",
+          "_msgId": "The zero based index of the message in the inbox.",
+          "_proof": "The merkle proof to prove the message inclusion in the inbox state root.",
+          "_to": "The address of the contract on Gnosis to call."
+        }
+      },
+      "startVerification(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Start verification for claim for 'epoch'.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch of the claim to challenge."
+        }
+      },
+      "updateSequencerLimit(uint256)": {
+        "details": "Set the maxL2StateSyncDelay by reading from the Arbitrum Bridge",
+        "params": {
+          "_newSequencerLimit": "The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract."
+        }
+      },
+      "verifySnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Resolves the optimistic claim for '_epoch'.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch of the optimistic claim."
+        }
+      },
+      "withdrawChallengeDeposit(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Sends the deposit back to the Challenger if successful. Includes a portion of the Bridger's deposit.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch associated with the challenge deposit to withraw."
+        }
+      },
+      "withdrawChallengerEscapeHatch(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "When bridge is shutdown, no claim disputes can be resolved. This allows the challenger to withdraw their deposit.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch associated with the claim deposit to withraw."
+        }
+      },
+      "withdrawClaimDeposit(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Sends the deposit back to the Claimer if successful. Includes a portion of the Challenger's deposit if unsuccessfully challenged.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch associated with the claim deposit to withraw."
+        }
+      },
+      "withdrawClaimerEscapeHatch(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch associated with the claim deposit to withraw."
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "resolveDisputedClaim(uint256,bytes32,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "notice": "Note: Access restricted to AMB."
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 2556,
+        "contract": "src/arbitrumToGnosis/VeaOutboxArbToGnosis.sol:VeaOutboxArbToGnosis",
+        "label": "stateRoot",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_bytes32"
+      },
+      {
+        "astId": 2558,
+        "contract": "src/arbitrumToGnosis/VeaOutboxArbToGnosis.sol:VeaOutboxArbToGnosis",
+        "label": "latestVerifiedEpoch",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 2562,
+        "contract": "src/arbitrumToGnosis/VeaOutboxArbToGnosis.sol:VeaOutboxArbToGnosis",
+        "label": "claimHashes",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_mapping(t_uint256,t_bytes32)"
+      },
+      {
+        "astId": 2566,
+        "contract": "src/arbitrumToGnosis/VeaOutboxArbToGnosis.sol:VeaOutboxArbToGnosis",
+        "label": "relayed",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_mapping(t_uint256,t_bytes32)"
+      },
+      {
+        "astId": 2568,
+        "contract": "src/arbitrumToGnosis/VeaOutboxArbToGnosis.sol:VeaOutboxArbToGnosis",
+        "label": "sequencerLimit",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_uint256"
+      }
+    ],
+    "types": {
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_mapping(t_uint256,t_bytes32)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => bytes32)",
+        "numberOfBytes": "32",
+        "value": "t_bytes32"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

@@ -52,10 +52,6 @@ describe("Merkle", async () => {
       mt = new MerkleTree(nodes);
       rootOffChain = mt.getHexRoot();
       rootOnChain = await merkleTreeExposed.getMerkleRoot();
-      console.log("######");
-      console.log(rootOffChain);
-      console.log(rootOnChain);
-      console.log("########################");
 
       expect(rootOffChain).to.equal(rootOnChain);
     });
@@ -83,10 +79,6 @@ describe("Merkle", async () => {
       const mt = new MerkleTree(nodes);
       const rootOffChain = mt.getHexRoot();
       const proof = mt.getHexProof("0x89b21fb4614a02475146160be6fb83cadd1ea38dd00f1a8ed1c880c902807ff4");
-      console.log("yoyoyo");
-      console.log(rootOffChain);
-      console.log(proof);
-      console.log("########################");
     });
   });
 });

@@ -14,20 +14,17 @@ const paramsByChainId = {
     deposit: parseEther("0.001"),
     // Average happy path wait time is 1 hour (30 min, 90 min), happy path only
     epochPeriod: 1800, // 30 min
-    claimDelay: 0, // Assume no sequencer backdating
-    challengePeriod: 0, // 0 min
+    minChallengePeriod: 0, // 0 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
-    arbitrumBridge: "0xC1Ebd02f738644983b6C4B2d440b8e77DdE276Bd", // https://developer.arbitrum.io/useful-addresses
+    arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
   },
   HARDHAT: {
     deposit: parseEther("10"), // 120 eth budget for timeout
     // Average happy path wait time is 45 mins, assume no censorship
     epochPeriod: 1800, // 30 min
-    claimDelay: 0, // 30 hours (24 hours sequencer backdating + 6 hour buffer)
-    challengePeriod: 1800, // 30 min (assume no sequencer backdating)
+    minChallengePeriod: 1800, // 30 min (assume no sequencer backdating)
     numEpochTimeout: 10000000000000, // 6 hours
-    senderChainId: 31337,
     maxMissingBlocks: 10000000000000,
     arbitrumBridge: ethers.constants.AddressZero,
   },
@@ -48,7 +45,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, maxMissingBlocks, arbitrumBridge } =
+  const { deposit, epochPeriod, numEpochTimeout, minChallengePeriod, maxMissingBlocks, arbitrumBridge } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -81,9 +78,8 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         arbSysAddress,
         deposit,
         epochPeriod,
-        challengePeriod,
+        minChallengePeriod,
         numEpochTimeout,
-        claimDelay,
         veaInboxAddress,
         bridgeAddress,
         maxMissingBlocks,
@@ -114,9 +110,8 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         args: [
           deposit,
           epochPeriod,
-          challengePeriod,
+          minChallengePeriod,
           numEpochTimeout,
-          claimDelay,
           veaInboxAddress,
           arbitrumBridge,
           maxMissingBlocks,
@@ -137,7 +132,7 @@ deployOutbox.tags = ["ArbGoerliToGoerliOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !(chainId === 5 || chainId === 31337);
+  return !ReceiverChains[chainId];
 };
 
 export default deployOutbox;

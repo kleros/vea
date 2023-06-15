@@ -14,22 +14,24 @@ const paramsByChainId = {
     deposit: parseEther("0.001"),
     epochPeriod: 1800, // 60 min
     claimDelay: 0, // Assume no sequencer backdating
-    challengePeriod: 0, // 30 min
+    minChallengePeriod: 0, // 30 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
-    senderChainId: 421613,
+    routerChainId: 5,
+    sequencerLimit: 86400, // 24 hours
   },
   HARDHAT: {
     deposit: parseEther("5"), // 120 xDAI budget for timeout
     // Average happy path wait time is 22.5 mins, assume no censorship
-    epochPeriod: 600, // 15 min
+    minChallengePeriod: 600, // 15 min
     challengePeriod: 600, // 15 min (assume no sequencer backdating)
     numEpochTimeout: 24, // 6 hours
     claimDelay: 2,
     amb: ethers.constants.AddressZero,
     maxMissingBlocks: 10000000000000,
-    senderChainId: 421613,
+    routerChainId: 31337,
+    sequencerLimit: 86400, // 24 hours
   },
 };
 
@@ -53,8 +55,17 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, maxMissingBlocks } =
-    paramsByChainId[ReceiverChains[chainId]];
+  const {
+    deposit,
+    epochPeriod,
+    routerChainId,
+    minChallengePeriod,
+    numEpochTimeout,
+    claimDelay,
+    amb,
+    maxMissingBlocks,
+    sequencerLimit,
+  } = paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
   // TODO: use deterministic deployments
@@ -72,13 +83,13 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       args: [
         deposit,
         epochPeriod,
-        challengePeriod,
+        minChallengePeriod,
         numEpochTimeout,
-        claimDelay,
-        veaInboxAddress,
         amb,
         ethers.constants.AddressZero,
+        sequencerLimit,
         maxMissingBlocks,
+        routerChainId,
       ],
       log: true,
     });
@@ -97,15 +108,22 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
     let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
 
-    const veaInboxAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
-
     const routerAddress = getContractAddress(deployer, nonceRouter);
     console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
 
     const txn = await deploy("VeaOutboxArbToGnosisDevnet", {
       from: deployer,
-      args: [deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, amb, routerAddress, maxMissingBlocks],
+      args: [
+        deposit,
+        epochPeriod,
+        minChallengePeriod,
+        numEpochTimeout,
+        amb,
+        routerAddress,
+        sequencerLimit,
+        maxMissingBlocks,
+        routerChainId,
+      ],
       log: true,
       ...gasOptions,
     });
