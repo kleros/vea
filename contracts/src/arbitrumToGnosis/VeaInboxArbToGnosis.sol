@@ -59,9 +59,6 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     constructor(uint256 _epochPeriod, address _routerArbToGnosis) {
         epochPeriod = _epochPeriod;
         routerArbToGnosis = _routerArbToGnosis;
-
-        // epochPeriod should never be set this small, but we check non-zero value as a sanity check to avoid division by zero
-        require(_epochPeriod > 0, "Epoch period must be greater than 0.");
     }
 
     // ************************************* //
