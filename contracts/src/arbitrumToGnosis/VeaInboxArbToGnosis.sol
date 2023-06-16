@@ -37,7 +37,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     // *              Events               * //
     // ************************************* //
 
-    /// @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
+    /// @dev Relayers watch for these events to construct merkle proofs to execute transactions on Gnosis.
     /// @param _nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message).
     event MessageSent(bytes _nodeData);
 
