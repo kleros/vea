@@ -28,6 +28,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     address internal constant BURN_ADDRESS = address(0); // Address to send burned eth
     uint256 internal constant SLOT_TIME = 5; // Gnosis 5 second slot time
+    uint256 internal constant RELAY_TIMEOUT = 604800; // 7 days
 
     uint256 public immutable routerChainId; // Router chain id for authentication of messages from the AMB.
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
@@ -147,10 +148,12 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     /// @dev Set the maxL2StateSyncDelay by reading from the Arbitrum Bridge
     /// @param _newSequencerDelayLimit The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.
-    function updateSequencerDelayLimit(uint256 _newSequencerDelayLimit) external {
+    /// @param _timestamp The timestamp of the message.
+    function updateSequencerDelayLimit(uint256 _newSequencerDelayLimit, uint256 _timestamp) external {
         require(msg.sender == address(amb), "Not from bridge.");
         require(bytes32(routerChainId) == amb.messageSourceChainId(), "Invalid chain id.");
         require(routerArbToGnosis == amb.messageSender(), "Not from router.");
+        require(_timestamp + RELAY_TIMEOUT <= block.timestamp, "Stale message. Timeout exceeded.");
 
         if (sequencerDelayLimit != _newSequencerDelayLimit) {
             sequencerDelayLimit = _newSequencerDelayLimit;

@@ -10,22 +10,22 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 #### Goerli
 
-- [RouterArbToGnosisDevnet](https://goerli.etherscan.io/address/0xF767226FD5d9A8BbC4d99462175905cB6c1adA04)
-- [RouterArbToGnosisTestnet](https://goerli.etherscan.io/address/0xbB800a318b5CeE079ADdBC6141A0BB1665793014)
-- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0x19F1fE9f34d3d6323FB9862a99F8A56542f879F0)
-- [VeaOutboxArbToEthTestnet](https://goerli.etherscan.io/address/0x2D2D210Bb504D4F8C226f780129a974C7CD56Ea0)
+- [RouterArbToGnosisDevnet](https://goerli.etherscan.io/address/0x696567a5F0A6DD4aAe1dBa6ddB4c977aB5B07CAC)
+- [RouterArbToGnosisTestnet](https://goerli.etherscan.io/address/0x57566eBB95e855fdAeEe108Afa450005B12123Bb)
+- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0xb594c5C4eE3bF976d59F5d3DB311A1ac99D20FBA)
+- [VeaOutboxArbToEthTestnet](https://goerli.etherscan.io/address/0x64277c8c817b45B0e3CE45AbC222f16406920B9a)
 
 #### Arbitrum Goerli
 
-- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0x63eBccD095a663f024B5336b8362A7fa836b7882)
-- [VeaInboxArbToEthTestnet](https://goerli.arbiscan.io/address/0x7B6D027DC9e838E98258c2A77877De59B7F5a350)
-- [VeaInboxArbToGnosisDevnet](https://goerli.arbiscan.io/address/0xf9F4501AF2447210219d1393450a83933293a4Fd)
-- [VeaInboxArbToGnosisTestnet](https://goerli.arbiscan.io/address/0xD6ecb6618e8070462E2a6AB160fE1773b8996D3a)
+- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0x3D9356FF595C2151513DFc520380d5A178224564)
+- [VeaInboxArbToEthTestnet](https://goerli.arbiscan.io/address/0xa452Eecf27B545E4115E1cD3cC903aC361B1eE22)
+- [VeaInboxArbToGnosisDevnet](https://goerli.arbiscan.io/address/0xEC337Fb9977848D0784dC4F01A69c237691755E0)
+- [VeaInboxArbToGnosisTestnet](https://goerli.arbiscan.io/address/0xf2DDe00c51be42c74e3927A324928381f83da37f)
 
 #### Chiado
 
-- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xa117A3B8527133EB4CC2006F3F5b7e0cCC7298B5)
-- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0xd7610CF459C13Ff22923692Ab023dF5a58DeA838)
+- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0x00f0A751C921B937208e49a92fAaeaF896733544)
+- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0x0C3Acd25FE091b02e8E9b30B9b51dBD5d58C8a41)
 
 ## Getting Started
 

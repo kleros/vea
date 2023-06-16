@@ -83,7 +83,6 @@ contract RouterArbToGnosis is IRouterToL1 {
             // For sequencerDelayLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
             sequencerDelayLimit = newsequencerDelayLimit;
             emit sequencerDelayLimitUpdated(newsequencerDelayLimit);
-            sendsequencerDelayLimit();
         } else if (newsequencerDelayLimit < sequencerDelayLimit) {
             require(
                 sequencerDelayLimitDecreaseRequest.timestamp == 0,
@@ -115,13 +114,15 @@ contract RouterArbToGnosis is IRouterToL1 {
         if (currentsequencerDelayLimit == requestedsequencerDelayLimit) {
             sequencerDelayLimit = requestedsequencerDelayLimit;
             emit sequencerDelayLimitUpdated(requestedsequencerDelayLimit);
-            sendsequencerDelayLimit();
         }
     }
 
     /// @dev Calculate the maxL2StateSyncDelay by reading from the Arbitrum Bridge
-    function sendsequencerDelayLimit() internal {
-        bytes memory data = abi.encodeCall(ISequencerDelayUpdatable.updateSequencerDelayLimit, sequencerDelayLimit);
+    function sendSequencerDelayLimit() public {
+        bytes memory data = abi.encodeCall(
+            ISequencerDelayUpdatable.updateSequencerDelayLimit,
+            (sequencerDelayLimit, block.timestamp)
+        );
         // Note: using maxGasPerTx here means the relaying txn on Gnosis will need to pass that (large) amount of gas, though almost all will be unused and refunded. This is preferred over hardcoding a gas limit.
         bytes32 ticketID = amb.requireToPassMessage(veaOutboxArbToGnosis, data, amb.maxGasPerTx());
         emit sequencerDelayLimitSent(ticketID);

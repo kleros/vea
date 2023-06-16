@@ -12,7 +12,8 @@ pragma solidity 0.8.18;
 /// @dev eg. Arbitrum (L2) -> Ethereum (L1) -> Gnosis (L1), the veaOutbox on Gnosis will be an ISequencerDelayUpdatable contract which receives updates from the router on Ethereum.
 interface ISequencerDelayUpdatable {
     /// @dev Updates the sequencer limit.
-    /// Note: Access restricted to ensure the argument is passed from the Arbitrum Sequencer contract.
+    /// Note: Access restricted to ensure the argument is passed from the Sequencer contract.
     /// @param _newSequencerDelayLimit The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.
-    function updateSequencerDelayLimit(uint256 _newSequencerDelayLimit) external;
+    /// @param _timestamp The timestamp of the message.
+    function updateSequencerDelayLimit(uint256 _newSequencerDelayLimit, uint256 _timestamp) external;
 }
