@@ -153,7 +153,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         require(msg.sender == address(amb), "Not from bridge.");
         require(bytes32(routerChainId) == amb.messageSourceChainId(), "Invalid chain id.");
         require(routerArbToGnosis == amb.messageSender(), "Not from router.");
-        require(_timestamp + RELAY_TIMEOUT <= block.timestamp, "Stale message. Timeout exceeded.");
+        require(_timestamp + RELAY_TIMEOUT >= block.timestamp, "Stale message. Timeout exceeded.");
 
         if (sequencerDelayLimit != _newSequencerDelayLimit) {
             sequencerDelayLimit = _newSequencerDelayLimit;
