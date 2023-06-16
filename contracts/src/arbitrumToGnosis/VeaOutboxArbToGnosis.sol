@@ -106,7 +106,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
     /// @param _minChallengePeriod The minimum time window to challenge a claim.
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
     /// @param _amb The address of the AMB contract on Gnosis.
-    /// @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Ethereum.
+    /// @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Gnosis.
     /// @param _sequencerLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
     /// @param _routerChainId The chain id of the routerArbToGnosis.
