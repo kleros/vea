@@ -132,7 +132,7 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
     /// @param _amb The address of the AMB contract on Gnosis.
     /// @param _routerArbToGnosisDevnet The address of the router contract on Goerli routing from ArbitrumGoerli to Chiado.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
-    /// @param _sequencerLimit The maximum number of sequencer messages that can be submitted in a challenge period.
+    /// @param _sequencerDelayLimit The maximum number of sequencer messages that can be submitted in a challenge period.
     /// @param _routerChainId The chain id of the router contract.
     constructor(
         uint256 _deposit,
@@ -142,7 +142,7 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
         IAMB _amb,
         address _routerArbToGnosisDevnet,
         uint256 _maxMissingBlocks,
-        uint256 _sequencerLimit,
+        uint256 _sequencerDelayLimit,
         uint256 _routerChainId
     )
         VeaOutboxArbToGnosis(
@@ -153,7 +153,7 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
             _amb,
             _routerArbToGnosisDevnet,
             _maxMissingBlocks,
-            sequencerLimit,
+            _sequencerDelayLimit,
             _routerChainId
         )
     {

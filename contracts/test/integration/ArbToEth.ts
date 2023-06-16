@@ -191,7 +191,7 @@ describe("Integration tests", async () => {
         })
       ).to.be.revertedWith("Claim must wait atleast maxL2StateSyncDelay.");
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -286,7 +286,7 @@ describe("Integration tests", async () => {
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -368,7 +368,7 @@ describe("Integration tests", async () => {
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -452,7 +452,7 @@ describe("Integration tests", async () => {
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -637,7 +637,7 @@ describe("Integration tests", async () => {
         })
       ).to.be.revertedWith("Challenge failed.");
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -784,7 +784,7 @@ describe("Integration tests", async () => {
         { value: TEN_ETH }
       );
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 

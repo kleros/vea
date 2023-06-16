@@ -10,11 +10,11 @@ pragma solidity 0.8.18;
 
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
-import "../interfaces/updaters/IArbitrumUpdatable.sol";
+import "../interfaces/updaters/ISequencerDelayUpdatable.sol";
 
 /// @dev Vea Outbox From Arbitrum to Gnosis.
 /// Note: This contract is deployed on Gnosis.
-contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
+contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
@@ -42,7 +42,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
     mapping(uint256 => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
 
-    uint256 public sequencerLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
+    uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
 
     enum CensorshipTestStatus {
         Failed,
@@ -78,8 +78,8 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
     event Verified(uint256 _epoch);
 
     /// @dev This event indicates the sequencer limit updated.
-    /// @param _newSequencerLimit The new maxL2StateSyncDelay.
-    event SequencerLimitUpdateReceived(uint256 _newSequencerLimit);
+    /// @param _newsequencerDelayLimit The new maxL2StateSyncDelay.
+    event sequencerDelayLimitUpdateReceived(uint256 _newsequencerDelayLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -107,7 +107,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
     /// @param _amb The address of the AMB contract on Gnosis.
     /// @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Gnosis.
-    /// @param _sequencerLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.
+    /// @param _sequencerDelayLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
     /// @param _routerChainId The chain id of the routerArbToGnosis.
     constructor(
@@ -117,7 +117,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
         uint256 _timeoutEpochs,
         IAMB _amb,
         address _routerArbToGnosis,
-        uint256 _sequencerLimit,
+        uint256 _sequencerDelayLimit,
         uint256 _maxMissingBlocks,
         uint256 _routerChainId
     ) {
@@ -131,7 +131,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
         maxMissingBlocks = _maxMissingBlocks;
         routerChainId = _routerChainId;
         // This value is on another chain, so we can't read it, we trust the deployer to set a correct value.
-        sequencerLimit = _sequencerLimit; // MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox
+        sequencerDelayLimit = _sequencerDelayLimit; // MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox
 
         // claimant and challenger are not sybil resistant
         // must burn half deposit to prevent zero cost griefing
@@ -146,15 +146,15 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
     // ************************************* //
 
     /// @dev Set the maxL2StateSyncDelay by reading from the Arbitrum Bridge
-    /// @param _newSequencerLimit The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.
-    function updateSequencerLimit(uint256 _newSequencerLimit) external {
+    /// @param _newSequencerDelayLimit The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.
+    function updateSequencerDelayLimit(uint256 _newSequencerDelayLimit) external {
         require(msg.sender == address(amb), "Not from bridge.");
         require(bytes32(routerChainId) == amb.messageSourceChainId(), "Invalid chain id.");
         require(routerArbToGnosis == amb.messageSender(), "Not from router.");
 
-        if (sequencerLimit != _newSequencerLimit) {
-            sequencerLimit = _newSequencerLimit;
-            emit SequencerLimitUpdateReceived(_newSequencerLimit);
+        if (sequencerDelayLimit != _newSequencerDelayLimit) {
+            sequencerDelayLimit = _newSequencerDelayLimit;
+            emit sequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
         }
     }
 
@@ -170,11 +170,11 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
 
         unchecked {
             require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
-            // Note: block.timestamp should be much larger than sequencerLimit, but we check in case Arbiturm governance updated this value.
-            if (block.timestamp > sequencerLimit) {
-                // Allow claims to be made within the sequencerLimit.
+            // Note: block.timestamp should be much larger than sequencerDelayLimit, but we check in case Arbiturm governance updated this value.
+            if (block.timestamp > sequencerDelayLimit) {
+                // Allow claims to be made within the sequencerDelayLimit.
                 // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
-                require(_epoch + 1 >= (block.timestamp - sequencerLimit) / epochPeriod, "Epoch is too old.");
+                require(_epoch + 1 >= (block.timestamp - sequencerDelayLimit) / epochPeriod, "Epoch is too old.");
             }
         }
 
@@ -229,10 +229,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, IArbitrumUpdatable {
     function startVerification(uint256 _epoch, Claim memory _claim) external virtual {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
 
-        // sequencerLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.
-        // using checked arithmetic incase arbitrum governance sets sequencerLimit to a large value
+        // sequencerDelayLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.
+        // using checked arithmetic incase arbitrum governance sets sequencerDelayLimit to a large value
         require(
-            block.timestamp >= _claim.timestampClaimed + sequencerLimit + epochPeriod,
+            block.timestamp >= _claim.timestampClaimed + sequencerDelayLimit + epochPeriod,
             "Claim must wait atleast maxL2StateSyncDelay."
         );
 

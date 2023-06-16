@@ -42,11 +42,11 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     mapping(uint256 => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
 
-    uint256 public sequencerLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
-    SequencerLimitDecreaseRequest public sequencerLimitDecreaseRequest; // Decreasing the sequencerLimit requires a delay to avoid griefing by sequencer, so we keep track of the request here.
+    uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
+    SequencerDelayLimitDecreaseRequest public sequencerDelayLimitDecreaseRequest; // Decreasing the sequencerDelayLimit requires a delay to avoid griefing by sequencer, so we keep track of the request here.
 
-    struct SequencerLimitDecreaseRequest {
-        uint256 requestedSequencerLimit;
+    struct SequencerDelayLimitDecreaseRequest {
+        uint256 requestedsequencerDelayLimit;
         uint256 timestamp;
     }
 
@@ -84,12 +84,12 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     event Verified(uint256 _epoch);
 
     /// @dev This event indicates the sequencer limit updated.
-    /// @param _newSequencerLimit The new maxL2StateSyncDelay.
-    event SequencerLimitUpdated(uint256 _newSequencerLimit);
+    /// @param _newsequencerDelayLimit The new maxL2StateSyncDelay.
+    event sequencerDelayLimitUpdated(uint256 _newsequencerDelayLimit);
 
     /// @dev This event indicates that a request to decrease the sequencer limit has been made.
-    /// @param _requestedSequencerLimit The new sequencer limit requested.
-    event SequencerLimitDecreaseRequested(uint256 _requestedSequencerLimit);
+    /// @param _requestedsequencerDelayLimit The new sequencer limit requested.
+    event sequencerDelayLimitDecreaseRequested(uint256 _requestedsequencerDelayLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -135,7 +135,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         bridge = IBridge(_bridge);
         maxMissingBlocks = _maxMissingBlocks;
 
-        updateSequencerLimit();
+        updatesequencerDelayLimit();
 
         // claimant and challenger are not sybil resistant
         // must burn half deposit to prevent zero cost griefing
@@ -149,44 +149,47 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     // *        Parameter Updates          * //
     // ************************************* //
 
-    /// @dev Request to decrease the sequencerLimit.
-    function updateSequencerLimit() public {
+    /// @dev Request to decrease the sequencerDelayLimit.
+    function updatesequencerDelayLimit() public {
         // the maximum asynchronous lag between the L2 and L1 clocks
-        (, , uint256 newSequencerLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
+        (, , uint256 newsequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
 
-        if (newSequencerLimit > sequencerLimit) {
-            // For sequencerLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
-            sequencerLimit = newSequencerLimit;
-            emit SequencerLimitUpdated(newSequencerLimit);
-        } else if (newSequencerLimit < sequencerLimit) {
-            require(sequencerLimitDecreaseRequest.timestamp == 0, "Sequencer limit decrease request already pending.");
+        if (newsequencerDelayLimit > sequencerDelayLimit) {
+            // For sequencerDelayLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
+            sequencerDelayLimit = newsequencerDelayLimit;
+            emit sequencerDelayLimitUpdated(newsequencerDelayLimit);
+        } else if (newsequencerDelayLimit < sequencerDelayLimit) {
+            require(
+                sequencerDelayLimitDecreaseRequest.timestamp == 0,
+                "Sequencer limit decrease request already pending."
+            );
 
-            sequencerLimitDecreaseRequest = SequencerLimitDecreaseRequest({
-                requestedSequencerLimit: newSequencerLimit,
+            sequencerDelayLimitDecreaseRequest = SequencerDelayLimitDecreaseRequest({
+                requestedsequencerDelayLimit: newsequencerDelayLimit,
                 timestamp: block.timestamp
             });
 
-            emit SequencerLimitDecreaseRequested(newSequencerLimit);
+            emit sequencerDelayLimitDecreaseRequested(newsequencerDelayLimit);
         }
     }
 
-    /// @dev execute SequencerLimitDecreaseRequest
-    function executeSequencerLimitDecreaseRequest() external {
-        require(sequencerLimitDecreaseRequest.timestamp != 0, "No pending sequencer limit decrease request.");
+    /// @dev execute sequencerDelayLimitDecreaseRequest
+    function executesequencerDelayLimitDecreaseRequest() external {
+        require(sequencerDelayLimitDecreaseRequest.timestamp != 0, "No pending sequencer limit decrease request.");
         require(
-            block.timestamp > sequencerLimitDecreaseRequest.timestamp + sequencerLimit,
+            block.timestamp > sequencerDelayLimitDecreaseRequest.timestamp + sequencerDelayLimit,
             "Sequencer limit decrease request is still pending."
         );
 
-        uint256 requestedSequencerLimit = sequencerLimitDecreaseRequest.requestedSequencerLimit;
-        delete sequencerLimitDecreaseRequest;
+        uint256 requestedsequencerDelayLimit = sequencerDelayLimitDecreaseRequest.requestedsequencerDelayLimit;
+        delete sequencerDelayLimitDecreaseRequest;
 
-        (, , uint256 currentSequencerLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
+        (, , uint256 currentsequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
 
         // check the request is still consistent with the arbiturm bridge
-        if (currentSequencerLimit == requestedSequencerLimit) {
-            sequencerLimit = requestedSequencerLimit;
-            emit SequencerLimitUpdated(requestedSequencerLimit);
+        if (currentsequencerDelayLimit == requestedsequencerDelayLimit) {
+            sequencerDelayLimit = requestedsequencerDelayLimit;
+            emit sequencerDelayLimitUpdated(requestedsequencerDelayLimit);
         }
     }
 
@@ -202,11 +205,11 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
 
         unchecked {
             require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
-            // Note: block.timestamp should be much larger than sequencerLimit, but we check in case Arbiturm governance updated this value.
-            if (block.timestamp > sequencerLimit) {
-                // Allow claims to be made within the sequencerLimit.
+            // Note: block.timestamp should be much larger than sequencerDelayLimit, but we check in case Arbiturm governance updated this value.
+            if (block.timestamp > sequencerDelayLimit) {
+                // Allow claims to be made within the sequencerDelayLimit.
                 // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
-                require(_epoch + 1 >= (block.timestamp - sequencerLimit) / epochPeriod, "Epoch is too old.");
+                require(_epoch + 1 >= (block.timestamp - sequencerDelayLimit) / epochPeriod, "Epoch is too old.");
             }
         }
 
@@ -261,10 +264,10 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     function startVerification(uint256 _epoch, Claim memory _claim) external virtual {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
 
-        // sequencerLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.
-        // using checked arithmetic incase arbitrum governance sets sequencerLimit to a large value
+        // sequencerDelayLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.
+        // using checked arithmetic incase arbitrum governance sets sequencerDelayLimit to a large value
         require(
-            block.timestamp >= _claim.timestampClaimed + sequencerLimit + epochPeriod,
+            block.timestamp >= _claim.timestampClaimed + sequencerDelayLimit + epochPeriod,
             "Claim must wait atleast maxL2StateSyncDelay."
         );
 

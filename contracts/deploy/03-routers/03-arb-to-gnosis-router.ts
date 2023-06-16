@@ -11,11 +11,11 @@ enum RouterChains {
 const paramsByChainId = {
   ETHEREUM_MAINNET: {
     arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
-    amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
+    amb: "0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e",
   },
   ETHEREUM_GOERLI: {
     arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    amb: "0x87A19d769D875964E9Cd41dDBfc397B2543764E6",
   },
   HARDHAT: {
     arbitrumInbox: ethers.constants.AddressZero,
