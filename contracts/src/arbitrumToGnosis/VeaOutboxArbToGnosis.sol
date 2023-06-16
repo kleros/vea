@@ -28,7 +28,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     address internal constant BURN_ADDRESS = address(0); // Address to send burned eth
     uint256 internal constant SLOT_TIME = 5; // Gnosis 5 second slot time
-    uint256 internal constant RELAY_TIMEOUT = 604800; // 7 days
 
     uint256 public immutable routerChainId; // Router chain id for authentication of messages from the AMB.
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
@@ -44,6 +43,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
 
     uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
+    uint256 public timestampDelayUpdated; // The timestamp of the last sequencer delay update.
 
     enum CensorshipTestStatus {
         Failed,
@@ -153,10 +153,11 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         require(msg.sender == address(amb), "Not from bridge.");
         require(bytes32(routerChainId) == amb.messageSourceChainId(), "Invalid chain id.");
         require(routerArbToGnosis == amb.messageSender(), "Not from router.");
-        require(_timestamp + RELAY_TIMEOUT >= block.timestamp, "Stale message. Timeout exceeded.");
+        require(timestampDelayUpdated < _timestamp, "Message is outdated.");
 
         if (sequencerDelayLimit != _newSequencerDelayLimit) {
             sequencerDelayLimit = _newSequencerDelayLimit;
+            timestampDelayUpdated = _timestamp;
             emit sequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
         }
     }

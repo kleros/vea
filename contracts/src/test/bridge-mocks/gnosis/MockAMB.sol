@@ -3,7 +3,6 @@
 pragma solidity 0.8.18;
 
 import "../../../canonical/gnosis-chain/IAMB.sol";
-import "../../../libraries/gnosis-chain/Bytes.sol";
 
 contract MockAMB is IAMB {
     event MockedEvent(bytes32 indexed messageId, bytes encodedData);

@@ -32,7 +32,7 @@ contract RouterArbToGnosis is IRouterToL1 {
     SequencerDelayLimitDecreaseRequest public sequencerDelayLimitDecreaseRequest; // Decreasing the sequencerDelayLimit requires a delay to avoid griefing by sequencer, so we keep track of the request here.
 
     struct SequencerDelayLimitDecreaseRequest {
-        uint256 requestedsequencerDelayLimit;
+        uint256 requestedSequencerDelayLimit;
         uint256 timestamp;
     }
 
@@ -82,6 +82,7 @@ contract RouterArbToGnosis is IRouterToL1 {
         if (newsequencerDelayLimit > sequencerDelayLimit) {
             // For sequencerDelayLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
             sequencerDelayLimit = newsequencerDelayLimit;
+            sendSequencerDelayLimit();
             emit sequencerDelayLimitUpdated(newsequencerDelayLimit);
         } else if (newsequencerDelayLimit < sequencerDelayLimit) {
             require(
@@ -90,7 +91,7 @@ contract RouterArbToGnosis is IRouterToL1 {
             );
 
             sequencerDelayLimitDecreaseRequest = SequencerDelayLimitDecreaseRequest({
-                requestedsequencerDelayLimit: newsequencerDelayLimit,
+                requestedSequencerDelayLimit: newsequencerDelayLimit,
                 timestamp: block.timestamp
             });
             emit sequencerDelayLimitDecreaseRequested(newsequencerDelayLimit);
@@ -98,27 +99,28 @@ contract RouterArbToGnosis is IRouterToL1 {
     }
 
     /// @dev execute sequencerDelayLimitDecreaseRequest
-    function executesequencerDelayLimitDecreaseRequest() external {
+    function executeSequencerDelayLimitDecreaseRequest() external {
         require(sequencerDelayLimitDecreaseRequest.timestamp != 0, "No pending sequencer limit decrease request.");
         require(
             block.timestamp > sequencerDelayLimitDecreaseRequest.timestamp + sequencerDelayLimit,
             "Sequencer limit decrease request is still pending."
         );
 
-        uint256 requestedsequencerDelayLimit = sequencerDelayLimitDecreaseRequest.requestedsequencerDelayLimit;
+        uint256 requestedSequencerDelayLimit = sequencerDelayLimitDecreaseRequest.requestedSequencerDelayLimit;
         delete sequencerDelayLimitDecreaseRequest;
 
-        (, , uint256 currentsequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
+        (, , uint256 currentSequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
 
         // check the request is still consistent with the arbiturm bridge
-        if (currentsequencerDelayLimit == requestedsequencerDelayLimit) {
-            sequencerDelayLimit = requestedsequencerDelayLimit;
-            emit sequencerDelayLimitUpdated(requestedsequencerDelayLimit);
+        if (currentSequencerDelayLimit == requestedSequencerDelayLimit) {
+            sequencerDelayLimit = requestedSequencerDelayLimit;
+            sendSequencerDelayLimit();
+            emit sequencerDelayLimitUpdated(requestedSequencerDelayLimit);
         }
     }
 
     /// @dev Calculate the maxL2StateSyncDelay by reading from the Arbitrum Bridge
-    function sendSequencerDelayLimit() public {
+    function sendSequencerDelayLimit() internal {
         bytes memory data = abi.encodeCall(
             ISequencerDelayUpdatable.updateSequencerDelayLimit,
             (sequencerDelayLimit, block.timestamp)
