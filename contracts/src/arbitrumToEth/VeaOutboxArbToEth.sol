@@ -174,7 +174,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     }
 
     /// @dev execute sequencerDelayLimitDecreaseRequest
-    function executesequencerDelayLimitDecreaseRequest() external {
+    function executeSequencerDelayLimitDecreaseRequest() external {
         require(sequencerDelayLimitDecreaseRequest.timestamp != 0, "No pending sequencer limit decrease request.");
         require(
             block.timestamp > sequencerDelayLimitDecreaseRequest.timestamp + sequencerDelayLimit,
