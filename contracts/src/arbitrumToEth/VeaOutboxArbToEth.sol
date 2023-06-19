@@ -267,7 +267,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         // sequencerDelayLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.
         // using checked arithmetic incase arbitrum governance sets sequencerDelayLimit to a large value
         require(
-            block.timestamp >= _claim.timestampClaimed + sequencerDelayLimit + epochPeriod,
+            block.timestamp >= uint256(_claim.timestampClaimed) + sequencerDelayLimit + epochPeriod,
             "Claim must wait atleast maxL2StateSyncDelay."
         );
 
