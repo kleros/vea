@@ -33,6 +33,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable minChallengePeriod; // Minimum time window to challenge a claim, even with a malicious sequencer.
 
+    uint256 public immutable maxClaimDelayEpochs; // The maximum number of epochs that can be claimed in the past.
     uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.
     uint256 public immutable maxMissingBlocks; // The maximum number of blocks that can be missing in a challenge period.
 
@@ -84,12 +85,12 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     event Verified(uint256 _epoch);
 
     /// @dev This event indicates the sequencer limit updated.
-    /// @param _newsequencerDelayLimit The new maxL2StateSyncDelay.
-    event sequencerDelayLimitUpdated(uint256 _newsequencerDelayLimit);
+    /// @param _newSequencerDelayLimit The new sequencer delay limit.
+    event sequencerDelayLimitUpdated(uint256 _newSequencerDelayLimit);
 
     /// @dev This event indicates that a request to decrease the sequencer limit has been made.
-    /// @param _requestedsequencerDelayLimit The new sequencer limit requested.
-    event sequencerDelayLimitDecreaseRequested(uint256 _requestedsequencerDelayLimit);
+    /// @param _requestedSequencerDelayLimit The new sequencer delay limit requested.
+    event sequencerDelayLimitDecreaseRequested(uint256 _requestedSequencerDelayLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -117,6 +118,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
     /// @param _veaInboxArbToEth The address of the inbox contract on Arbitrum.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
+    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -124,7 +126,8 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         uint256 _timeoutEpochs,
         address _veaInboxArbToEth,
         address _bridge,
-        uint256 _maxMissingBlocks
+        uint256 _maxMissingBlocks,
+        uint256 _maxClaimDelayEpochs
     ) {
         deposit = _deposit;
         // epochPeriod must match the VeaInboxArbToEth contract deployment epochPeriod value.
@@ -134,8 +137,9 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         veaInboxArbToEth = _veaInboxArbToEth;
         bridge = IBridge(_bridge);
         maxMissingBlocks = _maxMissingBlocks;
+        maxClaimDelayEpochs = _maxClaimDelayEpochs;
 
-        updatesequencerDelayLimit();
+        updateSequencerDelayLimit();
 
         // claimant and challenger are not sybil resistant
         // must burn half deposit to prevent zero cost griefing
@@ -150,26 +154,26 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     // ************************************* //
 
     /// @dev Request to decrease the sequencerDelayLimit.
-    function updatesequencerDelayLimit() public {
+    function updateSequencerDelayLimit() public {
         // the maximum asynchronous lag between the L2 and L1 clocks
-        (, , uint256 newsequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
+        (, , uint256 newSequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
 
-        if (newsequencerDelayLimit > sequencerDelayLimit) {
+        if (newSequencerDelayLimit > sequencerDelayLimit) {
             // For sequencerDelayLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
-            sequencerDelayLimit = newsequencerDelayLimit;
-            emit sequencerDelayLimitUpdated(newsequencerDelayLimit);
-        } else if (newsequencerDelayLimit < sequencerDelayLimit) {
+            sequencerDelayLimit = newSequencerDelayLimit;
+            emit sequencerDelayLimitUpdated(newSequencerDelayLimit);
+        } else if (newSequencerDelayLimit < sequencerDelayLimit) {
             require(
                 sequencerDelayLimitDecreaseRequest.timestamp == 0,
                 "Sequencer limit decrease request already pending."
             );
 
             sequencerDelayLimitDecreaseRequest = SequencerDelayLimitDecreaseRequest({
-                requestedsequencerDelayLimit: newsequencerDelayLimit,
+                requestedsequencerDelayLimit: newSequencerDelayLimit,
                 timestamp: block.timestamp
             });
 
-            emit sequencerDelayLimitDecreaseRequested(newsequencerDelayLimit);
+            emit sequencerDelayLimitDecreaseRequested(newSequencerDelayLimit);
         }
     }
 
@@ -203,15 +207,24 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
 
+        require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
+
+        // Allow claims to be made within the sequencerDelayLimit.
+        // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
+        // If the sequencerDelayLimit is set larger than block.timestamp - epochPeriod by arbitrum governance,
+        // the checked arithmetic will revert due to underflow and the bridge will shutdown.
+        uint256 minEpochSequencerDelay = (block.timestamp - sequencerDelayLimit) / epochPeriod - 1;
+
+        uint256 minEpochClaim;
+
         unchecked {
-            require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
-            // Note: block.timestamp should be much larger than sequencerDelayLimit, but we check in case Arbiturm governance updated this value.
-            if (block.timestamp > sequencerDelayLimit) {
-                // Allow claims to be made within the sequencerDelayLimit.
-                // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
-                require(_epoch + 1 >= (block.timestamp - sequencerDelayLimit) / epochPeriod, "Epoch is too old.");
-            }
+            // deployed sets maxClaimWindowEpochs so no underflow is possible
+            minEpochClaim = block.timestamp / epochPeriod - maxClaimDelayEpochs;
         }
+
+        uint256 minClaimableEpoch = minEpochSequencerDelay > minEpochClaim ? minEpochSequencerDelay : minEpochClaim;
+
+        require(_epoch >= minClaimableEpoch, "Invalid epoch.");
 
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");

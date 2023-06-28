@@ -20,4 +20,17 @@ contract InboxMock is IInbox {
     function bridge() external view returns (IBridge) {
         return arbBridge;
     }
+
+    function createRetryableTicket(
+        address to,
+        uint256 l2CallValue,
+        uint256 maxSubmissionCost,
+        address excessFeeRefundAddress,
+        address callValueRefundAddress,
+        uint256 gasLimit,
+        uint256 maxFeePerGas,
+        bytes calldata data
+    ) external payable returns (uint256) {
+        return 0;
+    }
 }

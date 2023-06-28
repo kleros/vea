@@ -132,28 +132,30 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
     /// @dev Constructor.
     /// @param _deposit The deposit amount to submit a claim in wei.
     /// @param _epochPeriod The duration of each epoch.
-    /// @param _challengePeriod The duration of the period allowing to challenge a claim.
+    /// @param _minChallengePeriod The minimum time window to challenge a claim.
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-    /// @param _veaInboxArbToEthDevnet The address of the devnet vea inbox on Arbitrum to Ethereum.
-    /// @param _bridge The address of the Arbitrum bridge contract on Ethereum.
+    /// @param _veaInboxArbToEthDevnet The address of the inbox contract on Arbitrum.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
+    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
-        uint256 _challengePeriod,
+        uint256 _minChallengePeriod,
         uint256 _timeoutEpochs,
         address _veaInboxArbToEthDevnet,
         address _bridge,
-        uint256 _maxMissingBlocks
+        uint256 _maxMissingBlocks,
+        uint256 _maxClaimDelayEpochs
     )
         VeaOutboxArbToEth(
             _deposit,
             _epochPeriod,
-            _challengePeriod,
+            _minChallengePeriod,
             _timeoutEpochs,
             _veaInboxArbToEthDevnet,
             _bridge,
-            _maxMissingBlocks
+            _maxMissingBlocks,
+            _maxClaimDelayEpochs
         )
     {
         devnetOperator = msg.sender;

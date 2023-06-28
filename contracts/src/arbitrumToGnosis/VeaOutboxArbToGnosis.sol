@@ -11,6 +11,7 @@ pragma solidity 0.8.18;
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 import "../interfaces/updaters/ISequencerDelayUpdatable.sol";
+import "../interfaces/tokens/gnosis/IWETH.sol";
 
 /// @dev Vea Outbox From Arbitrum to Gnosis.
 /// Note: This contract is deployed on Gnosis.
@@ -22,17 +23,18 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     IAMB public immutable amb; // The address of the AMB contract on Gnosis.
     address public immutable routerArbToGnosis; // The address of the router from Arbitrum to Gnosis on ethereum.
 
+    IWETH public immutable weth; // The address of the WETH contract on Gnosis.
     uint256 public immutable deposit; // The deposit in wei required to submit a claim or challenge
     uint256 internal immutable burn; // The amount of wei to burn. deposit / 2
     uint256 internal immutable depositPlusReward; // 2 * deposit - burn
 
-    address internal constant BURN_ADDRESS = address(0); // Address to send burned eth
     uint256 internal constant SLOT_TIME = 5; // Gnosis 5 second slot time
 
-    uint256 public immutable routerChainId; // Router chain id for authentication of messages from the AMB.
+    uint256 internal immutable routerChainId; // Router chain id for authentication of messages from the AMB.
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable minChallengePeriod; // Minimum time window to challenge a claim, even with a malicious sequencer.
 
+    uint256 public immutable maxClaimDelayEpochs; // The maximum number of epochs that can be claimed in the past.
     uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.
     uint256 public immutable maxMissingBlocks; // The maximum number of blocks that can be missing in a challenge period.
 
@@ -79,8 +81,8 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     event Verified(uint256 _epoch);
 
     /// @dev This event indicates the sequencer limit updated.
-    /// @param _newsequencerDelayLimit The new maxL2StateSyncDelay.
-    event sequencerDelayLimitUpdateReceived(uint256 _newsequencerDelayLimit);
+    /// @param _newSequencerDelayLimit The new sequencer delay limit.
+    event sequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -111,6 +113,8 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _sequencerDelayLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
     /// @param _routerChainId The chain id of the routerArbToGnosis.
+    /// @param _weth The address of the WETH contract on Gnosis.
+    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -120,7 +124,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         address _routerArbToGnosis,
         uint256 _sequencerDelayLimit,
         uint256 _maxMissingBlocks,
-        uint256 _routerChainId
+        uint256 _routerChainId,
+        IWETH _weth,
+        uint256 _maxClaimDelayEpochs
     ) {
         deposit = _deposit;
         // epochPeriod must match the VeaInboxArbToGnosis contract deployment epochPeriod value.
@@ -129,10 +135,12 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         minChallengePeriod = _minChallengePeriod;
         amb = _amb;
         routerArbToGnosis = _routerArbToGnosis;
-        maxMissingBlocks = _maxMissingBlocks;
-        routerChainId = _routerChainId;
         // This value is on another chain, so we can't read it, we trust the deployer to set a correct value.
         sequencerDelayLimit = _sequencerDelayLimit; // MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox
+        maxMissingBlocks = _maxMissingBlocks;
+        routerChainId = _routerChainId;
+        weth = _weth;
+        maxClaimDelayEpochs = _maxClaimDelayEpochs;
 
         // claimant and challenger are not sybil resistant
         // must burn half deposit to prevent zero cost griefing
@@ -146,7 +154,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     // *        Parameter Updates          * //
     // ************************************* //
 
-    /// @dev Set the maxL2StateSyncDelay by reading from the Arbitrum Bridge
+    /// @dev Set the sequencerDelayLimit by receiving a message from the AMB.
     /// @param _newSequencerDelayLimit The delaySeconds from the MaxTimeVariation struct in the Arbitrum Sequencer contract.
     /// @param _timestamp The timestamp of the message.
     function updateSequencerDelayLimit(uint256 _newSequencerDelayLimit, uint256 _timestamp) external {
@@ -156,6 +164,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         require(timestampDelayUpdated < _timestamp, "Message is outdated.");
 
         if (sequencerDelayLimit != _newSequencerDelayLimit) {
+            // If _newSequencerDelayLimit > timeout * epochPeriod, then the bridge will shutdown.
             sequencerDelayLimit = _newSequencerDelayLimit;
             timestampDelayUpdated = _timestamp;
             emit sequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
@@ -169,18 +178,27 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
     /// @param _epoch The epoch for which the claim is made.
     /// @param _stateRoot The state root to claim.
-    function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
-        require(msg.value >= deposit, "Insufficient claim deposit.");
+    function claim(uint256 _epoch, bytes32 _stateRoot) external virtual {
+        require(weth.transferFrom(msg.sender, address(this), deposit), "Failed WETH transfer.");
+
+        require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
+
+        // Allow claims to be made within the sequencerDelayLimit.
+        // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
+        // If the sequencerDelayLimit is set larger than block.timestamp - epochPeriod by arbitrum governance,
+        // the checked arithmetic will revert due to underflow and the bridge will shutdown.
+        uint256 minEpochSequencerDelay = (block.timestamp - sequencerDelayLimit) / epochPeriod - 1;
+
+        uint256 minEpochClaim;
 
         unchecked {
-            require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
-            // Note: block.timestamp should be much larger than sequencerDelayLimit, but we check in case Arbiturm governance updated this value.
-            if (block.timestamp > sequencerDelayLimit) {
-                // Allow claims to be made within the sequencerDelayLimit.
-                // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
-                require(_epoch + 1 >= (block.timestamp - sequencerDelayLimit) / epochPeriod, "Epoch is too old.");
-            }
+            // deployer sets maxClaimDelayEpochs so no underflow is possible
+            minEpochClaim = block.timestamp / epochPeriod - maxClaimDelayEpochs;
         }
+
+        uint256 minClaimableEpoch = minEpochSequencerDelay > minEpochClaim ? minEpochSequencerDelay : minEpochClaim;
+
+        require(_epoch >= minClaimableEpoch, "Invalid epoch.");
 
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
@@ -198,20 +216,15 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         );
 
         emit Claimed(msg.sender, _stateRoot);
-
-        // Refund overpayment.
-        if (msg.value > deposit) {
-            uint256 refund = msg.value - deposit;
-            payable(msg.sender).send(refund); // User is responsible for accepting ETH.
-        }
     }
 
     /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
     /// @param _epoch The epoch of the claim to challenge.
     /// @param _claim The claim associated with the epoch.
     function challenge(uint256 _epoch, Claim memory _claim) external payable {
+        require(weth.transferFrom(msg.sender, address(this), deposit), "Failed WETH transfer.");
+
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
-        require(msg.value >= deposit, "Insufficient challenge deposit.");
         require(_claim.challenger == address(0), "Claim already challenged.");
         require(_claim.honest == Party.None, "Claim already verified.");
 
@@ -219,12 +232,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         claimHashes[_epoch] = hashClaim(_claim);
 
         emit Challenged(_epoch, msg.sender);
-
-        // Refund overpayment.
-        if (msg.value > deposit) {
-            uint256 refund = msg.value - deposit;
-            payable(msg.sender).send(refund); // User is responsible for accepting ETH.
-        }
     }
 
     /// @dev Start verification for claim for 'epoch'.
@@ -236,14 +243,14 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         // sequencerDelayLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.
         // using checked arithmetic incase arbitrum governance sets sequencerDelayLimit to a large value
         require(
-            block.timestamp >= uint256(_claim.timestampClaimed) + sequencerDelayLimit + epochPeriod,
+            block.timestamp - uint256(_claim.timestampClaimed) >= sequencerDelayLimit + epochPeriod,
             "Claim must wait atleast maxL2StateSyncDelay."
         );
 
-        CensorshipTestStatus censorshipTestStatus = censorshipTestStatus(_claim);
+        CensorshipTestStatus _censorshipTestStatus = censorshipTestStatus(_claim);
         require(
-            censorshipTestStatus == CensorshipTestStatus.NotStarted ||
-                censorshipTestStatus == CensorshipTestStatus.Failed,
+            _censorshipTestStatus == CensorshipTestStatus.NotStarted ||
+                _censorshipTestStatus == CensorshipTestStatus.Failed,
             "Claim verification in progress or already completed."
         );
 
@@ -378,10 +385,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         delete claimHashes[_epoch];
 
         if (_claim.challenger != address(0)) {
-            payable(BURN_ADDRESS).send(burn);
-            payable(_claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.
+            weth.burn(burn); // no return value to check
+            require(weth.transfer(_claim.claimer, depositPlusReward), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
         } else {
-            payable(_claim.claimer).send(deposit); // User is responsible for accepting ETH.
+            require(weth.transfer(_claim.claimer, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
         }
     }
 
@@ -394,8 +401,8 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
         delete claimHashes[_epoch];
 
-        payable(BURN_ADDRESS).send(burn); // half burnt
-        payable(_claim.challenger).send(depositPlusReward); // User is responsible for accepting ETH.
+        weth.burn(burn); // no return value to check
+        require(weth.transfer(_claim.challenger, depositPlusReward), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
     }
 
     /// @dev When bridge is shutdown, no claim disputes can be resolved. This allows the claimer to withdraw their deposit.
@@ -408,12 +415,12 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         if (_claim.claimer != address(0)) {
             if (_claim.challenger == address(0)) {
                 delete claimHashes[_epoch];
-                payable(_claim.claimer).send(deposit); // User is responsible for accepting ETH.
+                require(weth.transfer(_claim.claimer, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             } else {
                 address claimer = _claim.claimer;
                 _claim.claimer = address(0);
                 claimHashes[_epoch] == hashClaim(_claim);
-                payable(claimer).send(deposit); // User is responsible for accepting ETH.
+                require(weth.transfer(claimer, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             }
         }
     }
@@ -428,12 +435,12 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         if (_claim.challenger != address(0)) {
             if (_claim.claimer == address(0)) {
                 delete claimHashes[_epoch];
-                payable(_claim.challenger).send(deposit); // User is responsible for accepting ETH.
+                require(weth.transfer(_claim.challenger, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             } else {
                 address challenger = _claim.challenger;
                 _claim.challenger = address(0);
                 claimHashes[_epoch] == hashClaim(_claim);
-                payable(challenger).send(deposit); // User is responsible for accepting ETH.
+                require(weth.transfer(challenger, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             }
         }
     }

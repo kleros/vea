@@ -22,4 +22,9 @@ contract BridgeMock is IBridge {
     function activeOutbox() external view returns (address _outbox) {
         return address(outbox);
     }
+
+    function allowedDelayedInboxList(uint256 index) external returns (address) {
+        if (index == 0) return sequencerInbox;
+        return address(0);
+    }
 }

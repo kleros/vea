@@ -11,27 +11,27 @@ enum ReceiverChains {
 
 const paramsByChainId = {
   GNOSIS_CHIADO: {
-    deposit: parseEther("0.001"),
-    epochPeriod: 1800, // 60 min
-    claimDelay: 0, // Assume no sequencer backdating
+    deposit: parseEther("0.1"),
+    epochPeriod: 1800, // 30 min
     minChallengePeriod: 0, // 30 min
     numEpochTimeout: 10000000000000, // never
-    maxMissingBlocks: 10000000000000,
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    sequencerLimit: 86400,
+    maxMissingBlocks: 10000000000000,
     routerChainId: 5,
-    sequencerLimit: 86400, // 24 hours
+    WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
+    maxClaimDelayEpochs: 3,
   },
   HARDHAT: {
-    deposit: parseEther("5"), // 120 xDAI budget for timeout
-    // Average happy path wait time is 22.5 mins, assume no censorship
+    deposit: parseEther("1"),
+    epochPeriod: 1800, // 30 min
     minChallengePeriod: 600, // 15 min
-    challengePeriod: 600, // 15 min (assume no sequencer backdating)
     numEpochTimeout: 24, // 6 hours
-    claimDelay: 2,
     amb: ethers.constants.AddressZero,
+    sequencerLimit: 0,
     maxMissingBlocks: 10000000000000,
     routerChainId: 31337,
-    sequencerLimit: 86400, // 24 hours
+    WETH: ethers.constants.AddressZero,
   },
 };
 
@@ -61,10 +61,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     routerChainId,
     minChallengePeriod,
     numEpochTimeout,
-    claimDelay,
     amb,
     maxMissingBlocks,
     sequencerLimit,
+    WETH,
+    maxClaimDelayEpochs,
   } = paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -90,6 +91,8 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         sequencerLimit,
         maxMissingBlocks,
         routerChainId,
+        WETH,
+        maxClaimDelayEpochs,
       ],
       log: true,
     });
@@ -123,6 +126,8 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         sequencerLimit,
         maxMissingBlocks,
         routerChainId,
+        WETH,
+        maxClaimDelayEpochs,
       ],
       log: true,
       ...gasOptions,

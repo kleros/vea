@@ -12,22 +12,24 @@ enum ReceiverChains {
 
 const paramsByChainId = {
   ETHEREUM_MAINNET: {
-    deposit: parseEther("10"), // ~2000 ETH budget, enough for 8 days of challenges
-    // bridging speed is 28 - 29 hours.
-    epochPeriod: 3600, // 1 hours
+    deposit: parseEther("12"), // ~1100 ETH budget, enough for 8 days of challenges
+    // bridging speed is 29 - 31 hours.
+    epochPeriod: 7200, // 2 hours
     minChallengePeriod: 10800, // 3 hours
-    numEpochTimeout: 504, // 21 days
+    numEpochTimeout: 252, // 21 days
     maxMissingBlocks: 49, // 49 in 900 slots, assumes 10% non-censoring validators
-    arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
+    arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses,
+    maxClaimDelayEpochs: 3,
   },
   ETHEREUM_GOERLI: {
-    deposit: parseEther("1"), // ~200 ETH budget to start, enough for 8 days of challenges
-    // bridging speed is 27 - 28 hours.
-    epochPeriod: 3600, // 1 hours
+    deposit: parseEther("1"), // ~100 ETH budget to start, enough for 8 days of challenges
+    // bridging speed is 29 - 31 hours.
+    epochPeriod: 7200, // 2 hours
     minChallengePeriod: 10800, // 3 hours
     numEpochTimeout: 1000000, // never
     maxMissingBlocks: 1000000, // any, goerli network performance is poor, so can't use the censorship test well
     arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
+    maxClaimDelayEpochs: 3,
   },
   HARDHAT: {
     deposit: parseEther("10"),
@@ -36,6 +38,7 @@ const paramsByChainId = {
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10,
     arbitrumBridge: ethers.constants.AddressZero,
+    maxClaimDelayEpochs: 3,
   },
 };
 
@@ -55,8 +58,15 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, minChallengePeriod, numEpochTimeout, claimDelay, maxMissingBlocks, arbitrumBridge } =
-    paramsByChainId[ReceiverChains[chainId]];
+  const {
+    deposit,
+    epochPeriod,
+    minChallengePeriod,
+    numEpochTimeout,
+    maxMissingBlocks,
+    arbitrumBridge,
+    maxClaimDelayEpochs,
+  } = paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
   // TODO: use deterministic deployments
@@ -104,6 +114,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         veaInboxAddress,
         bridge.address,
         maxMissingBlocks,
+        maxClaimDelayEpochs,
       ],
       log: true,
     });
@@ -138,6 +149,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
           veaInboxAddress,
           arbitrumBridge,
           maxMissingBlocks,
+          maxClaimDelayEpochs,
         ],
         log: true,
       });

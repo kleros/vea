@@ -10,4 +10,6 @@ interface IBridge {
     function activeOutbox() external view returns (address);
 
     function sequencerInbox() external view returns (address);
+
+    function allowedDelayedInboxList(uint256) external returns (address);
 }

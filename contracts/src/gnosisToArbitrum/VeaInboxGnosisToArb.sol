@@ -8,22 +8,21 @@
 
 pragma solidity 0.8.18;
 
-import "../canonical/arbitrum/IArbSys.sol";
+import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/inboxes/IVeaInbox.sol";
-import "../interfaces/routers/IRouterToGnosis.sol";
+import "../interfaces/routers/IRouterToArb.sol";
 
-/// @dev Vea Inbox From Arbitrum to Gnosis.
-/// Note: This contract is deployed on the Arbitrum.
-contract VeaInboxArbToGnosis is IVeaInbox {
+/// @dev Vea Inbox From Gnosis to Arbitrum.
+/// Note: This contract is deployed on the Gnosis.
+contract VeaInboxGnosisToArb is IVeaInbox {
     // ************************************* //
     // *             Storage               * //
     // ************************************* //
 
-    // Arbitrum precompile ArbSys for L2->L1 messaging: https://developer.arbitrum.io/arbos/precompiles#arbsys
-    IArbSys internal constant ARB_SYS = IArbSys(address(100));
+    IAMB public immutable amb; // The address of the AMB contract on Gnosis.
 
-    uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
-    address public immutable routerArbToGnosis; // The router on ethereum.
+    uint256 public immutable epochPeriod; // Epochs mark the period between stateroot snapshots
+    address public immutable routerGnosisToArb; // The router on Ethereum.
 
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
 
@@ -37,15 +36,13 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     // *              Events               * //
     // ************************************* //
 
-    /// @dev Relayers watch for these events to construct merkle proofs to execute transactions on Gnosis.
-    /// @param _nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message).
+    /// @dev Relayers watch for these events to construct merkle proofs to execute transactions on Ethereum.
+    /// @param _nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)
     event MessageSent(bytes _nodeData);
 
     /// The bridgers can watch this event to claim the stateRoot on the veaOutbox.
-    /// @param _snapshot The snapshot of the merkle tree state root.
-    /// @param _epoch The epoch of the snapshot.
     /// @param _count The count of messages in the merkle tree.
-    event SnapshotSaved(bytes32 _snapshot, uint256 _epoch, uint64 _count);
+    event SnapshotSaved(uint64 _count);
 
     /// @dev The event is emitted when a snapshot is sent through the canonical arbitrum bridge.
     /// @param _epochSent The epoch of the snapshot.
@@ -53,12 +50,14 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     event SnapshotSent(uint256 indexed _epochSent, bytes32 _ticketId);
 
     /// @dev Constructor.
-    /// Note: epochPeriod must match the VeaOutboxArbToGnosis contract deployment on Gnosis, since it's on a different chain, we can't read it and trust the deployer to set a correct value
+    /// Note: epochPeriod must match the VeaOutboxGnosisToArb contract deployment on Gnosis, since it's on a different chain, we can't read it and trust the deployer to set a correct value
     /// @param _epochPeriod The duration in seconds between epochs.
-    /// @param _routerArbToGnosis The router on Ethereum that routes from Arbitrum to Gnosis.
-    constructor(uint256 _epochPeriod, address _routerArbToGnosis) {
+    /// @param _routerGnosisToArb The router on Ethereum that routes from Gnosis to Arbitrum.
+    /// @param _amb The address of the AMB contract on Gnosis.
+    constructor(uint256 _epochPeriod, address _routerGnosisToArb, IAMB _amb) {
         epochPeriod = _epochPeriod;
-        routerArbToGnosis = _routerArbToGnosis;
+        routerGnosisToArb = _routerGnosisToArb;
+        amb = _amb;
     }
 
     // ************************************* //
@@ -68,7 +67,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     /// @dev Sends an arbitrary message to Gnosis.
     ///      `O(log(count))` where count is the number of messages already sent.
     ///      Amortized cost is constant.
-    /// Note: See docs for details how inbox manages merkle tree state.
+    /// Note: See merkle tree documentation for details how inbox manages state.
     /// @param _to The address of the contract on the receiving chain which receives the calldata.
     /// @param _fnSelector The function selector of the receiving contract.
     /// @param _data The message calldata, abi.encode(param1, param2, ...)
@@ -83,8 +82,8 @@ contract VeaInboxArbToGnosis is IVeaInbox {
         bytes memory nodeData = abi.encodePacked(
             oldCount,
             _to,
-            // _data is abi.encode(param1, param2, ...), we need to encode it again to get the correct leaf data
-            abi.encodePacked( // equivalent to abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
+            // data for outbox relay
+            abi.encodePacked( // abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...) where _data is abi.encode(param1, param2, ...)
                 _fnSelector,
                 bytes32(uint256(uint160(msg.sender))), // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
                 _data
@@ -172,7 +171,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
         snapshots[epoch] = stateRoot;
 
-        emit SnapshotSaved(stateRoot, epoch, count);
+        emit SnapshotSaved(count);
     }
 
     /// @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing a pair of children nodes, left and right.
@@ -200,37 +199,38 @@ contract VeaInboxArbToGnosis is IVeaInbox {
 
     /// @dev Sends the state root snapshot using Arbitrum's canonical bridge.
     /// @param _epoch The epoch of the snapshot requested to send.
-    /// @param _gasLimit The gas limit for the AMB transaction on Gnosis.
-    /// @param _claim The claim associated with the epoch.
-    function sendSnapshot(uint256 _epoch, uint256 _gasLimit, Claim memory _claim) external virtual {
+    /// @param _inboxIndex The index of the inbox in the Arbitrum bridge contract.
+    /// @param _maxSubmissionCost Max gas deducted from user's L2 balance to cover base submission fee
+    /// @param _excessFeeRefundAddress Address to refund any excess fee to
+    /// @param _gasLimit Max gas deducted from user's L2 balance to cover L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
+    /// @param _maxFeePerGas price bid for L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
+    function sendSnapshot(
+        uint256 _epoch,
+        uint256 _inboxIndex,
+        uint256 _maxSubmissionCost,
+        address _excessFeeRefundAddress,
+        uint256 _gasLimit,
+        uint256 _maxFeePerGas
+    ) external virtual returns (bytes32 ticketID) {
         unchecked {
             require(_epoch < block.timestamp / epochPeriod, "Can only send past epoch snapshot.");
         }
 
-        bytes memory data = abi.encodeCall(IRouterToGnosis.route, (_epoch, snapshots[_epoch], _gasLimit, _claim));
-
-        // Arbitrum -> Ethereum message with native bridge
-        // docs: https://developer.arbitrum.io/for-devs/cross-chain-messsaging#arbitrum-to-ethereum-messaging
-        // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/arbitrum/GreeterL2.sol#L25
-        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));
+        bytes memory data = abi.encodeCall(
+            IRouterToArb.route,
+            (
+                _epoch,
+                snapshots[_epoch],
+                _inboxIndex,
+                _maxSubmissionCost,
+                _excessFeeRefundAddress,
+                _gasLimit,
+                _maxFeePerGas
+            )
+        );
+        // Note: using maxGasPerTx here means the relaying txn on Gnosis will need to pass that (large) amount of gas, though almost all will be unused and refunded. This is preferred over hardcoding a gas limit.
+        ticketID = amb.requireToPassMessage(routerGnosisToArb, data, amb.maxGasPerTx());
 
         emit SnapshotSent(_epoch, ticketID);
-    }
-
-    // ************************************* //
-    // *           Pure / Views            * //
-    // ************************************* //
-
-    /// @dev Get the current epoch from the inbox's point of view using the Arbitrum L2 clock.
-    /// @return epoch The epoch associated with the current inbox block.timestamp
-    function epochNow() external view returns (uint256 epoch) {
-        epoch = block.timestamp / epochPeriod;
-    }
-
-    /// @dev Get the epoch from the inbox's point of view using timestamp.
-    /// @param _timestamp The timestamp to calculate the epoch from.
-    /// @return epoch The calculated epoch.
-    function epochAt(uint256 _timestamp) external view returns (uint256 epoch) {
-        epoch = _timestamp / epochPeriod;
     }
 }

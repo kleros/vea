@@ -5,50 +5,35 @@ import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
 
 enum ReceiverChains {
-  GNOSIS_MAINNET = 100,
-  GNOSIS_CHIADO = 10200,
+  ARBITRUM_GOERLI = 421613,
   HARDHAT = 31337,
 }
 
 const paramsByChainId = {
-  GNOSIS_MAINNET: {
-    deposit: parseEther("4"), // ~400 WETH budget to start, enough for 8 days of challenges
-    // bridging speed is 29 - 31 hours.
-    epochPeriod: 7200, // 2 hours
-    minChallengePeriod: 10800, // 3 hours
-    numEpochTimeout: 168, // 14 days
-    maxMissingBlocks: 345, // 345 in 2160 slots, assumes 20% non-censoring validators
-    routerChainId: 1,
-    amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
-    WETH: "0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1",
-    maxClaimDelayEpochs: 3,
-    sequencerLimit: 86400, // 24 hours
-  },
-  GNOSIS_CHIADO: {
-    deposit: parseEther("0.2"), // ~20 WETH budget to start, enough for 8 days of challenges
-    // bridging speed is 29 - 31 hours.
-    epochPeriod: 7200, // 2 hours
-    minChallengePeriod: 10800, // 3 hours
-    numEpochTimeout: 1000000, // never
-    maxMissingBlocks: 1000000, // any
+  ARBITRUM_GOERLI: {
+    deposit: parseEther("0.1"),
+    epochPeriod: 1800, // 30 min
+    challengePeriod: 0, // 30 min
+    numEpochTimeout: 10000000000000, // never
+    sequencerDelayLimit: 86400,
+    sequencerFutureLimit: 3600,
+    maxMissingBlocks: 10000000000000,
     routerChainId: 5,
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
-    WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
-    maxClaimDelayEpochs: 3,
-    sequencerLimit: 86400, // 24 hours
+    maxClaimDelayEpochs: 100,
+    maxClaimFutureEpochs: 100,
   },
   HARDHAT: {
-    deposit: parseEther("5"), // 120 xDAI budget for timeout
-    // Average happy path wait time is 22.5 mins, assume no censorship
-    epochPeriod: 600, // 15 min
-    challengePeriod: 600, // 15 min (assume no sequencer backdating)
+    deposit: parseEther("1"),
+    epochPeriod: 1800, // 30 min
+    challengePeriod: 600, // 15 min
     numEpochTimeout: 24, // 6 hours
-    claimDelay: 2,
     amb: ethers.constants.AddressZero,
-    routerAddress: ethers.constants.AddressZero,
+    sequencerDelayLimit: 86400,
+    sequencerFutureLimit: 3600,
     maxMissingBlocks: 10000000000000,
     routerChainId: 31337,
-    sequencerLimit: 86400, // 24 hours
+    maxClaimDelayEpochs: 100,
+    maxClaimFutureEpochs: 100,
   },
 };
 
@@ -63,28 +48,24 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const senderNetworks = {
-    GNOSIS_MAINNET: config.networks.arbitrum,
-    GNOSIS_CHIADO: config.networks.arbitrumGoerli,
+    ARBITRUM_GOERLI: config.networks.chiado,
     HARDHAT: config.networks.localhost,
   };
 
   const routerNetworks = {
-    GNOSIS_MAINNET: config.networks.mainnet,
-    GNOSIS_CHIADO: config.networks.goerli,
+    ARBITRUM_GOERLI: config.networks.goerli,
     HARDHAT: config.networks.localhost,
   };
 
   const {
     deposit,
     epochPeriod,
-    routerChainId,
-    minChallengePeriod,
+    challengePeriod,
     numEpochTimeout,
-    amb,
-    maxMissingBlocks,
-    sequencerLimit,
-    WETH,
+    sequencerDelayLimit,
+    sequencerFutureLimit,
     maxClaimDelayEpochs,
+    maxClaimFutureEpochs,
   } = paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -93,17 +74,19 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
     let nonce = await ethers.provider.getTransactionCount(deployer);
-    nonce += 4; // SenderGatewayToEthereum deploy tx will be the 5th after this, same network for both sender/receiver.
+    nonce += 3; // SenderGatewayToEthereum deploy tx will be the 5th after this, same network for both sender/receiver.
 
-    const routerAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
+    const veaInboxAddress = getContractAddress(deployer, nonce);
+    console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
+    // TODO outbox mock
+    /*
     await deploy("VeaOutboxGnosisMock", {
       from: deployer,
       args: [
         deposit,
         epochPeriod,
-        minChallengePeriod,
+        challengePeriod,
         numEpochTimeout,
         amb,
         ethers.constants.AddressZero,
@@ -111,47 +94,47 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         maxMissingBlocks,
         routerChainId,
         WETH,
-        maxClaimDelayEpochs,
+        maxClaimDelayEpochs
       ],
       log: true,
     });
+    */
   };
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
+    const gasOptions = {
+      maxFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+      maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+    };
+
     const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
     const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
     let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
 
-    const veaInboxAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
-
     const routerAddress = getContractAddress(deployer, nonceRouter);
     console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
 
-    const txn = await deploy("VeaOutboxArbToGnosis" + (chainId === 100 ? "" : "Testnet"), {
-      contract: "VeaOutboxArbToGnosis",
+    const txn = await deploy("VeaOutboxGnosisToArbDevnet", {
       from: deployer,
       args: [
         deposit,
         epochPeriod,
-        minChallengePeriod,
+        challengePeriod,
         numEpochTimeout,
-        amb,
         routerAddress,
-        sequencerLimit,
-        maxMissingBlocks,
-        routerChainId,
-        WETH,
+        sequencerDelayLimit,
+        sequencerFutureLimit,
         maxClaimDelayEpochs,
+        maxClaimFutureEpochs,
       ],
       log: true,
-      gasPrice: ethers.utils.parseUnits("1", "gwei"), // chiado rpc response underprices gas
+      ...gasOptions,
     });
 
-    console.log("VeaOutboxArbToGnosis deployed to:", txn.address);
+    console.log("VeaOutboxGnosisToArbDevnet deployed to:", txn.address);
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -162,7 +145,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deployOutbox.tags = ["ArbToGnosisOutbox"];
+deployOutbox.tags = ["ChiadoToArbGoerliOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
