@@ -21,7 +21,6 @@ const paramsByChainId = {
     routerChainId: 1,
     amb: "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
     WETH: "0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1",
-    maxClaimDelayEpochs: 3,
     sequencerLimit: 86400, // 24 hours
   },
   GNOSIS_CHIADO: {
@@ -34,7 +33,6 @@ const paramsByChainId = {
     routerChainId: 5,
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
     WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
-    maxClaimDelayEpochs: 3,
     sequencerLimit: 86400, // 24 hours
   },
   HARDHAT: {
@@ -84,7 +82,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     maxMissingBlocks,
     sequencerLimit,
     WETH,
-    maxClaimDelayEpochs,
   } = paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -111,7 +108,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         maxMissingBlocks,
         routerChainId,
         WETH,
-        maxClaimDelayEpochs,
       ],
       log: true,
     });
@@ -145,7 +141,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         maxMissingBlocks,
         routerChainId,
         WETH,
-        maxClaimDelayEpochs,
       ],
       log: true,
       gasPrice: ethers.utils.parseUnits("1", "gwei"), // chiado rpc response underprices gas

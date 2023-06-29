@@ -29,8 +29,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable challengePeriod; // Claim challenge timewindow.
     uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.
-    uint256 public immutable maxClaimDelayEpochs; // The maximum number of epochs that can be claimed in the past.
-    uint256 public immutable maxClaimFutureEpochs; // The maximum number of epochs that can be claimed in the future.
 
     uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
     uint256 public sequencerFutureLimit; // This is MaxTimeVariation.futureSeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can futuredate L2 txns relative to the L1 clock.
@@ -61,10 +59,11 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     // *              Events               * //
     // ************************************* //
 
-    /// @dev Watcher check this event to challenge fraud.
+    /// @dev Watchers check this event to challenge fraud.
     /// @param _claimer The address of the claimer.
+    /// @param _epoch The epoch associated with the claim.
     /// @param _stateRoot The state root of the claim.
-    event Claimed(address indexed _claimer, bytes32 _stateRoot);
+    event Claimed(address indexed _claimer, uint256 _epoch, bytes32 _stateRoot);
 
     /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
     /// @param _epoch The epoch associated with the challenged claim.
@@ -110,8 +109,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @param _routerGnosisToArb The address of the router on Ethereum that routes from Arbitrum to Ethereum.
     /// @param _sequencerDelayLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.
     /// @param _sequencerFutureLimit The maximum delay in seconds that the Arbitrum sequencer can futuredate transactions.
-    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
-    /// @param _maxClaimFutureEpochs The maximum number of epochs that can be claimed in the future.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -119,9 +116,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         uint256 _timeoutEpochs,
         address _routerGnosisToArb,
         uint256 _sequencerDelayLimit,
-        uint256 _sequencerFutureLimit,
-        uint256 _maxClaimDelayEpochs,
-        uint256 _maxClaimFutureEpochs
+        uint256 _sequencerFutureLimit
     ) {
         deposit = _deposit;
         epochPeriod = _epochPeriod;
@@ -130,8 +125,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         routerGnosisToArb = _routerGnosisToArb;
         sequencerDelayLimit = _sequencerDelayLimit;
         sequencerFutureLimit = _sequencerFutureLimit;
-        maxClaimDelayEpochs = _maxClaimDelayEpochs;
-        maxClaimFutureEpochs = _maxClaimFutureEpochs;
 
         // claimant and challenger are not sybil resistant
         // must burn half deposit to prevent zero cost griefing
@@ -192,22 +185,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
-
-        uint256 epochMaxClaimableCalculated = (block.timestamp + sequencerDelayLimit) / epochPeriod + 1;
-        uint256 epochMaxClaimableCap = block.timestamp / epochPeriod + maxClaimFutureEpochs;
-        uint256 epochMaxClaimable = epochMaxClaimableCalculated < epochMaxClaimableCap
-            ? epochMaxClaimableCalculated
-            : epochMaxClaimableCap;
-
-        require(_epoch <= epochMaxClaimable, "Epoch is invalid.");
-
-        uint256 epochMinClaimableCalculated = (block.timestamp - sequencerFutureLimit) / epochPeriod - 1;
-        uint256 epochMinClaimableCap = block.timestamp / epochPeriod - maxClaimDelayEpochs;
-        uint256 epochMinClaimable = epochMinClaimableCalculated > epochMinClaimableCap
-            ? epochMinClaimableCap
-            : epochMinClaimableCap;
-
-        require(_epoch >= epochMinClaimable, "Epoch is invalid.");
+        require(_epoch == block.timestamp / epochPeriod - 1, "Epoch is invalid.");
 
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claims[_epoch].claimer == address(0), "Claim already made.");
@@ -219,7 +197,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
             honest: Party.None
         });
 
-        emit Claimed(msg.sender, _stateRoot);
+        emit Claimed(msg.sender, _epoch, _stateRoot);
 
         // Refund overpayment.
         if (msg.value > deposit) {

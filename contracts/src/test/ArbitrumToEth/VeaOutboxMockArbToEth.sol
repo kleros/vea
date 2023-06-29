@@ -54,7 +54,6 @@ contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
     /// @param _veaInboxArbToEth The address of the inbox contract on Arbitrum.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
-    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
     constructor(
         IArbSys _arbSys,
         uint256 _deposit,
@@ -63,8 +62,7 @@ contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
         uint256 _timeoutEpochs,
         address _veaInboxArbToEth,
         address _bridge,
-        uint256 _maxMissingBlocks,
-        uint256 _maxClaimDelayEpochs
+        uint256 _maxMissingBlocks
     )
         VeaOutboxArbToEth(
             _deposit,
@@ -73,8 +71,7 @@ contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
             _timeoutEpochs,
             _veaInboxArbToEth,
             _bridge,
-            _maxMissingBlocks,
-            _maxClaimDelayEpochs
+            _maxMissingBlocks
         )
     {
         arbSys = _arbSys;

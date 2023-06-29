@@ -34,23 +34,6 @@ contract VeaOutboxGnosisToArbDevnet is VeaOutboxGnosisToArb {
     /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) public payable override onlyByDevnetOperator {
         require(msg.value >= deposit, "Insufficient claim deposit.");
-
-        uint256 epochMaxClaimableCalculated = (block.timestamp + sequencerDelayLimit) / epochPeriod + 1;
-        uint256 epochMaxClaimableCap = block.timestamp / epochPeriod + maxClaimFutureEpochs;
-        uint256 epochMaxClaimable = epochMaxClaimableCalculated < epochMaxClaimableCap
-            ? epochMaxClaimableCalculated
-            : epochMaxClaimableCap;
-
-        require(_epoch <= epochMaxClaimable, "Epoch is invalid.");
-
-        uint256 epochMinClaimableCalculated = (block.timestamp - sequencerFutureLimit) / epochPeriod - 1;
-        uint256 epochMinClaimableCap = block.timestamp / epochPeriod - maxClaimDelayEpochs;
-        uint256 epochMinClaimable = epochMinClaimableCalculated > epochMinClaimableCap
-            ? epochMinClaimableCap
-            : epochMinClaimableCap;
-
-        require(_epoch >= epochMinClaimable, "Epoch is invalid.");
-
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claims[_epoch].claimer == address(0), "Claim already made.");
 
@@ -61,7 +44,7 @@ contract VeaOutboxGnosisToArbDevnet is VeaOutboxGnosisToArb {
             honest: Party.None
         });
 
-        emit Claimed(msg.sender, _stateRoot);
+        emit Claimed(msg.sender, _epoch, _stateRoot);
 
         // Refund overpayment.
         if (msg.value > deposit) {
@@ -126,8 +109,6 @@ contract VeaOutboxGnosisToArbDevnet is VeaOutboxGnosisToArb {
     /// @param _routerGnosisToArb The address of the router on Ethereum that routes from Arbitrum to Ethereum.
     /// @param _sequencerDelayLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.
     /// @param _sequencerFutureLimit The maximum delay in seconds that the Arbitrum sequencer can futuredate transactions.
-    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
-    /// @param _maxClaimFutureEpochs The maximum number of epochs that can be claimed in the future.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -135,9 +116,7 @@ contract VeaOutboxGnosisToArbDevnet is VeaOutboxGnosisToArb {
         uint256 _timeoutEpochs,
         address _routerGnosisToArb,
         uint256 _sequencerDelayLimit,
-        uint256 _sequencerFutureLimit,
-        uint256 _maxClaimDelayEpochs,
-        uint256 _maxClaimFutureEpochs
+        uint256 _sequencerFutureLimit
     )
         VeaOutboxGnosisToArb(
             _deposit,
@@ -146,9 +125,7 @@ contract VeaOutboxGnosisToArbDevnet is VeaOutboxGnosisToArb {
             _timeoutEpochs,
             _routerGnosisToArb,
             _sequencerDelayLimit,
-            _sequencerFutureLimit,
-            _maxClaimDelayEpochs,
-            _maxClaimFutureEpochs
+            _sequencerFutureLimit
         )
     {
         devnetOperator = msg.sender;

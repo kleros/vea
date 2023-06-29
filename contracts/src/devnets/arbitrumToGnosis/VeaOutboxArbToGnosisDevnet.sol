@@ -34,7 +34,6 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
     /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) public override onlyByDevnetOperator {
         require(weth.transferFrom(msg.sender, address(this), deposit), "Failed WETH transfer.");
-
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
 
@@ -50,7 +49,7 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
             })
         );
 
-        emit Claimed(msg.sender, _stateRoot);
+        emit Claimed(msg.sender, _epoch, _stateRoot);
     }
 
     /// @dev Start verification for claim for 'epoch'.
@@ -136,7 +135,6 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
     /// @param _routerChainId The chain id of the routerArbToGnosis.
     /// @param _weth The address of the WETH contract on Gnosis.
-    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -147,8 +145,7 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
         uint256 _sequencerDelayLimit,
         uint256 _maxMissingBlocks,
         uint256 _routerChainId,
-        IWETH _weth,
-        uint256 _maxClaimDelayEpochs
+        IWETH _weth
     )
         VeaOutboxArbToGnosis(
             _deposit,
@@ -160,8 +157,7 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
             _sequencerDelayLimit,
             _maxMissingBlocks,
             _routerChainId,
-            _weth,
-            _maxClaimDelayEpochs
+            _weth
         )
     {
         devnetOperator = msg.sender;

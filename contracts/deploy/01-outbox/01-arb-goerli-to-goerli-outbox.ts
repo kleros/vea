@@ -18,7 +18,6 @@ const paramsByChainId = {
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
     arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
-    maxClaimDelayEpochs: 3,
   },
   HARDHAT: {
     deposit: parseEther("10"), // 120 eth budget for timeout
@@ -28,7 +27,6 @@ const paramsByChainId = {
     numEpochTimeout: 10000000000000, // 6 hours
     maxMissingBlocks: 10000000000000,
     arbitrumBridge: ethers.constants.AddressZero,
-    maxClaimDelayEpochs: 3,
   },
 };
 
@@ -47,15 +45,8 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const {
-    deposit,
-    epochPeriod,
-    numEpochTimeout,
-    minChallengePeriod,
-    maxMissingBlocks,
-    arbitrumBridge,
-    maxClaimDelayEpochs,
-  } = paramsByChainId[ReceiverChains[chainId]];
+  const { deposit, epochPeriod, numEpochTimeout, minChallengePeriod, maxMissingBlocks, arbitrumBridge } =
+    paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
   // TODO: use deterministic deployments
@@ -92,7 +83,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         veaInboxAddress,
         bridgeAddress,
         maxMissingBlocks,
-        maxClaimDelayEpochs,
       ],
       log: true,
     });
@@ -125,7 +115,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
           veaInboxAddress,
           arbitrumBridge,
           maxMissingBlocks,
-          maxClaimDelayEpochs,
         ],
         log: true,
       });

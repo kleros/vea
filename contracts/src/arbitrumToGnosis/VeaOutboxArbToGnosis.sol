@@ -34,7 +34,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable minChallengePeriod; // Minimum time window to challenge a claim, even with a malicious sequencer.
 
-    uint256 public immutable maxClaimDelayEpochs; // The maximum number of epochs that can be claimed in the past.
     uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.
     uint256 public immutable maxMissingBlocks; // The maximum number of blocks that can be missing in a challenge period.
 
@@ -60,8 +59,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     /// @dev Watchers check this event to challenge fraud.
     /// @param _claimer The address of the claimer.
+    /// @param _epoch The epoch associated with the claim.
     /// @param _stateRoot The state root of the claim.
-    event Claimed(address indexed _claimer, bytes32 _stateRoot);
+    event Claimed(address indexed _claimer, uint256 _epoch, bytes32 _stateRoot);
 
     /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
     /// @param _epoch The epoch associated with the challenged claim.
@@ -114,7 +114,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
     /// @param _routerChainId The chain id of the routerArbToGnosis.
     /// @param _weth The address of the WETH contract on Gnosis.
-    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -125,8 +124,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         uint256 _sequencerDelayLimit,
         uint256 _maxMissingBlocks,
         uint256 _routerChainId,
-        IWETH _weth,
-        uint256 _maxClaimDelayEpochs
+        IWETH _weth
     ) {
         deposit = _deposit;
         // epochPeriod must match the VeaInboxArbToGnosis contract deployment epochPeriod value.
@@ -140,7 +138,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         maxMissingBlocks = _maxMissingBlocks;
         routerChainId = _routerChainId;
         weth = _weth;
-        maxClaimDelayEpochs = _maxClaimDelayEpochs;
 
         // claimant and challenger are not sybil resistant
         // must burn half deposit to prevent zero cost griefing
@@ -180,25 +177,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) external virtual {
         require(weth.transferFrom(msg.sender, address(this), deposit), "Failed WETH transfer.");
-
-        require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
-
-        // Allow claims to be made within the sequencerDelayLimit.
-        // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
-        // If the sequencerDelayLimit is set larger than block.timestamp - epochPeriod by arbitrum governance,
-        // the checked arithmetic will revert due to underflow and the bridge will shutdown.
-        uint256 minEpochSequencerDelay = (block.timestamp - sequencerDelayLimit) / epochPeriod - 1;
-
-        uint256 minEpochClaim;
-
-        unchecked {
-            // deployer sets maxClaimDelayEpochs so no underflow is possible
-            minEpochClaim = block.timestamp / epochPeriod - maxClaimDelayEpochs;
-        }
-
-        uint256 minClaimableEpoch = minEpochSequencerDelay > minEpochClaim ? minEpochSequencerDelay : minEpochClaim;
-
-        require(_epoch >= minClaimableEpoch, "Invalid epoch.");
+        require(_epoch == block.timestamp / epochPeriod - 1, "Epoch has not yet passed.");
 
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
@@ -215,7 +194,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             })
         );
 
-        emit Claimed(msg.sender, _stateRoot);
+        emit Claimed(msg.sender, _epoch, _stateRoot);
     }
 
     /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.

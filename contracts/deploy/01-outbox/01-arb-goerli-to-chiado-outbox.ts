@@ -20,7 +20,6 @@ const paramsByChainId = {
     maxMissingBlocks: 10000000000000,
     routerChainId: 5,
     WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
-    maxClaimDelayEpochs: 3,
   },
   HARDHAT: {
     deposit: parseEther("1"),
@@ -65,7 +64,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     maxMissingBlocks,
     sequencerLimit,
     WETH,
-    maxClaimDelayEpochs,
   } = paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -92,7 +90,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         maxMissingBlocks,
         routerChainId,
         WETH,
-        maxClaimDelayEpochs,
       ],
       log: true,
     });
@@ -127,7 +124,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         maxMissingBlocks,
         routerChainId,
         WETH,
-        maxClaimDelayEpochs,
       ],
       log: true,
       ...gasOptions,

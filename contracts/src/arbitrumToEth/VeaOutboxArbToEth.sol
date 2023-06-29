@@ -33,7 +33,6 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable minChallengePeriod; // Minimum time window to challenge a claim, even with a malicious sequencer.
 
-    uint256 public immutable maxClaimDelayEpochs; // The maximum number of epochs that can be claimed in the past.
     uint256 public immutable timeoutEpochs; // The number of epochs without forward progress before the bridge is considered shutdown.
     uint256 public immutable maxMissingBlocks; // The maximum number of blocks that can be missing in a challenge period.
 
@@ -64,8 +63,9 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
 
     /// @dev Watchers check this event to challenge fraud.
     /// @param _claimer The address of the claimer.
+    /// @param _epoch The epoch associated with the claim.
     /// @param _stateRoot The state root of the claim.
-    event Claimed(address indexed _claimer, bytes32 _stateRoot);
+    event Claimed(address indexed _claimer, uint256 _epoch, bytes32 _stateRoot);
 
     /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
     /// @param _epoch The epoch associated with the challenged claim.
@@ -118,7 +118,6 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
     /// @param _veaInboxArbToEth The address of the inbox contract on Arbitrum.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
-    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -126,8 +125,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         uint256 _timeoutEpochs,
         address _veaInboxArbToEth,
         address _bridge,
-        uint256 _maxMissingBlocks,
-        uint256 _maxClaimDelayEpochs
+        uint256 _maxMissingBlocks
     ) {
         deposit = _deposit;
         // epochPeriod must match the VeaInboxArbToEth contract deployment epochPeriod value.
@@ -137,7 +135,6 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         veaInboxArbToEth = _veaInboxArbToEth;
         bridge = IBridge(_bridge);
         maxMissingBlocks = _maxMissingBlocks;
-        maxClaimDelayEpochs = _maxClaimDelayEpochs;
 
         updateSequencerDelayLimit();
 
@@ -206,26 +203,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
-
-        require(_epoch < block.timestamp / epochPeriod, "Epoch has not yet passed.");
-
-        // Allow claims to be made within the sequencerDelayLimit.
-        // Adds an epochs margin to permit L2 node syncing time in worst case sequencer backdating.
-        // If the sequencerDelayLimit is set larger than block.timestamp - epochPeriod by arbitrum governance,
-        // the checked arithmetic will revert due to underflow and the bridge will shutdown.
-        uint256 minEpochSequencerDelay = (block.timestamp - sequencerDelayLimit) / epochPeriod - 1;
-
-        uint256 minEpochClaim;
-
-        unchecked {
-            // deployed sets maxClaimWindowEpochs so no underflow is possible
-            minEpochClaim = block.timestamp / epochPeriod - maxClaimDelayEpochs;
-        }
-
-        uint256 minClaimableEpoch = minEpochSequencerDelay > minEpochClaim ? minEpochSequencerDelay : minEpochClaim;
-
-        require(_epoch >= minClaimableEpoch, "Invalid epoch.");
-
+        require(_epoch == block.timestamp / epochPeriod - 1, "Epoch has not yet passed.");
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
 
@@ -241,7 +219,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
             })
         );
 
-        emit Claimed(msg.sender, _stateRoot);
+        emit Claimed(msg.sender, _epoch, _stateRoot);
 
         // Refund overpayment.
         if (msg.value > deposit) {

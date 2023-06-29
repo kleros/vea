@@ -19,8 +19,6 @@ const paramsByChainId = {
     sequencerFutureLimit: 3600,
     maxMissingBlocks: 10000000000000,
     routerChainId: 5,
-    maxClaimDelayEpochs: 100,
-    maxClaimFutureEpochs: 100,
   },
   HARDHAT: {
     deposit: parseEther("1"),
@@ -32,8 +30,6 @@ const paramsByChainId = {
     sequencerFutureLimit: 3600,
     maxMissingBlocks: 10000000000000,
     routerChainId: 31337,
-    maxClaimDelayEpochs: 100,
-    maxClaimFutureEpochs: 100,
   },
 };
 
@@ -57,16 +53,8 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     HARDHAT: config.networks.localhost,
   };
 
-  const {
-    deposit,
-    epochPeriod,
-    challengePeriod,
-    numEpochTimeout,
-    sequencerDelayLimit,
-    sequencerFutureLimit,
-    maxClaimDelayEpochs,
-    maxClaimFutureEpochs,
-  } = paramsByChainId[ReceiverChains[chainId]];
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, sequencerDelayLimit, sequencerFutureLimit } =
+    paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
   // TODO: use deterministic deployments
@@ -127,8 +115,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         routerAddress,
         sequencerDelayLimit,
         sequencerFutureLimit,
-        maxClaimDelayEpochs,
-        maxClaimFutureEpochs,
       ],
       log: true,
       ...gasOptions,

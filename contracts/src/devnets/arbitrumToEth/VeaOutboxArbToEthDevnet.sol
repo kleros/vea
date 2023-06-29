@@ -49,7 +49,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
             })
         );
 
-        emit Claimed(msg.sender, _stateRoot);
+        emit Claimed(msg.sender, _epoch, _stateRoot);
 
         // Refund overpayment.
         if (msg.value > deposit) {
@@ -136,7 +136,6 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
     /// @param _veaInboxArbToEthDevnet The address of the inbox contract on Arbitrum.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
-    /// @param _maxClaimDelayEpochs The maximum number of epochs that can be claimed in the past.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
@@ -144,8 +143,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         uint256 _timeoutEpochs,
         address _veaInboxArbToEthDevnet,
         address _bridge,
-        uint256 _maxMissingBlocks,
-        uint256 _maxClaimDelayEpochs
+        uint256 _maxMissingBlocks
     )
         VeaOutboxArbToEth(
             _deposit,
@@ -154,8 +152,7 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
             _timeoutEpochs,
             _veaInboxArbToEthDevnet,
             _bridge,
-            _maxMissingBlocks,
-            _maxClaimDelayEpochs
+            _maxMissingBlocks
         )
     {
         devnetOperator = msg.sender;
