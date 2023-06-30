@@ -25,12 +25,12 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     IWETH public immutable weth; // The address of the WETH contract on Gnosis.
     uint256 public immutable deposit; // The deposit in wei required to submit a claim or challenge
-    uint256 internal immutable burn; // The amount of wei to burn. deposit / 2
-    uint256 internal immutable depositPlusReward; // 2 * deposit - burn
+    uint256 public immutable burn; // The amount of wei to burn. deposit / 2
+    uint256 public immutable depositPlusReward; // 2 * deposit - burn
 
     uint256 internal constant SLOT_TIME = 5; // Gnosis 5 second slot time
 
-    uint256 internal immutable routerChainId; // Router chain id for authentication of messages from the AMB.
+    uint256 public immutable routerChainId; // Router chain id for authentication of messages from the AMB.
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable minChallengePeriod; // Minimum time window to challenge a claim, even with a malicious sequencer.
 
@@ -41,7 +41,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     uint256 public latestVerifiedEpoch; // The latest epoch that has been verified.
 
     mapping(uint256 => bytes32) public claimHashes; // epoch => claim
-    mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+    mapping(uint256 => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
 
     uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
     uint256 public timestampDelayUpdated; // The timestamp of the last sequencer delay update.
@@ -61,7 +61,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _claimer The address of the claimer.
     /// @param _epoch The epoch associated with the claim.
     /// @param _stateRoot The state root of the claim.
-    event Claimed(address indexed _claimer, uint256 _epoch, bytes32 _stateRoot);
+    event Claimed(address indexed _claimer, uint256 indexed _epoch, bytes32 _stateRoot);
 
     /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
     /// @param _epoch The epoch associated with the challenged claim.
@@ -177,7 +177,9 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) external virtual {
         require(weth.transferFrom(msg.sender, address(this), deposit), "Failed WETH transfer.");
-        require(_epoch == block.timestamp / epochPeriod - 1, "Epoch has not yet passed.");
+        unchecked {
+            require(_epoch == block.timestamp / epochPeriod - 1, "Epoch has not yet passed.");
+        }
 
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
@@ -202,7 +204,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _claim The claim associated with the epoch.
     function challenge(uint256 _epoch, Claim memory _claim) external payable {
         require(weth.transferFrom(msg.sender, address(this), deposit), "Failed WETH transfer.");
-
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.challenger == address(0), "Claim already challenged.");
         require(_claim.honest == Party.None, "Claim already verified.");
@@ -451,10 +452,11 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @return status True if the claim passed the censorship test.
     function censorshipTestStatus(Claim memory _claim) public view returns (CensorshipTestStatus status) {
         unchecked {
-            if (uint256(_claim.timestampVerification) == 0) status = CensorshipTestStatus.NotStarted;
-            else if (block.timestamp - uint256(_claim.timestampVerification) < minChallengePeriod)
+            if (uint256(_claim.timestampVerification) == 0) {
+                status = CensorshipTestStatus.NotStarted;
+            } else if (block.timestamp - uint256(_claim.timestampVerification) < minChallengePeriod) {
                 status = CensorshipTestStatus.InProgress;
-            else {
+            } else {
                 uint256 expectedBlocks = uint256(_claim.blocknumberVerification) +
                     (block.timestamp - uint256(_claim.timestampVerification)) /
                     SLOT_TIME;
@@ -478,5 +480,21 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @return epoch The hash of the claim.
     function epochAt(uint256 timestamp) external view returns (uint256 epoch) {
         epoch = timestamp / epochPeriod;
+    }
+
+    /// @dev Get the msg relayed status.
+    /// @param _msgId The msgId to check.
+    /// @return isRelayed True if the msg was relayed.
+    function isMsgRelayed(uint256 _msgId) external view returns (bool isRelayed) {
+        uint256 relayIndex = _msgId >> 8;
+        uint256 offset;
+
+        unchecked {
+            offset = _msgId % 256;
+        }
+
+        bytes32 replay = relayed[relayIndex];
+
+        isRelayed = (replay >> offset) & bytes32(uint256(1)) == bytes32(uint256(1));
     }
 }

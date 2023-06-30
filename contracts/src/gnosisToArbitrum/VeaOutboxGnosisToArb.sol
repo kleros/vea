@@ -21,10 +21,10 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     address public immutable routerGnosisToArb; // The address of the router from Gnosis to Arbitrum on Ethereum.
 
     uint256 public immutable deposit; // The deposit in wei required to submit a claim or challenge
-    uint256 internal immutable burn; // The amount of wei to burn. deposit / 2
-    uint256 internal immutable depositPlusReward; // 2 * deposit - burn
+    uint256 public immutable burn; // The amount of wei to burn. deposit / 2
+    uint256 public immutable depositPlusReward; // 2 * deposit - burn
 
-    address internal constant BURN_ADDRESS = address(0); // address to send burned eth
+    address public constant BURN_ADDRESS = address(0); // address to send burned eth
 
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     uint256 public immutable challengePeriod; // Claim challenge timewindow.
@@ -35,12 +35,12 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     uint256 public timestampDelayUpdated; // The timestamp of the last sequencer delay update.
     uint256 public timestampFutureUpdated; // The timestamp of the last sequencer future update.
 
-    bytes32 public stateRoot;
-    uint256 public latestVerifiedEpoch;
+    bytes32 public stateRoot; // merkle root of the outbox state
+    uint256 public latestVerifiedEpoch; // The latest epoch that has been verified.
 
     mapping(uint256 => Claim) public claims; // epoch => claim
     mapping(uint256 => address) public challengers; // epoch => challenger
-    mapping(uint256 => bytes32) public relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+    mapping(uint256 => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
 
     enum Party {
         None,
@@ -63,7 +63,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @param _claimer The address of the claimer.
     /// @param _epoch The epoch associated with the claim.
     /// @param _stateRoot The state root of the claim.
-    event Claimed(address indexed _claimer, uint256 _epoch, bytes32 _stateRoot);
+    event Claimed(address indexed _claimer, uint256 indexed _epoch, bytes32 _stateRoot);
 
     /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
     /// @param _epoch The epoch associated with the challenged claim.
@@ -78,9 +78,13 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @param _epoch The epoch that was verified.
     event Verified(uint256 _epoch);
 
-    /// @dev This event indicates the sequencer limit updated.
-    /// @param _newsequencerDelayLimit The new maxL2StateSyncDelay.
-    event sequencerDelayLimitUpdateReceived(uint256 _newsequencerDelayLimit);
+    /// @dev This event indicates the sequencer delay limit updated.
+    /// @param _newSequencerDelayLimit The new max sequencer past timestamping power.
+    event sequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
+
+    /// @dev This event indicates the sequencer futue limit updated.
+    /// @param _newSequencerFutureLimit The new max sequencer future timestamping power.
+    event sequencerFutureLimitUpdateReceived(uint256 _newSequencerFutureLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -88,14 +92,14 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
 
     modifier OnlyBridgeRunning() {
         unchecked {
-            require(block.timestamp / epochPeriod <= latestVerifiedEpoch + timeoutEpochs, "Bridge Shutdown.");
+            require(block.timestamp / epochPeriod - latestVerifiedEpoch <= timeoutEpochs, "Bridge Shutdown.");
         }
         _;
     }
 
     modifier OnlyBridgeShutdown() {
         unchecked {
-            require(block.timestamp / epochPeriod > latestVerifiedEpoch + timeoutEpochs, "Bridge Running.");
+            require(block.timestamp / epochPeriod - latestVerifiedEpoch > timeoutEpochs, "Bridge Running.");
         }
         _;
     }
@@ -153,7 +157,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (sequencerFutureLimit != _newSequencerFutureLimit) {
             sequencerFutureLimit = _newSequencerFutureLimit;
             timestampFutureUpdated = _timestamp;
-            emit sequencerDelayLimitUpdateReceived(_newSequencerFutureLimit);
+            emit sequencerFutureLimitUpdateReceived(_newSequencerFutureLimit);
         }
     }
 
@@ -185,8 +189,9 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @param _stateRoot The state root to claim.
     function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
-        require(_epoch == block.timestamp / epochPeriod - 1, "Epoch is invalid.");
-
+        unchecked {
+            require(_epoch == block.timestamp / epochPeriod - 1, "Epoch is invalid.");
+        }
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claims[_epoch].claimer == address(0), "Claim already made.");
 
@@ -274,10 +279,10 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     }
 
     /// @dev Verifies and relays the message. UNTRUSTED.
-    /// @param _proof The merkle proof to prove the message.
+    /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
-    /// @param _to The address of the contract on Gnosis to call.
-    /// @param _message The message encoded with header from VeaInbox.
+    /// @param _to The address of the contract on Arbitrum to call.
+    /// @param _message The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
     function sendMessage(bytes32[] memory _proof, uint64 _msgId, address _to, bytes memory _message) external {
         require(_proof.length < 64, "Proof too long.");
 
@@ -408,5 +413,21 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @return epoch The hash of the claim.
     function epochAt(uint256 timestamp) external view returns (uint256 epoch) {
         epoch = timestamp / epochPeriod;
+    }
+
+    /// @dev Get the msg relayed status.
+    /// @param _msgId The msgId to check.
+    /// @return isRelayed True if the msg was relayed.
+    function isMsgRelayed(uint256 _msgId) external view returns (bool isRelayed) {
+        uint256 relayIndex = _msgId >> 8;
+        uint256 offset;
+
+        unchecked {
+            offset = _msgId % 256;
+        }
+
+        bytes32 replay = relayed[relayIndex];
+
+        isRelayed = (replay >> offset) & bytes32(uint256(1)) == bytes32(uint256(1));
     }
 }

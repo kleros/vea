@@ -30,7 +30,7 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     // Inbox represents minimum data availability to maintain incremental merkle tree.
     // Supports a max of 2^64 - 1 messages. See merkle tree docs for details how inbox manages state.
 
-    bytes32[64] public inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.
+    bytes32[64] internal inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.
     uint64 public count; // count of messages in the merkle tree
 
     // ************************************* //
@@ -225,6 +225,12 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     /// @return epoch The epoch associated with the current inbox block.timestamp
     function epochNow() external view returns (uint256 epoch) {
         epoch = block.timestamp / epochPeriod;
+    }
+
+    /// @dev Get the most recent epoch for which snapshots are finalized.
+    /// @return epoch The epoch associated with the current inbox block.timestamp
+    function epochFinalized() external view returns (uint256 epoch) {
+        epoch = block.timestamp / epochPeriod - 1;
     }
 
     /// @dev Get the epoch from the inbox's point of view using timestamp.

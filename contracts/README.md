@@ -10,28 +10,28 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 #### Goerli
 
-- [RouterArbToGnosisDevnet](https://goerli.etherscan.io/address/0xef62E517bE7e319458f41014C4d8864117381255)
-- [RouterArbToGnosisTestnet](https://goerli.etherscan.io/address/0x7Ee8Ad48EfA4765257a49486421A4CF11389E480)
-- [RouterGnosisToArbDevnet](https://goerli.etherscan.io/address/0x65b577dC22D3bdfcB20298ac07EF99D574275D04)
-- [RouterGnosisToArbTestnet](https://goerli.etherscan.io/address/0x531754c9935A851173FA349b3bEadAF538c570aC)
-- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0x4B1275adA5014d7A10375B87bb0cfaCAbC47d3dC)
-- [VeaOutboxArbToEthTestnet](https://goerli.etherscan.io/address/0x356f5D0756ab15C819015960C355386d0367d545)
+- [RouterArbToGnosisDevnet](https://goerli.etherscan.io/address/0xEC337Fb9977848D0784dC4F01A69c237691755E0)
+- [RouterArbToGnosisTestnet](https://goerli.etherscan.io/address/0x1224E83DF410b43A65ed3e375a6442813B1aea14)
+- [RouterGnosisToArbDevnet](https://goerli.etherscan.io/address/0xb7d2C76641B21718cC8A0b595be438c863A6e031)
+- [RouterGnosisToArbTestnet](https://goerli.etherscan.io/address/0x84de475fed07406aA3B05248f1a7b0Fca11DA012)
+- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0x3D9356FF595C2151513DFc520380d5A178224564)
+- [VeaOutboxArbToEthTestnet](https://goerli.etherscan.io/address/0x4738A566706eDd30Fe175e20eDDd21c5c7bD79Ea)
 
 #### Arbitrum Goerli
 
-- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0xe81afBecf7d0bB755fB9f1fb417b95Bf924534e6)
-- [VeaInboxArbToEthTestnet](https://goerli.arbiscan.io/address/0xB00b74346d6cb2440F71cc3Fb19Cd2B50450571E)
-- [VeaInboxArbToGnosisDevnet](https://goerli.arbiscan.io/address/0x7CE671804C3bC9096669F37cE6a7419BA66b7fD8)
-- [VeaInboxArbToGnosisTestnet](https://goerli.arbiscan.io/address/0x5EC6917F803bF2C9E55D43D3B7DD1032a625A979)
-- [VeaOutboxGnosisToArbDevnet](https://goerli.arbiscan.io/address/0x016170Ad327cE0dCa07b3bd7a7592013a7488FAc)
-- [VeaOutboxGnosisToArbTestnet](https://goerli.arbiscan.io/address/0xF0492e87Be6d644A6a467fE20ee9EC5eFCB6cB23)
+- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0x935feC4B0bc8f48884f7315153839859832f385b)
+- [VeaInboxArbToEthTestnet](https://goerli.arbiscan.io/address/0x0c45C5A1925085fF0672C1052f0b79D5e3ac2A78)
+- [VeaInboxArbToGnosisDevnet](https://goerli.arbiscan.io/address/0x8179EBCA5D2EA4152ac61A5BCA7a1dc68f8BbF54)
+- [VeaInboxArbToGnosisTestnet](https://goerli.arbiscan.io/address/0xdc201e4Ab6a25A17C1731D8bB7E56f89D0B86486)
+- [VeaOutboxGnosisToArbDevnet](https://goerli.arbiscan.io/address/0x8Da07C6D68F17d7BbC8B42D59Bc9EEE90e9dD621)
+- [VeaOutboxGnosisToArbTestnet](https://goerli.arbiscan.io/address/0x62581B897330CA4044C4db79Ebe96ca230569492)
 
 #### Chiado
 
-- [VeaInboxGnosisToArbDevnet](https://blockscout.com/gnosis/chiado/address/0xA3FefC6FeE3fc66B9d9a8BEE794736ab71a74c55)
-- [VeaInboxGnosisToArbTestnet](https://blockscout.com/gnosis/chiado/address/0xfF2B7048d673767754B798df1702C786E2c59F1F)
-- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0x660daB9A6436A814a6ae3a6f27b309356a4bE78c)
-- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0x9cF5c011e2A4CB7797413f311A35AcB021071c35)
+- [VeaInboxGnosisToArbDevnet](https://blockscout.com/gnosis/chiado/address/0x9F4407785DFf95c08Bf9a0d9d4A5a164C48eC5CB)
+- [VeaInboxGnosisToArbTestnet](https://blockscout.com/gnosis/chiado/address/0x8Bf88E6474d93bD2Dc0d76CB3BE8809c6BB84148)
+- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xb0263478A46d885D715B01fbac745500B9576634)
+- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0xE8ea62d3a4F06301016b9C23Ace108F3D8027839)
 
 ## Getting Started
 

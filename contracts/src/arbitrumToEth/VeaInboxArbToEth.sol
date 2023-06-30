@@ -19,8 +19,7 @@ contract VeaInboxArbToEth is IVeaInbox {
     // *             Storage               * //
     // ************************************* //
 
-    // Arbitrum precompile ArbSys, used for L2->L1 messaging.
-    // docs: https://developer.arbitrum.io/arbos/precompiles#arbsys
+    // Arbitrum precompile ArbSys for L2->L1 messaging: https://developer.arbitrum.io/arbos/precompiles#arbsys
     IArbSys internal constant ARB_SYS = IArbSys(address(100));
 
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
@@ -29,9 +28,9 @@ contract VeaInboxArbToEth is IVeaInbox {
     mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
 
     // Inbox represents minimum data availability to maintain incremental merkle tree.
-    // Supports a max of 2^64 - 1 messages. See merkle tree docs for more details on inbox data management.
+    // Supports a max of 2^64 - 1 messages. See merkle tree docs for details how inbox manages state.
 
-    bytes32[64] public inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.
+    bytes32[64] internal inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.
     uint64 public count; // count of messages in the merkle tree
 
     // ************************************* //
@@ -177,7 +176,8 @@ contract VeaInboxArbToEth is IVeaInbox {
     }
 
     /// @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing a pair of children nodes, left and right.
-    /// Note: EVM scratch space is used to efficiently calculate hashes.    /// @param _left The left hash.
+    /// Note: EVM scratch space is used to efficiently calculate hashes.
+    /// @param _left The left hash.
     /// @param _right The right hash.
     /// @return parent The parent hash.
     function sortConcatAndHash(bytes32 _left, bytes32 _right) internal pure returns (bytes32 parent) {
@@ -224,6 +224,12 @@ contract VeaInboxArbToEth is IVeaInbox {
     /// @return epoch The epoch associated with the current inbox block.timestamp
     function epochNow() external view returns (uint256 epoch) {
         epoch = block.timestamp / epochPeriod;
+    }
+
+    /// @dev Get the most recent epoch for which snapshots are finalized.
+    /// @return epoch The epoch associated with the current inbox block.timestamp
+    function epochFinalized() external view returns (uint256 epoch) {
+        epoch = block.timestamp / epochPeriod - 1;
     }
 
     /// @dev Get the epoch from the inbox's point of view using timestamp.
