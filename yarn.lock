@@ -3387,7 +3387,7 @@ __metadata:
     hardhat-watcher: ^2.5.0
     json-schema: ^0.4.0
     mocha: ^10.2.0
-    node-fetch: ^3.3.1
+    node-fetch: ^3.3.2
     shelljs: ^0.8.5
     solhint: ^3.4.1
     solidity-coverage: ^0.8.2
