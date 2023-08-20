@@ -399,7 +399,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             } else {
                 address claimer = _claim.claimer;
                 _claim.claimer = address(0);
-                claimHashes[_epoch] == hashClaim(_claim);
+                claimHashes[_epoch] = hashClaim(_claim);
                 require(weth.transfer(claimer, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             }
         }
@@ -419,7 +419,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             } else {
                 address challenger = _claim.challenger;
                 _claim.challenger = address(0);
-                claimHashes[_epoch] == hashClaim(_claim);
+                claimHashes[_epoch] = hashClaim(_claim);
                 require(weth.transfer(challenger, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             }
         }
