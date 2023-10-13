@@ -70,7 +70,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
     /// @param _epoch The epoch associated with the challenged claim.
     /// @param _challenger The address of the challenger.
-    event Challenged(uint256 _epoch, address indexed _challenger);
+    event Challenged(uint256 indexed _epoch, address indexed _challenger);
 
     /// @dev This event indicates that a message has been relayed.
     /// @param _msgId The msgId of the message that was relayed.
@@ -78,7 +78,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
 
     /// @dev This event indicates that the censorship test started and all challengers are ready even in the worst case scenario of a malicious sequencer.
     /// @param _epoch The epoch that started verification.
-    event VerificationStarted(uint256 _epoch);
+    event VerificationStarted(uint256 indexed _epoch);
 
     /// @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
     /// @param _epoch The epoch that was verified.
@@ -204,7 +204,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     function claim(uint256 _epoch, bytes32 _stateRoot) external payable virtual {
         require(msg.value >= deposit, "Insufficient claim deposit.");
         unchecked {
-            require(_epoch == block.timestamp / epochPeriod - 1, "Epoch has not yet passed.");
+            require(_epoch == block.timestamp / epochPeriod - 1, "Invalid epoch.");
         }
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
@@ -234,15 +234,32 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     /// @param _epoch The epoch of the claim to challenge.
     /// @param _claim The claim associated with the epoch.
     function challenge(uint256 _epoch, Claim memory _claim) external payable {
+        _challenge(_epoch, _claim, msg.sender);
+    }
+
+    /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
+    /// @dev Allows proxy contracts to batch challenges.
+    /// @param _epoch The epoch of the claim to challenge.
+    /// @param _claim The claim associated with the epoch.
+    /// @param _withdrawalAddress The address to withdraw the deposit + reward to.
+    function challenge(uint256 _epoch, Claim memory _claim, address _withdrawalAddress) external payable {
+        _challenge(_epoch, _claim, _withdrawalAddress);
+    }
+
+    /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
+    /// @param _epoch The epoch of the claim to challenge.
+    /// @param _claim The claim associated with the epoch.
+    /// @param _withdrawAddress The address to withdraw the deposit + reward to.
+    function _challenge(uint256 _epoch, Claim memory _claim, address _withdrawAddress) internal {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(msg.value >= deposit, "Insufficient challenge deposit.");
         require(_claim.challenger == address(0), "Claim already challenged.");
         require(_claim.honest == Party.None, "Claim already verified.");
 
-        _claim.challenger = msg.sender;
+        _claim.challenger = _withdrawAddress;
         claimHashes[_epoch] = hashClaim(_claim);
 
-        emit Challenged(_epoch, msg.sender);
+        emit Challenged(_epoch, _withdrawAddress);
 
         // Refund overpayment.
         if (msg.value > deposit) {
@@ -458,7 +475,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
             } else {
                 address challenger = _claim.challenger;
                 _claim.challenger = address(0);
-                claimHashes[_epoch] = hashClaim(_claim);
+                claimHashes[_epoch] == hashClaim(_claim);
                 payable(challenger).send(deposit); // User is responsible for accepting ETH.
             }
         }

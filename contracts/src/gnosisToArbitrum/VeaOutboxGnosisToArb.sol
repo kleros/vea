@@ -68,7 +68,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
     /// @param _epoch The epoch associated with the challenged claim.
     /// @param _challenger The address of the challenger.
-    event Challenged(uint256 _epoch, address indexed _challenger);
+    event Challenged(uint256 indexed _epoch, address indexed _challenger);
 
     /// @dev This event indicates that a message has been relayed.
     /// @param _msgId The msgId of the message that was relayed.
@@ -76,7 +76,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
 
     /// @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
     /// @param _epoch The epoch that was verified.
-    event Verified(uint256 _epoch);
+    event Verified(uint256 indexed _epoch);
 
     /// @dev This event indicates the sequencer delay limit updated.
     /// @param _newSequencerDelayLimit The new max sequencer past timestamping power.
@@ -213,9 +213,10 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
 
     /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
     /// @param _epoch The epoch of the claim to challenge.
-    function challenge(uint256 _epoch) external payable virtual {
+    /// @param _disputedStateRoot The claimed state root to challenge, included to ensure txn reverts if claim is removed due to a block reorg.
+    function challenge(uint256 _epoch, bytes32 _disputedStateRoot) external payable virtual {
         require(challengers[_epoch] == address(0), "Claim already challenged.");
-        require(claims[_epoch].claimer != address(0), "No claim for epoch.");
+        require(claims[_epoch].stateRoot == _disputedStateRoot, "No claim for epoch.");
         require(msg.value >= deposit, "Insufficient challenge deposit.");
 
         challengers[_epoch] = msg.sender;

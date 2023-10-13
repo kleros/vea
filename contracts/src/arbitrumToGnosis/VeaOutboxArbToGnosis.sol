@@ -66,7 +66,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @dev This event indicates that `sendSnapshot(epoch)` should be called in the inbox.
     /// @param _epoch The epoch associated with the challenged claim.
     /// @param _challenger The address of the challenger.
-    event Challenged(uint256 _epoch, address indexed _challenger);
+    event Challenged(uint256 indexed _epoch, address indexed _challenger);
 
     /// @dev This event indicates that a message has been relayed.
     /// @param _msgId The msgId of the message that was relayed.
@@ -74,7 +74,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     /// @dev This event indicates that the censorship test started and all challengers are ready even in the worst case scenario of a malicious sequencer.
     /// @param _epoch The epoch that started verification.
-    event VerificationStarted(uint256 _epoch);
+    event VerificationStarted(uint256 indexed _epoch);
 
     /// @dev This events indicates that verification has succeeded. The messages are ready to be relayed.
     /// @param _epoch The epoch that was verified.
@@ -202,7 +202,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
     /// @param _epoch The epoch of the claim to challenge.
     /// @param _claim The claim associated with the epoch.
-    function challenge(uint256 _epoch, Claim memory _claim) external payable {
+    function challenge(uint256 _epoch, Claim memory _claim) external {
         require(weth.transferFrom(msg.sender, address(this), deposit), "Failed WETH transfer.");
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
         require(_claim.challenger == address(0), "Claim already challenged.");
@@ -419,7 +419,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             } else {
                 address challenger = _claim.challenger;
                 _claim.challenger = address(0);
-                claimHashes[_epoch] = hashClaim(_claim);
+                claimHashes[_epoch] == hashClaim(_claim);
                 require(weth.transfer(challenger, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             }
         }
