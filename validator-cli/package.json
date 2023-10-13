@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.1.2",
+    "@flashbots/ethers-provider-bundle": "^0.6.2",
     "@kleros/vea-contracts": "workspace:^",
     "@typechain/ethers-v5": "^10.2.0",
     "dotenv": "^16.0.3",

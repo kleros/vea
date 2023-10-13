@@ -1536,6 +1536,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@flashbots/ethers-provider-bundle@npm:^0.6.2":
+  version: 0.6.2
+  resolution: "@flashbots/ethers-provider-bundle@npm:0.6.2"
+  peerDependencies:
+    ethers: 5.7.2
+  checksum: 90a991c55b02b242f28e36a131d20e7def404a1c7edbd8696fed258c91a047f8d07ea7f787f87d8e3b5a83e53e3f64c353931b2707b6e230ca48c0164329dfcb
+  languageName: node
+  linkType: hard
+
 "@float-capital/float-subgraph-uncrashable@npm:^0.0.0-alpha.4":
   version: 0.0.0-internal-testing.5
   resolution: "@float-capital/float-subgraph-uncrashable@npm:0.0.0-internal-testing.5"
@@ -3428,6 +3437,7 @@ __metadata:
   resolution: "@kleros/vea-validator-cli@workspace:validator-cli"
   dependencies:
     "@arbitrum/sdk": ^3.1.2
+    "@flashbots/ethers-provider-bundle": ^0.6.2
     "@kleros/vea-contracts": "workspace:^"
     "@typechain/ethers-v5": ^10.2.0
     dotenv: ^16.0.3
