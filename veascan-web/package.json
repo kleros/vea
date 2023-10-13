@@ -81,7 +81,7 @@
     "react-dom": "^18.2.0",
     "react-is": "^18.2.0",
     "react-jazzicon": "^1.0.4",
-    "react-loading-skeleton": "^3.2.1",
+    "react-loading-skeleton": "^3.3.1",
     "react-router-dom": "^6.11.0",
     "react-use": "^17.4.0",
     "styled-components": "^5.3.10",
