@@ -60,12 +60,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const chainId = Number(await getChainId());
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
-  const senderNetworks = {
-    GNOSIS_MAINNET: config.networks.arbitrum,
-    GNOSIS_CHIADO: config.networks.arbitrumGoerli,
-    HARDHAT: config.networks.localhost,
-  };
-
   const routerNetworks = {
     GNOSIS_MAINNET: config.networks.mainnet,
     GNOSIS_CHIADO: config.networks.goerli,
@@ -115,17 +109,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
-    let nonce = await senderChainProvider.getTransactionCount(deployer);
-
     const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
     let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
 
-    const veaInboxAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
-
     const routerAddress = getContractAddress(deployer, nonceRouter);
-    console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
+    console.log("calculated future router for nonce %d: %s", nonceRouter, routerAddress);
 
     const txn = await deploy("VeaOutboxArbToGnosis" + (chainId === 100 ? "" : "Testnet"), {
       contract: "VeaOutboxArbToGnosis",

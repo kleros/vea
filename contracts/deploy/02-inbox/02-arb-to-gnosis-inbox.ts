@@ -1,5 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
+import getContractAddress from "../../deploy-helpers/getContractAddress";
 
 enum SenderChains {
   ARBITRUM = 42161,
@@ -9,11 +10,9 @@ enum SenderChains {
 const paramsByChainId = {
   ARBITRUM: {
     epochPeriod: 3600, // 1 hours
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.gnosischain,
   },
   ARBITRUM_GOERLI: {
     epochPeriod: 3600, // 1 hours
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.chiado,
   },
   HARDHAT: {
     epochPeriod: 1800, // 30 minutes
@@ -22,25 +21,34 @@ const paramsByChainId = {
 
 // TODO: use deterministic deployments
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
-  const { deployments, getNamedAccounts, getChainId } = hre;
+  const { ethers, deployments, getNamedAccounts, getChainId, config } = hre;
   const { deploy, execute } = deployments;
   const chainId = Number(await getChainId());
+  const { providers } = ethers;
 
   const deployer = (await getNamedAccounts()).deployer;
   console.log("deployer: %s", deployer);
 
-  const { epochPeriod, companion } = paramsByChainId[SenderChains[chainId]];
+  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
+
+  const routerNetworks = {
+    ARBITRUM: config.networks.mainnet,
+    ARBITRUM_GOERLI: config.networks.goerli,
+    HARDHAT: config.networks.localhost,
+  };
 
   // ----------------------------------------------------------------------------------------------
 
-  const veaOutboxGnosis = await companion(hre).deployments.get(
-    "VeaOutboxArbToGnosis" + (chainId === 42161 ? "" : "Testnet")
-  );
+  const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[SenderChains[chainId]].url);
+  let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
+
+  const routerAddress = getContractAddress(deployer, nonceRouter);
+  console.log("calculated future router for nonce %d: %s", nonceRouter, routerAddress);
 
   await deploy("VeaInboxArbToGnosis" + (chainId === 42161 ? "" : "Testnet"), {
     contract: "VeaInboxArbToGnosis",
     from: deployer,
-    args: [epochPeriod, veaOutboxGnosis.address],
+    args: [epochPeriod, routerAddress],
     log: true,
   });
 };
