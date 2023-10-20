@@ -1,0 +1,11 @@
+query GetMsgData(
+    $nonce: [BigInt!]!
+    ){
+      messageSents(first: 5, where: {nonce_in: nonce}) {
+        nonce
+        to {
+            id
+        }
+        data
+        }
+}
