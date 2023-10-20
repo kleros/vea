@@ -55,6 +55,10 @@ function getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress: string, privateKey
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
 }
 
+function getVeaOutboxArbToGnosisDevnetProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
+}
+
 function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
 }
@@ -73,4 +77,5 @@ export {
   getVeaOutboxArbToGnosisProvider,
   getVeaInboxArbToGnosisProvider,
   getWETHProvider,
+  getVeaOutboxArbToGnosisDevnetProvider,
 };
