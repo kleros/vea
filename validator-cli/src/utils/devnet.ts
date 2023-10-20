@@ -87,7 +87,7 @@ export async function initializeGnosis(
 }
 
 async function happyPath(
-  veaInbox: VeaInboxArbToEth,
+  veaInbox: VeaInboxArbToEth | VeaInboxArbToGnosis,
   epochPeriod: number,
   lastSavedCount: BigNumber,
   veaOutbox: VeaOutboxArbToEthDevnet,
@@ -123,53 +123,6 @@ async function happyPath(
     const latestVerifiedEpoch = await veaOutbox.latestVerifiedEpoch();
     if (latestVerifiedEpoch.toNumber() < claimableEpoch) {
       console.log("advancing devnet state. . .");
-      const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
-      console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
-    }
-  }
-
-  return newCount;
-}
-
-async function happyPathGnosis(
-  veaInbox: VeaInboxArbToEth,
-  epochPeriod: number,
-  lastSavedCount: BigNumber,
-  veaOutbox: VeaOutboxArbToGnosisDevnet,
-  deposit: BigNumber
-): Promise<BigNumber> {
-  let currentTS = Math.floor(Date.now() / 1000);
-  let claimableEpoch = Math.floor(currentTS / epochPeriod);
-  let newCount = lastSavedCount;
-  const snapshot = await veaInbox.snapshots(claimableEpoch);
-
-  if (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
-    // check if snapshot should be taken
-    const inboxCount = await veaInbox.count();
-    if (inboxCount.gt(lastSavedCount)) {
-      // should take snapshot
-      console.log("inbox updated: taking snapshot. . .");
-      const txn = await veaInbox.saveSnapshot();
-      const receipt = await txn.wait();
-
-      newCount = BigNumber.from(receipt.logs[0].data);
-
-      const snapshot = await veaInbox.snapshots(claimableEpoch);
-      console.log(`Snapshot Txn: ${txn.hash}`);
-      console.log("snapshot count: ", receipt.logs[0].data);
-      lastSavedCount = inboxCount;
-      const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
-      console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
-    } else {
-      console.log("inbox not updated: not taking snapshot. . .");
-    }
-  } else {
-    console.log("snapshot already taken. . .");
-    const latestVerifiedEpoch = await veaOutbox.latestVerifiedEpoch();
-    if (latestVerifiedEpoch.toNumber() < claimableEpoch) {
-      console.log("advancing devnet state. . .");
-      const weth = await veaOutbox.weth();
-
       const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
       console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
     }
