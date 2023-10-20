@@ -37,13 +37,9 @@ async function initialize(
   // not really correct since l2 blocks are different, but just an estimate
   const searchBlock = Math.max(0, (await arbGoerliProvider.getBlockNumber()) - Math.floor(1209600 / 12));
 
-  const logs = await arbGoerliProvider.getLogs({
-    address: veaInboxAddress,
-    topics: veaInbox.filters.SnapshotSaved(null).topics,
-    fromBlock: searchBlock,
-  });
+  const logs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSaved(null), searchBlock);
 
-  let lastSavedCount = logs.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : BigNumber.from(0);
+  let lastSavedCount = logs.length > 0 ? logs[logs.length - 1].args._count : BigNumber.from(0);
   return [veaInbox, epochPeriod, lastSavedCount, veaOutbox, deposit];
 }
 
@@ -78,15 +74,9 @@ export async function initializeGnosis(
   // not really correct since l2 blocks are different, but just an estimate
   const searchBlock = Math.max(0, (await arbGoerliProvider.getBlockNumber()) - Math.floor(1209600 / 12));
 
-  const logs = await arbGoerliProvider.getLogs({
-    address: veaInboxAddress,
-    topics: veaInbox.filters.SnapshotSaved(null).topics,
-    fromBlock: searchBlock,
-  });
+  const logs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSaved(null), searchBlock);
 
-  console.log("last log: ", logs[logs.length - 1].data);
-
-  let lastSavedCount = logs.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : BigNumber.from(0);
+  let lastSavedCount = logs.length > 0 ? logs[logs.length - 1].args._count : BigNumber.from(0);
   return [veaInbox, epochPeriod, lastSavedCount, veaOutbox, deposit];
 }
 
