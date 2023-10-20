@@ -84,6 +84,8 @@ export async function initializeGnosis(
     fromBlock: searchBlock,
   });
 
+  console.log("last log: ", logs[logs.length - 1].data);
+
   let lastSavedCount = logs.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : BigNumber.from(0);
   return [veaInbox, epochPeriod, lastSavedCount, veaOutbox, deposit];
 }
@@ -94,23 +96,21 @@ async function happyPath(
   lastSavedCount: BigNumber,
   veaOutbox: VeaOutboxArbToEthDevnet | VeaOutboxArbToGnosisDevnet,
   deposit: BigNumber
-): Promise<BigNumber> {
+) {
   let currentTS = Math.floor(Date.now() / 1000);
   let claimableEpoch = Math.floor(currentTS / epochPeriod);
-  let newCount = lastSavedCount;
   const snapshot = await veaInbox.snapshots(claimableEpoch);
 
   if (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
     // check if snapshot should be taken
+    console.log("last saved count: ", lastSavedCount.toString());
     const inboxCount = await veaInbox.count();
+    console.log("inbox count: ", inboxCount.toString());
     if (inboxCount.gt(lastSavedCount)) {
       // should take snapshot
       console.log("inbox updated: taking snapshot. . .");
       const txn = await veaInbox.saveSnapshot();
       const receipt = await txn.wait();
-
-      newCount = BigNumber.from(receipt.logs[0].data);
-
       const snapshot = await veaInbox.snapshots(claimableEpoch);
       console.log(`Snapshot Txn: ${txn.hash}`);
       console.log("snapshot count: ", receipt.logs[0].data);
@@ -129,8 +129,6 @@ async function happyPath(
       console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
     }
   }
-
-  return newCount;
 }
 
 export { happyPath, initialize };
