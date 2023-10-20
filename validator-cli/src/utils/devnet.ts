@@ -59,7 +59,8 @@ export async function initializeGnosis(
   const veaInbox = getVeaInboxArbToGnosisProvider(veaInboxAddress, process.env.PRIVATE_KEY, arbGoerliProvider);
 
   const deposit = await veaOutbox.deposit();
-  const weth = getWETHProvider(process.env.WETH, process.env.PRIVATE_KEY, outboxProvider);
+  const wethAddress = await veaOutbox.weth();
+  const weth = getWETHProvider(wethAddress, process.env.PRIVATE_KEY, outboxProvider);
   const allowance = await weth.allowance(veaOutbox.address, veaOutboxAddress);
   if (allowance < deposit) {
     await (await weth.approve(veaOutbox.address, deposit)).wait();
@@ -90,7 +91,7 @@ async function happyPath(
   veaInbox: VeaInboxArbToEth | VeaInboxArbToGnosis,
   epochPeriod: number,
   lastSavedCount: BigNumber,
-  veaOutbox: VeaOutboxArbToEthDevnet,
+  veaOutbox: VeaOutboxArbToEthDevnet | VeaOutboxArbToGnosisDevnet,
   deposit: BigNumber
 ): Promise<BigNumber> {
   let currentTS = Math.floor(Date.now() / 1000);
