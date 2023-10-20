@@ -4,7 +4,6 @@ import {
   SnapshotSent as SnapshotSentEvent,
 } from "../generated/VeaInbox/VeaInbox";
 import {
-  Hearbeat,
   MessageSent,
   SnapshotSaved,
   SnapshotSent,
@@ -29,7 +28,7 @@ export function handleMessageSent(event: MessageSentEvent): void {
   let entity = new MessageSent(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
-  let msgData = event.params.nodeData;
+  let msgData = event.params._nodeData;
 
   let _nonce = new ByteArray(8);
   for (let i = 0; i < 8; i++) _nonce[i] = msgData[i];
@@ -125,7 +124,7 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
   let contract = VeaInbox.bind(event.address);
   entity.epoch = event.block.timestamp.div(contract.epochPeriod());
   entity.stateRoot = contract.snapshots(entity.epoch);
-  entity.count = event.params.count;
+  entity.count = event.params._count;
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -221,8 +220,8 @@ export function handleSnapshotSent(event: SnapshotSentEvent): void {
   let entity = new SnapshotSent(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
-  entity.epochSent = event.params.epochSent;
-  entity.ticketId = event.params.ticketId;
+  entity.epochSent = event.params._epochSent;
+  entity.ticketId = event.params._ticketId;
 
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;

@@ -57,7 +57,7 @@ const watch = async () => {
   // When Sequencer is malicious, even when L1 is finalized, L2 state might be unknown for up to  sequencerDelayLimit + epochPeriod.
   const L2SyncPeriod = sequencerDelayLimit + epochPeriod;
   // When we start the watcher, we need to go back far enough to check for claims which may have been pending L2 state finalization.
-  const veaEpochOutboxWacthLowerBound =
+  const veaEpochOutboxWatchLowerBound =
     Math.floor((blockFinalizedEth.timestamp - L2SyncPeriod - coldStartBacklog) / epochPeriod) - 2;
 
   // ETH / Gnosis POS assumes synchronized clocks
@@ -67,9 +67,9 @@ const watch = async () => {
   let veaEpochOutboxClaimableNow = Math.floor(timeLocal / epochPeriod) - 1;
 
   // only past epochs are claimable, hence shift by one here
-  const veaEpochOutboxRange = veaEpochOutboxClaimableNow - veaEpochOutboxWacthLowerBound + 1;
+  const veaEpochOutboxRange = veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound + 1;
   const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
-    .fill(veaEpochOutboxWacthLowerBound)
+    .fill(veaEpochOutboxWatchLowerBound)
     .map((el, i) => el + i);
   const challengeTxnHashes = new Map<number, string>();
 
@@ -121,14 +121,14 @@ const watch = async () => {
       console.log("no claims to check");
       const timeToNextEpoch = epochPeriod - (Math.floor(Date.now() / 1000) % epochPeriod);
       console.log("waiting till next epoch in " + timeToNextEpoch + " seconds. . .");
-      await wait(timeToNextEpoch);
+      continue;
     }
 
     for (let index = 0; index < veaEpochOutboxCheckClaimsRangeArray.length; index++) {
       const veaEpochOutboxCheck = veaEpochOutboxCheckClaimsRangeArray[index];
       console.log("checking claim for epoch " + veaEpochOutboxCheck);
       // if L1 experiences finality failure, we use the latest block
-      const blockTagEth = timeEth ? "latest" : "finalized";
+      const blockTagEth = finalityIssueFlagEth ? "latest" : "finalized";
       const claimHash = (await retryOperation(
         () => veaOutbox.claimHashes(veaEpochOutboxCheck, { blockTag: blockTagEth }),
         1000,
@@ -161,7 +161,7 @@ const watch = async () => {
 
         let blockNumberOutboxLowerBound: number;
 
-        // to query event perpformantly, we limit the block range with the heuristic that. delta blocknumber <= delta timestamp / secondsPerSlot
+        // to query event performantly, we limit the block range with the heuristic that. delta blocknumber <= delta timestamp / secondsPerSlot
         if (veaEpochOutboxCheck <= veaEpochOutboxClaimableFinalized) {
           blockNumberOutboxLowerBound =
             blockFinalizedEth.number -

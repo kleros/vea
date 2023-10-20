@@ -6,7 +6,7 @@ dataSources:
     name: VeaInbox
     network: arbitrum-goerli
     source:
-      address: "0x3b894FE680deB990b4Fb7E7D0000C32Af06687C3"
+      address: "0xA3FefC6FeE3fc66B9d9a8BEE794736ab71a74c55"
       abi: VeaInbox
       startBlock: 16978653
     mapping:
@@ -19,11 +19,11 @@ dataSources:
         - StaterootSent
       abis:
         - name: VeaInbox
-          file: ../contracts/deployments/arbitrumGoerli/VeaInboxArbGoerliToGoerli.json
+          file: ../contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json
       eventHandlers:
         - event: MessageSent(bytes)
           handler: handleMessageSent
-        - event: SnapshotSaved(uint256)
+        - event: SnapshotSaved(bytes32,uint256,uint64)
           handler: handleSnapshotSaved
         - event: SnapshotSent(indexed uint256,bytes32)
           handler: handleSnapshotSent
