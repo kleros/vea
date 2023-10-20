@@ -9,7 +9,7 @@ async function validatorChiado() {
     process.env.VEAINBOX_ARBGOERLI_TO_CHIADO_ADDRESS,
     process.env.RPC_CHIADO
   );
-  await happyPath(veaInboxArbGoerliToChiado, epochPeriod, lastSavedCount, veaOutboxChiado, deposit);
+  await happyPath(true, veaInboxArbGoerliToChiado, epochPeriod, lastSavedCount, veaOutboxChiado, deposit);
   return {
     statusCode: StatusCodes.OK,
   };

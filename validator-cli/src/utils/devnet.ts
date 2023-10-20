@@ -81,6 +81,7 @@ export async function initializeGnosis(
 }
 
 async function happyPath(
+  isGnosis: boolean,
   veaInbox: VeaInboxArbToEth | VeaInboxArbToGnosis,
   epochPeriod: number,
   lastSavedCount: BigNumber,
@@ -115,7 +116,8 @@ async function happyPath(
     const latestVerifiedEpoch = await veaOutbox.latestVerifiedEpoch();
     if (latestVerifiedEpoch.toNumber() < claimableEpoch) {
       console.log("advancing devnet state. . .");
-      const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
+      const amount = isGnosis ? 0 : deposit;
+      const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: amount });
       console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
     }
   }
