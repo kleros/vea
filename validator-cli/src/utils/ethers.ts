@@ -9,7 +9,7 @@ import {
   VeaInboxArbToEth__factory,
   VeaInboxArbToGnosis__factory,
   IWETH__factory,
-} from "@kleros/vea-contracts/typechain-types";
+} from "../../typechain-types";
 
 function getWallet(privateKey: string, web3ProviderURL: string) {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
