@@ -1,0 +1,11 @@
+[build]
+  functions = "validator-cli/devnet/functions"
+[build.environment]
+  RPC_URL_MAINNET="https://rpc.ankr.com/eth"
+  RPC_GOERLI="https://goerli.infura.io/v3/"
+  RPC_ARB_GOERLI="https://goerli-rollup.arbitrum.io/rpc"
+  RPC_CHIADO="https://rpc.eu-central-2.gateway.fm/v3/gnosis/archival/chiado"
+  VEAOUTBOX_ARBGOERLI_TO_CHIADO_ADDRESS="0x9481b3A49ac67d03D9022E6200eFD81850BADDB4"
+  VEAINBOX_ARBGOERLI_TO_CHIADO_ADDRESS="0xf38b8739635d2F4cb38Bd453453AB9d41fD16300"
+  VEAOUTBOX_ARBGOERLI_TO_GOERLI_ADDRESS="0xDa528e9BE20a8A22437D28Ed6C63bb6d00Ad0032"
+  VEAINBOX_ARBGOERLI_TO_GOERLI_ADDRESS="0xE99C6177CD8731DE6F108443CcAf7449074f6aED"

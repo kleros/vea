@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers";
 import { getVeaInboxArbToEthProvider, getVeaOutboxArbToEthDevnetProvider } from "../utils/ethers";
-import { VeaInboxArbToEth, VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
+import { VeaInboxArbToEth, VeaOutboxArbToEthDevnet } from "../../typechain-types";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 async function initialize(
@@ -17,12 +17,10 @@ async function initialize(
   const deposit = await veaOutbox.deposit();
   const epochPeriod = (await veaOutbox.epochPeriod()).toNumber();
   let currentTS = Math.floor(Date.now() / 1000);
-  let claimableEpoch = Math.floor(currentTS / epochPeriod);
 
   if (currentTS % epochPeriod < 60) {
     console.log("Epoch is almost over. Waiting 1 min for next epoch...");
-    await delay((currentTS % epochPeriod) * 1000);
-    claimableEpoch++;
+    return;
   }
 
   // only search back 2 weeks
@@ -82,10 +80,6 @@ async function happyPath(
   }
 
   return newCount;
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export { happyPath, initialize };
