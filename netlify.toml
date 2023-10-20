@@ -1,5 +1,3 @@
-[build]
-  functions = "validator-cli/devnet/functions"
 [build.environment]
   RPC_URL_MAINNET="https://rpc.ankr.com/eth"
   RPC_GOERLI="https://goerli.infura.io/v3/"
