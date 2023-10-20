@@ -90,6 +90,10 @@ async function happyPath(
 ) {
   let currentTS = Math.floor(Date.now() / 1000);
   let claimableEpoch = Math.floor(currentTS / epochPeriod);
+  const verifiedEpoch = await veaOutbox.latestVerifiedEpoch();
+  if (verifiedEpoch.toNumber() >= claimableEpoch) {
+    return;
+  }
   const snapshot = await veaInbox.snapshots(claimableEpoch);
 
   if (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
