@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 import {
   getVeaInboxArbToEthProvider,
   getVeaOutboxArbToEthDevnetProvider,
@@ -61,7 +61,8 @@ export async function initializeGnosis(
   const deposit = await veaOutbox.deposit();
   const wethAddress = await veaOutbox.weth();
   const weth = getWETHProvider(wethAddress, process.env.PRIVATE_KEY, outboxProvider);
-  const allowance = await weth.allowance(veaOutbox.address, veaOutboxAddress);
+  const signerPublicKey = utils.computeAddress(process.env.PRIVATE_KEY);
+  const allowance = await weth.allowance(signerPublicKey, veaOutbox.address);
   if (allowance < deposit) {
     await (await weth.approve(veaOutbox.address, deposit)).wait();
   }
