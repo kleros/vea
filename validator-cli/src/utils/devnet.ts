@@ -89,11 +89,9 @@ async function happyPath(
   deposit: BigNumber
 ) {
   let currentTS = Math.floor(Date.now() / 1000);
-  let claimableEpoch = Math.floor(currentTS / epochPeriod);
+  let claimableEpoch = Math.floor(currentTS / epochPeriod) - 1;
   const verifiedEpoch = await veaOutbox.latestVerifiedEpoch();
-  if (verifiedEpoch.toNumber() >= claimableEpoch) {
-    return;
-  }
+
   const snapshot = await veaInbox.snapshots(claimableEpoch);
 
   if (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
@@ -106,16 +104,18 @@ async function happyPath(
       console.log("inbox updated: taking snapshot. . .");
       const txn = await veaInbox.saveSnapshot();
       const receipt = await txn.wait();
-      const snapshot = await veaInbox.snapshots(claimableEpoch);
-      console.log(`Snapshot Txn: ${txn.hash}`);
-      console.log("snapshot count: ", receipt.logs[0].data);
-      lastSavedCount = inboxCount;
-      const txnOutbox = await veaOutbox.devnetAdvanceState(claimableEpoch, snapshot, { value: deposit });
-      console.log(`DevnetAdvanceState Txn: ${txnOutbox.hash}`);
+      // take snapshot at end of epoch
+      if (currentTS % epochPeriod > epochPeriod - 120) {
+        const snapshot = await veaInbox.snapshots(claimableEpoch);
+        console.log(`Snapshot Txn: ${txn.hash}`);
+      }
     } else {
       console.log("inbox not updated: not taking snapshot. . .");
     }
   } else {
+    if (verifiedEpoch.toNumber() >= claimableEpoch) {
+      return;
+    }
     console.log("snapshot already taken. . .");
     const latestVerifiedEpoch = await veaOutbox.latestVerifiedEpoch();
     if (latestVerifiedEpoch.toNumber() < claimableEpoch) {
