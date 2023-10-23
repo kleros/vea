@@ -5,7 +5,7 @@ import {
   VeaOutboxArbToEthDevnet__factory,
   VeaOutboxArbToGnosisDevnet__factory,
   VeaInboxArbToEth__factory,
-} from "@kleros/vea-contracts/typechain-types";
+} from "../../typechain-types";
 
 export function getWallet(privateKey: string, web3ProviderURL: string) {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));

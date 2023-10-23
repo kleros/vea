@@ -9,7 +9,7 @@ import {
   VeaInboxArbToEth__factory,
   VeaInboxArbToGnosis__factory,
   IWETH__factory,
-} from "@kleros/vea-contracts/typechain-types";
+} from "../../typechain-types";
 
 function getWallet(privateKey: string, web3ProviderURL: string) {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
@@ -55,6 +55,10 @@ function getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress: string, privateKey
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
 }
 
+function getVeaOutboxArbToGnosisDevnetProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
+}
+
 function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
 }
@@ -73,4 +77,5 @@ export {
   getVeaOutboxArbToGnosisProvider,
   getVeaInboxArbToGnosisProvider,
   getWETHProvider,
+  getVeaOutboxArbToGnosisDevnetProvider,
 };

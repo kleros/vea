@@ -18,7 +18,6 @@
     "@graphql-codegen/typescript": "^4.0.1",
     "@graphql-codegen/typescript-graphql-request": "^6.0.0",
     "@graphql-codegen/typescript-operations": "^4.0.1",
-    "@kleros/vea-contracts": "workspace:^",
     "@netlify/functions": "^2.3.0",
     "@typechain/ethers-v5": "^10.2.0",
     "dotenv": "^16.0.3",

@@ -1,8 +1,4 @@
-import {
-  VeaOutboxArbToEth__factory,
-  VeaInboxArbToEth__factory,
-  VeaInboxTouch__factory,
-} from "@kleros/vea-contracts/typechain-types";
+import { VeaOutboxArbToEth__factory, VeaInboxArbToEth__factory, VeaInboxTouch__factory } from "../../typechain-types";
 import { WebSocketProvider, JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
 import { FlashbotsBundleProvider } from "@flashbots/ethers-provider-bundle";
