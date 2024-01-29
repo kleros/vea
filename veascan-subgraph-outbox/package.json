@@ -27,6 +27,6 @@
   },
   "devDependencies": {
     "@goldskycom/cli": "^1.6.0",
-    "@graphprotocol/graph-cli": "^0.44.0"
+    "@graphprotocol/graph-cli": "^0.60.0"
   }
 }

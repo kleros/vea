@@ -1,0 +1,8 @@
+query GetNonceFrom(
+    $nonce: BigInt!,
+    $msgSender: Bytes!
+    ){
+    messageSents(first: 1000, where: {nonce_gte: $nonce, msgSender_: {id: $msgSender} }, orderBy: nonce, orderDirection: asc) {
+        nonce
+    }
+}

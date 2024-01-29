@@ -1,0 +1,8 @@
+query GetProof(
+    $proofIndices: [ID!]!
+    ){
+    nodes(first: 100, where: {id_in: $proofIndices}) {
+      id
+      hash
+    }
+}

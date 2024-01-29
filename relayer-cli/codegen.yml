@@ -1,0 +1,9 @@
+overwrite: true
+generates:
+  ./generated/vea-inbox.ts:
+    schema: "https://api.thegraph.com/subgraphs/name/shotaronowhere/vea-inbox-arbitrum"
+    documents: "graphql/inbox/*.gql"
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-graphql-request"

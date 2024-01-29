@@ -1,0 +1,7 @@
+query GetCount(
+    $stateRoot: Bytes!
+    ){
+    snapshotSaveds(where: { stateRoot: $stateRoot }) {
+        count
+    }
+}
