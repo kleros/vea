@@ -3427,6 +3427,7 @@ __metadata:
   dependencies:
     "@graphprotocol/graph-cli": ^0.44.0
     "@graphprotocol/graph-ts": ^0.29.3
+    concat-stream: ^2.0.0
     gluegun: ^5.1.2
     matchstick-as: 0.5.2
   languageName: unknown
@@ -5487,15 +5488,6 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: d4401622333e888925b47c5d5bb0b89dddae17cc020f909a64ad7275b326bf3c6e9cd467f625a197fd958a1e49220d32f4a2b0bf2948fee330c719a9b985674e
-  languageName: node
-  linkType: hard
-
-"@types/concat-stream@npm:^1.6.0":
-  version: 1.6.1
-  resolution: "@types/concat-stream@npm:1.6.1"
-  dependencies:
-    "@types/node": "*"
-  checksum: 7d211e74331affd3578b5469244f5cef84a93775f38332adb3ef12413559a23862bc682c6873d0a404b01c9d5d5f7d3ae091fe835b435b633eb420e3055b3e56
   languageName: node
   linkType: hard
 
@@ -8484,25 +8476,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"concat-stream@github:hugomrdias/concat-stream#feat/smaller":
+"concat-stream@npm:^2.0.0":
   version: 2.0.0
-  resolution: "concat-stream@https://github.com/hugomrdias/concat-stream.git#commit=057bc7b5d6d8df26c8cf00a3f151b6721a0a8034"
-  dependencies:
-    inherits: ^2.0.3
-    readable-stream: ^3.0.2
-  checksum: 1cef636e7061f310088706b34fe774e3960dff60a5039158b5e5c84795f6dd8a3411659324280405b8c5f1d7e8e3d4f68fa48e55963ed14953a44fef66423329
-  languageName: node
-  linkType: hard
-
-"concat-stream@npm:^1.6.0, concat-stream@npm:^1.6.2, concat-stream@npm:~1.6.2":
-  version: 1.6.2
-  resolution: "concat-stream@npm:1.6.2"
+  resolution: "concat-stream@npm:2.0.0"
   dependencies:
     buffer-from: ^1.0.0
     inherits: ^2.0.3
-    readable-stream: ^2.2.2
+    readable-stream: ^3.0.2
     typedarray: ^0.0.6
-  checksum: 1ef77032cb4459dcd5187bd710d6fc962b067b64ec6a505810de3d2b8cc0605638551b42f8ec91edf6fcd26141b32ef19ad749239b58fae3aba99187adc32285
+  checksum: d7f75d48f0ecd356c1545d87e22f57b488172811b1181d96021c7c4b14ab8855f5313280263dca44bb06e5222f274d047da3e290a38841ef87b59719bde967c7
   languageName: node
   linkType: hard
 
@@ -9566,7 +9548,6 @@ __metadata:
   version: 2.5.8
   resolution: "dockerode@npm:2.5.8"
   dependencies:
-    concat-stream: ~1.6.2
     docker-modem: ^1.0.8
     tar-fs: ~1.16.3
   checksum: 01381da98f98a3236b735fb2bb2a66f521da39200a2a11b83777cee3b104b32966ba7dfeb93f3fa8ab85b5e639265842d66f576e7db9562b1049564c2af6ec84
@@ -12750,7 +12731,6 @@ __metadata:
   resolution: "http-basic@npm:8.1.3"
   dependencies:
     caseless: ^0.12.0
-    concat-stream: ^1.6.2
     http-response-object: ^3.0.1
     parse-cache-control: ^1.0.1
   checksum: 7df5dc4d4b6eb8cc3beaa77f8e5c3074288ec3835abd83c85e5bb66d8a95a0ef97664d862caf5e225698cb795f78f9a5abd0d39404e5356ccd3e5e10c87936a5
@@ -13188,7 +13168,6 @@ __metadata:
     bs58: ^4.0.1
     buffer: ^5.4.2
     cids: ~0.7.1
-    concat-stream: "github:hugomrdias/concat-stream#feat/smaller"
     debug: ^4.1.0
     detect-node: ^2.0.4
     end-of-stream: ^1.4.1
@@ -18198,7 +18177,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"readable-stream@npm:^2.2.2, readable-stream@npm:^2.3.0, readable-stream@npm:^2.3.5, readable-stream@npm:~2.3.6":
+"readable-stream@npm:^2.3.0, readable-stream@npm:^2.3.5, readable-stream@npm:~2.3.6":
   version: 2.3.8
   resolution: "readable-stream@npm:2.3.8"
   dependencies:
@@ -20360,12 +20339,10 @@ __metadata:
   version: 6.0.2
   resolution: "then-request@npm:6.0.2"
   dependencies:
-    "@types/concat-stream": ^1.6.0
     "@types/form-data": 0.0.33
     "@types/node": ^8.0.0
     "@types/qs": ^6.2.31
     caseless: ~0.12.0
-    concat-stream: ^1.6.0
     form-data: ^2.2.0
     http-basic: ^8.1.1
     http-response-object: ^3.0.1
