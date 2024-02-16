@@ -36,7 +36,7 @@
     "check": "hardhat check",
     "test": "TS_NODE_TRANSPILE_ONLY=1 hardhat test",
     "start": "hardhat node --tags nothing",
-    "start-local": "hardhat node --tags ArbToEthOutbox,ArbToEthInbox",
+    "start-local": "hardhat node --tags ArbToEthOutbox,ArbToEthInbox --hostname 0.0.0.0",
     "deploy": "hardhat deploy",
     "deploy:mainnet": "yarn deploy:ArbToEth && yarn deploy:ArbToGnosis && yarn deploy:GnosisToArb",
     "deploy:testnet": "yarn deploy:ArbToEthTestnet && yarn deploy:ArbToGnosisTestnet && yarn deploy:GnosisToArbTestnet",
