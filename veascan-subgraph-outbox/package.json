@@ -20,7 +20,7 @@
     "deploy:chiado": "yarn build:chiado && goldsky subgraph deploy kleros-veascan-outbox-chiado/latest",
     "create-local": "graph create --node http://localhost:8020/ kleros/veascan-outbox",
     "remove-local": "graph remove --node http://localhost:8020/ kleros/veascan-outbox",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/veascan-subgraph-outbox"
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/veascan-outbox"
   },
   "dependencies": {
     "@graphprotocol/graph-ts": "^0.29.3"
