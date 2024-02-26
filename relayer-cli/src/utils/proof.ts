@@ -26,6 +26,8 @@ const getMessageDataToRelay = async (chainid: number, nonce: number) => {
 const getProofAtCount = async (chainid: number, nonce: number, count: number): Promise<string[]> => {
   const proofIndices = getProofIndices(nonce, count);
 
+  if (proofIndices.length == 0) return [];
+
   let query = "{";
   for (let i = 0; i < proofIndices.length; i++) {
     query += `layer${i}: nodes(first: 1, where: {id: "${proofIndices[i]}"}) {
@@ -58,7 +60,7 @@ const getProofIndices = (nonce: number, count: number) => {
 
   const treeDepth = Math.ceil(Math.log2(count));
 
-  for (let i = 0; i < treeDepth; i++) {
+  for (let i = 0; i <= treeDepth; i++) {
     if (i == 0 && (nonce ^ 1) < count) proof.push((nonce ^ 1).toString()); // sibling
     else {
       const low = ((nonce >> i) ^ 1) << i;

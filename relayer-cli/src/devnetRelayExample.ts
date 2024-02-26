@@ -3,7 +3,7 @@ import * as fs from "fs";
 require("dotenv").config();
 
 let chain_ids = [5, 10200];
-const epochPeriod = 1800; // 30 min
+const epochPeriod = 600; // 30 min
 ["SIGINT", "SIGTERM", "SIGQUIT", "EXIT", "MODULE_NOT_FOUND"].forEach((signal) =>
   process.on(signal, async () => {
     console.log("exit");
@@ -26,10 +26,10 @@ const epochPeriod = 1800; // 30 min
           ? "0xe6aC8CfF97199A67b8121a3Ce3aC98772f90B94b"
           : "0x177AfBF3cda970024Efa901516735aF9c3B894a4";
       nonce = await relayAllFrom(chain_id, nonce, senderGateway);
-      await updateStateFile(chain_id, Math.floor(Date.now() / 1000), nonce);
+      if (nonce != null) await updateStateFile(chain_id, Math.floor(Date.now() / 1000), nonce);
     }
     const currentTS = Math.floor(Date.now() / 1000);
-    const delayAmount = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 300 * 1000;
+    const delayAmount = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 100 * 1000;
     console.log("waiting for the next epoch. . .", Math.floor(delayAmount / 1000), "seconds");
     await delay(delayAmount);
   }
@@ -47,7 +47,8 @@ async function initialize(chain_id: number): Promise<number> {
   fs.writeFileSync(lock_file_name, process.pid.toString(), { encoding: "utf8" });
 
   const state_file_name = "./state/" + chain_id + ".json";
-  if (!fs.existsSync(state_file_name)) {
+  const state_file_name_fs_check = "./src/state/" + chain_id + ".json";
+  if (!fs.existsSync(state_file_name_fs_check)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
     await updateStateFile(chain_id, tsnow, 0);

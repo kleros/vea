@@ -39,7 +39,7 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<
             }`
   );
 
-  if (result["snapshotSaveds"].length == 0) throw new Error("No snapshot found");
+  if (result["snapshotSaveds"].length == 0) return 0;
 
   return Number(result["snapshotSaveds"][0].count);
 };
@@ -98,6 +98,8 @@ const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): 
   const contract = new web3.eth.Contract(_contract.abi, VEAOUTBOX_ADDRESS);
   const veaOutbox = getVeaOutboxArbToEth(VEAOUTBOX_ADDRESS, process.env.PRIVATE_KEY, RPC_VEAOUTBOX);
   const count = await getCount(veaOutbox, chainid);
+
+  if (!count) return null;
 
   let txns = [];
 
