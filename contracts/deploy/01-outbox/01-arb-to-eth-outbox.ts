@@ -94,9 +94,8 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     const veaOutbox = await deploy("VeaOutbox", {
       from: deployer,
-      contract: "VeaOutboxMockArbToEth",
+      contract: "VeaOutboxArbToEthDevnet",
       args: [
-        arbSysAddress,
         deposit,
         epochPeriod,
         minChallengePeriod,
