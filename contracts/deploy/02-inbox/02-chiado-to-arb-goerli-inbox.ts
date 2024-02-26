@@ -14,7 +14,7 @@ const paramsByChainId = {
   },
   HARDHAT: {
     amb: ethers.constants.AddressZero,
-    epochPeriod: 1800, // 30 minutes
+    epochPeriod: 600, // 10 minutes
   },
 };
 

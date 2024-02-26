@@ -22,8 +22,8 @@ const paramsByChainId = {
   },
   HARDHAT: {
     deposit: parseEther("1"),
-    epochPeriod: 1800, // 30 min
-    challengePeriod: 600, // 15 min
+    epochPeriod: 600, // 10 min
+    challengePeriod: 600, // 10 min
     numEpochTimeout: 24, // 6 hours
     amb: ethers.constants.AddressZero,
     sequencerDelayLimit: 86400,

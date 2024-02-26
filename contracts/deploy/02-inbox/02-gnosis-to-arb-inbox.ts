@@ -18,7 +18,7 @@ const paramsByChainId = {
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
   },
   HARDHAT: {
-    epochPeriod: 7200, // 2 hours
+    epochPeriod: 600, // 10 minutes
   },
 };
 

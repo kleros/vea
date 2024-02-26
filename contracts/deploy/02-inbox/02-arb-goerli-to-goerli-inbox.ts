@@ -11,7 +11,7 @@ const paramsByChainId = {
     epochPeriod: 1800, // 1 hour
   },
   HARDHAT: {
-    epochPeriod: 1800, // 30 minutes
+    epochPeriod: 600, // 10 minutes
   },
 };
 

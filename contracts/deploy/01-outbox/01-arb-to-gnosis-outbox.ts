@@ -38,8 +38,8 @@ const paramsByChainId = {
   HARDHAT: {
     deposit: parseEther("5"), // 120 xDAI budget for timeout
     // Average happy path wait time is 22.5 mins, assume no censorship
-    epochPeriod: 600, // 15 min
-    challengePeriod: 600, // 15 min (assume no sequencer backdating)
+    epochPeriod: 600, // 10 min
+    challengePeriod: 600, // 10 min (assume no sequencer backdating)
     numEpochTimeout: 24, // 6 hours
     claimDelay: 2,
     amb: ethers.constants.AddressZero,

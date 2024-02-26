@@ -31,8 +31,8 @@ const paramsByChainId = {
   },
   HARDHAT: {
     deposit: parseEther("10"),
-    epochPeriod: 1800, // 30 min
-    minChallengePeriod: 1800, // 30 min
+    epochPeriod: 600, // 10 min
+    minChallengePeriod: 600, // 10 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10,
     arbitrumBridge: ethers.constants.AddressZero,
