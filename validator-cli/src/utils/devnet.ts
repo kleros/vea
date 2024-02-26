@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { getVeaInboxArbToEthProvider, getVeaOutboxArbToEthDevnetProvider } from "../utils/ethers";
 import { VeaInboxArbToEth, VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -35,7 +35,10 @@ async function initialize(
     fromBlock: searchBlock,
   });
 
-  let lastSavedCount = logs.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : BigNumber.from(0);
+  let lastSavedCount =
+    logs.length > 0
+      ? utils.defaultAbiCoder.decode(["bytes32", "uint256", "uint64"], logs[logs.length - 1].data)[2]
+      : BigNumber.from(0);
   return [veaInbox, epochPeriod, lastSavedCount, veaOutbox, deposit];
 }
 
