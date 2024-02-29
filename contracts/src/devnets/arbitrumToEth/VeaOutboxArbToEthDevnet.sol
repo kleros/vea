@@ -10,8 +10,8 @@ pragma solidity 0.8.18;
 
 import "../../arbitrumToEth/VeaOutboxArbToEth.sol";
 
-/// @dev Vea Outbox From ArbitrumGoerli to Goerli.
-/// Note: This contract is deployed on Goerli.
+/// @dev Vea Outbox From arbitrumSepolia to Sepolia.
+/// Note: This contract is deployed on Sepolia.
 /// Note: This contract is permissioned for developer testing (devnet).
 contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
     address public devnetOperator; // permissioned devnet operator

@@ -5,19 +5,19 @@ import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
 
 enum ReceiverChains {
-  ETHEREUM_GOERLI = 5,
+  ETHEREUM_SEPOLIA = 11155111,
   HARDHAT = 31337,
 }
 
 const paramsByChainId = {
-  ETHEREUM_GOERLI: {
+  ETHEREUM_SEPOLIA: {
     deposit: parseEther("0.001"),
     // Average happy path wait time is 1 hour (30 min, 90 min), happy path only
     epochPeriod: 1800, // 30 min
     minChallengePeriod: 0, // 0 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
-    arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
+    arbitrumBridge: "0x38f918D0E9F1b721EDaA41302E399fa1B79333a9", // https://developer.arbitrum.io/useful-addresses
   },
   HARDHAT: {
     deposit: parseEther("10"), // 120 eth budget for timeout
@@ -41,7 +41,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const senderNetworks = {
-    ETHEREUM_GOERLI: config.networks.arbitrumGoerli,
+    ETHEREUM_SEPOLIA: config.networks.arbitrumSepolia,
     HARDHAT: config.networks.localhost,
   };
 
@@ -128,7 +128,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deployOutbox.tags = ["ArbGoerliToGoerliOutbox"];
+deployOutbox.tags = ["ArbSepoliaToSepoliaOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

@@ -30,7 +30,7 @@ const paramsByChainId = {
     minChallengePeriod: 10800, // 3 hours
     numEpochTimeout: 1000000, // never
     maxMissingBlocks: 1000000, // any
-    routerChainId: 5,
+    routerChainId: 11155111,
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
     WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
     sequencerLimit: 86400, // 24 hours
@@ -62,7 +62,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const routerNetworks = {
     GNOSIS_MAINNET: config.networks.mainnet,
-    GNOSIS_CHIADO: config.networks.goerli,
+    GNOSIS_CHIADO: config.networks.sepolia,
     HARDHAT: config.networks.localhost,
   };
 

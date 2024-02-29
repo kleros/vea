@@ -4,14 +4,14 @@ import getContractAddress from "../../deploy-helpers/getContractAddress";
 
 enum SenderChains {
   ARBITRUM = 42161,
-  ARBITRUM_GOERLI = 421613,
+  ARBITRUM_SEPOLIA = 421614,
   HARDHAT = 31337,
 }
 const paramsByChainId = {
   ARBITRUM: {
     epochPeriod: 3600, // 1 hours
   },
-  ARBITRUM_GOERLI: {
+  ARBITRUM_SEPOLIA: {
     epochPeriod: 3600, // 1 hours
   },
   HARDHAT: {
@@ -22,7 +22,7 @@ const paramsByChainId = {
 // TODO: use deterministic deployments
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { ethers, deployments, getNamedAccounts, getChainId, config } = hre;
-  const { deploy, execute } = deployments;
+  const { deploy } = deployments;
   const chainId = Number(await getChainId());
   const { providers } = ethers;
 
@@ -33,7 +33,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const routerNetworks = {
     ARBITRUM: config.networks.mainnet,
-    ARBITRUM_GOERLI: config.networks.goerli,
+    ARBITRUM_SEPOLIA: config.networks.sepolia,
     HARDHAT: config.networks.localhost,
   };
 

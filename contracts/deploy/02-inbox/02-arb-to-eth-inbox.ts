@@ -3,7 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
   ARBITRUM = 42161,
-  ARBITRUM_GOERLI = 421613,
+  ARBITRUM_SEPOLIA = 421614,
   HARDHAT = 31337,
 }
 const paramsByChainId = {
@@ -11,9 +11,9 @@ const paramsByChainId = {
     epochPeriod: 7200, // 2 hours
     companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.mainnet,
   },
-  ARBITRUM_GOERLI: {
+  ARBITRUM_SEPOLIA: {
     epochPeriod: 7200, // 2 hours
-    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.goerli,
+    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.sepolia,
   },
   HARDHAT: {
     epochPeriod: 600, // 10 minutes
@@ -22,7 +22,7 @@ const paramsByChainId = {
 
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
-  const { deploy, execute } = deployments;
+  const { deploy } = deployments;
   const chainId = Number(await getChainId());
 
   // fallback to hardhat node signers on local network

@@ -1,16 +1,19 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
+import { ethers } from "hardhat";
 
 enum SenderChains {
-  ARBITRUM_GOERLI = 421613,
+  GNOSIS_CHIADO = 10200,
   HARDHAT = 31337,
 }
 
 const paramsByChainId = {
-  ARBITRUM_GOERLI: {
-    epochPeriod: 1800, // 1 hour
+  GNOSIS_CHIADO: {
+    epochPeriod: 1800, // 30 minutes
+    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
   },
   HARDHAT: {
+    amb: ethers.constants.AddressZero,
     epochPeriod: 600, // 10 minutes
   },
 };
@@ -18,33 +21,39 @@ const paramsByChainId = {
 // TODO: use deterministic deployments
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
-  const { deploy, execute } = deployments;
+  const { deploy } = deployments;
   const chainId = Number(await getChainId());
 
   const deployer = (await getNamedAccounts()).deployer;
   console.log("deployer: %s", deployer);
 
-  const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
+  const { epochPeriod, amb } = paramsByChainId[SenderChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
 
-  const veaOutboxGnosis = await hre.companionNetworks.chiado.deployments.get("VeaOutboxArbToGnosisDevnet");
+  const veaOutboxArb = await hre.companionNetworks.arbitrumSepolia.deployments.get("VeaOutboxGnosisToArbDevnet");
 
-  const inbox = await deploy("VeaInboxArbToGnosisDevnet", {
+  const gasOptions = {
+    maxFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+    maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+  };
+
+  const inbox = await deploy("VeaInboxGnosisToArbDevnet", {
     from: deployer,
-    contract: "VeaInboxArbToGnosis",
-    args: [epochPeriod, veaOutboxGnosis.address],
+    contract: "VeaInboxGnosisToArb",
+    args: [epochPeriod, veaOutboxArb.address, amb],
     log: true,
+    ...gasOptions,
   });
 
-  console.log("VeaInboxArbToGnosisDevnet deployed to: %s", inbox.address);
+  console.log("VeaInboxGnosisToArbDevnet deployed to: %s", inbox.address);
 };
 
-deployInbox.tags = ["ArbGoerliToChiadoInbox"];
+deployInbox.tags = ["ChiadoToArbSepoliaInbox"];
 deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !(chainId === 421613 || chainId === 31337);
+  return !SenderChains[chainId];
 };
 deployInbox.runAtTheEnd = true;
 

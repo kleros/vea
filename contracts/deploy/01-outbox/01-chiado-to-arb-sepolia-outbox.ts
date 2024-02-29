@@ -5,32 +5,31 @@ import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
 
 enum ReceiverChains {
-  GNOSIS_CHIADO = 10200,
+  ARBITRUM_SEPOLIA = 421614,
   HARDHAT = 31337,
 }
 
 const paramsByChainId = {
-  GNOSIS_CHIADO: {
+  ARBITRUM_SEPOLIA: {
     deposit: parseEther("0.1"),
     epochPeriod: 1800, // 30 min
-    minChallengePeriod: 0, // 30 min
+    challengePeriod: 0, // 30 min
     numEpochTimeout: 10000000000000, // never
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
-    sequencerLimit: 86400,
+    sequencerDelayLimit: 86400,
+    sequencerFutureLimit: 3600,
     maxMissingBlocks: 10000000000000,
-    routerChainId: 5,
-    WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
+    routerChainId: 11155111,
   },
   HARDHAT: {
     deposit: parseEther("1"),
     epochPeriod: 600, // 10 min
-    minChallengePeriod: 600, // 10 min
+    challengePeriod: 600, // 10 min
     numEpochTimeout: 24, // 6 hours
     amb: ethers.constants.AddressZero,
-    sequencerLimit: 0,
+    sequencerDelayLimit: 86400,
+    sequencerFutureLimit: 3600,
     maxMissingBlocks: 10000000000000,
     routerChainId: 31337,
-    WETH: ethers.constants.AddressZero,
   },
 };
 
@@ -45,26 +44,17 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const senderNetworks = {
-    GNOSIS_CHIADO: config.networks.arbitrumGoerli,
+    ARBITRUM_SEPOLIA: config.networks.chiado,
     HARDHAT: config.networks.localhost,
   };
 
   const routerNetworks = {
-    GNOSIS_CHIADO: config.networks.goerli,
+    ARBITRUM_SEPOLIA: config.networks.sepolia,
     HARDHAT: config.networks.localhost,
   };
 
-  const {
-    deposit,
-    epochPeriod,
-    routerChainId,
-    minChallengePeriod,
-    numEpochTimeout,
-    amb,
-    maxMissingBlocks,
-    sequencerLimit,
-    WETH,
-  } = paramsByChainId[ReceiverChains[chainId]];
+  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, sequencerDelayLimit, sequencerFutureLimit } =
+    paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
   // TODO: use deterministic deployments
@@ -77,12 +67,14 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const veaInboxAddress = getContractAddress(deployer, nonce);
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
+    // TODO outbox mock
+    /*
     await deploy("VeaOutboxGnosisMock", {
       from: deployer,
       args: [
         deposit,
         epochPeriod,
-        minChallengePeriod,
+        challengePeriod,
         numEpochTimeout,
         amb,
         ethers.constants.AddressZero,
@@ -90,9 +82,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         maxMissingBlocks,
         routerChainId,
         WETH,
+        maxClaimDelayEpochs
       ],
       log: true,
     });
+    */
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -111,25 +105,22 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const routerAddress = getContractAddress(deployer, nonceRouter);
     console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
 
-    const txn = await deploy("VeaOutboxArbToGnosisDevnet", {
+    const txn = await deploy("VeaOutboxGnosisToArbDevnet", {
       from: deployer,
       args: [
         deposit,
         epochPeriod,
-        minChallengePeriod,
+        challengePeriod,
         numEpochTimeout,
-        amb,
         routerAddress,
-        sequencerLimit,
-        maxMissingBlocks,
-        routerChainId,
-        WETH,
+        sequencerDelayLimit,
+        sequencerFutureLimit,
       ],
       log: true,
       ...gasOptions,
     });
 
-    console.log("VeaOutboxArbToGnosisDevnet deployed to:", txn.address);
+    console.log("VeaOutboxGnosisToArbDevnet deployed to:", txn.address);
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -140,7 +131,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deployOutbox.tags = ["ArbGoerliToChiadoOutbox"];
+deployOutbox.tags = ["ChiadoToArbSepoliaOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

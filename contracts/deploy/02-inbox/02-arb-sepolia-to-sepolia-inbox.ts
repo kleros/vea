@@ -2,12 +2,12 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
-  ARBITRUM_GOERLI = 421613,
+  ARBITRUM_SEPOLIA = 421614,
   HARDHAT = 31337,
 }
 
 const paramsByChainId = {
-  ARBITRUM_GOERLI: {
+  ARBITRUM_SEPOLIA: {
     epochPeriod: 1800, // 1 hour
   },
   HARDHAT: {
@@ -18,7 +18,7 @@ const paramsByChainId = {
 // TODO: use deterministic deployments
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
-  const { deploy, execute } = deployments;
+  const { deploy } = deployments;
   const chainId = Number(await getChainId());
 
   // fallback to hardhat node signers on local network
@@ -65,7 +65,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await hre.companionNetworks.goerli.deployments.get("VeaOutboxArbToEthDevnet");
+    const veaOutbox = await hre.companionNetworks.sepolia.deployments.get("VeaOutboxArbToEthDevnet");
 
     await deploy("VeaInboxArbToEthDevnet", {
       from: deployer,
@@ -83,11 +83,11 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deployInbox.tags = ["ArbGoerliToGoerliInbox"];
+deployInbox.tags = ["ArbSepoliaToSepoliaInbox"];
 deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !(chainId === 421613 || chainId === 31337);
+  return !(chainId === 421614 || chainId === 31337);
 };
 deployInbox.runAtTheEnd = true;
 
