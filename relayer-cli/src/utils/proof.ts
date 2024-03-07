@@ -5,7 +5,7 @@ const getMessageDataToRelay = async (chainid: number, nonce: number) => {
     const subgraph = getSubgraph(chainid);
 
     const result = await request(
-      `https://api.thegraph.com/subgraphs/name/shotaronowhere/${subgraph}`,
+      `https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`,
       `{
                 messageSents(first: 5, where: {nonce: ${nonce}}) {
                 nonce
@@ -39,7 +39,7 @@ const getProofAtCount = async (chainid: number, nonce: number, count: number): P
   try {
     const subgraph = getSubgraph(chainid);
 
-    const result = await request(`https://api.thegraph.com/subgraphs/name/shotaronowhere/${subgraph}`, query);
+    const result = await request(`https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`, query);
 
     const proof = [];
 
@@ -75,10 +75,8 @@ const getProofIndices = (nonce: number, count: number) => {
 
 const getSubgraph = (chainid: number): string => {
   switch (chainid) {
-    case 5:
-      return "vea-inbox-arbgoerli-to-goerli";
-    case 10200:
-      return "vea-inbox-arbgoerli-to-chiado";
+    case 11155111:
+      return "vea-inbox-arb-sepolia-devnet";
     default:
       throw new Error("Invalid chainid");
   }

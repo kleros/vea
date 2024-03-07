@@ -11,8 +11,8 @@ async function initialize(
   const outboxProvider = new JsonRpcProvider(outboxRPCUrl);
   const veaOutbox = getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress, process.env.PRIVATE_KEY, outboxProvider);
 
-  const arbGoerliProvider = new JsonRpcProvider(process.env.RPC_ARB_GOERLI);
-  const veaInbox = getVeaInboxArbToEthProvider(veaInboxAddress, process.env.PRIVATE_KEY, arbGoerliProvider);
+  const arbSepoliaProvider = new JsonRpcProvider(process.env.RPC_ARB_SEPOLIA);
+  const veaInbox = getVeaInboxArbToEthProvider(veaInboxAddress, process.env.PRIVATE_KEY, arbSepoliaProvider);
 
   const deposit = await veaOutbox.deposit();
   const epochPeriod = (await veaOutbox.epochPeriod()).toNumber();
@@ -27,9 +27,9 @@ async function initialize(
 
   // only search back 2 weeks
   // not really correct since l2 blocks are different, but just an estimate
-  const searchBlock = Math.max(0, (await arbGoerliProvider.getBlockNumber()) - Math.floor(1209600 / 12));
+  const searchBlock = Math.max(0, (await arbSepoliaProvider.getBlockNumber()) - Math.floor(1209600 / 12));
 
-  const logs = await arbGoerliProvider.getLogs({
+  const logs = await arbSepoliaProvider.getLogs({
     address: veaInboxAddress,
     topics: veaInbox.filters.SnapshotSaved(null).topics,
     fromBlock: searchBlock,
