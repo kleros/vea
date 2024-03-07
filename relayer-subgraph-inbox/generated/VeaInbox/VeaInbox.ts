@@ -10,24 +10,6 @@ import {
   BigInt,
 } from "@graphprotocol/graph-ts";
 
-export class Hearbeat extends ethereum.Event {
-  get params(): Hearbeat__Params {
-    return new Hearbeat__Params(this);
-  }
-}
-
-export class Hearbeat__Params {
-  _event: Hearbeat;
-
-  constructor(event: Hearbeat) {
-    this._event = event;
-  }
-
-  get ticketId(): Bytes {
-    return this._event.parameters[0].value.toBytes();
-  }
-}
-
 export class MessageSent extends ethereum.Event {
   get params(): MessageSent__Params {
     return new MessageSent__Params(this);
@@ -41,7 +23,7 @@ export class MessageSent__Params {
     this._event = event;
   }
 
-  get nodeData(): Bytes {
+  get _nodeData(): Bytes {
     return this._event.parameters[0].value.toBytes();
   }
 }
@@ -59,8 +41,16 @@ export class SnapshotSaved__Params {
     this._event = event;
   }
 
-  get stateRoot(): Bytes {
+  get _snapshot(): Bytes {
     return this._event.parameters[0].value.toBytes();
+  }
+
+  get _epoch(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+
+  get _count(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
   }
 }
 
@@ -77,11 +67,11 @@ export class SnapshotSent__Params {
     this._event = event;
   }
 
-  get epochSent(): BigInt {
+  get _epochSent(): BigInt {
     return this._event.parameters[0].value.toBigInt();
   }
 
-  get ticketId(): Bytes {
+  get _ticketId(): Bytes {
     return this._event.parameters[1].value.toBytes();
   }
 }
@@ -91,29 +81,67 @@ export class VeaInbox extends ethereum.SmartContract {
     return new VeaInbox("VeaInbox", address);
   }
 
-  ARB_SYS(): Address {
-    let result = super.call("ARB_SYS", "ARB_SYS():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_ARB_SYS(): ethereum.CallResult<Address> {
-    let result = super.tryCall("ARB_SYS", "ARB_SYS():(address)", []);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
   count(): BigInt {
-    let result = super.call("count", "count():(uint256)", []);
+    let result = super.call("count", "count():(uint64)", []);
 
     return result[0].toBigInt();
   }
 
   try_count(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall("count", "count():(uint256)", []);
+    let result = super.tryCall("count", "count():(uint64)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  epochAt(_timestamp: BigInt): BigInt {
+    let result = super.call("epochAt", "epochAt(uint256):(uint256)", [
+      ethereum.Value.fromUnsignedBigInt(_timestamp),
+    ]);
+
+    return result[0].toBigInt();
+  }
+
+  try_epochAt(_timestamp: BigInt): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("epochAt", "epochAt(uint256):(uint256)", [
+      ethereum.Value.fromUnsignedBigInt(_timestamp),
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  epochFinalized(): BigInt {
+    let result = super.call("epochFinalized", "epochFinalized():(uint256)", []);
+
+    return result[0].toBigInt();
+  }
+
+  try_epochFinalized(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "epochFinalized",
+      "epochFinalized():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  epochNow(): BigInt {
+    let result = super.call("epochNow", "epochNow():(uint256)", []);
+
+    return result[0].toBigInt();
+  }
+
+  try_epochNow(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("epochNow", "epochNow():(uint256)", []);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -136,33 +164,14 @@ export class VeaInbox extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  inbox(param0: BigInt): Bytes {
-    let result = super.call("inbox", "inbox(uint256):(bytes32)", [
-      ethereum.Value.fromUnsignedBigInt(param0),
-    ]);
-
-    return result[0].toBytes();
-  }
-
-  try_inbox(param0: BigInt): ethereum.CallResult<Bytes> {
-    let result = super.tryCall("inbox", "inbox(uint256):(bytes32)", [
-      ethereum.Value.fromUnsignedBigInt(param0),
-    ]);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytes());
-  }
-
-  sendMessage(to: Address, fnSelector: Bytes, data: Bytes): BigInt {
+  sendMessage(_to: Address, _fnSelector: Bytes, _data: Bytes): BigInt {
     let result = super.call(
       "sendMessage",
       "sendMessage(address,bytes4,bytes):(uint64)",
       [
-        ethereum.Value.fromAddress(to),
-        ethereum.Value.fromFixedBytes(fnSelector),
-        ethereum.Value.fromBytes(data),
+        ethereum.Value.fromAddress(_to),
+        ethereum.Value.fromFixedBytes(_fnSelector),
+        ethereum.Value.fromBytes(_data),
       ]
     );
 
@@ -170,17 +179,17 @@ export class VeaInbox extends ethereum.SmartContract {
   }
 
   try_sendMessage(
-    to: Address,
-    fnSelector: Bytes,
-    data: Bytes
+    _to: Address,
+    _fnSelector: Bytes,
+    _data: Bytes
   ): ethereum.CallResult<BigInt> {
     let result = super.tryCall(
       "sendMessage",
       "sendMessage(address,bytes4,bytes):(uint64)",
       [
-        ethereum.Value.fromAddress(to),
-        ethereum.Value.fromFixedBytes(fnSelector),
-        ethereum.Value.fromBytes(data),
+        ethereum.Value.fromAddress(_to),
+        ethereum.Value.fromFixedBytes(_fnSelector),
+        ethereum.Value.fromBytes(_data),
       ]
     );
     if (result.reverted) {
@@ -209,14 +218,22 @@ export class VeaInbox extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  veaOutbox(): Address {
-    let result = super.call("veaOutbox", "veaOutbox():(address)", []);
+  veaOutboxArbToEth(): Address {
+    let result = super.call(
+      "veaOutboxArbToEth",
+      "veaOutboxArbToEth():(address)",
+      []
+    );
 
     return result[0].toAddress();
   }
 
-  try_veaOutbox(): ethereum.CallResult<Address> {
-    let result = super.tryCall("veaOutbox", "veaOutbox():(address)", []);
+  try_veaOutboxArbToEth(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "veaOutboxArbToEth",
+      "veaOutboxArbToEth():(address)",
+      []
+    );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -246,7 +263,7 @@ export class ConstructorCall__Inputs {
     return this._call.inputValues[0].value.toBigInt();
   }
 
-  get _veaOutbox(): Address {
+  get _veaOutboxArbToEth(): Address {
     return this._call.inputValues[1].value.toAddress();
   }
 }
@@ -285,32 +302,6 @@ export class SaveSnapshotCall__Outputs {
   }
 }
 
-export class SendHeartbeatCall extends ethereum.Call {
-  get inputs(): SendHeartbeatCall__Inputs {
-    return new SendHeartbeatCall__Inputs(this);
-  }
-
-  get outputs(): SendHeartbeatCall__Outputs {
-    return new SendHeartbeatCall__Outputs(this);
-  }
-}
-
-export class SendHeartbeatCall__Inputs {
-  _call: SendHeartbeatCall;
-
-  constructor(call: SendHeartbeatCall) {
-    this._call = call;
-  }
-}
-
-export class SendHeartbeatCall__Outputs {
-  _call: SendHeartbeatCall;
-
-  constructor(call: SendHeartbeatCall) {
-    this._call = call;
-  }
-}
-
 export class SendMessageCall extends ethereum.Call {
   get inputs(): SendMessageCall__Inputs {
     return new SendMessageCall__Inputs(this);
@@ -328,15 +319,15 @@ export class SendMessageCall__Inputs {
     this._call = call;
   }
 
-  get to(): Address {
+  get _to(): Address {
     return this._call.inputValues[0].value.toAddress();
   }
 
-  get fnSelector(): Bytes {
+  get _fnSelector(): Bytes {
     return this._call.inputValues[1].value.toBytes();
   }
 
-  get data(): Bytes {
+  get _data(): Bytes {
     return this._call.inputValues[2].value.toBytes();
   }
 }
@@ -370,8 +361,14 @@ export class SendSnapshotCall__Inputs {
     this._call = call;
   }
 
-  get epochSend(): BigInt {
+  get _epoch(): BigInt {
     return this._call.inputValues[0].value.toBigInt();
+  }
+
+  get _claim(): SendSnapshotCall_claimStruct {
+    return changetype<SendSnapshotCall_claimStruct>(
+      this._call.inputValues[1].value.toTuple()
+    );
   }
 }
 
@@ -380,5 +377,35 @@ export class SendSnapshotCall__Outputs {
 
   constructor(call: SendSnapshotCall) {
     this._call = call;
+  }
+}
+
+export class SendSnapshotCall_claimStruct extends ethereum.Tuple {
+  get stateRoot(): Bytes {
+    return this[0].toBytes();
+  }
+
+  get claimer(): Address {
+    return this[1].toAddress();
+  }
+
+  get timestampClaimed(): BigInt {
+    return this[2].toBigInt();
+  }
+
+  get timestampVerification(): BigInt {
+    return this[3].toBigInt();
+  }
+
+  get blocknumberVerification(): BigInt {
+    return this[4].toBigInt();
+  }
+
+  get honest(): i32 {
+    return this[5].toI32();
+  }
+
+  get challenger(): Address {
+    return this[6].toAddress();
   }
 }
