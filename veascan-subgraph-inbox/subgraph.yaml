@@ -3,27 +3,27 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
-    name: VeaInboxArbToGnosis
-    network: arbitrum-goerli
+    name: VeaInbox
+    network: arbitrum-sepolia
     source:
-      address: "0x3b894FE680deB990b4Fb7E7D0000C32Af06687C3"
+      address: "0x77e95F54032f467eC45c48C6affc203f93858783"
       abi: VeaInbox
-      startBlock: 18151531
+      startBlock: 18210847
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.6
+      apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-      - Snapshot
-      - Message
-      - Refs
+        - Snapshot
+        - Message
+        - Refs
       abis:
         - name: VeaInbox
-          file: ../contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json
       eventHandlers:
         - event: MessageSent(bytes)
           handler: handleMessageSent
-        - event: SnapshotSaved(uint256)
+        - event: SnapshotSaved(bytes32,uint256,uint64)
           handler: handleSnapshotSaved
         - event: SnapshotSent(indexed uint256,bytes32)
           handler: handleSnapshotSent
