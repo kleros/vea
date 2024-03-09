@@ -6,7 +6,7 @@ import { ethers } from "hardhat";
 
 enum ReceiverChains {
   ETHEREUM_MAINNET = 1,
-  ETHEREUM_Sepolia = 11155111,
+  ETHEREUM_SEPOLIA = 11155111,
   HARDHAT = 31337,
 }
 
@@ -94,8 +94,9 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     const veaOutbox = await deploy("VeaOutbox", {
       from: deployer,
-      contract: "VeaOutboxArbToEthDevnet",
+      contract: "VeaOutboxMockArbToEth",
       args: [
+        arbSysAddress,
         deposit,
         epochPeriod,
         minChallengePeriod,
