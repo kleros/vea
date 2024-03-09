@@ -45,9 +45,10 @@ async function initialize(chain_id: number): Promise<number> {
   }
   fs.writeFileSync(lock_file_name, process.pid.toString(), { encoding: "utf8" });
 
-  const state_file_name = "./state/" + chain_id + ".json";
-  const state_file_name_fs_check = "./src/state/" + chain_id + ".json";
-  if (!fs.existsSync(state_file_name_fs_check)) {
+  // STATE_DIR is absolute path of the directory where the state files are stored
+  // STATE_DIR must have trailing slash
+  const state_file = process.env.STATE_DIR + chain_id + ".json";
+  if (!fs.existsSync(state_file)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
     await updateStateFile(chain_id, tsnow, 0);
@@ -55,7 +56,7 @@ async function initialize(chain_id: number): Promise<number> {
 
   // print pwd for debugging
   console.log(process.cwd());
-  var chain_state = require(state_file_name);
+  var chain_state = require(state_file);
 
   let nonce = 0;
   if ("nonce" in chain_state) {
