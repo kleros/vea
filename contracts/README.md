@@ -87,13 +87,13 @@ yarn start-local
 ##### Testnets
 
 ```bash
-# arbitrumSepolia -> Goerli
-yarn deploy --network goerli --tags ArbGoerliToGoerliOutbox
-yarn deploy --network arbitrumSepolia --tags ArbGoerliToGoerliInbox
+# arbitrumSepolia -> Sepolia
+yarn deploy --network sepolia --tags ArbSepoliaToSepoliaOutbox
+yarn deploy --network arbitrumSepolia --tags ArbSepoliaToSepoliaInbox
 
 # arbitrumSepolia -> Chiado
-yarn deploy --network chiado --tags ArbGoerliToChiadoOutbox
-yarn deploy --network arbitrumSepolia --tags ArbGoerliToChiadoInbox
+yarn deploy --network chiado --tags ArbSepoliaToChiadoOutbox
+yarn deploy --network arbitrumSepolia --tags ArbSepoliaToChiadoInbox
 ```
 
 ##### Mainnets
@@ -123,8 +123,8 @@ This must be done for each network separately.
 
 ```bash
 # explorer
-yarn etherscan-verify --network <arbitrumSepolia|arbitrum|goerli|mainnet|chiado|gnosischain>
+yarn etherscan-verify --network <arbitrumSepolia|arbitrum|sepolia|mainnet|chiado|gnosischain>
 
 # sourcify
-yarn sourcify --network <arbitrumSepolia|arbitrum|goerli|mainnet|chiado|gnosischain>
+yarn sourcify --network <arbitrumSepolia|arbitrum|sepolia|mainnet|chiado|gnosischain>
 ```
