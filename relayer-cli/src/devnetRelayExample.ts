@@ -4,7 +4,7 @@ require("dotenv").config();
 
 // let chain_ids = [5, 10200];
 let chain_ids = [11155111];
-const epochPeriod = 600; // 30 min
+const epochPeriod = 1800; // 30 min
 ["SIGINT", "SIGTERM", "SIGQUIT", "EXIT", "MODULE_NOT_FOUND"].forEach((signal) =>
   process.on(signal, async () => {
     console.log("exit");
