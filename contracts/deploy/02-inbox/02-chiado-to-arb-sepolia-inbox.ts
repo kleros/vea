@@ -14,14 +14,14 @@ const paramsByChainId = {
   },
   HARDHAT: {
     amb: ethers.constants.AddressZero,
-    epochPeriod: 1800, // 30 minutes
+    epochPeriod: 600, // 10 minutes
   },
 };
 
 // TODO: use deterministic deployments
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
-  const { deploy, execute } = deployments;
+  const { deploy } = deployments;
   const chainId = Number(await getChainId());
 
   const deployer = (await getNamedAccounts()).deployer;
@@ -31,7 +31,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
 
-  const veaOutboxArb = await hre.companionNetworks.arbitrumGoerli.deployments.get("VeaOutboxGnosisToArbDevnet");
+  const veaOutboxArb = await hre.companionNetworks.arbitrumSepolia.deployments.get("VeaOutboxGnosisToArbDevnet");
 
   const gasOptions = {
     maxFeePerGas: ethers.utils.parseUnits("1", "gwei"),
@@ -49,7 +49,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("VeaInboxGnosisToArbDevnet deployed to: %s", inbox.address);
 };
 
-deployInbox.tags = ["ChiadoToArbGoerliInbox"];
+deployInbox.tags = ["ChiadoToArbSepoliaInbox"];
 deployInbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

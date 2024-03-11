@@ -5,7 +5,7 @@ import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
 
 enum ReceiverChains {
-  ARBITRUM_GOERLI = 421613,
+  ARBITRUM_SEPOLIA = 421614,
   ARBITRUM = 42161,
   HARDHAT = 31337,
 }
@@ -19,7 +19,7 @@ const paramsByChainId = {
     sequencerDelayLimit: 86400,
     sequencerFutureLimit: 3600,
   },
-  ARBITRUM_GOERLI: {
+  ARBITRUM_SEPOLIA: {
     deposit: parseEther("4"),
     epochPeriod: 7200, // 2 hours
     challengePeriod: 86400, // 24 hours
@@ -29,8 +29,8 @@ const paramsByChainId = {
   },
   HARDHAT: {
     deposit: parseEther("2"),
-    epochPeriod: 1800, // 30 min
-    challengePeriod: 1800, // 30 min
+    epochPeriod: 600, // 10 min
+    challengePeriod: 600, // 10 min
     numEpochTimeout: 10000000, // never
     sequencerDelayLimit: 86400,
     sequencerFutureLimit: 3600,
@@ -49,13 +49,13 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const senderNetworks = {
     ARBITRUM: config.networks.gnosischain,
-    ARBITRUM_GOERLI: config.networks.chiado,
+    ARBITRUM_SEPOLIA: config.networks.chiado,
     HARDHAT: config.networks.localhost,
   };
 
   const routerNetworks = {
     ARBITRUM: config.networks.mainnet,
-    ARBITRUM_GOERLI: config.networks.goerli,
+    ARBITRUM_SEPOLIA: config.networks.sepolia,
     HARDHAT: config.networks.localhost,
   };
 

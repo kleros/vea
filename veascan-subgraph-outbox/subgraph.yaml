@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: VeaOutbox
-    network: goerli
+    network: sepolia
     source:
-      address: "0xAA0FA4fB781d8e17F3998291774601e06f2f27be"
+      address: "0x5AD255400913515C8DA7E82E6b8A109fA5c46135"
       abi: VeaOutbox
-      startBlock: 8904168
+      startBlock: 5379614
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -20,11 +20,11 @@ dataSources:
         - Verified
       abis:
         - name: VeaOutbox
-          file: ../contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json
+          file: ../contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json
       eventHandlers:
-        - event: Challenged(uint256,indexed address)
+        - event: Challenged(indexed uint256,indexed address)
           handler: handleChallenged
-        - event: Claimed(indexed address,bytes32)
+        - event: Claimed(indexed address,indexed uint256,bytes32)
           handler: handleClaimed
         - event: MessageRelayed(uint64)
           handler: handleMessageRelayed

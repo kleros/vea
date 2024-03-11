@@ -18,13 +18,13 @@ const paramsByChainId = {
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
     sequencerLimit: 86400,
     maxMissingBlocks: 10000000000000,
-    routerChainId: 5,
+    routerChainId: 11155111,
     WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
   },
   HARDHAT: {
     deposit: parseEther("1"),
-    epochPeriod: 1800, // 30 min
-    minChallengePeriod: 600, // 15 min
+    epochPeriod: 600, // 10 min
+    minChallengePeriod: 600, // 10 min
     numEpochTimeout: 24, // 6 hours
     amb: ethers.constants.AddressZero,
     sequencerLimit: 0,
@@ -45,12 +45,12 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const senderNetworks = {
-    GNOSIS_CHIADO: config.networks.arbitrumGoerli,
+    GNOSIS_CHIADO: config.networks.arbitrumSepolia,
     HARDHAT: config.networks.localhost,
   };
 
   const routerNetworks = {
-    GNOSIS_CHIADO: config.networks.goerli,
+    GNOSIS_CHIADO: config.networks.sepolia,
     HARDHAT: config.networks.localhost,
   };
 
@@ -140,7 +140,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deployOutbox.tags = ["ArbGoerliToChiadoOutbox"];
+deployOutbox.tags = ["ArbSepoliaToChiadoOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

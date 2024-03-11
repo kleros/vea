@@ -17,7 +17,7 @@ export function handleMessageSent(event: MessageSent): void {
   message.snapshot = snapshot.id;
   message.txHash = event.transaction.hash;
   message.timestamp = event.block.timestamp;
-  const msgData = event.params.nodeData;
+  const msgData = event.params._nodeData;
   const _to = new ByteArray(20);
   for (let i = 0; i < 20; i++) _to[i] = msgData[i + 8];
 
@@ -98,7 +98,7 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
 }
 
 export function handleSnapshotSent(event: SnapshotSent): void {
-  const epochSent = event.params.epochSent;
+  const epochSent = event.params._epochSent;
   const fallback = new Fallback(
     epochSent.plus(event.block.timestamp).toString()
   );
@@ -107,7 +107,7 @@ export function handleSnapshotSent(event: SnapshotSent): void {
   fallback.timestamp = event.block.timestamp;
   fallback.txHash = event.transaction.hash;
   fallback.executor = event.transaction.from;
-  fallback.ticketId = event.params.ticketId;
+  fallback.ticketId = event.params._ticketId;
 
   for (let i = ref.currentSnapshotIndex.toI32(); i >= 0; i--) {
     const snapshotId = BigInt.fromI32(i).toString();

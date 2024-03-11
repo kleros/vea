@@ -1,5 +1,5 @@
-import VeaInboxArbitrumGoerli from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json";
-import VeaOutboxGoerli from "@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json";
+import VeaInboxArbitrumGoerli from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json";
+import VeaOutboxGoerli from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
 import { Chain, arbitrumGoerli, goerli } from "@wagmi/chains";
 import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
 import Ethereum from "tsx:svgs/chains/ethereum.svg";
@@ -31,9 +31,9 @@ export const bridges: IBridge[] = [
     to: goerli.id,
     inboxAddress: VeaInboxArbitrumGoerli.address as `0x${string}`,
     inboxEndpoint:
-      "https://api.thegraph.com/subgraphs/name/alcercu/veascantest",
+      "https://api.studio.thegraph.com/query/67213/veascan-inbox-arb-sep-devnet/version/latest",
     outboxAddress: VeaOutboxGoerli.address as `0x${string}`,
     outboxEndpoint:
-      "https://api.thegraph.com/subgraphs/name/alcercu/veascan-outbox-goerli",
+      "https://api.studio.thegraph.com/query/67213/veascan-outbox-arb-sep-devnet/version/latest",
   },
 ];

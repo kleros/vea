@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 
 enum RouterChains {
   ETHEREUM_MAINNET = 1,
-  ETHEREUM_GOERLI = 5,
+  ETHEREUM_SEPOLIA = 11155111,
   HARDHAT = 31337,
 }
 
@@ -13,8 +13,8 @@ const paramsByChainId = {
     arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
     amb: "0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e",
   },
-  ETHEREUM_GOERLI: {
-    arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
+  ETHEREUM_SEPOLIA: {
+    arbitrumBridge: "0x38f918D0E9F1b721EDaA41302E399fa1B79333a9", // https://developer.arbitrum.io/useful-addresses
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
   },
   HARDHAT: {
@@ -26,7 +26,7 @@ const paramsByChainId = {
 // TODO: use deterministic deployments
 const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
-  const { deploy, execute } = deployments;
+  const { deploy } = deployments;
   const chainId = Number(await getChainId());
 
   // fallback to hardhat node signers on local network
@@ -49,7 +49,7 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const outboxNetwork = chainId === 1 ? hre.companionNetworks.arbitrum : hre.companionNetworks.arbitrumGoerli;
+    const outboxNetwork = chainId === 1 ? hre.companionNetworks.arbitrum : hre.companionNetworks.arbitrumSepolia;
     const inboxNetwork = chainId === 1 ? hre.companionNetworks.gnosischain : hre.companionNetworks.chiado;
     const veaOutbox = await outboxNetwork.deployments.get("VeaOutboxGnosisToArb" + (chainId === 1 ? "" : "Testnet"));
     const veaInbox = await inboxNetwork.deployments.get("VeaInboxGnosisToArb" + (chainId === 1 ? "" : "Testnet"));

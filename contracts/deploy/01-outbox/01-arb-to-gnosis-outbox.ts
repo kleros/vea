@@ -30,7 +30,7 @@ const paramsByChainId = {
     minChallengePeriod: 10800, // 3 hours
     numEpochTimeout: 1000000, // never
     maxMissingBlocks: 1000000, // any
-    routerChainId: 5,
+    routerChainId: 11155111,
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
     WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
     sequencerLimit: 86400, // 24 hours
@@ -38,8 +38,8 @@ const paramsByChainId = {
   HARDHAT: {
     deposit: parseEther("5"), // 120 xDAI budget for timeout
     // Average happy path wait time is 22.5 mins, assume no censorship
-    epochPeriod: 600, // 15 min
-    challengePeriod: 600, // 15 min (assume no sequencer backdating)
+    epochPeriod: 600, // 10 min
+    challengePeriod: 600, // 10 min (assume no sequencer backdating)
     numEpochTimeout: 24, // 6 hours
     claimDelay: 2,
     amb: ethers.constants.AddressZero,
@@ -62,7 +62,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const routerNetworks = {
     GNOSIS_MAINNET: config.networks.mainnet,
-    GNOSIS_CHIADO: config.networks.goerli,
+    GNOSIS_CHIADO: config.networks.sepolia,
     HARDHAT: config.networks.localhost,
   };
 

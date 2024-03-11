@@ -18,14 +18,14 @@ const paramsByChainId = {
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
   },
   HARDHAT: {
-    epochPeriod: 7200, // 2 hours
+    epochPeriod: 600, // 10 minutes
   },
 };
 
 // TODO: use deterministic deployments
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
-  const { deploy, execute } = deployments;
+  const { deploy } = deployments;
   const chainId = Number(await getChainId());
 
   const deployer = (await getNamedAccounts()).deployer;
@@ -35,7 +35,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
 
-  const veaOutboxArb = await hre.companionNetworks.arbitrumGoerli.deployments.get(
+  const veaOutboxArb = await hre.companionNetworks.arbitrumSepolia.deployments.get(
     "VeaOutboxGnosisToArb" + (chainId === 100 ? "" : "Testnet")
   );
 

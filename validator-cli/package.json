@@ -12,7 +12,7 @@
   "scripts": {
     "start": "npx ts-node ./src/ArbToEth/watcher.ts",
     "start-chiado-devnet": "npx ts-node ./src/devnet/arbToChiado/happyPath.ts",
-    "start-goerli-devnet": "npx ts-node ./src/devnet/arbToGoerli/happyPath.ts"
+    "start-sepolia-devnet": "npx ts-node ./src/devnet/arbToSepolia/happyPath.ts"
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.1.2",

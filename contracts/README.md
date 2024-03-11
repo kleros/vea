@@ -8,23 +8,13 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 ### Current version
 
-#### Goerli
+#### Sepolia
 
-- [RouterArbToGnosisDevnet](https://goerli.etherscan.io/address/0x6164EA58a1f5359D2E54ea8eB9e5971B7C8dB0f1)
-- [RouterArbToGnosisTestnet](https://goerli.etherscan.io/address/0x5Df4452965cd2ff87f205AE5b10b5d0F65223116)
-- [RouterGnosisToArbDevnet](https://goerli.etherscan.io/address/0xcC196cC90bD30109E39400817e6ef63A1b744659)
-- [RouterGnosisToArbTestnet](https://goerli.etherscan.io/address/0x6bC3C7Bcd2C6C2d8BFEAA3642c425cAE25F7fe17)
-- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0xDa528e9BE20a8A22437D28Ed6C63bb6d00Ad0032)
-- [VeaOutboxArbToEthTestnet](https://goerli.etherscan.io/address/0xDF216C98773DA7998EE49AE8106BFe9724cf2944)
+- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0x5AD255400913515C8DA7E82E6b8A109fA5c46135)
 
-#### Arbitrum Goerli
+#### Arbitrum Sepolia
 
-- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0xE99C6177CD8731DE6F108443CcAf7449074f6aED)
-- [VeaInboxArbToEthTestnet](https://goerli.arbiscan.io/address/0x95100f56d040fD48AA52dcDD05A9Fc477d55bd2E)
-- [VeaInboxArbToGnosisDevnet](https://goerli.arbiscan.io/address/0xf38b8739635d2F4cb38Bd453453AB9d41fD16300)
-- [VeaInboxArbToGnosisTestnet](https://goerli.arbiscan.io/address/0x1418a26Ca3A73a0EA3aBf943E8B524bEFD7C96cD)
-- [VeaOutboxGnosisToArbDevnet](https://goerli.arbiscan.io/address/0xE14fA0B3910CB0853E811375B9a6fcEEE32db521)
-- [VeaOutboxGnosisToArbTestnet](https://goerli.arbiscan.io/address/0x18AB70ea8dBc7072D1C1C90bA0bC1547d92198CF)
+- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0x77e95F54032f467eC45c48C6affc203f93858783)
 
 #### Chiado
 
@@ -97,13 +87,13 @@ yarn start-local
 ##### Testnets
 
 ```bash
-# ArbitrumGoerli -> Goerli
-yarn deploy --network goerli --tags ArbGoerliToGoerliOutbox
-yarn deploy --network arbitrumGoerli --tags ArbGoerliToGoerliInbox
+# arbitrumSepolia -> Sepolia
+yarn deploy --network sepolia --tags ArbSepoliaToSepoliaOutbox
+yarn deploy --network arbitrumSepolia --tags ArbSepoliaToSepoliaInbox
 
-# ArbitrumGoerli -> Chiado
-yarn deploy --network chiado --tags ArbGoerliToChiadoOutbox
-yarn deploy --network arbitrumGoerli --tags ArbGoerliToChiadoInbox
+# arbitrumSepolia -> Chiado
+yarn deploy --network chiado --tags ArbSepoliaToChiadoOutbox
+yarn deploy --network arbitrumSepolia --tags ArbSepoliaToChiadoInbox
 ```
 
 ##### Mainnets
@@ -133,8 +123,8 @@ This must be done for each network separately.
 
 ```bash
 # explorer
-yarn etherscan-verify --network <arbitrumGoerli|arbitrum|goerli|mainnet|chiado|gnosischain>
+yarn etherscan-verify --network <arbitrumSepolia|arbitrum|sepolia|mainnet|chiado|gnosischain>
 
 # sourcify
-yarn sourcify --network <arbitrumGoerli|arbitrum|goerli|mainnet|chiado|gnosischain>
+yarn sourcify --network <arbitrumSepolia|arbitrum|sepolia|mainnet|chiado|gnosischain>
 ```

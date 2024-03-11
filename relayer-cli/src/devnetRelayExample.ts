@@ -2,7 +2,8 @@ import { relayAllFrom } from "./utils/relay";
 import * as fs from "fs";
 require("dotenv").config();
 
-let chain_ids = [5, 10200];
+// let chain_ids = [5, 10200];
+let chain_ids = [11155111];
 const epochPeriod = 1800; // 30 min
 ["SIGINT", "SIGTERM", "SIGQUIT", "EXIT", "MODULE_NOT_FOUND"].forEach((signal) =>
   process.on(signal, async () => {
@@ -21,22 +22,20 @@ const epochPeriod = 1800; // 30 min
   while (1) {
     for (const chain_id of chain_ids) {
       let nonce = await initialize(chain_id);
-      const senderGateway =
-        chain_id === 10200
-          ? "0xe6aC8CfF97199A67b8121a3Ce3aC98772f90B94b"
-          : "0x177AfBF3cda970024Efa901516735aF9c3B894a4";
-      nonce = await relayAllFrom(chain_id, nonce, senderGateway);
-      await updateStateFile(chain_id, Math.floor(Date.now() / 1000), nonce);
+      // This is libghtbulb switch address in arbitrum sepolia
+      const sender = "0x4A9EF2E97B780ea6E8DE3fD8acd4cBA8C061F173";
+      nonce = await relayAllFrom(chain_id, nonce, sender);
+      if (nonce != null) await updateStateFile(chain_id, Math.floor(Date.now() / 1000), nonce);
     }
     const currentTS = Math.floor(Date.now() / 1000);
-    const delayAmount = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 300 * 1000;
+    const delayAmount = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 100 * 1000;
     console.log("waiting for the next epoch. . .", Math.floor(delayAmount / 1000), "seconds");
     await delay(delayAmount);
   }
 })();
 
 async function initialize(chain_id: number): Promise<number> {
-  if (chain_id !== 5 && chain_id !== 10200) throw new Error("Invalid chainid");
+  if (chain_id !== 11155111) throw new Error("Invalid chainid");
 
   const lock_file_name = "./src/state/" + chain_id + ".pid";
 
@@ -46,8 +45,10 @@ async function initialize(chain_id: number): Promise<number> {
   }
   fs.writeFileSync(lock_file_name, process.pid.toString(), { encoding: "utf8" });
 
-  const state_file_name = "./state/" + chain_id + ".json";
-  if (!fs.existsSync(state_file_name)) {
+  // STATE_DIR is absolute path of the directory where the state files are stored
+  // STATE_DIR must have trailing slash
+  const state_file = process.env.STATE_DIR + chain_id + ".json";
+  if (!fs.existsSync(state_file)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
     await updateStateFile(chain_id, tsnow, 0);
@@ -55,7 +56,7 @@ async function initialize(chain_id: number): Promise<number> {
 
   // print pwd for debugging
   console.log(process.cwd());
-  var chain_state = require(state_file_name);
+  var chain_state = require(state_file);
 
   let nonce = 0;
   if ("nonce" in chain_state) {

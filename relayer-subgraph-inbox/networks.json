@@ -1,8 +1,8 @@
 {
-  "arbitrum-goerli": {
+  "arbitrum-sepolia": {
     "VeaInbox": {
-      "address": "0x3b894FE680deB990b4Fb7E7D0000C32Af06687C3",
-      "startBlock": 16978653
+      "address": "0x77e95F54032f467eC45c48C6affc203f93858783",
+      "startBlock": 18210847
     }
   }
 }

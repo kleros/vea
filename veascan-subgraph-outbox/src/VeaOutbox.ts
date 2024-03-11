@@ -18,12 +18,9 @@ export function handleClaimed(event: Claimed): void {
   const claimIndex = useClaimIndex();
   const claim = new Claim(claimIndex.toString());
   const outbox = VeaOutbox.bind(event.address);
-  const claimDelay = outbox.claimDelay();
-  const epochPeriod = outbox.epochPeriod();
-  const epoch = event.block.timestamp.minus(claimDelay).div(epochPeriod);
-  claim.epoch = epoch;
+  claim.epoch = event.params._epoch;
   claim.txHash = event.transaction.hash;
-  claim.stateroot = event.params.stateRoot;
+  claim.stateroot = event.params._stateRoot;
   claim.timestamp = event.block.timestamp;
   claim.bridger = event.transaction.from; // same as event.params.claimer
   claim.challenged = false;
@@ -41,7 +38,7 @@ export function handleChallenged(event: Challenged): void {
   ) {
     const claim = Claim.load(i.toString());
     if (!claim) continue;
-    if (claim.epoch.equals(event.params.epoch)) {
+    if (claim.epoch.equals(event.params._epoch)) {
       outterClaim = claim;
       break;
     }
@@ -69,7 +66,7 @@ export function handleVerified(event: Verified): void {
     i.minus(BigInt.fromI32(1))
   ) {
     const claim = Claim.load(i.toString());
-    if (claim!.epoch.equals(event.params.epoch)) {
+    if (claim!.epoch.equals(event.params._epoch)) {
       const verification = new Verification(claim!.id);
       verification.claim = claim!.id;
       verification.timestamp = event.block.timestamp;
@@ -82,7 +79,7 @@ export function handleVerified(event: Verified): void {
 }
 
 export function handleMessageRelayed(event: MessageRelayed): void {
-  const message = new Message(event.params.msgId.toString());
+  const message = new Message(event.params._msgId.toString());
   message.timestamp = event.block.timestamp;
   message.txHash = event.transaction.hash;
   message.relayer = event.transaction.from;
