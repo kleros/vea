@@ -60,7 +60,8 @@ const getProofIndices = (nonce: number, count: number) => {
 
   const treeDepth = Math.ceil(Math.log2(count));
 
-  for (let i = 0; i <= treeDepth; i++) {
+  let i = 0;
+  do {
     if (i == 0 && (nonce ^ 1) < count) proof.push((nonce ^ 1).toString()); // sibling
     else {
       const low = ((nonce >> i) ^ 1) << i;
@@ -68,7 +69,8 @@ const getProofIndices = (nonce: number, count: number) => {
       if (low < count - 1) proof.push(low.toString() + "," + high.toString());
       else if (low == count - 1) proof.push(low.toString());
     }
-  }
+    i++;
+  } while (i < treeDepth);
 
   return proof;
 };
