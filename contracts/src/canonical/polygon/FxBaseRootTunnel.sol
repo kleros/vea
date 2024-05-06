@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // https://github.com/fx-portal/contracts/blob/main/contracts/tunnel/FxBaseRootTunnel.sol
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import {RLPReader} from "./lib/RLPReader.sol";
 import {MerklePatriciaProof} from "./lib/MerklePatriciaProof.sol";
@@ -22,7 +22,7 @@ contract ICheckpointManager {
 
     /// @notice mapping of checkpoint header numbers to block details
     /// @dev These checkpoints are submited by plasma contracts
-    mapping(uint256 => HeaderBlock) public headerBlocks;
+    mapping(uint256 headerNumber => HeaderBlock) public headerBlocks;
 }
 
 ///@dev Ethereum-side abstract contract of the bidirectional Polygon/Ethereum bridge

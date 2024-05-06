@@ -6,7 +6,7 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 /// @dev Interface of the Vea Outbox on Optimistic Rollup L2s like Arbitrum, Optimism, Base, Specular where L2 storage is inexpensive compared to L1 calldata.
 interface IVeaOutboxOnL2 {

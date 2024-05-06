@@ -6,7 +6,7 @@
 // implementation: https://etherscan.io/address/0xD03bFe2CE83632F4E618a97299cc91B1335BB2d9#code
 // interface is pruned for relevant function stubs
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "./IBridge.sol";
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // https://github.com/poanetwork/tokenbridge-contracts/blob/master/contracts/mocks/AMBMock.sol
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "../../../canonical/gnosis-chain/IAMB.sol";
 
