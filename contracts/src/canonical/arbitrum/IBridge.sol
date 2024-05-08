@@ -4,7 +4,7 @@
 // implementation: https://etherscan.io/address/0x1066cecc8880948fe55e427e94f1ff221d626591#code
 // interface is pruned for relevant function stubs
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 interface IBridge {
     function activeOutbox() external view returns (address);

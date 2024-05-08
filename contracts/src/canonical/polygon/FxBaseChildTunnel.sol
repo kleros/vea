@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // https://github.com/fx-portal/contracts/blob/main/contracts/tunnel/FxBaseChildTunnel.sol
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 // IFxMessageProcessor represents interface to process message
 interface IFxMessageProcessor {

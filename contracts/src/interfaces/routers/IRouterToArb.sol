@@ -6,7 +6,7 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 /// @dev Interface of the Vea Router intended to be deployed on an intermediary chain which routes messages to Arbitrum where calldata is the primary cost.
 ///      eg. Gnosis (L1) -> Ethereum (L1) -> Arbitrum (L2), the IRouterToL2 will be deployed on Ethereum (L1) routing messages to Arbitrum (L2).
