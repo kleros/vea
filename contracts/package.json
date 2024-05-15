@@ -1,7 +1,10 @@
 {
   "name": "@kleros/vea-contracts",
-  "version": "0.1.14",
+  "version": "0.3.2",
   "description": "Smart contracts for Vea",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/kleros/vea.git"
@@ -32,7 +35,7 @@
   },
   "scripts": {
     "build": "hardhat compile",
-    "clean": "hardhat clean",
+    "clean": "hardhat clean && rm -rf dist typechain-types",
     "check": "hardhat check",
     "test": "TS_NODE_TRANSPILE_ONLY=1 hardhat test",
     "start": "hardhat node --tags nothing",
@@ -44,9 +47,10 @@
     "size": "hardhat size-contracts --no-compile",
     "watch": "hardhat watch",
     "docgen": "hardhat docgen",
-    "release:patch": "scripts/publish.sh patch",
-    "release:minor": "scripts/publish.sh minor",
-    "release:major": "scripts/publish.sh major"
+    "release:patch": "yarn version patch && yarn npm publish",
+    "release:minor": "yarn version minor && yarn npm publish",
+    "release:major": "yarn version major && yarn npm publish",
+    "prepublish": "./scripts/prepublish.sh"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
@@ -75,7 +79,6 @@
     "json-schema": "^0.4.0",
     "mocha": "^10.2.0",
     "node-fetch": "^3.3.1",
-    "shelljs": "^0.8.5",
     "solhint": "^3.4.1",
     "solidity-coverage": "^0.8.2",
     "ts-node": "^10.9.1",
@@ -84,5 +87,19 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.3"
-  }
+  },
+  "files": [
+    "src",
+    "deployments",
+    "typechain-types",
+    "!hardhat.config.*",
+    "!src/test",
+    "!typechain-types/test",
+    "!typechain-types/factories/test",
+    "!test",
+    "!deploy",
+    "!deployments/localhost",
+    "!deployments/hardhat",
+    "!deployments/**/solcInputs"
+  ]
 }
