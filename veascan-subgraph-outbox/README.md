@@ -2,10 +2,10 @@
 
 ## Deployments
 
-### Goerli (hosted service)
+### Sepolia (hosted service)
 
-- [Subgraph explorer](https://thegraph.com/explorer/subgraph/kleros/veascan-outbox-goerli)
-- [Subgraph endpoints](https://api.thegraph.com/subgraphs/name/kleros/veascan-outbox-goerli)
+- [Subgraph explorer](https://thegraph.com/explorer/subgraph/kleros/veascan-outbox-sepolia)
+- [Subgraph endpoints](https://api.thegraph.com/subgraphs/name/kleros/veascan-outbox-sepolia)
 
 ## Chiado (GoldSky)
 
@@ -26,7 +26,7 @@ $ yarn build
 This script updates `subgraph.yml` by parsing the deployment artifacts in `../contracts/deployments`.
 
 ```bash
-yarn update:goerli
+yarn update:sepolia
 
 yarn update:chiado
 ```
@@ -44,7 +44,7 @@ $ yarn run graph auth --product hosted-service
 ### Deployment
 
 ```bash
-yarn deploy:goerli
+yarn deploy:sepolia
 ```
 
 ## Deployment to Chiado via GoldSky

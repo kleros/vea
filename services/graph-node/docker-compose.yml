@@ -17,8 +17,7 @@ services:
       postgres_pass: let-me-in
       postgres_db: graph-node
       ipfs: "ipfs:5001"
-      ethereum: "arbitrum-goerli:https://goerli-rollup.arbitrum.io/rpc goerli:https://rpc.ankr.com/eth_goerli"
-      #ethereum: "arbitrum-goerli:https://goerli-rollup.arbitrum.io/rpc goerli:https://rpc.ankr.com/eth_goerli chiado:https://rpc.chiadochain.net gnosischain:https://rpc.ankr.com/gnosis mainnet:https://rpc.ankr.com/eth"
+      ethereum: "arbitrum-sepolia:https://sepolia-rollup.arbitrum.io/rpc sepolia:https://rpc.ankr.com/eth_sepolia chiado:https://rpc.chiadochain.net gnosischain:https://rpc.ankr.com/gnosis mainnet:https://rpc.ankr.com/eth"
       GRAPH_LOG: debug
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -32,11 +31,7 @@ services:
     image: postgres
     ports:
       - "5432:5432"
-    command:
-      [
-        "postgres",
-        "-cshared_preload_libraries=pg_stat_statements"
-      ]
+    command: ["postgres", "-cshared_preload_libraries=pg_stat_statements"]
     environment:
       POSTGRES_USER: graph-node
       POSTGRES_PASSWORD: let-me-in

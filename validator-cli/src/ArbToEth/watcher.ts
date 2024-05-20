@@ -26,8 +26,8 @@ const watch = async () => {
   const flashbotsProvider = await FlashbotsBundleProvider.create(
     providerEth, // a normal ethers.js provider, to perform gas estimiations and nonce lookups
     authSigner, // ethers.js signer wallet, only for signing request payloads, not transactions
-    "https://relay-goerli.flashbots.net/",
-    "goerli"
+    "https://relay-sepolia.flashbots.net/",
+    "sepolia"
   );
 
   const veaInbox = VeaInboxArbToEth__factory.connect(process.env.VEAINBOX_ARB_TO_ETH_ADDRESS, signerArb);

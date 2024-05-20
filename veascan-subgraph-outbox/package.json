@@ -10,7 +10,7 @@
     "yarn": "3.3.1"
   },
   "scripts": {
-    "update:goerli": "./scripts/update.sh goerli goerli ArbToEthDevnet",
+    "update:sepolia": "./scripts/update.sh sepolia sepolia ArbToEthDevnet",
     "update:chiado": "./scripts/update.sh chiado chiado ArbToGnosisDevnet",
     "codegen": "graph codegen",
     "build": "graph build",
