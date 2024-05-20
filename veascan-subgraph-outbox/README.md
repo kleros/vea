@@ -4,8 +4,8 @@
 
 ### Sepolia (hosted service)
 
-- [Subgraph explorer](https://thegraph.com/explorer/subgraph/kleros/veascan-outbox-sepolia)
-- [Subgraph endpoints](https://api.thegraph.com/subgraphs/name/kleros/veascan-outbox-sepolia)
+- [Subgraph explorer](https://thegraph.com/studio/subgraph/veascan-outbox-arb-sep-devnet/)
+- [Subgraph endpoints](https://api.studio.thegraph.com/query/67213/veascan-outbox-arb-sep-devnet/version/latest)
 
 ## Chiado (GoldSky)
 
