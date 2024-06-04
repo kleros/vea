@@ -6,7 +6,7 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 /// @dev Interface of a contract which is updatable, receiving parameter updates from an L1 contract through a cross-chain call.
 /// @dev eg. Arbitrum (L2) -> Ethereum (L1) -> Gnosis (L1), the veaOutbox on Gnosis will be an ISequencerDelayUpdatable contract which receives updates from the router on Ethereum.

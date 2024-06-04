@@ -1,6 +1,6 @@
-import VeaInboxArbitrumGoerli from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json";
-import VeaOutboxGoerli from "@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json";
-import { Chain, arbitrumGoerli, goerli } from "@wagmi/chains";
+import VeaInboxArbitrumSepolia from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json";
+import VeaOutboxSepolia from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
+import { Chain, arbitrumSepolia, sepolia } from "@wagmi/core/chains";
 import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
 import Ethereum from "tsx:svgs/chains/ethereum.svg";
 
@@ -9,8 +9,8 @@ export interface IChain extends Chain {
 }
 
 export const supportedChains = [
-  { ...arbitrumGoerli, logo: Arbitrum },
-  { ...goerli, logo: Ethereum },
+  { ...arbitrumSepolia, logo: Arbitrum },
+  { ...sepolia, logo: Ethereum },
 ];
 
 export const getChain = (id: number): IChain =>
@@ -27,13 +27,13 @@ interface IBridge {
 
 export const bridges: IBridge[] = [
   {
-    from: arbitrumGoerli.id,
-    to: goerli.id,
-    inboxAddress: VeaInboxArbitrumGoerli.address as `0x${string}`,
+    from: arbitrumSepolia.id,
+    to: sepolia.id,
+    inboxAddress: VeaInboxArbitrumSepolia.address as `0x${string}`,
     inboxEndpoint:
-      "https://api.thegraph.com/subgraphs/name/alcercu/veascantest",
-    outboxAddress: VeaOutboxGoerli.address as `0x${string}`,
+      "https://api.studio.thegraph.com/query/67213/veascan-inbox-arb-sep-devnet/version/latest",
+    outboxAddress: VeaOutboxSepolia.address as `0x${string}`,
     outboxEndpoint:
-      "https://api.thegraph.com/subgraphs/name/alcercu/veascan-outbox-goerli",
+      "https://api.studio.thegraph.com/query/67213/veascan-outbox-arb-sep-devnet/version/latest",
   },
 ];

@@ -5,12 +5,12 @@ import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
 
 enum ReceiverChains {
-  ARBITRUM_GOERLI = 421613,
+  ARBITRUM_SEPOLIA = 421614,
   HARDHAT = 31337,
 }
 
 const paramsByChainId = {
-  ARBITRUM_GOERLI: {
+  ARBITRUM_SEPOLIA: {
     deposit: parseEther("0.1"),
     epochPeriod: 1800, // 30 min
     challengePeriod: 0, // 30 min
@@ -18,12 +18,12 @@ const paramsByChainId = {
     sequencerDelayLimit: 86400,
     sequencerFutureLimit: 3600,
     maxMissingBlocks: 10000000000000,
-    routerChainId: 5,
+    routerChainId: 11155111,
   },
   HARDHAT: {
     deposit: parseEther("1"),
-    epochPeriod: 1800, // 30 min
-    challengePeriod: 600, // 15 min
+    epochPeriod: 600, // 10 min
+    challengePeriod: 600, // 10 min
     numEpochTimeout: 24, // 6 hours
     amb: ethers.constants.AddressZero,
     sequencerDelayLimit: 86400,
@@ -44,12 +44,12 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const senderNetworks = {
-    ARBITRUM_GOERLI: config.networks.chiado,
+    ARBITRUM_SEPOLIA: config.networks.chiado,
     HARDHAT: config.networks.localhost,
   };
 
   const routerNetworks = {
-    ARBITRUM_GOERLI: config.networks.goerli,
+    ARBITRUM_SEPOLIA: config.networks.sepolia,
     HARDHAT: config.networks.localhost,
   };
 
@@ -131,7 +131,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-deployOutbox.tags = ["ChiadoToArbGoerliOutbox"];
+deployOutbox.tags = ["ChiadoToArbSepoliaOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);

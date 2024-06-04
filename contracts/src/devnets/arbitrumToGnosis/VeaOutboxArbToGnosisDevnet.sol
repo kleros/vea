@@ -6,11 +6,11 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "../../arbitrumToGnosis/VeaOutboxArbToGnosis.sol";
 
-/// @dev Vea Outbox From ArbitrumGoerli to Chiado.
+/// @dev Vea Outbox From ArbitrumSepolia to Chiado.
 /// Note: This contract is deployed on Chiado.
 /// Note: This contract is permissioned for developer testing (devnet).
 contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {

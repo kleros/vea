@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 
-import { HardhatUserConfig, task } from "hardhat/config";
+import { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import "hardhat-deploy-tenderly";
@@ -17,7 +17,7 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.18",
+    version: "0.8.24",
     settings: {
       optimizer: {
         enabled: true,
@@ -57,19 +57,20 @@ const config: HardhatUserConfig = {
     },
 
     // INBOX ---------------------------------------------------------------------------------------
-    arbitrumGoerli: {
-      chainId: 421613,
-      url: "https://goerli-rollup.arbitrum.io/rpc",
+    arbitrumSepolia: {
+      chainId: 421614,
+      url: "https://sepolia-rollup.arbitrum.io/rpc",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
       tags: ["staging", "inbox", "layer2"],
       companionNetworks: {
-        goerli: "goerli",
+        sepolia: "sepolia",
         chiado: "chiado",
       },
       verify: {
         etherscan: {
+          apiUrl: "https://api-sepolia.arbiscan.io",
           apiKey: process.env.ARBISCAN_API_KEY,
         },
       },
@@ -87,6 +88,7 @@ const config: HardhatUserConfig = {
       },
       verify: {
         etherscan: {
+          apiUrl: "https://api.arbiscan.io/api",
           apiKey: process.env.ARBISCAN_API_KEY,
         },
       },
@@ -100,7 +102,7 @@ const config: HardhatUserConfig = {
       saveDeployments: true,
       tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
-        arbitrumGoerli: "arbitrumGoerli",
+        arbitrumSepolia: "arbitrumSepolia",
       },
       verify: {
         etherscan: {
@@ -116,7 +118,7 @@ const config: HardhatUserConfig = {
       saveDeployments: true,
       tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
-        arbitrumGoerli: "arbitrum",
+        arbitrumSepolia: "arbitrumSepolia",
       },
       verify: {
         etherscan: {
@@ -124,15 +126,15 @@ const config: HardhatUserConfig = {
         },
       },
     },
-    goerli: {
-      chainId: 5,
-      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    sepolia: {
+      chainId: 11155111,
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
       tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
-        arbitrumGoerli: "arbitrumGoerli",
+        arbitrumSepolia: "arbitrumSepolia",
         chiado: "chiado",
       },
     },

@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: VeaInbox
-    network: arbitrum-goerli
+    network: arbitrum-sepolia
     source:
-      address: "0xA3FefC6FeE3fc66B9d9a8BEE794736ab71a74c55"
+      address: "0x77e95F54032f467eC45c48C6affc203f93858783"
       abi: VeaInbox
-      startBlock: 16978653
+      startBlock: 18210847
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -19,7 +19,7 @@ dataSources:
         - StaterootSent
       abis:
         - name: VeaInbox
-          file: ../contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json
       eventHandlers:
         - event: MessageSent(bytes)
           handler: handleMessageSent

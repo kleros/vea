@@ -12,13 +12,13 @@ function generate() { #deploymentDir #explorerUrl
     done
 }
 
-echo "#### Goerli"
+echo "#### Sepolia"
 echo
-generate "$SCRIPT_DIR/../deployments/goerli" "https://goerli.etherscan.io/address/"
+generate "$SCRIPT_DIR/../deployments/sepolia" "https://sepolia.etherscan.io/address/"
 echo
-echo "#### Arbitrum Goerli"
+echo "#### Arbitrum Sepolia"
 echo
-generate "$SCRIPT_DIR/../deployments/arbitrumGoerli" "https://goerli.arbiscan.io/address/"
+generate "$SCRIPT_DIR/../deployments/arbitrumSepolia" "https://sepolia.arbiscan.io/address/"
 echo
 echo "#### Chiado"
 echo

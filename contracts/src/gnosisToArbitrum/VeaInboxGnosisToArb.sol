@@ -6,7 +6,7 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/inboxes/IVeaInbox.sol";
@@ -24,7 +24,7 @@ contract VeaInboxGnosisToArb is IVeaInbox {
     uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.
     address public immutable routerGnosisToArb; // The router on Ethereum.
 
-    mapping(uint256 => bytes32) public snapshots; // epoch => state root snapshot
+    mapping(uint256 epoch => bytes32) public snapshots; // epoch => state root snapshot
 
     // Inbox represents minimum data availability to maintain incremental merkle tree.
     // Supports a max of 2^64 - 1 messages. See merkle tree docs for details how inbox manages state.

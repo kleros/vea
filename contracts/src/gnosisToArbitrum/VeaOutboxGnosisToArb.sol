@@ -6,7 +6,7 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "../interfaces/outboxes/IVeaOutboxOnL2.sol";
 import "../canonical/arbitrum/AddressAliasHelper.sol";
@@ -38,9 +38,9 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     bytes32 public stateRoot; // merkle root of the outbox state
     uint256 public latestVerifiedEpoch; // The latest epoch that has been verified.
 
-    mapping(uint256 => Claim) public claims; // epoch => claim
-    mapping(uint256 => address) public challengers; // epoch => challenger
-    mapping(uint256 => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+    mapping(uint256 epoch => Claim) public claims; // epoch => claim
+    mapping(uint256 epoch => address) public challengers; // epoch => challenger
+    mapping(uint256 messageId => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
 
     enum Party {
         None,

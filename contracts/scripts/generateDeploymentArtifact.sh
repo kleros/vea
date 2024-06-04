@@ -32,16 +32,16 @@ arbitrum)
   url="https://api.arbiscan.io"
   apiKey="$ARBISCAN_API_KEY"
   ;;
-arbitrumGoerli)
-  url="https://api-goerli.arbiscan.io"
+arbitrumSepolia)
+  url="https://api-sepolia.arbiscan.io"
   apiKey="$ARBISCAN_API_KEY"
   ;;
 mainnet)
   url="https://api.etherscan.io"
   apiKey="$ETHERSCAN_API_KEY"
   ;;
-goerli)
-  url="https://api-goerli.etherscan.io"
+sepolia)
+  url="https://api-sepolia.etherscan.io"
   apiKey="$ETHERSCAN_API_KEY"
   ;;
 *)

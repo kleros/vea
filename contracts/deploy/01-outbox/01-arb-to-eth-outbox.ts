@@ -6,7 +6,7 @@ import { ethers } from "hardhat";
 
 enum ReceiverChains {
   ETHEREUM_MAINNET = 1,
-  ETHEREUM_GOERLI = 5,
+  ETHEREUM_SEPOLIA = 11155111,
   HARDHAT = 31337,
 }
 
@@ -20,19 +20,19 @@ const paramsByChainId = {
     maxMissingBlocks: 49, // 49 in 900 slots, assumes 10% non-censoring validators
     arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses,
   },
-  ETHEREUM_GOERLI: {
+  ETHEREUM_SEPOLIA: {
     deposit: parseEther("1"), // ~100 ETH budget to start, enough for 8 days of challenges
     // bridging speed is 29 - 31 hours.
     epochPeriod: 7200, // 2 hours
     minChallengePeriod: 10800, // 3 hours
     numEpochTimeout: 1000000, // never
-    maxMissingBlocks: 1000000, // any, goerli network performance is poor, so can't use the censorship test well
-    arbitrumBridge: "0xaf4159A80B6Cc41ED517DB1c453d1Ef5C2e4dB72", // https://developer.arbitrum.io/useful-addresses
+    maxMissingBlocks: 1000000, // any, sepolia network performance is poor, so can't use the censorship test well
+    arbitrumBridge: "0x38f918D0E9F1b721EDaA41302E399fa1B79333a9", // https://developer.arbitrum.io/useful-addresses
   },
   HARDHAT: {
     deposit: parseEther("10"),
-    epochPeriod: 1800, // 30 min
-    minChallengePeriod: 1800, // 30 min
+    epochPeriod: 600, // 10 min
+    minChallengePeriod: 600, // 10 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10,
     arbitrumBridge: ethers.constants.AddressZero,
@@ -51,7 +51,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const senderNetworks = {
     ETHEREUM_MAINNET: config.networks.arbitrum,
-    ETHEREUM_GOERLI: config.networks.arbitrumGoerli,
+    ETHEREUM_SEPOLIA: config.networks.arbitrumSepolia,
     HARDHAT: config.networks.localhost,
   };
 

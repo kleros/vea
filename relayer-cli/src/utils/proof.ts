@@ -5,7 +5,7 @@ const getMessageDataToRelay = async (chainid: number, nonce: number) => {
     const subgraph = getSubgraph(chainid);
 
     const result = await request(
-      `https://api.thegraph.com/subgraphs/name/shotaronowhere/${subgraph}`,
+      `https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`,
       `{
                 messageSents(first: 5, where: {nonce: ${nonce}}) {
                 nonce
@@ -26,6 +26,8 @@ const getMessageDataToRelay = async (chainid: number, nonce: number) => {
 const getProofAtCount = async (chainid: number, nonce: number, count: number): Promise<string[]> => {
   const proofIndices = getProofIndices(nonce, count);
 
+  if (proofIndices.length == 0) return [];
+
   let query = "{";
   for (let i = 0; i < proofIndices.length; i++) {
     query += `layer${i}: nodes(first: 1, where: {id: "${proofIndices[i]}"}) {
@@ -37,7 +39,7 @@ const getProofAtCount = async (chainid: number, nonce: number, count: number): P
   try {
     const subgraph = getSubgraph(chainid);
 
-    const result = await request(`https://api.thegraph.com/subgraphs/name/shotaronowhere/${subgraph}`, query);
+    const result = await request(`https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`, query);
 
     const proof = [];
 
@@ -58,7 +60,8 @@ const getProofIndices = (nonce: number, count: number) => {
 
   const treeDepth = Math.ceil(Math.log2(count));
 
-  for (let i = 0; i < treeDepth; i++) {
+  let i = 0;
+  do {
     if (i == 0 && (nonce ^ 1) < count) proof.push((nonce ^ 1).toString()); // sibling
     else {
       const low = ((nonce >> i) ^ 1) << i;
@@ -66,17 +69,16 @@ const getProofIndices = (nonce: number, count: number) => {
       if (low < count - 1) proof.push(low.toString() + "," + high.toString());
       else if (low == count - 1) proof.push(low.toString());
     }
-  }
+    i++;
+  } while (i < treeDepth);
 
   return proof;
 };
 
 const getSubgraph = (chainid: number): string => {
   switch (chainid) {
-    case 5:
-      return "vea-inbox-arbgoerli-to-goerli";
-    case 10200:
-      return "vea-inbox-arbgoerli-to-chiado";
+    case 11155111:
+      return "vea-inbox-arb-sepolia-devnet";
     default:
       throw new Error("Invalid chainid");
   }

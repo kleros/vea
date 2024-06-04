@@ -6,7 +6,7 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
@@ -40,8 +40,8 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     bytes32 public stateRoot; // merkle root of the outbox state
     uint256 public latestVerifiedEpoch; // The latest epoch that has been verified.
 
-    mapping(uint256 => bytes32) public claimHashes; // epoch => claim
-    mapping(uint256 => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+    mapping(uint256 epoch => bytes32) public claimHashes; // epoch => claim
+    mapping(uint256 messageId => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
 
     uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
     uint256 public timestampDelayUpdated; // The timestamp of the last sequencer delay update.

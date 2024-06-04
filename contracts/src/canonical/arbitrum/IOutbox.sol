@@ -4,7 +4,7 @@
 // implementation: https://etherscan.io/address/0x0ea7372338a589e7f0b00e463a53aa464ef04e17#code
 // interface is pruned for relevant function stubs
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 interface IOutbox {
     /// @notice When l2ToL1Sender returns a nonzero address, the message was originated by an L2 account
