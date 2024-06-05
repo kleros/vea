@@ -10,7 +10,7 @@ pragma solidity 0.8.24;
 
 import "../../arbitrumToGnosis/VeaOutboxArbToGnosis.sol";
 
-/// @dev Vea Outbox From ArbitrumSepolia to Chiado.
+/// @dev Vea Outbox From Arbitrum to Chiado.
 /// Note: This contract is deployed on Chiado.
 /// Note: This contract is permissioned for developer testing (devnet).
 contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
