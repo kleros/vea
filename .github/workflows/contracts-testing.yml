@@ -24,10 +24,10 @@ jobs:
     - name: Setup Node.js environment
       uses: actions/setup-node@v4
       with:
-        node-version: 18.x   
+        node-version: 18.x
 
     - name: Set Yarn version to Berry
-      run: yarn set version 4
+      run: yarn set version 4.2.2
 
     - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
     
