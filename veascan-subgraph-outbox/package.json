@@ -23,10 +23,10 @@
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/veascan-subgraph-outbox"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "^0.29.3"
+    "@graphprotocol/graph-ts": "^0.35.1"
   },
   "devDependencies": {
     "@goldskycom/cli": "^1.6.0",
-    "@graphprotocol/graph-cli": "^0.44.0"
+    "@graphprotocol/graph-cli": "^0.73.0"
   }
 }
