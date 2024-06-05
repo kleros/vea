@@ -1,13 +1,13 @@
 {
   "name": "@kleros/veascan-subgraph-outbox",
   "license": "MIT",
-  "packageManager": "yarn@3.3.1",
+  "packageManager": "yarn@4.2.2",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "volta": {
-    "node": "16.19.0",
-    "yarn": "3.3.1"
+    "node": "18.20.3",
+    "yarn": "4.2.2"
   },
   "scripts": {
     "update:sepolia": "./scripts/update.sh sepolia sepolia ArbToEthDevnet",
@@ -22,10 +22,10 @@
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/veascan-outbox"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "^0.29.3"
+    "@graphprotocol/graph-ts": "^0.35.1"
   },
   "devDependencies": {
     "@goldskycom/cli": "^1.6.0",
-    "@graphprotocol/graph-cli": "^0.44.0"
+    "@graphprotocol/graph-cli": "^0.73.0"
   }
 }
