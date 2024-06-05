@@ -204,3 +204,5 @@ veascan-subgraph-inbox/generated/*
 veascan-subgraph-inbox/build/*
 validator-subgraph-inbox/generated/*
 validator-subgraph-inbox/build/*
+
+cache

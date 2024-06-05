@@ -24,10 +24,10 @@
     "veascan-subgraph-inbox",
     "veascan-subgraph-outbox"
   ],
-  "packageManager": "yarn@3.3.1",
+  "packageManager": "yarn@4.2.2",
   "volta": {
-    "node": "16.20.0",
-    "yarn": "3.3.1"
+    "node": "18.20.3",
+    "yarn": "4.2.2"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.6.1",
