@@ -77,9 +77,11 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
   currentSnapshot.taken = true;
   currentSnapshot.caller = event.transaction.from;
   currentSnapshot.stateRoot = stateRoot;
+  currentSnapshot.stateRootString = stateRoot.toHexString();
   currentSnapshot.timestamp = event.block.timestamp;
   currentSnapshot.txHash = event.transaction.hash;
   currentSnapshot.epoch = epoch;
+  currentSnapshot.epochString = epoch.toString();
   currentSnapshot.save();
 
   // Create a new snapshot entity to be the current snapshot.

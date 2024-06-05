@@ -2,7 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import Document from "tsx:svgs/icons/document.svg";
 
-interface MessageStatusProps {
+interface IMessageStatus {
   messageNumber: number;
   status: string;
 }
@@ -26,10 +26,7 @@ const Status = styled.div`
   margin-top: 46px;
 `;
 
-const MessageHeader: React.FC<MessageStatusProps> = ({
-  messageNumber,
-  status,
-}) => {
+const MessageHeader: React.FC<IMessageStatus> = ({ messageNumber, status }) => {
   return (
     <Status>
       <Icon as={Document} />

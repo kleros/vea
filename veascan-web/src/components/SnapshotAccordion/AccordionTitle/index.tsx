@@ -1,12 +1,12 @@
-import { bridges, getChain } from "consts/bridges";
 import React from "react";
 import styled from "styled-components";
-import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
-import { IStatus } from "utils/mapDataForAccordion";
 import ChainAndAddress from "./ChainAndAddress";
 import ColoredLabel, { variantColors } from "./ColoredLabel";
 import Epoch from "./Epoch";
 import Timestamp from "./Timestamp";
+import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
+import { getBridge, getChain } from "consts/bridges";
+import { IStatus } from "utils/mapDataForAccordion";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
@@ -51,7 +51,7 @@ const StyledEpochAndTimestamp = styled.div`
 `;
 
 export interface SnapshotInboxDataType {
-  bridgeIndex: number;
+  bridgeId: number;
   caller: string;
   epoch: string;
   id: string;
@@ -63,20 +63,20 @@ export interface SnapshotInboxDataType {
   txHash: string;
 }
 
-export interface AccordionTitleProps {
+export interface IAccordionTitle {
   epoch: string;
-  bridgeIndex: number;
+  bridgeId: number;
   timestamp: string;
   status: IStatus;
 }
 
-const SnapshotAccordionTitle: React.FC<AccordionTitleProps> = ({
+const SnapshotAccordionTitle: React.FC<IAccordionTitle> = ({
   epoch,
-  bridgeIndex,
+  bridgeId,
   timestamp,
   status,
 }) => {
-  const bridgeInfo = bridges[bridgeIndex];
+  const bridgeInfo = getBridge(bridgeId);
   const titleParams = {
     epoch: epoch,
     timestamp: timestamp,
@@ -120,11 +120,13 @@ const parseStatus = ({
   resolved,
   resolving,
   challenged,
+  verified,
   claimed,
 }: IStatus): keyof typeof variantColors => {
   if (resolved) return "Resolved";
   if (resolving) return "Resolving";
   if (challenged) return "Challenged";
+  if (verified) return "Verified";
   if (claimed) return "Claimed";
   return "Taken";
 };

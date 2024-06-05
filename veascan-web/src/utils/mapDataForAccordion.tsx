@@ -1,39 +1,39 @@
-import { TxCardProps } from "components/SnapshotAccordion/AccordionBody/TxCard";
+import { ITxCard } from "components/SnapshotAccordion/AccordionBody/TxCard";
 import { bridges } from "consts/bridges";
-import { InboxData, OutboxData } from "hooks/useSnapshots";
 import { formatTimestampToHumanReadable } from "./formatTimestampToHumanReadable";
+import { InboxData, OutboxData } from "hooks/useSnapshots";
 
 export interface IStatus {
-  honest: boolean;
   claimed: boolean;
+  verified: boolean;
   challenged: boolean;
   resolving: boolean;
   resolved: boolean;
 }
 
 export interface IParsedData {
-  bridgeIndex: number;
+  bridgeId: number;
   epoch: string;
   snapshotId: string;
   status: IStatus;
-  transactions: TxCardProps[];
+  transactions: ITxCard[];
 }
 
 export const mapDataForAccordion = (
   snapshotsData: [InboxData, OutboxData][]
 ): IParsedData[] => {
   return snapshotsData.map(([inboxData, outboxData]): IParsedData => {
-    const bridgeInfo = bridges[inboxData?.bridgeIndex];
+    const bridgeInfo = bridges[inboxData?.bridgeId];
     return {
-      bridgeIndex: inboxData.bridgeIndex,
+      bridgeId: inboxData.bridgeId,
       epoch: inboxData.epoch,
       snapshotId: inboxData.id,
       status: {
         claimed: typeof outboxData?.txHash !== "undefined",
+        verified: !outboxData?.challenged && outboxData?.verified,
         challenged: outboxData?.challenged,
         resolving: inboxData.resolving,
-        resolved: typeof outboxData?.verification?.txHash !== "undefined",
-        honest: outboxData?.honest,
+        resolved: outboxData?.challenged && outboxData?.verified,
       },
       transactions: [
         {

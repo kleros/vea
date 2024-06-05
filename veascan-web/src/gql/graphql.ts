@@ -122,6 +122,7 @@ export enum Challenge_OrderBy {
   ClaimStateroot = "claim__stateroot",
   ClaimTimestamp = "claim__timestamp",
   ClaimTxHash = "claim__txHash",
+  ClaimVerified = "claim__verified",
   Honest = "honest",
   Id = "id",
   Timestamp = "timestamp",
@@ -140,6 +141,7 @@ export type Claim = {
   timestamp: Scalars["BigInt"];
   txHash: Scalars["Bytes"];
   verification?: Maybe<Verification>;
+  verified: Scalars["Boolean"];
 };
 
 export type Claim_Filter = {
@@ -211,6 +213,10 @@ export type Claim_Filter = {
   txHash_not_contains?: InputMaybe<Scalars["Bytes"]>;
   txHash_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
   verification_?: InputMaybe<Verification_Filter>;
+  verified?: InputMaybe<Scalars["Boolean"]>;
+  verified_in?: InputMaybe<Array<Scalars["Boolean"]>>;
+  verified_not?: InputMaybe<Scalars["Boolean"]>;
+  verified_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
 };
 
 export enum Claim_OrderBy {
@@ -233,6 +239,7 @@ export enum Claim_OrderBy {
   VerificationId = "verification__id",
   VerificationTimestamp = "verification__timestamp",
   VerificationTxHash = "verification__txHash",
+  Verified = "verified",
 }
 
 export type Fallback = {
@@ -325,10 +332,12 @@ export enum Fallback_OrderBy {
   Snapshot = "snapshot",
   SnapshotCaller = "snapshot__caller",
   SnapshotEpoch = "snapshot__epoch",
+  SnapshotEpochString = "snapshot__epochString",
   SnapshotId = "snapshot__id",
   SnapshotNumberMessages = "snapshot__numberMessages",
   SnapshotResolving = "snapshot__resolving",
   SnapshotStateRoot = "snapshot__stateRoot",
+  SnapshotStateRootString = "snapshot__stateRootString",
   SnapshotTaken = "snapshot__taken",
   SnapshotTimestamp = "snapshot__timestamp",
   SnapshotTxHash = "snapshot__txHash",
@@ -463,10 +472,12 @@ export enum Message_OrderBy {
   Snapshot = "snapshot",
   SnapshotCaller = "snapshot__caller",
   SnapshotEpoch = "snapshot__epoch",
+  SnapshotEpochString = "snapshot__epochString",
   SnapshotId = "snapshot__id",
   SnapshotNumberMessages = "snapshot__numberMessages",
   SnapshotResolving = "snapshot__resolving",
   SnapshotStateRoot = "snapshot__stateRoot",
+  SnapshotStateRootString = "snapshot__stateRootString",
   SnapshotTaken = "snapshot__taken",
   SnapshotTimestamp = "snapshot__timestamp",
   SnapshotTxHash = "snapshot__txHash",
@@ -496,6 +507,7 @@ export type Query = {
   ref?: Maybe<Ref>;
   refs: Array<Ref>;
   snapshot?: Maybe<Snapshot>;
+  snapshotQuery: Array<Snapshot>;
   snapshots: Array<Snapshot>;
   verification?: Maybe<Verification>;
   verifications: Array<Verification>;
@@ -589,6 +601,15 @@ export type QuerySnapshotArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars["ID"];
   subgraphError?: _SubgraphErrorPolicy_;
+};
+
+export type QuerySnapshotQueryArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars["Int"]>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  text: Scalars["String"];
+  where?: InputMaybe<Snapshot_Filter>;
 };
 
 export type QuerySnapshotsArgs = {
@@ -695,12 +716,14 @@ export type Snapshot = {
   __typename?: "Snapshot";
   caller?: Maybe<Scalars["Bytes"]>;
   epoch?: Maybe<Scalars["BigInt"]>;
+  epochString?: Maybe<Scalars["String"]>;
   fallback: Array<Fallback>;
   id: Scalars["ID"];
   messages: Array<Message>;
   numberMessages: Scalars["BigInt"];
   resolving: Scalars["Boolean"];
   stateRoot?: Maybe<Scalars["Bytes"]>;
+  stateRootString?: Maybe<Scalars["String"]>;
   taken: Scalars["Boolean"];
   timestamp?: Maybe<Scalars["BigInt"]>;
   txHash?: Maybe<Scalars["Bytes"]>;
@@ -737,6 +760,26 @@ export type Snapshot_Filter = {
   caller_not_contains?: InputMaybe<Scalars["Bytes"]>;
   caller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
   epoch?: InputMaybe<Scalars["BigInt"]>;
+  epochString?: InputMaybe<Scalars["String"]>;
+  epochString_contains?: InputMaybe<Scalars["String"]>;
+  epochString_contains_nocase?: InputMaybe<Scalars["String"]>;
+  epochString_ends_with?: InputMaybe<Scalars["String"]>;
+  epochString_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  epochString_gt?: InputMaybe<Scalars["String"]>;
+  epochString_gte?: InputMaybe<Scalars["String"]>;
+  epochString_in?: InputMaybe<Array<Scalars["String"]>>;
+  epochString_lt?: InputMaybe<Scalars["String"]>;
+  epochString_lte?: InputMaybe<Scalars["String"]>;
+  epochString_not?: InputMaybe<Scalars["String"]>;
+  epochString_not_contains?: InputMaybe<Scalars["String"]>;
+  epochString_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  epochString_not_ends_with?: InputMaybe<Scalars["String"]>;
+  epochString_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  epochString_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  epochString_not_starts_with?: InputMaybe<Scalars["String"]>;
+  epochString_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  epochString_starts_with?: InputMaybe<Scalars["String"]>;
+  epochString_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   epoch_gt?: InputMaybe<Scalars["BigInt"]>;
   epoch_gte?: InputMaybe<Scalars["BigInt"]>;
   epoch_in?: InputMaybe<Array<Scalars["BigInt"]>>;
@@ -768,6 +811,26 @@ export type Snapshot_Filter = {
   resolving_not?: InputMaybe<Scalars["Boolean"]>;
   resolving_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
   stateRoot?: InputMaybe<Scalars["Bytes"]>;
+  stateRootString?: InputMaybe<Scalars["String"]>;
+  stateRootString_contains?: InputMaybe<Scalars["String"]>;
+  stateRootString_contains_nocase?: InputMaybe<Scalars["String"]>;
+  stateRootString_ends_with?: InputMaybe<Scalars["String"]>;
+  stateRootString_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  stateRootString_gt?: InputMaybe<Scalars["String"]>;
+  stateRootString_gte?: InputMaybe<Scalars["String"]>;
+  stateRootString_in?: InputMaybe<Array<Scalars["String"]>>;
+  stateRootString_lt?: InputMaybe<Scalars["String"]>;
+  stateRootString_lte?: InputMaybe<Scalars["String"]>;
+  stateRootString_not?: InputMaybe<Scalars["String"]>;
+  stateRootString_not_contains?: InputMaybe<Scalars["String"]>;
+  stateRootString_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  stateRootString_not_ends_with?: InputMaybe<Scalars["String"]>;
+  stateRootString_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  stateRootString_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  stateRootString_not_starts_with?: InputMaybe<Scalars["String"]>;
+  stateRootString_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  stateRootString_starts_with?: InputMaybe<Scalars["String"]>;
+  stateRootString_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   stateRoot_contains?: InputMaybe<Scalars["Bytes"]>;
   stateRoot_gt?: InputMaybe<Scalars["Bytes"]>;
   stateRoot_gte?: InputMaybe<Scalars["Bytes"]>;
@@ -804,12 +867,14 @@ export type Snapshot_Filter = {
 export enum Snapshot_OrderBy {
   Caller = "caller",
   Epoch = "epoch",
+  EpochString = "epochString",
   Fallback = "fallback",
   Id = "id",
   Messages = "messages",
   NumberMessages = "numberMessages",
   Resolving = "resolving",
   StateRoot = "stateRoot",
+  StateRootString = "stateRootString",
   Taken = "taken",
   Timestamp = "timestamp",
   TxHash = "txHash",
@@ -1035,6 +1100,7 @@ export enum Verification_OrderBy {
   ClaimStateroot = "claim__stateroot",
   ClaimTimestamp = "claim__timestamp",
   ClaimTxHash = "claim__txHash",
+  ClaimVerified = "claim__verified",
   Id = "id",
   Timestamp = "timestamp",
   TxHash = "txHash",
@@ -1074,77 +1140,36 @@ export enum _SubgraphErrorPolicy_ {
   Deny = "deny",
 }
 
-export type GetClaimQueryVariables = Exact<{
+export type GetSnapshotQueryVariables = Exact<{
   epoch: Scalars["BigInt"];
 }>;
 
-export type GetClaimQuery = {
+export type GetSnapshotQuery = {
   __typename?: "Query";
-  claims: Array<{
-    __typename?: "Claim";
+  snapshots: Array<{
+    __typename?: "Snapshot";
     id: string;
-    epoch: any;
-    timestamp: any;
-    stateroot: any;
-    bridger: any;
-    challenged: boolean;
-    txHash: any;
-    honest: boolean;
-    challenge?: {
-      __typename?: "Challenge";
-      id: string;
-      timestamp: any;
-      challenger: any;
-      honest: boolean;
+    epoch?: any | null;
+    caller?: any | null;
+    txHash?: any | null;
+    timestamp?: any | null;
+    stateRoot?: any | null;
+    numberMessages: any;
+    taken: boolean;
+    resolving: boolean;
+    fallback: Array<{
+      __typename?: "Fallback";
+      executor: any;
+      timestamp?: any | null;
       txHash: any;
-    } | null;
-    verification?: {
-      __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
-    } | null;
+      ticketId: any;
+    }>;
   }>;
-};
-
-export type GetMessagesQueryVariables = Exact<{
-  skip: Scalars["Int"];
-  snapshot: Scalars["String"];
-  snapshotID: Scalars["ID"];
-}>;
-
-export type GetMessagesQuery = {
-  __typename?: "Query";
-  messages: Array<{
-    __typename?: "Message";
-    id: string;
-    txHash: any;
-    timestamp: any;
-    from: any;
-    to: any;
-    data: any;
-  }>;
-  snapshot?: { __typename?: "Snapshot"; numberMessages: any } | null;
-};
-
-export type GetRelayQueryVariables = Exact<{
-  id: Scalars["ID"];
-}>;
-
-export type GetRelayQuery = {
-  __typename?: "Query";
-  message?: {
-    __typename?: "Message";
-    timestamp: any;
-    txHash: any;
-    relayer: any;
-    proof: any;
-  } | null;
 };
 
 export type GetSnapshotsQueryVariables = Exact<{
-  lastTimestamp: Scalars["BigInt"];
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
+  lastTimestamp: Scalars["BigInt"];
 }>;
 
 export type GetSnapshotsQuery = {
@@ -1171,13 +1196,275 @@ export type GetSnapshotsQuery = {
   ref?: { __typename?: "Ref"; currentSnapshotIndex: any } | null;
 };
 
-export const GetClaimDocument = {
+export type GetResolvingSnapshotsQueryVariables = Exact<{
+  snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
+  lastTimestamp: Scalars["BigInt"];
+  resolving?: InputMaybe<Scalars["Boolean"]>;
+}>;
+
+export type GetResolvingSnapshotsQuery = {
+  __typename?: "Query";
+  snapshots: Array<{
+    __typename?: "Snapshot";
+    id: string;
+    epoch?: any | null;
+    caller?: any | null;
+    txHash?: any | null;
+    timestamp?: any | null;
+    stateRoot?: any | null;
+    numberMessages: any;
+    taken: boolean;
+    resolving: boolean;
+    fallback: Array<{
+      __typename?: "Fallback";
+      executor: any;
+      timestamp?: any | null;
+      txHash: any;
+      ticketId: any;
+    }>;
+  }>;
+  ref?: { __typename?: "Ref"; currentSnapshotIndex: any } | null;
+};
+
+export type SearchSnapshotsQueryVariables = Exact<{
+  snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
+  value: Scalars["String"];
+}>;
+
+export type SearchSnapshotsQuery = {
+  __typename?: "Query";
+  snapshotQuery: Array<{
+    __typename?: "Snapshot";
+    id: string;
+    epoch?: any | null;
+    caller?: any | null;
+    txHash?: any | null;
+    timestamp?: any | null;
+    stateRoot?: any | null;
+    numberMessages: any;
+    taken: boolean;
+    resolving: boolean;
+    fallback: Array<{
+      __typename?: "Fallback";
+      executor: any;
+      timestamp?: any | null;
+      txHash: any;
+      ticketId: any;
+    }>;
+  }>;
+};
+
+export type GetMessagesQueryVariables = Exact<{
+  skip: Scalars["Int"];
+  snapshot: Scalars["String"];
+  snapshotID: Scalars["ID"];
+}>;
+
+export type GetMessagesQuery = {
+  __typename?: "Query";
+  messages: Array<{
+    __typename?: "Message";
+    id: string;
+    txHash: any;
+    timestamp: any;
+    from: any;
+    to: any;
+    data: any;
+  }>;
+  snapshot?: { __typename?: "Snapshot"; numberMessages: any } | null;
+};
+
+export type GetClaimQueryVariables = Exact<{
+  epoch: Scalars["BigInt"];
+}>;
+
+export type GetClaimQuery = {
+  __typename?: "Query";
+  claims: Array<{
+    __typename?: "Claim";
+    id: string;
+    epoch: any;
+    timestamp: any;
+    stateroot: any;
+    bridger: any;
+    challenged: boolean;
+    verified: boolean;
+    txHash: any;
+    challenge?: {
+      __typename?: "Challenge";
+      id: string;
+      timestamp: any;
+      challenger: any;
+      honest: boolean;
+      txHash: any;
+    } | null;
+    verification?: {
+      __typename?: "Verification";
+      timestamp: any;
+      caller: any;
+      txHash: any;
+    } | null;
+  }>;
+};
+
+export type GetClaimedSnapshotsQueryVariables = Exact<{
+  snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
+  lastTimestamp: Scalars["BigInt"];
+}>;
+
+export type GetClaimedSnapshotsQuery = {
+  __typename?: "Query";
+  claims: Array<{
+    __typename?: "Claim";
+    id: string;
+    epoch: any;
+    timestamp: any;
+    stateroot: any;
+    bridger: any;
+    challenged: boolean;
+    verified: boolean;
+    txHash: any;
+    challenge?: {
+      __typename?: "Challenge";
+      id: string;
+      timestamp: any;
+      challenger: any;
+      honest: boolean;
+      txHash: any;
+    } | null;
+    verification?: {
+      __typename?: "Verification";
+      timestamp: any;
+      caller: any;
+      txHash: any;
+    } | null;
+  }>;
+};
+
+export type GetChallengedSnapshotsQueryVariables = Exact<{
+  snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
+  lastTimestamp: Scalars["BigInt"];
+}>;
+
+export type GetChallengedSnapshotsQuery = {
+  __typename?: "Query";
+  claims: Array<{
+    __typename?: "Claim";
+    id: string;
+    epoch: any;
+    timestamp: any;
+    stateroot: any;
+    bridger: any;
+    challenged: boolean;
+    verified: boolean;
+    txHash: any;
+    challenge?: {
+      __typename?: "Challenge";
+      id: string;
+      timestamp: any;
+      challenger: any;
+      honest: boolean;
+      txHash: any;
+    } | null;
+    verification?: {
+      __typename?: "Verification";
+      timestamp: any;
+      caller: any;
+      txHash: any;
+    } | null;
+  }>;
+};
+
+export type GetVerifiedSnapshotsQueryVariables = Exact<{
+  snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
+  lastTimestamp: Scalars["BigInt"];
+}>;
+
+export type GetVerifiedSnapshotsQuery = {
+  __typename?: "Query";
+  claims: Array<{
+    __typename?: "Claim";
+    id: string;
+    epoch: any;
+    timestamp: any;
+    stateroot: any;
+    bridger: any;
+    challenged: boolean;
+    verified: boolean;
+    txHash: any;
+    challenge?: {
+      __typename?: "Challenge";
+      id: string;
+      timestamp: any;
+      challenger: any;
+      honest: boolean;
+      txHash: any;
+    } | null;
+    verification?: {
+      __typename?: "Verification";
+      timestamp: any;
+      caller: any;
+      txHash: any;
+    } | null;
+  }>;
+};
+
+export type GetResolvedSnapshotsQueryVariables = Exact<{
+  snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
+  lastTimestamp: Scalars["BigInt"];
+}>;
+
+export type GetResolvedSnapshotsQuery = {
+  __typename?: "Query";
+  claims: Array<{
+    __typename?: "Claim";
+    id: string;
+    epoch: any;
+    timestamp: any;
+    stateroot: any;
+    bridger: any;
+    challenged: boolean;
+    verified: boolean;
+    txHash: any;
+    challenge?: {
+      __typename?: "Challenge";
+      id: string;
+      timestamp: any;
+      challenger: any;
+      honest: boolean;
+      txHash: any;
+    } | null;
+    verification?: {
+      __typename?: "Verification";
+      timestamp: any;
+      caller: any;
+      txHash: any;
+    } | null;
+  }>;
+};
+
+export type GetRelayQueryVariables = Exact<{
+  id: Scalars["ID"];
+}>;
+
+export type GetRelayQuery = {
+  __typename?: "Query";
+  message?: {
+    __typename?: "Message";
+    timestamp: any;
+    txHash: any;
+    relayer: any;
+    proof: any;
+  } | null;
+};
+
+export const GetSnapshotDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "query",
-      name: { kind: "Name", value: "getClaim" },
+      name: { kind: "Name", value: "getSnapshot" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -1199,7 +1486,7 @@ export const GetClaimDocument = {
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "claims" },
+            name: { kind: "Name", value: "snapshots" },
             arguments: [
               {
                 kind: "Argument",
@@ -1224,237 +1511,58 @@ export const GetClaimDocument = {
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "epoch" } },
-                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
-                { kind: "Field", name: { kind: "Name", value: "stateroot" } },
-                { kind: "Field", name: { kind: "Name", value: "bridger" } },
-                { kind: "Field", name: { kind: "Name", value: "challenged" } },
-                { kind: "Field", name: { kind: "Name", value: "txHash" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "challenge" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "challenger" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "honest" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "verification" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "caller" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
-                      },
-                    ],
-                  },
-                },
-                { kind: "Field", name: { kind: "Name", value: "honest" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<GetClaimQuery, GetClaimQueryVariables>;
-export const GetMessagesDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "getMessages" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "skip" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "snapshot" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "snapshotID" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "messages" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "5" },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "skip" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "skip" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "orderBy" },
-                value: { kind: "EnumValue", value: "timestamp" },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "orderDirection" },
-                value: { kind: "EnumValue", value: "desc" },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "where" },
-                value: {
-                  kind: "ObjectValue",
-                  fields: [
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "snapshot" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "snapshot" },
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "caller" } },
                 { kind: "Field", name: { kind: "Name", value: "txHash" } },
                 { kind: "Field", name: { kind: "Name", value: "timestamp" } },
-                { kind: "Field", name: { kind: "Name", value: "from" } },
-                { kind: "Field", name: { kind: "Name", value: "to" } },
-                { kind: "Field", name: { kind: "Name", value: "data" } },
-              ],
-            },
-          },
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "snapshot" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "snapshotID" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
+                { kind: "Field", name: { kind: "Name", value: "stateRoot" } },
                 {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<GetMessagesQuery, GetMessagesQueryVariables>;
-export const GetRelayDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "getRelay" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "message" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
+                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "resolving" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "fallback" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "first" },
+                      value: { kind: "IntValue", value: "1" },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "orderBy" },
+                      value: { kind: "EnumValue", value: "timestamp" },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "orderDirection" },
+                      value: { kind: "EnumValue", value: "desc" },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "executor" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "ticketId" },
+                      },
+                    ],
+                  },
                 },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
-                { kind: "Field", name: { kind: "Name", value: "txHash" } },
-                { kind: "Field", name: { kind: "Name", value: "relayer" } },
-                { kind: "Field", name: { kind: "Name", value: "proof" } },
               ],
             },
           },
@@ -1462,7 +1570,7 @@ export const GetRelayDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<GetRelayQuery, GetRelayQueryVariables>;
+} as unknown as DocumentNode<GetSnapshotQuery, GetSnapshotQueryVariables>;
 export const GetSnapshotsDocument = {
   kind: "Document",
   definitions: [
@@ -1471,6 +1579,14 @@ export const GetSnapshotsDocument = {
       operation: "query",
       name: { kind: "Name", value: "getSnapshots" },
       variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
         {
           kind: "VariableDefinition",
           variable: {
@@ -1484,14 +1600,6 @@ export const GetSnapshotsDocument = {
               name: { kind: "Name", value: "BigInt" },
             },
           },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "snapshotsPerPage" },
-          },
-          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
         },
       ],
       selectionSet: {
@@ -1622,3 +1730,1208 @@ export const GetSnapshotsDocument = {
     },
   ],
 } as unknown as DocumentNode<GetSnapshotsQuery, GetSnapshotsQueryVariables>;
+export const GetResolvingSnapshotsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getResolvingSnapshots" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "lastTimestamp" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "BigInt" },
+            },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "resolving" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Boolean" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "snapshots" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotsPerPage" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: { kind: "EnumValue", value: "timestamp" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderDirection" },
+                value: { kind: "EnumValue", value: "desc" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "timestamp_lte" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "lastTimestamp" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "resolving" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "resolving" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "caller" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "stateRoot" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "numberMessages" },
+                },
+                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "resolving" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "fallback" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "first" },
+                      value: { kind: "IntValue", value: "1" },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "orderBy" },
+                      value: { kind: "EnumValue", value: "timestamp" },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "orderDirection" },
+                      value: { kind: "EnumValue", value: "desc" },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "executor" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "ticketId" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "ref" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: { kind: "StringValue", value: "0", block: false },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "currentSnapshotIndex" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetResolvingSnapshotsQuery,
+  GetResolvingSnapshotsQueryVariables
+>;
+export const SearchSnapshotsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "searchSnapshots" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "value" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "snapshotQuery" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "text" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "value" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotsPerPage" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "caller" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "stateRoot" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "numberMessages" },
+                },
+                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "resolving" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "fallback" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "first" },
+                      value: { kind: "IntValue", value: "1" },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "orderBy" },
+                      value: { kind: "EnumValue", value: "timestamp" },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "orderDirection" },
+                      value: { kind: "EnumValue", value: "desc" },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "executor" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "ticketId" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SearchSnapshotsQuery,
+  SearchSnapshotsQueryVariables
+>;
+export const GetMessagesDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getMessages" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "skip" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshot" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotID" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "messages" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "5" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "skip" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "skip" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: { kind: "EnumValue", value: "timestamp" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderDirection" },
+                value: { kind: "EnumValue", value: "desc" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "snapshot" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "snapshot" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "from" } },
+                { kind: "Field", name: { kind: "Name", value: "to" } },
+                { kind: "Field", name: { kind: "Name", value: "data" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "snapshot" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotID" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "numberMessages" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetMessagesQuery, GetMessagesQueryVariables>;
+export const GetClaimDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getClaim" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "epoch" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "BigInt" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "claims" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "epoch" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "epoch" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "stateroot" } },
+                { kind: "Field", name: { kind: "Name", value: "bridger" } },
+                { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "challenge" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "challenger" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "honest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "verification" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "caller" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetClaimQuery, GetClaimQueryVariables>;
+export const GetClaimedSnapshotsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getClaimedSnapshots" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "lastTimestamp" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "BigInt" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "claims" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotsPerPage" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: { kind: "EnumValue", value: "timestamp" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderDirection" },
+                value: { kind: "EnumValue", value: "desc" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "timestamp_lte" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "lastTimestamp" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "verified" },
+                      value: { kind: "BooleanValue", value: false },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "challenged" },
+                      value: { kind: "BooleanValue", value: false },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "stateroot" } },
+                { kind: "Field", name: { kind: "Name", value: "bridger" } },
+                { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "challenge" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "challenger" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "honest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "verification" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "caller" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetClaimedSnapshotsQuery,
+  GetClaimedSnapshotsQueryVariables
+>;
+export const GetChallengedSnapshotsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getChallengedSnapshots" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "lastTimestamp" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "BigInt" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "claims" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotsPerPage" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: { kind: "EnumValue", value: "timestamp" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderDirection" },
+                value: { kind: "EnumValue", value: "desc" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "timestamp_lte" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "lastTimestamp" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "verified" },
+                      value: { kind: "BooleanValue", value: false },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "challenged" },
+                      value: { kind: "BooleanValue", value: true },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "stateroot" } },
+                { kind: "Field", name: { kind: "Name", value: "bridger" } },
+                { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "challenge" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "challenger" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "honest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "verification" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "caller" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetChallengedSnapshotsQuery,
+  GetChallengedSnapshotsQueryVariables
+>;
+export const GetVerifiedSnapshotsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getVerifiedSnapshots" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "lastTimestamp" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "BigInt" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "claims" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotsPerPage" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: { kind: "EnumValue", value: "timestamp" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderDirection" },
+                value: { kind: "EnumValue", value: "desc" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "timestamp_lte" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "lastTimestamp" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "verified" },
+                      value: { kind: "BooleanValue", value: true },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "challenged" },
+                      value: { kind: "BooleanValue", value: false },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "stateroot" } },
+                { kind: "Field", name: { kind: "Name", value: "bridger" } },
+                { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "challenge" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "challenger" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "honest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "verification" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "caller" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetVerifiedSnapshotsQuery,
+  GetVerifiedSnapshotsQueryVariables
+>;
+export const GetResolvedSnapshotsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getResolvedSnapshots" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "snapshotsPerPage" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "lastTimestamp" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "BigInt" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "claims" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "snapshotsPerPage" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: { kind: "EnumValue", value: "timestamp" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderDirection" },
+                value: { kind: "EnumValue", value: "desc" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "timestamp_lte" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "lastTimestamp" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "verified" },
+                      value: { kind: "BooleanValue", value: true },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "challenged" },
+                      value: { kind: "BooleanValue", value: true },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "epoch" } },
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "stateroot" } },
+                { kind: "Field", name: { kind: "Name", value: "bridger" } },
+                { kind: "Field", name: { kind: "Name", value: "challenged" } },
+                { kind: "Field", name: { kind: "Name", value: "verified" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "challenge" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "challenger" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "honest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "verification" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "timestamp" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "caller" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "txHash" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetResolvedSnapshotsQuery,
+  GetResolvedSnapshotsQueryVariables
+>;
+export const GetRelayDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getRelay" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "message" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "timestamp" } },
+                { kind: "Field", name: { kind: "Name", value: "txHash" } },
+                { kind: "Field", name: { kind: "Name", value: "relayer" } },
+                { kind: "Field", name: { kind: "Name", value: "proof" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetRelayQuery, GetRelayQueryVariables>;

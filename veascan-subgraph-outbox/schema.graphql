@@ -7,6 +7,7 @@ type Claim @entity {
   challenged: Boolean!
   challenge: Challenge @derivedFrom(field: "claim")
   verification: Verification @derivedFrom(field: "claim")
+  verified: Boolean!
   honest: Boolean!
   txHash: Bytes!
 }

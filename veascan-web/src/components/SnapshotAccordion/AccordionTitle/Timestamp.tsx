@@ -5,10 +5,13 @@ const StyledTimestamp = styled.div`
   color: ${({ theme }) => theme.color.lightBlue};
   white-space: nowrap;
 `;
-const Timestamp: React.FC<{
+
+interface ITimestamp {
   timestamp: string;
-}> = (p) => {
-  return <StyledTimestamp>{p.timestamp} </StyledTimestamp>;
+}
+
+const Timestamp: React.FC<ITimestamp> = ({ timestamp }) => {
+  return <StyledTimestamp>{timestamp} </StyledTimestamp>;
 };
 
 export default Timestamp;

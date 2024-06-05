@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import styled, { css } from "styled-components";
-import SearchIconLogo from "tsx:svgs/icons/search.svg";
 import { smallScreenStyle } from "styles/smallScreenStyle";
+import SearchIconLogo from "tsx:svgs/icons/search.svg";
+import { useFiltersContext } from "contexts/FiltersContext";
 
 const Container = styled.div`
   height: 45px;
@@ -62,13 +63,14 @@ const SearchIconContainer = styled.div`
 
 const SearchBar: React.FC = () => {
   const [placeholder, setPlaceholder] = useState("");
+  const { search, setSearch } = useFiltersContext();
 
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth <= 500) {
         setPlaceholder("Search");
       } else {
-        setPlaceholder("Search by Epoch ID / Tx ID / Merkle root");
+        setPlaceholder("Search by Epoch ID / State Root");
       }
     };
 
@@ -80,44 +82,6 @@ const SearchBar: React.FC = () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-  // const snapshots = [
-  //   {
-  //     chain: "Arbitrum",
-  //     epoch: "000000",
-  //     txID: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-  //     timestamp: "1680680481",
-  //     caller: "0x1234585f4ecaab46b138ec8d87238da442eeab9b",
-  //     stateRoot: "0x1234585f4ecaab46b138ec8d87238da44b32eeab",
-  //   },
-  //   {
-  //     chain: "Gnosis",
-  //     epoch: "99999999999",
-  //     txID: "0x9876585f4ecaab46b138ec8d87238da442eeab9b",
-  //     timestamp: "5580680455",
-  //     caller: "0x9876585f4ecaab46b138ec8d87238da442eeab9b",
-  //     stateRoot: "0x0000085f4ecaab46b138ec8d87238da44b32eeab",
-  //   },
-  // ];
-  //const [searchQuery, setSearchQuery] = useState("");
-  //const [filteredSnapshots, setFilteredSnapshots] = useState<any[]>([]);
-
-  // const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   const { value } = event.target;
-  //   setSearchQuery(value);
-
-  //   const filtered = snapshots.filter((snapshot) => {
-  //     const { epoch, txID, stateRoot } = snapshot;
-  //     const lowerCaseQuery = value.toLowerCase();
-
-  //     return (
-  //       epoch.toLowerCase().includes(lowerCaseQuery) ||
-  //       txID.toLowerCase().includes(lowerCaseQuery) ||
-  //       stateRoot.toLowerCase().includes(lowerCaseQuery)
-  //     );
-  //   });
-
-  //   setFilteredSnapshots(filtered);
-  // };
 
   return (
     <Container>
@@ -127,8 +91,8 @@ const SearchBar: React.FC = () => {
 
       <StyledInput
         type="text"
-        //value={searchQuery}
-        //onChange={handleInputChange}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
         placeholder={placeholder}
       />
     </Container>

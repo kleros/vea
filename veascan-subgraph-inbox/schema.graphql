@@ -1,3 +1,11 @@
+type _Schema_
+  @fulltext(
+    name: "snapshotQuery"
+    language: en
+    algorithm: rank
+    include: [{ entity: "Snapshot", fields: [{ name: "epochString" }, { name: "stateRootString" }] }]
+  )
+
 type Message @entity {
   id: ID!
   txHash: Bytes!
@@ -11,10 +19,12 @@ type Message @entity {
 type Snapshot @entity {
   id: ID!
   epoch: BigInt
+  epochString: String
   caller: Bytes
   txHash: Bytes
   timestamp: BigInt
   stateRoot: Bytes
+  stateRootString: String
   messages: [Message!]! @derivedFrom(field: "snapshot")
   numberMessages: BigInt!
   taken: Boolean!

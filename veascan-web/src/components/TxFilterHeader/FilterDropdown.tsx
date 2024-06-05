@@ -1,6 +1,6 @@
-import { DropdownSelect } from "@kleros/ui-components-library";
 import React from "react";
 import styled, { css } from "styled-components";
+import { DropdownSelect } from "@kleros/ui-components-library";
 import { smallScreenStyle } from "styles/smallScreenStyle";
 
 interface Item {
@@ -10,10 +10,12 @@ interface Item {
   value: number;
 }
 
-interface FilterDropdownProps {
+interface IFilterDropdown {
   isSimpleButton: boolean;
   isAlignRight: boolean;
   itemData: Item[];
+  value: number;
+  callback: (arg0: number) => void;
 }
 
 const FilterItem = styled(DropdownSelect)`
@@ -50,18 +52,20 @@ const FilterItem = styled(DropdownSelect)`
   }
 `;
 
-export const FilterDropdown: React.FC<FilterDropdownProps> = ({
+export const FilterDropdown: React.FC<IFilterDropdown> = ({
   isSimpleButton,
   isAlignRight,
   itemData,
+  value,
+  callback,
 }) => {
   return (
     <FilterItem
       items={itemData}
-      defaultValue={1}
+      defaultValue={value}
       simpleButton={isSimpleButton}
       alignRight={isAlignRight}
-      callback={() => {}}
+      callback={callback}
     />
   );
 };

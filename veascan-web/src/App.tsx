@@ -1,13 +1,13 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { useList } from "react-use";
-import { BigNumber } from "ethers";
 import { StandardPagination } from "@kleros/ui-components-library";
 import Layout from "components/Layout";
-import SnapshotAccordion from "components/SnapshotAccordion/SnapshotAccordion";
+import SnapshotAccordion from "components/SnapshotAccordion";
 import TxFilterHeader from "components/TxFilterHeader";
-import { useSnapshots, getSnapshotId } from "hooks/useSnapshots";
+import { getSnapshotId, useSnapshots } from "hooks/useSnapshots";
 import { mapDataForAccordion } from "utils/mapDataForAccordion";
+import { useFiltersContext } from "./contexts/FiltersContext";
 
 const SNAPSHOTS_PER_PAGE = 5;
 
@@ -25,16 +25,27 @@ const App = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [
     pageTracking,
-    { push: pushPageTracking, removeAt: removeAtPageTracking },
+    {
+      push: pushPageTracking,
+      removeAt: removeAtPageTracking,
+      clear: clearPageTracking,
+    },
   ] = useList<IPageTracking>();
   const { data } = useSnapshots(
     pageTracking.at(-1)?.shownSnapshots,
     pageTracking.at(-1)?.timestamp,
     SNAPSHOTS_PER_PAGE
   );
-  const numPages = data?.totalSnapshots
-    .div(BigNumber.from(SNAPSHOTS_PER_PAGE))
-    .toNumber();
+
+  const { fromChain, toChain, statusFilter } = useFiltersContext();
+
+  useEffect(() => {
+    if (currentPage !== 1) {
+      clearPageTracking();
+      setCurrentPage(1);
+    }
+  }, [fromChain, toChain, statusFilter]);
+
   const handlePageChange = useCallback(
     (newPage: number) => {
       if (newPage > currentPage)
@@ -54,15 +65,16 @@ const App = () => {
       <TxFilterHeader />
       {data ? (
         <>
-          <SnapshotAccordion items={mapDataForAccordion(data.snapshots)} />
-          {numPages && numPages > 0 && (
-            <StyledPagination
-              numPages={numPages!}
-              currentPage={currentPage}
-              callback={handlePageChange}
-              hideNumbers
-            />
-          )}
+          <SnapshotAccordion
+            key={currentPage}
+            items={mapDataForAccordion(data.snapshots)}
+          />
+          <StyledPagination
+            numPages={data.isMorePages ? currentPage + 1 : currentPage}
+            currentPage={currentPage}
+            callback={handlePageChange}
+            hideNumbers
+          />
         </>
       ) : (
         <p>loading...</p>
