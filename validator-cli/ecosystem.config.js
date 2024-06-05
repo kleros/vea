@@ -13,9 +13,9 @@ module.exports = {
       },
     },
     {
-      name: "start-goerli-devnet",
+      name: "start-sepolia-devnet",
       script: "yarn",
-      args: "start-goerli-devnet",
+      args: "start-sepolia-devnet",
       interpreter: "/bin/bash",
       log_date_format: "YYYY-MM-DD HH:mm Z",
       watch: false,

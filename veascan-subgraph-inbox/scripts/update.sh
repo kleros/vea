@@ -16,8 +16,8 @@ function update() #file #dataSourceIndex #graphNetwork
     yq -i  ".dataSources[$dataSourceIndex].source.startBlock=$blockNumber" "$SCRIPT_DIR"/../subgraph.yaml
 }
 
-hardhatNetwork=${1:-arbitrumGoerli}
-graphNetwork=${2:-arbitrum\-goerli}
+hardhatNetwork=${1:-arbitrumSepolia}
+graphNetwork=${2:-arbitrum\-sepolia}
 i=0
 
 # backup

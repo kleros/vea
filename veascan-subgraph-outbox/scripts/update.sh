@@ -18,8 +18,8 @@ function update() #file #dataSourceIndex #graphNetwork
     yq -i  ".dataSources[$dataSourceIndex].source.startBlock=$blockNumber" "$SCRIPT_DIR"/../subgraph.yaml
 }
 
-hardhatNetwork=${1:-goerli}
-graphNetwork=${2:-goerli}
+hardhatNetwork=${1:-sepolia}
+graphNetwork=${2:-sepolia}
 contractFileSuffix=${3:-ArbToEthDevnet}
 i=0
 

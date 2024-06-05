@@ -6,11 +6,11 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "../../arbitrumToGnosis/VeaOutboxArbToGnosis.sol";
 
-/// @dev Vea Outbox From ArbitrumGoerli to Chiado.
+/// @dev Vea Outbox From Arbitrum to Chiado.
 /// Note: This contract is deployed on Chiado.
 /// Note: This contract is permissioned for developer testing (devnet).
 contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
@@ -32,14 +32,8 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
     /// @dev Submit a claim about the _stateRoot at _epoch and submit a deposit.
     /// @param _epoch The epoch for which the claim is made.
     /// @param _stateRoot The state root to claim.
-    function claim(uint256 _epoch, bytes32 _stateRoot) public payable override {
-        require(msg.value >= deposit, "Insufficient claim deposit.");
-        require(msg.sender == devnetOperator, "Invalid Testnet Operator");
-
-        unchecked {
-            require((block.timestamp - claimDelay) / epochPeriod == _epoch, "Invalid epoch.");
-        }
-
+    function claim(uint256 _epoch, bytes32 _stateRoot) public override onlyByDevnetOperator {
+        require(weth.transferFrom(msg.sender, address(this), deposit), "Failed WETH transfer.");
         require(_stateRoot != bytes32(0), "Invalid claim.");
         require(claimHashes[_epoch] == bytes32(0), "Claim already made.");
 
@@ -47,36 +41,32 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
             Claim({
                 stateRoot: _stateRoot,
                 claimer: msg.sender,
-                timestamp: uint32(block.timestamp),
-                blocknumber: uint32(block.number),
+                timestampClaimed: uint32(block.timestamp),
+                timestampVerification: uint32(0),
+                blocknumberVerification: uint32(0),
                 honest: Party.None,
                 challenger: address(0)
             })
         );
 
-        emit Claimed(msg.sender, _stateRoot);
+        emit Claimed(msg.sender, _epoch, _stateRoot);
     }
 
-    /// @dev Submit a challenge for the claim of the inbox state root snapshot taken at 'epoch'.
+    /// @dev Start verification for claim for 'epoch'.
     /// @param _epoch The epoch of the claim to challenge.
     /// @param _claim The claim associated with the epoch.
-    function challenge(uint256 _epoch, Claim memory _claim) external payable override {
+    function startVerification(uint256 _epoch, Claim memory _claim) public override onlyByDevnetOperator {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
-        require(_claim.challenger == address(0), "Claim already challenged.");
-        require(msg.value >= deposit, "Insufficient challenge deposit.");
-        require(msg.sender == devnetOperator, "Invalid Testnet Operator");
 
-        unchecked {
-            require(block.timestamp < uint256(_claim.timestamp) + challengePeriod, "Challenge period elapsed.");
-        }
+        _claim.timestampVerification = uint32(block.timestamp);
+        _claim.blocknumberVerification = uint32(block.number);
 
-        _claim.challenger = msg.sender;
         claimHashes[_epoch] = hashClaim(_claim);
 
-        emit Challenged(_epoch, msg.sender);
+        emit VerificationStarted(_epoch);
     }
 
-    /// @dev Sends the deposit back to the Bridger if their claim is not successfully challenged. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
+    /// @dev Sends the deposit back to the Claimer if successful. Includes a portion of the Challenger's deposit if unsuccessfully challenged.
     /// @param _epoch The epoch associated with the claim deposit to withraw.
     /// @param _claim The claim associated with the epoch.
     function withdrawClaimDeposit(uint256 _epoch, Claim memory _claim) public override {
@@ -86,29 +76,18 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
         delete claimHashes[_epoch];
 
         if (_claim.challenger != address(0)) {
-            payable(BURN_ADDRESS).send(burn);
-            payable(_claim.claimer).send(depositPlusReward); // User is responsible for accepting ETH.
+            weth.burn(burn); // no return value to check
+            require(weth.transfer(_claim.claimer, depositPlusReward), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
         } else {
-            payable(_claim.claimer).send(deposit); // User is responsible for accepting ETH.
+            require(weth.transfer(_claim.claimer, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
         }
     }
 
     /// @dev Resolves the optimistic claim for '_epoch'.
     /// @param _epoch The epoch of the optimistic claim.
     /// @param _claim The claim associated with the epoch.
-    function validateSnapshot(uint256 _epoch, Claim memory _claim) public override OnlyBridgeRunning {
+    function verifySnapshot(uint256 _epoch, Claim memory _claim) public override OnlyBridgeRunning {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
-
-        unchecked {
-            require(_claim.timestamp + challengePeriod <= block.timestamp, "Challenge period has not yet elapsed.");
-            require(
-                // expected blocks <= actual blocks + maxMissingBlocks
-                uint256(_claim.blocknumber) + (block.timestamp - uint256(_claim.timestamp)) / SLOT_TIME <=
-                    block.number + maxMissingBlocks,
-                "Too many missing blocks. Possible censorship attack. Use canonical bridge."
-            );
-        }
-
         require(_claim.challenger == address(0), "Claim is challenged.");
 
         if (_epoch > latestVerifiedEpoch) {
@@ -126,58 +105,59 @@ contract VeaOutboxArbToGnosisDevnet is VeaOutboxArbToGnosis {
     /// @param _stateroot The state root to claim.
     function devnetAdvanceState(uint256 _epoch, bytes32 _stateroot) external payable {
         claim(_epoch, _stateroot);
-        validateSnapshot(
-            _epoch,
-            Claim({
-                stateRoot: _stateroot,
-                claimer: msg.sender,
-                timestamp: uint32(block.timestamp),
-                blocknumber: uint32(block.number),
-                honest: Party.None,
-                challenger: address(0)
-            })
-        );
-        withdrawClaimDeposit(
-            _epoch,
-            Claim({
-                stateRoot: _stateroot,
-                claimer: msg.sender,
-                timestamp: uint32(block.timestamp),
-                blocknumber: uint32(block.number),
-                honest: Party.Claimer,
-                challenger: address(0)
-            })
-        );
+        Claim memory claim = Claim({
+            stateRoot: _stateroot,
+            claimer: msg.sender,
+            timestampClaimed: uint32(block.timestamp),
+            timestampVerification: uint32(0),
+            blocknumberVerification: uint32(0),
+            honest: Party.None,
+            challenger: address(0)
+        });
+        claim.timestampClaimed = uint32(block.timestamp);
+        startVerification(_epoch, claim);
+        claim.timestampVerification = uint32(block.timestamp);
+        claim.blocknumberVerification = uint32(block.number);
+        verifySnapshot(_epoch, claim);
+        claim.honest = Party.Claimer;
+        withdrawClaimDeposit(_epoch, claim);
     }
 
     /// @dev Constructor.
+    /// Note: epochPeriod must match the VeaInboxArbToGnosis contract deployment on Arbitrum, since it's on a different chain, we can't read it and trust the deployer to set a correct value
     /// @param _deposit The deposit amount to submit a claim in wei.
     /// @param _epochPeriod The duration of each epoch.
-    /// @param _challengePeriod The duration of the period allowing to challenge a claim.
+    /// @param _minChallengePeriod The minimum time window to challenge a claim.
     /// @param _timeoutEpochs The epochs before the bridge is considered shutdown.
-    /// @param _claimDelay The number of epochs a claim can be submitted for.
     /// @param _amb The address of the AMB contract on Gnosis.
-    /// @param _routerArbToGnosisDevnet The address of the router contract on Goerli routing from ArbitrumGoerli to Chiado.
+    /// @param _routerArbToGnosis The address of the router on Ethereum that routes from Arbitrum to Gnosis.
+    /// @param _sequencerDelayLimit The maximum delay in seconds that the Arbitrum sequencer can backdate transactions.
     /// @param _maxMissingBlocks The maximum number of blocks that can be missing in a challenge period.
+    /// @param _routerChainId The chain id of the routerArbToGnosis.
+    /// @param _weth The address of the WETH contract on Gnosis.
     constructor(
         uint256 _deposit,
         uint256 _epochPeriod,
-        uint256 _challengePeriod,
+        uint256 _minChallengePeriod,
         uint256 _timeoutEpochs,
-        uint256 _claimDelay,
         IAMB _amb,
-        address _routerArbToGnosisDevnet,
-        uint256 _maxMissingBlocks
+        address _routerArbToGnosis,
+        uint256 _sequencerDelayLimit,
+        uint256 _maxMissingBlocks,
+        uint256 _routerChainId,
+        IWETH _weth
     )
         VeaOutboxArbToGnosis(
             _deposit,
             _epochPeriod,
-            _challengePeriod,
+            _minChallengePeriod,
             _timeoutEpochs,
-            _claimDelay,
             _amb,
-            _routerArbToGnosisDevnet,
-            _maxMissingBlocks
+            _routerArbToGnosis,
+            _sequencerDelayLimit,
+            _maxMissingBlocks,
+            _routerChainId,
+            _weth
         )
     {
         devnetOperator = msg.sender;

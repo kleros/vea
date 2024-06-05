@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 // https://github.com/poanetwork/tokenbridge-contracts/blob/master/contracts/mocks/AMBMock.sol
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "../../../canonical/gnosis-chain/IAMB.sol";
-import "../../../libraries/gnosis-chain/Bytes.sol";
 
 contract MockAMB is IAMB {
     event MockedEvent(bytes32 indexed messageId, bytes encodedData);

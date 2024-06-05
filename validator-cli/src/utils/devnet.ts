@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { getVeaInboxArbToEthProvider, getVeaOutboxArbToEthDevnetProvider } from "../utils/ethers";
 import { VeaInboxArbToEth, VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -11,8 +11,8 @@ async function initialize(
   const outboxProvider = new JsonRpcProvider(outboxRPCUrl);
   const veaOutbox = getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress, process.env.PRIVATE_KEY, outboxProvider);
 
-  const arbGoerliProvider = new JsonRpcProvider(process.env.RPC_ARB_GOERLI);
-  const veaInbox = getVeaInboxArbToEthProvider(veaInboxAddress, process.env.PRIVATE_KEY, arbGoerliProvider);
+  const arbSepoliaProvider = new JsonRpcProvider(process.env.RPC_ARB_SEPOLIA);
+  const veaInbox = getVeaInboxArbToEthProvider(veaInboxAddress, process.env.PRIVATE_KEY, arbSepoliaProvider);
 
   const deposit = await veaOutbox.deposit();
   const epochPeriod = (await veaOutbox.epochPeriod()).toNumber();
@@ -27,15 +27,18 @@ async function initialize(
 
   // only search back 2 weeks
   // not really correct since l2 blocks are different, but just an estimate
-  const searchBlock = Math.max(0, (await arbGoerliProvider.getBlockNumber()) - Math.floor(1209600 / 12));
+  const searchBlock = Math.max(0, (await arbSepoliaProvider.getBlockNumber()) - Math.floor(1209600 / 12));
 
-  const logs = await arbGoerliProvider.getLogs({
+  const logs = await arbSepoliaProvider.getLogs({
     address: veaInboxAddress,
     topics: veaInbox.filters.SnapshotSaved(null).topics,
     fromBlock: searchBlock,
   });
 
-  let lastSavedCount = logs.length > 0 ? BigNumber.from(logs[logs.length - 1].data) : BigNumber.from(0);
+  let lastSavedCount =
+    logs.length > 0
+      ? utils.defaultAbiCoder.decode(["bytes32", "uint256", "uint64"], logs[logs.length - 1].data)[2]
+      : BigNumber.from(0);
   return [veaInbox, epochPeriod, lastSavedCount, veaOutbox, deposit];
 }
 

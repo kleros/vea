@@ -6,42 +6,35 @@ import { ethers } from "hardhat";
 
 enum ReceiverChains {
   ETHEREUM_MAINNET = 1,
+  ETHEREUM_SEPOLIA = 11155111,
   HARDHAT = 31337,
 }
+
 const paramsByChainId = {
   ETHEREUM_MAINNET: {
-    deposit: parseEther("20"), // 1000 ETH budget to start, enough for 21 days till timeout
-    // Average happy path wait time is 42 hours (36, 48 hours)
-    epochPeriod: 43200, // 12 hours
-    claimDelay: 108000, // 30 hours (24 hours sequencer backdating + 6 hour buffer)
-    challengePeriod: 21600, // 6 hours
-    numEpochTimeout: 42, // 21 days
-    maxMissingBlocks: 108, // 108 in 1800 slots
-    senderChainId: 42161,
-    arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
+    deposit: parseEther("12"), // ~1100 ETH budget, enough for 8 days of challenges
+    // bridging speed is 29 - 31 hours.
+    epochPeriod: 7200, // 2 hours
+    minChallengePeriod: 10800, // 3 hours
+    numEpochTimeout: 252, // 21 days
+    maxMissingBlocks: 49, // 49 in 900 slots, assumes 10% non-censoring validators
+    arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses,
   },
-  /*
-  // if maxTimeVariation on seuqencer is 4 hours. . .
-  ETHEREUM_MAINNET: {
-    deposit: parseEther("10"), // 1000 ETH budget to start, enough for 21 days till timeout
-    // Average happy path wait time is 12 hours (9, 15 hours)
-    epochPeriod: 43200, // 6 hours
-    claimDelay: 21600, // 6 hours (4 hours sequencer backdating + 2 hour buffer)
-    challengePeriod: 21600, // 3 hours
-    numEpochTimeout: 42, // 21 days
-    maxMissingBlocks: 40, // 900 in 1800 slots
-    senderChainId: 42161,
-    arbitrumBridge: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", // https://developer.arbitrum.io/useful-addresses
-  },*/
+  ETHEREUM_SEPOLIA: {
+    deposit: parseEther("1"), // ~100 ETH budget to start, enough for 8 days of challenges
+    // bridging speed is 29 - 31 hours.
+    epochPeriod: 7200, // 2 hours
+    minChallengePeriod: 10800, // 3 hours
+    numEpochTimeout: 1000000, // never
+    maxMissingBlocks: 1000000, // any, sepolia network performance is poor, so can't use the censorship test well
+    arbitrumBridge: "0x38f918D0E9F1b721EDaA41302E399fa1B79333a9", // https://developer.arbitrum.io/useful-addresses
+  },
   HARDHAT: {
-    deposit: parseEther("10"), // 120 eth budget for timeout
-    // Average happy path wait time is 45 mins, assume no censorship
-    epochPeriod: 1800, // 30 min
-    claimDelay: 0, // 30 hours (24 hours sequencer backdating + 6 hour buffer)
-    challengePeriod: 1800, // 30 min (assume no sequencer backdating)
-    numEpochTimeout: 10000000000000, // 6 hours
-    senderChainId: 31337,
-    maxMissingBlocks: 10000000000000,
+    deposit: parseEther("10"),
+    epochPeriod: 600, // 10 min
+    minChallengePeriod: 600, // 10 min
+    numEpochTimeout: 10000000000000, // never
+    maxMissingBlocks: 10,
     arbitrumBridge: ethers.constants.AddressZero,
   },
 };
@@ -58,10 +51,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const senderNetworks = {
     ETHEREUM_MAINNET: config.networks.arbitrum,
+    ETHEREUM_SEPOLIA: config.networks.arbitrumSepolia,
     HARDHAT: config.networks.localhost,
   };
 
-  const { deposit, epochPeriod, challengePeriod, numEpochTimeout, claimDelay, maxMissingBlocks, arbitrumBridge } =
+  const { deposit, epochPeriod, minChallengePeriod, numEpochTimeout, maxMissingBlocks, arbitrumBridge } =
     paramsByChainId[ReceiverChains[chainId]];
 
   // Hack to predict the deployment address on the sender chain.
@@ -70,22 +64,33 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
     let nonce = await ethers.provider.getTransactionCount(deployer);
-    nonce += 4; // SenderGatewayToEthereum deploy tx will be the 5th after this, same network for both sender/receiver.
 
-    const senderGatewayAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future SenderGatewayToEthereum address for nonce %d: %s", nonce, senderGatewayAddress);
-    nonce -= 2;
-
-    const arbSysAddress = getContractAddress(deployer, nonce);
+    const arbSysAddress = getContractAddress(deployer, nonce + 5);
     console.log("calculated future arbSysAddress address for nonce %d: %s", nonce, arbSysAddress);
-    nonce += 1;
 
-    const veaInboxAddress = getContractAddress(deployer, nonce);
+    const veaInboxAddress = getContractAddress(deployer, nonce + 6);
     console.log("calculated future VeaInbox for nonce %d: %s", nonce, veaInboxAddress);
-    nonce += 3;
 
-    const bridgeAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future inboxAddress for nonce %d: %s", nonce, bridgeAddress);
+    const senderGatewayAddress = getContractAddress(deployer, nonce + 7);
+    console.log("calculated future SenderGatewayToEthereum address for nonce %d: %s", nonce, senderGatewayAddress);
+
+    const outbox = await deploy("OutboxMock", {
+      from: deployer,
+      args: [veaInboxAddress],
+      log: true,
+    });
+
+    const sequencerInbox = await deploy("SequencerInboxMock", {
+      from: deployer,
+      args: [86400],
+      log: true,
+    });
+
+    const bridge = await deploy("BridgeMock", {
+      from: deployer,
+      args: [outbox.address, sequencerInbox.address],
+      log: true,
+    });
 
     const veaOutbox = await deploy("VeaOutbox", {
       from: deployer,
@@ -94,11 +99,10 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         arbSysAddress,
         deposit,
         epochPeriod,
-        challengePeriod,
+        minChallengePeriod,
         numEpochTimeout,
-        claimDelay,
         veaInboxAddress,
-        bridgeAddress,
+        bridge.address,
         maxMissingBlocks,
       ],
       log: true,
@@ -123,15 +127,14 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     console.log("calculated future veaInbox for nonce %d: %s", nonce, veaInboxAddress);
 
     if (chainId)
-      await deploy("VeaOutboxArbToEth", {
+      await deploy("VeaOutboxArbToEth" + (chainId === 1 ? "" : "Testnet"), {
         from: deployer,
         contract: "VeaOutboxArbToEth",
         args: [
           deposit,
           epochPeriod,
-          challengePeriod,
+          minChallengePeriod,
           numEpochTimeout,
-          claimDelay,
           veaInboxAddress,
           arbitrumBridge,
           maxMissingBlocks,
@@ -152,7 +155,7 @@ deployOutbox.tags = ["ArbToEthOutbox"];
 deployOutbox.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
   console.log(chainId);
-  return !(chainId === 1 || chainId === 31337);
+  return !ReceiverChains[chainId];
 };
 
 export default deployOutbox;

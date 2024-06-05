@@ -8,19 +8,20 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 ### Current version
 
-#### Goerli
+#### Sepolia
 
-- [RouterArbToGnosisDevnet](https://goerli.etherscan.io/address/0xD4847f86Ed2E9D03839B15fd0818759861c063a8)
-- [VeaOutboxArbToEthDevnet](https://goerli.etherscan.io/address/0x9235A379950B9f01fb3e2961C06912A96DCcef0e)
+- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0x5AD255400913515C8DA7E82E6b8A109fA5c46135)
 
-#### Arbitrum Goerli
+#### Arbitrum Sepolia
 
-- [VeaInboxArbToEthDevnet](https://goerli.arbiscan.io/address/0xA3FefC6FeE3fc66B9d9a8BEE794736ab71a74c55)
-- [VeaInboxArbToGnosisDevnet](https://goerli.arbiscan.io/address/0x660daB9A6436A814a6ae3a6f27b309356a4bE78c)
+- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0x77e95F54032f467eC45c48C6affc203f93858783)
 
 #### Chiado
 
-- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xdFd7aDEb43d46FA3f16FB3e27F7fe85c3f5BD89D)
+- [VeaInboxGnosisToArbDevnet](https://blockscout.com/gnosis/chiado/address/0xc0804E4FcEEfD958050356A429DAaaA71aA39385)
+- [VeaInboxGnosisToArbTestnet](https://blockscout.com/gnosis/chiado/address/0xC21c20a719fAc23c54c336FA0E16a0CFdC4baA00)
+- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0x9481b3A49ac67d03D9022E6200eFD81850BADDB4)
+- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0x931FA807020231bCE1340Be8E1e5054207BbAFEd)
 
 ## Getting Started
 
@@ -86,13 +87,13 @@ yarn start-local
 ##### Testnets
 
 ```bash
-# ArbitrumGoerli -> Goerli
-yarn deploy --network goerli --tags ArbGoerliToGoerliOutbox
-yarn deploy --network arbitrumGoerli --tags ArbGoerliToGoerliInbox
+# arbitrumSepolia -> Sepolia
+yarn deploy --network sepolia --tags ArbSepoliaToSepoliaOutbox
+yarn deploy --network arbitrumSepolia --tags ArbSepoliaToSepoliaInbox
 
-# ArbitrumGoerli -> Chiado
-yarn deploy --network chiado --tags ArbGoerliToChiadoOutbox
-yarn deploy --network arbitrumGoerli --tags ArbGoerliToChiadoInbox
+# arbitrumSepolia -> Chiado
+yarn deploy --network chiado --tags ArbSepoliaToChiadoOutbox
+yarn deploy --network arbitrumSepolia --tags ArbSepoliaToChiadoInbox
 ```
 
 ##### Mainnets
@@ -122,8 +123,8 @@ This must be done for each network separately.
 
 ```bash
 # explorer
-yarn etherscan-verify --network <arbitrumGoerli|arbitrum|goerli|mainnet|chiado|gnosischain>
+yarn etherscan-verify --network <arbitrumSepolia|arbitrum|sepolia|mainnet|chiado|gnosischain>
 
 # sourcify
-yarn sourcify --network <arbitrumGoerli|arbitrum|goerli|mainnet|chiado|gnosischain>
+yarn sourcify --network <arbitrumSepolia|arbitrum|sepolia|mainnet|chiado|gnosischain>
 ```

@@ -4,7 +4,7 @@
 // https://arbiscan.io/address/0x0000000000000000000000000000000000000064#code
 // interface is pruned for relevant function stubs
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 ///@title System level functionality
 ///@notice For use by contracts to interact with core L2-specific functionality.

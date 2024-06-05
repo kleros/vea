@@ -1,18 +1,18 @@
 {
   "name": "@kleros/vea-relayer-subgraph-inbox",
   "license": "MIT",
-  "packageManager": "yarn@3.3.1",
+  "packageManager": "yarn@4.2.2",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "volta": {
-    "node": "16.20.0",
-    "yarn": "3.3.1"
+    "node": "18.20.3",
+    "yarn": "4.2.2"
   },
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ shotaronowhere/vea-inbox-arbitrum",
+    "deploy": "graph deploy --studio vea-inbox-arb-sepolia-devnet",
     "create-local": "graph create --node http://localhost:8020/ kleros/vea-validator-inbox",
     "remove-local": "graph remove --node http://localhost:8020/ kleros/vea-validator-inbox",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/vea-validator-inbox",
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.73.0",
+    "concat-stream": "^2.0.0",
     "gluegun": "^5.1.2",
     "matchstick-as": "0.5.2"
   }

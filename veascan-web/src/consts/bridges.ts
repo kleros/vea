@@ -1,8 +1,13 @@
-import { Chain, arbitrumGoerli, goerli, gnosisChiado } from "@wagmi/chains";
-import VeaInboxArbitrumGoerliGoerli from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToEthDevnet.json";
-import VeaOutboxArbitrumGoerliGoerli from "@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json";
-import VeaInboxArbitrumGoerliChiado from "@kleros/vea-contracts/deployments/arbitrumGoerli/VeaInboxArbToGnosisDevnet.json";
-import VeaOutboxArbitrumGoerliChiado from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
+import VeaInboxArbitrumSepolia from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json";
+import VeaOutboxSepolia from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
+import VeaInboxArbitrumSepoliaChiado from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json";
+import VeaOutboxArbitrumSepoliaChiado from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
+import {
+  Chain,
+  arbitrumSepolia,
+  sepolia,
+  gnosisChiado,
+} from "@wagmi/core/chains";
 import Arbitrum from "tsx:svgs/chains/arbitrum.svg";
 import Ethereum from "tsx:svgs/chains/ethereum.svg";
 import Gnosis from "tsx:svgs/chains/gnosis.svg";
@@ -12,8 +17,8 @@ export interface IChain extends Chain {
 }
 
 export const supportedChains = [
-  { ...arbitrumGoerli, logo: Arbitrum },
-  { ...goerli, logo: Ethereum },
+  { ...arbitrumSepolia, logo: Arbitrum },
+  { ...sepolia, logo: Ethereum },
   { ...gnosisChiado, logo: Gnosis },
 ];
 
@@ -33,25 +38,25 @@ export interface IBridge {
 export const bridges: IBridge[] = [
   {
     id: 0,
-    from: arbitrumGoerli.id,
-    to: goerli.id,
-    inboxAddress: VeaInboxArbitrumGoerliGoerli.address as `0x${string}`,
+    from: arbitrumSepolia.id,
+    to: sepolia.id,
+    inboxAddress: VeaInboxArbitrumSepolia.address as `0x${string}`,
     inboxEndpoint:
-      "https://api.thegraph.com/subgraphs/name/alcercu/veascantest",
-    outboxAddress: VeaOutboxArbitrumGoerliGoerli.address as `0x${string}`,
+      "https://api.studio.thegraph.com/query/67213/veascan-inbox-arb-sep-devnet/version/latest",
+    outboxAddress: VeaOutboxSepolia.address as `0x${string}`,
     outboxEndpoint:
-      "https://api.thegraph.com/subgraphs/name/alcercu/veascan-outbox-goerli",
+      "https://api.studio.thegraph.com/query/67213/veascan-outbox-arb-sep-devnet/version/latest",
   },
   {
     id: 1,
-    from: arbitrumGoerli.id,
+    from: arbitrumSepolia.id,
     to: gnosisChiado.id,
-    inboxAddress: VeaInboxArbitrumGoerliChiado.address as `0x${string}`,
+    inboxAddress: VeaInboxArbitrumSepoliaChiado.address as `0x${string}`,
     inboxEndpoint:
-      "https://api.thegraph.com/subgraphs/name/alcercu/vea-inbox-arbgoerlitochiadodn",
-    outboxAddress: VeaOutboxArbitrumGoerliChiado.address as `0x${string}`,
+      "https://api.studio.thegraph.com/query/67213/veascan-inbox-arb-sep-chiado-devnet/version/latest",
+    outboxAddress: VeaOutboxArbitrumSepoliaChiado.address as `0x${string}`,
     outboxEndpoint:
-      "https://api.goldsky.com/api/public/project_clh3hizxpga0j49w059761yga/subgraphs/kleros-veascan-outbox-chiado/latest/gn",
+      "https://api.studio.thegraph.com/query/67213/veascan-outbox-arb-chiado-devnet/version/latest",
   },
 ];
 

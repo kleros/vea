@@ -8,22 +8,16 @@ require("dotenv").config();
 
 const Web3 = require("web3");
 const _batchedSend = require("web3-batched-send");
-const _contract = require("@kleros/vea-contracts/deployments/goerli/VeaOutboxArbToEthDevnet.json");
+const _contract = require("@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json");
 
 const getParams = (chainid: number): [string, string, string] => {
-  if (chainid !== 5 && chainid !== 10200) throw new Error("Invalid chainid");
+  if (chainid !== 11155111) throw new Error("Invalid chainid");
 
-  return chainid === 5
-    ? [
-        process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_GOERLI,
-        process.env.VEAOUTBOX_ARBGOERLI_TO_GOERLI_ADDRESS,
-        process.env.RPC_GOERLI,
-      ]
-    : [
-        process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_CHIADO,
-        process.env.VEAOUTBOX_ARBGOERLI_TO_CHIADO_ADDRESS,
-        process.env.RPC_CHIADO,
-      ];
+  return [
+    process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_SEPOLIA,
+    process.env.VEAOUTBOX_ARBSEPOLIA_TO_SEPOLIA_ADDRESS,
+    process.env.RPC_SEPOLIA,
+  ];
 };
 
 const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<number> => {
@@ -31,7 +25,7 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<
   const stateRoot = await veaOutbox.stateRoot();
 
   const result = await request(
-    `https://api.thegraph.com/subgraphs/name/shotaronowhere/${subgraph}`,
+    `https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`,
     `{
               snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
                 count
@@ -39,7 +33,7 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<
             }`
   );
 
-  if (result["snapshotSaveds"].length == 0) throw new Error("No snapshot found");
+  if (result["snapshotSaveds"].length == 0) return 0;
 
   return Number(result["snapshotSaveds"][0].count);
 };
@@ -99,6 +93,8 @@ const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): 
   const veaOutbox = getVeaOutboxArbToEth(VEAOUTBOX_ADDRESS, process.env.PRIVATE_KEY, RPC_VEAOUTBOX);
   const count = await getCount(veaOutbox, chainid);
 
+  if (!count) return null;
+
   let txns = [];
 
   const nonces = await getNonceFrom(chainid, nonce, msgSender);
@@ -120,10 +116,10 @@ const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): 
 
 const getNonceFrom = async (chainid: number, nonce: number, msgSender: string) => {
   try {
-    const sugbraph = getSubgraph(chainid);
+    const subgraph = getSubgraph(chainid);
 
     const result = await request(
-      `https://api.thegraph.com/subgraphs/name/shotaronowhere/${sugbraph}`,
+      `https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`,
       `{
             messageSents(first: 1000, where: {nonce_gte: ${nonce}, msgSender_: {id: "${msgSender}"}}, orderBy: nonce, orderDirection: asc) {
               nonce

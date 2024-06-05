@@ -18,13 +18,13 @@
     "solidity",
     "smart contracts"
   ],
-  "packageManager": "yarn@3.3.1",
+  "packageManager": "yarn@4.2.2",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "volta": {
-    "node": "16.20.0",
-    "yarn": "3.3.1"
+    "node": "18.20.3",
+    "yarn": "4.2.2"
   },
   "publishConfig": {
     "access": "public",
@@ -36,10 +36,28 @@
     "check": "hardhat check",
     "test": "TS_NODE_TRANSPILE_ONLY=1 hardhat test",
     "start": "hardhat node --tags nothing",
-    "start-local": "hardhat node --tags ArbToEthOutbox,ArbToEthInbox",
+    "start-local": "hardhat node --tags ArbToEthOutbox,ArbToEthInbox --hostname 0.0.0.0",
     "deploy": "hardhat deploy",
+    "deploy:mainnet": "yarn deploy:ArbToEth && yarn deploy:ArbToGnosis && yarn deploy:GnosisToArb",
+    "deploy:testnet": "yarn deploy:ArbToEthTestnet && yarn deploy:ArbToGnosisTestnet && yarn deploy:GnosisToArbTestnet",
+    "deploy:devnet": "yarn deploy:ArbToEthDevnet && yarn deploy:ArbToGnosisDevnet && yarn deploy:GnosisToArbDevnet",
+    "deploy:ArbToEth": "hardhat deploy --network mainnet --tags ArbToEthOutbox && hardhat deploy --network arbitrum --tags ArbToEthInbox",
+    "deploy:ArbToGnosis": "hardhat deploy --network gnosis --tags ArbToGnosisOutbox && hardhat deploy --network arbitrum --tags ArbToGnosisInbox && hardhat deploy --network mainnet --tags ArbToGnosisRouter",
+    "deploy:GnosisToArb": "hardhat deploy --network arbitrum --tags GnosisToArbOutbox && hardhat deploy --network chiado --tags GnosisToArbInbox && hardhat deploy --network sepolia --tags GnosisToArbRouter",
+    "deploy:ArbToEthTestnet": "hardhat deploy --network sepolia --tags ArbToEthOutbox && hardhat deploy --network arbitrumSepolia --tags ArbToEthInbox",
+    "deploy:ArbToGnosisTestnet": "hardhat deploy --network chiado --tags ArbToGnosisOutbox && hardhat deploy --network arbitrumSepolia --tags ArbToGnosisInbox && hardhat deploy --network sepolia --tags ArbToGnosisRouter",
+    "deploy:GnosisToArbTestnet": "hardhat deploy --network arbitrumSepolia --tags GnosisToArbOutbox && hardhat deploy --network chiado --tags GnosisToArbInbox && hardhat deploy --network sepolia --tags GnosisToArbRouter",
+    "deploy:ArbToEthDevnet": "hardhat deploy --network sepolia --tags ArbSepoliaToSepoliaOutbox && hardhat deploy --network arbitrumSepolia --tags ArbSepoliaToSepoliaInbox",
+    "deploy:ArbToGnosisDevnet": "hardhat deploy --network chiado --tags ArbSepoliaToChiadoOutbox && hardhat deploy --network arbitrumSepolia --tags ArbSepoliaToChiadoInbox && hardhat deploy --network sepolia --tags ArbSepoliaToChiadoRouter",
+    "deploy:GnosisToArbDevnet": "hardhat deploy --network arbitrumSepolia --tags ChiadoToArbSepoliaOutbox && hardhat deploy --network chiado --tags ChiadoToArbSepoliaInbox && hardhat deploy --network sepolia --tags ChiadoToArbSepoliaRouter",
     "deploy-local": "hardhat deploy --tags ArbToEthOutbox,ArbToEthInbox --network localhost",
-    "etherscan-verify": "hardhat etherscan-verify",
+    "etherscan-verify:testnet": "yarn etherscan-verify:chiado && yarn etherscan-verify:sepolia && yarn etherscan-verify:arbitrumSepolia",
+    "etherscan-verify:gnosis": "hardhat etherscan-verify --network gnosischain",
+    "etherscan-verify:chiado": "hardhat etherscan-verify --network chiado",
+    "etherscan-verify:ethereum": "hardhat etherscan-verify --network ethereum",
+    "etherscan-verify:sepolia": "hardhat etherscan-verify --network sepolia",
+    "etherscan-verify:arbitrum": "hardhat etherscan-verify --network arbitrum",
+    "etherscan-verify:arbitrumSepolia": "hardhat etherscan-verify --network arbitrumSepolia",
     "sourcify": "hardhat sourcify --write-failing-metadata",
     "size": "hardhat size-contracts --no-compile",
     "watch": "hardhat watch",
@@ -50,6 +68,7 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.13",
     "@typechain/ethers-v5": "^10.2.0",
     "@typechain/hardhat": "^6.1.5",
@@ -81,8 +100,5 @@
     "ts-node": "^10.9.1",
     "typechain": "^8.1.1",
     "typescript": "^4.9.5"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^4.8.3"
   }
 }

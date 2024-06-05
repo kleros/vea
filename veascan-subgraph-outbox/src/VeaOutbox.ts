@@ -18,10 +18,7 @@ export function handleClaimed(event: Claimed): void {
   const claimIndex = useClaimIndex();
   const claim = new Claim(claimIndex.toString());
   const outbox = VeaOutbox.bind(event.address);
-  const claimDelay = outbox.claimDelay();
-  const epochPeriod = outbox.epochPeriod();
-  const epoch = event.block.timestamp.minus(claimDelay).div(epochPeriod);
-  claim.epoch = epoch;
+  claim.epoch = event.params._epoch;
   claim.txHash = event.transaction.hash;
   claim.stateroot = event.params._stateRoot;
   claim.timestamp = event.block.timestamp;
@@ -71,21 +68,6 @@ export function handleVerified(event: Verified): void {
   ) {
     const claim = Claim.load(i.toString());
     if (claim!.epoch.equals(event.params._epoch)) {
-      if (claim!.challenged) {
-        const challenge = Challenge.load(claim!.challenge!);
-        if (event.transaction.input.slice(36, 68) === claim!.stateroot) {
-          claim!.honest = true;
-          challenge!.honest = false;
-        } else {
-          claim!.honest = false;
-          challenge!.honest = true;
-        }
-        challenge!.save();
-      } else {
-        claim!.honest = true;
-      }
-      claim!.verified = true;
-      claim!.save();
       const verification = new Verification(claim!.id);
       verification.claim = claim!.id;
       verification.timestamp = event.block.timestamp;

@@ -3,22 +3,26 @@ import { DeployFunction } from "hardhat-deploy/types";
 
 enum SenderChains {
   ARBITRUM = 42161,
+  ARBITRUM_SEPOLIA = 421614,
   HARDHAT = 31337,
 }
 const paramsByChainId = {
   ARBITRUM: {
-    epochPeriod: 43200, // 12 hours
+    epochPeriod: 7200, // 2 hours
     companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.mainnet,
   },
+  ARBITRUM_SEPOLIA: {
+    epochPeriod: 7200, // 2 hours
+    companion: (hre: HardhatRuntimeEnvironment) => hre.companionNetworks.sepolia,
+  },
   HARDHAT: {
-    epochPeriod: 1800, // 30 minutes
+    epochPeriod: 600, // 10 minutes
   },
 };
 
-// TODO: use deterministic deployments
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
-  const { deploy, execute } = deployments;
+  const { deploy } = deployments;
   const chainId = Number(await getChainId());
 
   // fallback to hardhat node signers on local network
@@ -40,34 +44,22 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     });
 
     const receiverGateway = await deployments.get("ReceiverGateway");
-    const receiverChainId = 31337;
 
-    const senderGateway = await deploy("SenderGateway", {
+    await deploy("SenderGateway", {
       from: deployer,
       contract: "SenderGatewayMock",
       args: [veaInbox.address, receiverGateway.address],
       gasLimit: 4000000,
       log: true,
     });
-
-    const outbox = await deploy("OutboxMock", {
-      from: deployer,
-      args: [veaInbox.address],
-      log: true,
-    });
-
-    await deploy("BridgeMock", {
-      from: deployer,
-      args: [outbox.address],
-      log: true,
-    });
   };
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const veaOutbox = await companion(hre).deployments.get("VeaOutbox");
+    const veaOutbox = await companion(hre).deployments.get("VeaOutboxArbToEth" + (chainId === 42161 ? "" : "Testnet"));
 
-    await deploy("VeaInboxArbToEth", {
+    await deploy("VeaInboxArbToEth" + (chainId === 42161 ? "" : "Testnet"), {
+      contract: "VeaInboxArbToEth",
       from: deployer,
       args: [epochPeriod, veaOutbox.address],
       log: true,
