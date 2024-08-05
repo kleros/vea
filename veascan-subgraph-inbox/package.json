@@ -21,6 +21,6 @@
     "@graphprotocol/graph-ts": "^0.35.1"
   },
   "devDependencies": {
-    "@graphprotocol/graph-cli": "^0.73.0"
+    "@graphprotocol/graph-cli": "^0.80.0"
   }
 }
