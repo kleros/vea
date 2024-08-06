@@ -10,7 +10,7 @@ enum SenderChains {
 const paramsByChainId = {
   GNOSIS_CHIADO: {
     epochPeriod: 1800, // 30 minutes
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    amb: "0x8448E15d0e706C0298dECA99F0b4744030e59d7d", // https://docs.gnosischain.com/bridges/About%20Token%20Bridges/amb-bridge#key-contracts
   },
   HARDHAT: {
     amb: ethers.constants.AddressZero,
