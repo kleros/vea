@@ -5231,6 +5231,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@solidity-parser/parser@npm:^0.18.0":
+  version: 0.18.0
+  resolution: "@solidity-parser/parser@npm:0.18.0"
+  checksum: 10/3b600b584f49bd84d6d27aeeb453c49c279df49324e104bda00d12cd3b26f18cb6230ff63db6a0ba1f383868620d318b15b7417a92aa8c580099449adaa13d76
+  languageName: node
+  linkType: hard
+
 "@svgr/babel-plugin-add-jsx-attribute@npm:^6.5.1":
   version: 6.5.1
   resolution: "@svgr/babel-plugin-add-jsx-attribute@npm:6.5.1"
@@ -17520,16 +17527,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier-plugin-solidity@npm:^1.1.3":
-  version: 1.1.3
-  resolution: "prettier-plugin-solidity@npm:1.1.3"
+"prettier-plugin-solidity@npm:^1.4.1":
+  version: 1.4.1
+  resolution: "prettier-plugin-solidity@npm:1.4.1"
   dependencies:
-    "@solidity-parser/parser": "npm:^0.16.0"
-    semver: "npm:^7.3.8"
-    solidity-comments-extractor: "npm:^0.0.7"
+    "@solidity-parser/parser": "npm:^0.18.0"
+    semver: "npm:^7.5.4"
   peerDependencies:
-    prettier: ">=2.3.0 || >=3.0.0-alpha.0"
-  checksum: 10/601ef5f843325006c1cb2541a4482da8325c81ad45241b28549976f5a8436045ce7f3927b044b1853f4519be068c7e9c64d144cd88e1a2cdf9c1b3598022dbbe
+    prettier: ">=2.3.0"
+  checksum: 10/8bd0b20cd1a0973bfdbb4e035d5dae9ff229a7f6475c4e31e99b85d74f77625c0a874835df23e51d36750139aa2e5c5d900a366d1cdff16edfe52b3550b7e2da
   languageName: node
   linkType: hard
 
@@ -19039,6 +19045,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"semver@npm:^7.5.4":
+  version: 7.6.3
+  resolution: "semver@npm:7.6.3"
+  bin:
+    semver: bin/semver.js
+  checksum: 10/36b1fbe1a2b6f873559cd57b238f1094a053dbfd997ceeb8757d79d1d2089c56d1321b9f1069ce263dc64cfa922fa1d2ad566b39426fe1ac6c723c1487589e10
+  languageName: node
+  linkType: hard
+
 "semver@npm:~7.2.0":
   version: 7.2.3
   resolution: "semver@npm:7.2.3"
@@ -19486,13 +19501,6 @@ __metadata:
   bin:
     solhint: solhint.js
   checksum: 10/0929e8fb068264942411602377d23769b9b313210edb787edee7402a8521a934d874bc4b4b3e6dffd7e512c4c3ede9d849cabb21f40cd3aa10537462057ebe4e
-  languageName: node
-  linkType: hard
-
-"solidity-comments-extractor@npm:^0.0.7":
-  version: 0.0.7
-  resolution: "solidity-comments-extractor@npm:0.0.7"
-  checksum: 10/a5cedf2310709969bc1783a6c336171478536f2f0ea96ad88437e0ef1e8844c0b37dd75591b0a824ec9c30640ea7e31b5f03128e871e6235bef3426617ce96c4
   languageName: node
   linkType: hard
 
@@ -21373,7 +21381,7 @@ __metadata:
     husky: "npm:^8.0.3"
     lint-staged: "npm:^13.2.2"
     prettier: "npm:^2.8.8"
-    prettier-plugin-solidity: "npm:^1.1.3"
+    prettier-plugin-solidity: "npm:^1.4.1"
     solhint-plugin-prettier: "npm:^0.0.5"
   languageName: unknown
   linkType: soft
