@@ -5,7 +5,7 @@ const getMessageDataToRelay = async (chainid: number, nonce: number) => {
     const subgraph = getSubgraph(chainid);
 
     const result = await request(
-      `https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`,
+      `https://api.studio.thegraph.com/query/85918/${subgraph}/version/latest`,
       `{
                 messageSents(first: 5, where: {nonce: ${nonce}}) {
                 nonce
@@ -39,7 +39,7 @@ const getProofAtCount = async (chainid: number, nonce: number, count: number): P
   try {
     const subgraph = getSubgraph(chainid);
 
-    const result = await request(`https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`, query);
+    const result = await request(`https://api.studio.thegraph.com/query/85918/${subgraph}/version/latest`, query);
 
     const proof = [];
 

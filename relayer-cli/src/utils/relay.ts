@@ -25,7 +25,7 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<
   const stateRoot = await veaOutbox.stateRoot();
 
   const result = await request(
-    `https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`,
+    `https://api.studio.thegraph.com/query/85918/${subgraph}/version/latest`,
     `{
               snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
                 count
@@ -119,7 +119,7 @@ const getNonceFrom = async (chainid: number, nonce: number, msgSender: string) =
     const subgraph = getSubgraph(chainid);
 
     const result = await request(
-      `https://api.studio.thegraph.com/query/67213/${subgraph}/version/latest`,
+      `https://api.studio.thegraph.com/query/85918/${subgraph}/version/latest`,
       `{
             messageSents(first: 1000, where: {nonce_gte: ${nonce}, msgSender_: {id: "${msgSender}"}}, orderBy: nonce, orderDirection: asc) {
               nonce

@@ -23,7 +23,7 @@ const epochPeriod = 1800; // 30 min
     for (const chain_id of chain_ids) {
       let nonce = await initialize(chain_id);
       // This is libghtbulb switch address in arbitrum sepolia
-      const sender = "0x4A9EF2E97B780ea6E8DE3fD8acd4cBA8C061F173";
+      const sender = "0x28d6D503F4c5734cD926E96b63C61527d975B382";
       nonce = await relayAllFrom(chain_id, nonce, sender);
       if (nonce != null) await updateStateFile(chain_id, Math.floor(Date.now() / 1000), nonce);
     }
