@@ -1727,9 +1727,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphprotocol/graph-cli@npm:^0.73.0":
-  version: 0.73.0
-  resolution: "@graphprotocol/graph-cli@npm:0.73.0"
+"@graphprotocol/graph-cli@npm:^0.81.0":
+  version: 0.81.0
+  resolution: "@graphprotocol/graph-cli@npm:0.81.0"
   dependencies:
     "@float-capital/float-subgraph-uncrashable": "npm:^0.0.0-alpha.4"
     "@oclif/core": "npm:2.8.6"
@@ -1761,7 +1761,7 @@ __metadata:
     yaml: "npm:1.10.2"
   bin:
     graph: bin/run
-  checksum: 10/ebcd5b8163257e8920fcad90b074b4e35a9bbe4d979cabcf6deb731480b8d86a069ccb56cbbd695623e10291f0288d7ae12806ba359ca67df6a77dcf7a427726
+  checksum: 10/000834b430e824272e3e14ad38d05094cdebb5a9aa72bed3e4046e33f7f426c5721669d3c9ae30eced0063037e4ae755c90adacc80ba867d4c688d4f4fe801fc
   languageName: node
   linkType: hard
 
@@ -3271,7 +3271,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@kleros/vea-relayer-subgraph-inbox@workspace:relayer-subgraph-inbox"
   dependencies:
-    "@graphprotocol/graph-cli": "npm:^0.73.0"
+    "@graphprotocol/graph-cli": "npm:^0.81.0"
     "@graphprotocol/graph-ts": "npm:^0.35.1"
     concat-stream: "npm:^2.0.0"
     gluegun: "npm:^5.1.2"
@@ -3299,7 +3299,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@kleros/veascan-subgraph-inbox@workspace:veascan-subgraph-inbox"
   dependencies:
-    "@graphprotocol/graph-cli": "npm:^0.73.0"
+    "@graphprotocol/graph-cli": "npm:^0.81.0"
     "@graphprotocol/graph-ts": "npm:^0.35.1"
   languageName: unknown
   linkType: soft
@@ -3309,7 +3309,7 @@ __metadata:
   resolution: "@kleros/veascan-subgraph-outbox@workspace:veascan-subgraph-outbox"
   dependencies:
     "@goldskycom/cli": "npm:^1.6.0"
-    "@graphprotocol/graph-cli": "npm:^0.73.0"
+    "@graphprotocol/graph-cli": "npm:^0.81.0"
     "@graphprotocol/graph-ts": "npm:^0.35.1"
   languageName: unknown
   linkType: soft
