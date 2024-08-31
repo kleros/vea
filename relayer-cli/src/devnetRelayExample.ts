@@ -1,6 +1,5 @@
 import { relayAllFrom } from "./utils/relay";
 import * as fs from "fs";
-require("dotenv").config();
 
 // let chain_ids = [5, 10200];
 let chain_ids = [11155111];

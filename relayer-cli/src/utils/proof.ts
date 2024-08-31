@@ -1,11 +1,12 @@
 import request from "graphql-request";
+import { getInboxSubgraph } from "../consts/bridgeRoutes";
 
 const getMessageDataToRelay = async (chainid: number, nonce: number) => {
   try {
-    const subgraph = getSubgraph(chainid);
+    const subgraph = getInboxSubgraph(chainid);
 
     const result = await request(
-      `https://api.studio.thegraph.com/query/85918/${subgraph}/version/latest`,
+      `https://api.studio.thegraph.com/query/${subgraph}`,
       `{
                 messageSents(first: 5, where: {nonce: ${nonce}}) {
                 nonce
@@ -37,9 +38,9 @@ const getProofAtCount = async (chainid: number, nonce: number, count: number): P
   query += "}";
 
   try {
-    const subgraph = getSubgraph(chainid);
+    const subgraph = getInboxSubgraph(chainid);
 
-    const result = await request(`https://api.studio.thegraph.com/query/85918/${subgraph}/version/latest`, query);
+    const result = await request(`https://api.studio.thegraph.com/query/${subgraph}`, query);
 
     const proof = [];
 
@@ -75,13 +76,4 @@ const getProofIndices = (nonce: number, count: number) => {
   return proof;
 };
 
-const getSubgraph = (chainid: number): string => {
-  switch (chainid) {
-    case 11155111:
-      return "vea-inbox-arb-sepolia-devnet";
-    default:
-      throw new Error("Invalid chainid");
-  }
-};
-
-export { getProofAtCount, getSubgraph, getMessageDataToRelay };
+export { getProofAtCount, getMessageDataToRelay };

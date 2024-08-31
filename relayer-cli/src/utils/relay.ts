@@ -1,7 +1,8 @@
-import { getProofAtCount, getMessageDataToRelay, getSubgraph } from "./proof";
+import { getProofAtCount, getMessageDataToRelay } from "./proof";
 import { getVeaOutboxArbToEth } from "./ethers";
 import request from "graphql-request";
-import { VeaInboxArbToEth, VeaOutboxArbToEth } from "@kleros/vea-contracts/typechain-types";
+import { VeaOutboxArbToEth } from "@kleros/vea-contracts/typechain-types";
+import { getBridgeConfig, getInboxSubgraph } from "../consts/bridgeRoutes";
 const fs = require("fs");
 
 require("dotenv").config();
@@ -10,22 +11,12 @@ const Web3 = require("web3");
 const _batchedSend = require("web3-batched-send");
 const _contract = require("@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json");
 
-const getParams = (chainid: number): [string, string, string] => {
-  if (chainid !== 11155111) throw new Error("Invalid chainid");
-
-  return [
-    process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_SEPOLIA,
-    process.env.VEAOUTBOX_ARBSEPOLIA_TO_SEPOLIA_ADDRESS,
-    process.env.RPC_SEPOLIA,
-  ];
-};
-
 const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<number> => {
-  const subgraph = getSubgraph(chainid);
+  const subgraph = getInboxSubgraph(chainid);
   const stateRoot = await veaOutbox.stateRoot();
 
   const result = await request(
-    `https://api.studio.thegraph.com/query/85918/${subgraph}/version/latest`,
+    `https://api.studio.thegraph.com/query/${subgraph}`,
     `{
               snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
                 count
@@ -39,9 +30,9 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<
 };
 
 const relay = async (chainid: number, nonce: number) => {
-  const [TRANSACTION_BATCHER_CONTRACT_ADDRESS, VEAOUTBOX_ADDRESS, RPC_VEAOUTBOX] = getParams(chainid);
+  const routeParams = getBridgeConfig(chainid);
 
-  const veaOutbox = getVeaOutboxArbToEth(VEAOUTBOX_ADDRESS, process.env.PRIVATE_KEY, RPC_VEAOUTBOX);
+  const veaOutbox = getVeaOutboxArbToEth(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox);
   const count = await getCount(veaOutbox, chainid);
 
   const proof = await getProofAtCount(chainid, nonce, count);
@@ -52,13 +43,13 @@ const relay = async (chainid: number, nonce: number) => {
 };
 
 const relayBatch = async (chainid: number, nonce: number, iterations: number) => {
-  const [TRANSACTION_BATCHER_CONTRACT_ADDRESS, VEAOUTBOX_ADDRESS, RPC_VEAOUTBOX] = getParams(chainid);
+  const routeParams = getBridgeConfig(chainid);
 
-  const web3 = new Web3(RPC_VEAOUTBOX);
-  const batchedSend = _batchedSend(web3, TRANSACTION_BATCHER_CONTRACT_ADDRESS, process.env.PRIVATE_KEY, 0);
+  const web3 = new Web3(routeParams.rpcOutbox);
+  const batchedSend = _batchedSend(web3, routeParams.rpcOutbox, process.env.PRIVATE_KEY, 0);
 
-  const contract = new web3.eth.Contract(_contract.abi, VEAOUTBOX_ADDRESS);
-  const veaOutbox = getVeaOutboxArbToEth(VEAOUTBOX_ADDRESS, process.env.PRIVATE_KEY, RPC_VEAOUTBOX);
+  const contract = new web3.eth.Contract(_contract.abi, routeParams.veaOutbox);
+  const veaOutbox = getVeaOutboxArbToEth(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox);
   const count = await getCount(veaOutbox, chainid);
 
   let txns = [];
@@ -73,24 +64,23 @@ const relayBatch = async (chainid: number, nonce: number, iterations: number) =>
     });
   }
 
-  console.log(txns);
   await batchedSend(txns);
 };
 
 const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): Promise<number> => {
-  const [TRANSACTION_BATCHER_CONTRACT_ADDRESS, VEAOUTBOX_ADDRESS, RPC_VEAOUTBOX] = getParams(chainid);
+  const routeParams = getBridgeConfig(chainid);
 
-  const web3 = new Web3(RPC_VEAOUTBOX);
+  const web3 = new Web3(routeParams.rpcOutbox);
   const batchedSend = _batchedSend(
     web3, // Your web3 object.
     // The address of the transaction batcher contract you wish to use. The addresses for the different networks are listed below. If the one you need is missing, feel free to deploy it yourself and make a PR to save the address here for others to use.
-    TRANSACTION_BATCHER_CONTRACT_ADDRESS,
+    routeParams.batcher,
     process.env.PRIVATE_KEY, // The private key of the account you want to send transactions from.
     0 // The debounce timeout period in milliseconds in which transactions are batched.
   );
 
-  const contract = new web3.eth.Contract(_contract.abi, VEAOUTBOX_ADDRESS);
-  const veaOutbox = getVeaOutboxArbToEth(VEAOUTBOX_ADDRESS, process.env.PRIVATE_KEY, RPC_VEAOUTBOX);
+  const contract = new web3.eth.Contract(_contract.abi, routeParams.veaOutbox);
+  const veaOutbox = getVeaOutboxArbToEth(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox);
   const count = await getCount(veaOutbox, chainid);
 
   if (!count) return null;
@@ -116,10 +106,10 @@ const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): 
 
 const getNonceFrom = async (chainid: number, nonce: number, msgSender: string) => {
   try {
-    const subgraph = getSubgraph(chainid);
+    const subgraph = getInboxSubgraph(chainid);
 
     const result = await request(
-      `https://api.studio.thegraph.com/query/85918/${subgraph}/version/latest`,
+      `https://api.studio.thegraph.com/query/${subgraph}`,
       `{
             messageSents(first: 1000, where: {nonce_gte: ${nonce}, msgSender_: {id: "${msgSender}"}}, orderBy: nonce, orderDirection: asc) {
               nonce
