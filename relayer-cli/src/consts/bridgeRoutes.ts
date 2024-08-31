@@ -36,7 +36,7 @@ const getInboxSubgraph = (chainId: number): string => {
     case 11155111:
       return process.env.VEAINBOX_ARBSEPOLIA_TO_SEPOLIA_SUBGRAPH;
     case 10200:
-      return process.env.VEAINBOX_ARBSEPOLIA_TO_SEPOLIA_SUBGRAPH;
+      return process.env.VEAINBOX_ARBSEPOLIA_TO_CHIADO_SUBGRAPH;
     default:
       throw new Error("Invalid chainid");
   }
