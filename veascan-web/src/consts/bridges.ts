@@ -41,11 +41,9 @@ export const bridges: IBridge[] = [
     from: arbitrumSepolia.id,
     to: sepolia.id,
     inboxAddress: VeaInboxArbitrumSepolia.address as `0x${string}`,
-    inboxEndpoint:
-      "https://api.studio.thegraph.com/query/85918/veascan-inbox-arb-sep-devnet/v0.8.0",
+    inboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_INBOX_ARBSEPOLIA_TO_SEPOLIA_SUBGRAPH}`,
     outboxAddress: VeaOutboxSepolia.address as `0x${string}`,
-    outboxEndpoint:
-      "https://api.studio.thegraph.com/query/85918/veascan-outbox-arb-sep-devnet/v0.8.0",
+    outboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_OUTBOX_ARBSEPOLIA_TO_SEPOLIA_SUBGRAPH}`,
   },
   // {
   //   id: 1,
