@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { deployments, ethers, network } from "hardhat";
-import { BigNumber } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { MerkleTree } from "../merkle/MerkleTree";
 const { mine } = require("@nomicfoundation/hardhat-network-helpers");
@@ -534,6 +534,226 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
 
       const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.address, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
+    });
+  });
+
+  describe("Dishonest Claim - Honest Challenge - Bridger deposit forfeited, Challenger paid", async () => {
+    let epoch: number;
+    let dishonestMerkleRoot: string;
+    let honestMerkleRoot: string;
+
+    beforeEach(async () => {
+      // Setup: Send message and save snapshot on Arbitrum
+      await senderGateway.connect(sender).sendMessage(1121);
+      await veaInbox.connect(bridger).saveSnapshot();
+
+      const BatchOutgoing = veaInbox.filters.SnapshotSaved();
+      const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
+      epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / EPOCH_PERIOD);
+      honestMerkleRoot = await veaInbox.snapshots(epoch);
+      dishonestMerkleRoot = ethers.utils.keccak256("0x123456"); // Simulating a dishonest state root
+
+      // Advance time to next epoch
+      await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      // Ensure bridger and challenger have enough WETH
+      await weth.transfer(bridger.address, TEN_ETH.mul(2));
+      await weth.transfer(challenger.address, TEN_ETH.mul(2));
+
+      // Approve WETH spending for both
+      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH.mul(2));
+      await weth.connect(challenger).approve(veaOutbox.address, TEN_ETH.mul(2));
+    });
+
+    it("should allow challenger to submit a challenge to a dishonest claim", async () => {
+      const { claimBlock, challengeTx } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch, challenger.address);
+    });
+
+    it("should initiate cross-chain dispute resolution for dishonest claim", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      const sendSnapshotTx = await veaInbox.connect(bridger).sendSnapshot(
+        epoch,
+        100000,
+        {
+          stateRoot: dishonestMerkleRoot,
+          claimer: bridger.address,
+          timestampClaimed: claimBlock.timestamp,
+          timestampVerification: 0,
+          blocknumberVerification: 0,
+          honest: 0,
+          challenger: challenger.address,
+        },
+        { gasLimit: 100000 }
+      );
+
+      await expect(sendSnapshotTx)
+        .to.emit(veaInbox, "SnapshotSent")
+        .withArgs(epoch, ethers.utils.formatBytes32String(""));
+
+      const routerEvents = await router.queryFilter(router.filters.Routed(), sendSnapshotTx.blockNumber);
+      expect(routerEvents.length).to.equal(1, "Expected one Routed event");
+      const routedEvent = routerEvents[0];
+      expect(routedEvent.args._epoch).to.equal(epoch, "Routed event epoch mismatch");
+    });
+
+    it("should resolve dispute in favor of the challenger", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      await simulateDisputeResolution(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+
+      expect(await veaOutbox.stateRoot()).to.equal(honestMerkleRoot, "State root should be updated to honest root");
+    });
+
+    it("should not allow dishonest bridger to withdraw deposit", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      await simulateDisputeResolution(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+
+      await expect(
+        veaOutbox.connect(bridger).withdrawClaimDeposit(epoch, {
+          stateRoot: dishonestMerkleRoot,
+          claimer: bridger.address,
+          timestampClaimed: claimBlock.timestamp,
+          timestampVerification: 0,
+          blocknumberVerification: 0,
+          honest: 2,
+          challenger: challenger.address,
+        })
+      ).to.be.revertedWith("Claim failed.");
+    });
+
+    it("should allow challenger to withdraw deposit plus reward", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      await simulateDisputeResolution(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+
+      const challengerInitialBalance = await weth.balanceOf(challenger.address);
+      await veaOutbox.connect(challenger).withdrawChallengeDeposit(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 2,
+        challenger: challenger.address,
+      });
+      const challengerFinalBalance = await weth.balanceOf(challenger.address);
+      expect(challengerFinalBalance.sub(challengerInitialBalance)).to.equal(
+        TEN_ETH.add(TEN_ETH.div(2)),
+        "Incorrect withdrawal amount"
+      );
+    });
+
+    it("should allow message relay with correct state root after dispute resolution", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      await simulateDisputeResolution(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+
+      const MessageSent = veaInbox.filters.MessageSent();
+      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
+      const msg = MessageSentEvent[0].args._nodeData;
+      const nonce = "0x" + msg.slice(2, 18);
+      const to = "0x" + msg.slice(18, 58);
+      const msgData = "0x" + msg.slice(58);
+
+      let nodes: string[] = [];
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      const mt = new MerkleTree(nodes);
+      const proof = mt.getHexProof(nodes[0]);
+
+      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.address, msgData);
+      await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
+    });
+
+    it("should update latest verified epoch and state root correctly after dispute resolution", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      await simulateDisputeResolution(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+
+      expect(await veaOutbox.latestVerifiedEpoch()).to.equal(epoch, "Latest verified epoch should be updated");
+      expect(await veaOutbox.stateRoot()).to.equal(honestMerkleRoot, "State root should be updated to honest root");
+    });
+
+    it("should not allow multiple withdrawals for the same challenge", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      await simulateDisputeResolution(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+
+      // First withdrawal should succeed
+      await veaOutbox.connect(challenger).withdrawChallengeDeposit(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 2,
+        challenger: challenger.address,
+      });
+
+      // Second withdrawal should fail
+      await expect(
+        veaOutbox.connect(challenger).withdrawChallengeDeposit(epoch, {
+          stateRoot: dishonestMerkleRoot,
+          claimer: bridger.address,
+          timestampClaimed: claimBlock.timestamp,
+          timestampVerification: 0,
+          blocknumberVerification: 0,
+          honest: 2,
+          challenger: challenger.address,
+        })
+      ).to.be.revertedWith("Invalid claim.");
     });
   });
 });
