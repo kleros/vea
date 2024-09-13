@@ -23,11 +23,16 @@ const paramsByChainId = {
 };
 
 const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
-  const { ethers, deployments, getNamedAccounts, getChainId, config } = hre;
+  const { ethers, deployments, getNamedAccounts, getChainId } = hre;
   const { deploy } = deployments;
 
   // fallback to hardhat node signers on local network
-  const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
+  const [namedAccounts, defaultSigner] = await Promise.all([
+    getNamedAccounts(),
+    hre.ethers.getSigners().then((signers) => signers[0]),
+  ]);
+
+  const deployer = namedAccounts.deployer ?? defaultSigner.address;
   const chainId = Number(await getChainId());
 
   const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
