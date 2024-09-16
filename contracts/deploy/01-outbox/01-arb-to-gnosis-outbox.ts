@@ -26,7 +26,7 @@ const paramsByChainId = {
   GNOSIS_CHIADO: {
     deposit: parseEther("0.2"), // ~20 WETH budget to start, enough for 8 days of challenges
     // bridging speed is 29 - 31 hours.
-    epochPeriod: 7200, // 2 hours
+    epochPeriod: 3600, // 1 hours
     minChallengePeriod: 10800, // 3 hours
     numEpochTimeout: 1000000, // never
     maxMissingBlocks: 1000000, // any
