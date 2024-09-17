@@ -369,12 +369,12 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_mine");
 
       // Ensure bridger and challenger have enough WETH
-      await weth.transfer(bridger.address, TEN_ETH.mul(2));
-      await weth.transfer(challenger.address, TEN_ETH.mul(2));
+      await weth.transfer(bridger.address, TEN_ETH.mul(10));
+      await weth.transfer(challenger.address, TEN_ETH.mul(10));
 
       // Approve WETH spending for both
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH.mul(2));
-      await weth.connect(challenger).approve(veaOutbox.address, TEN_ETH.mul(2));
+      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH.mul(10));
+      await weth.connect(challenger).approve(veaOutbox.address, TEN_ETH.mul(10));
       await amb.setMaxGasPerTx(100000);
     });
 
@@ -447,8 +447,100 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const verifiedEvent = verifiedEvents[0];
       expect(verifiedEvent.args._epoch).to.equal(epoch, "Verified event epoch mismatch");
 
+      const expectedClaim = {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 1,
+        challenger: challenger.address,
+      };
+
+      const expectedClaimHash = await veaOutbox.hashClaim(expectedClaim);
+      const storedClaimHash = await veaOutbox.claimHashes(epoch);
+
+      expect(storedClaimHash).to.equal(expectedClaimHash, "Stored claim hash does not match expected");
       expect(await veaOutbox.stateRoot()).to.equal(batchMerkleRoot, "VeaOutbox stateRoot should be updated");
       expect(await veaOutbox.latestVerifiedEpoch()).to.equal(epoch, "VeaOutbox latestVerifiedEpoch should be updated");
+    });
+
+    it("should not update latestEpoch and stateRoot when resolving older dispute", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, batchMerkleRoot, 0);
+
+      // Create and verify newer epochs
+      const newEpoch1 = epoch + 1;
+      const newMerkleRoot1 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("newer1"));
+
+      // Advance time to the next epoch
+      await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      const newClaimTxOne = await veaOutbox.connect(bridger).claim(newEpoch1, newMerkleRoot1);
+      const newClaimTxOneBlock = await ethers.provider.getBlock(newClaimTxOne.blockNumber!);
+
+      const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
+      const maxL2StateSyncDelay = sequencerDelayLimit.add(EPOCH_PERIOD);
+      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      await network.provider.send("evm_mine");
+
+      const newVerifyTxOne = await veaOutbox.startVerification(
+        newEpoch1,
+        createClaim(newMerkleRoot1, bridger.address, newClaimTxOneBlock.timestamp)
+      );
+      const newVerifyTxOneBlock = await ethers.provider.getBlock(newVerifyTxOne.blockNumber!);
+
+      await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      await veaOutbox.connect(bridger).verifySnapshot(newEpoch1, {
+        ...createClaim(newMerkleRoot1, bridger.address, newClaimTxOneBlock.timestamp),
+        blocknumberVerification: newVerifyTxOne.blockNumber!,
+        timestampVerification: newVerifyTxOneBlock.timestamp,
+      });
+
+      // Advance time to the next epoch
+      await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      const newEpoch2 = (await veaOutbox.epochNow()).toNumber() - 1;
+      const newMerkleRoot2 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("newer2"));
+      const newClaimTxTwo = await veaOutbox.connect(bridger).claim(newEpoch2, newMerkleRoot2);
+
+      const newClaimTxTwoBlock = await ethers.provider.getBlock(newClaimTxTwo.blockNumber!);
+
+      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      await network.provider.send("evm_mine");
+
+      const newVerifyTxTwo = await veaOutbox.startVerification(
+        newEpoch2,
+        createClaim(newMerkleRoot2, bridger.address, newClaimTxTwoBlock.timestamp)
+      );
+      const newVerifyTxTwoBlock = await ethers.provider.getBlock(newVerifyTxTwo.blockNumber!);
+
+      await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      await veaOutbox.connect(bridger).verifySnapshot(newEpoch2, {
+        ...createClaim(newMerkleRoot2, bridger.address, newClaimTxTwoBlock.timestamp),
+        timestampVerification: newVerifyTxTwoBlock.timestamp!,
+        blocknumberVerification: newVerifyTxTwo.blockNumber!,
+      });
+
+      // Resolve the dispute for the old epoch
+      await simulateDisputeResolution(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+
+      // Check that latestEpoch and stateRoot weren't updated to the old epoch's data
+      expect(await veaOutbox.latestVerifiedEpoch()).to.equal(newEpoch2, "Latest verified epoch should not change");
+      expect(await veaOutbox.stateRoot()).to.equal(newMerkleRoot2, "State root should not change");
     });
 
     it("should allow bridger to withdraw deposit plus reward", async () => {
@@ -558,12 +650,12 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_mine");
 
       // Ensure bridger and challenger have enough WETH
-      await weth.transfer(bridger.address, TEN_ETH.mul(2));
-      await weth.transfer(challenger.address, TEN_ETH.mul(2));
+      await weth.transfer(bridger.address, TEN_ETH.mul(10));
+      await weth.transfer(challenger.address, TEN_ETH.mul(10));
 
       // Approve WETH spending for both
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH.mul(2));
-      await weth.connect(challenger).approve(veaOutbox.address, TEN_ETH.mul(2));
+      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH.mul(10));
+      await weth.connect(challenger).approve(veaOutbox.address, TEN_ETH.mul(10));
     });
 
     it("should allow challenger to submit a challenge to a dishonest claim", async () => {
@@ -612,6 +704,21 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         honest: 0,
         challenger: challenger.address,
       });
+
+      const expectedClaim = {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 2,
+        challenger: challenger.address,
+      };
+
+      const expectedClaimHash = await veaOutbox.hashClaim(expectedClaim);
+      const storedClaimHash = await veaOutbox.claimHashes(epoch);
+
+      expect(storedClaimHash).to.equal(expectedClaimHash, "Stored claim hash does not match expected");
 
       expect(await veaOutbox.stateRoot()).to.equal(honestMerkleRoot, "State root should be updated to honest root");
     });
@@ -716,6 +823,84 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
 
       expect(await veaOutbox.latestVerifiedEpoch()).to.equal(epoch, "Latest verified epoch should be updated");
       expect(await veaOutbox.stateRoot()).to.equal(honestMerkleRoot, "State root should be updated to honest root");
+    });
+
+    it("should not update latestEpoch and stateRoot when resolving older dispute", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+
+      // Create and verify newer epochs
+      const newEpoch1 = epoch + 1;
+      const newMerkleRoot1 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("newer1"));
+
+      // Advance time to the next epoch
+      await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      const newClaimTxOne = await veaOutbox.connect(bridger).claim(newEpoch1, newMerkleRoot1);
+      const newClaimTxOneBlock = await ethers.provider.getBlock(newClaimTxOne.blockNumber!);
+
+      const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
+      const maxL2StateSyncDelay = sequencerDelayLimit.add(EPOCH_PERIOD);
+      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      await network.provider.send("evm_mine");
+
+      const newVerifyTxOne = await veaOutbox.startVerification(
+        newEpoch1,
+        createClaim(newMerkleRoot1, bridger.address, newClaimTxOneBlock.timestamp)
+      );
+      const newVerifyTxOneBlock = await ethers.provider.getBlock(newVerifyTxOne.blockNumber!);
+
+      await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      await veaOutbox.connect(bridger).verifySnapshot(newEpoch1, {
+        ...createClaim(newMerkleRoot1, bridger.address, newClaimTxOneBlock.timestamp),
+        blocknumberVerification: newVerifyTxOne.blockNumber!,
+        timestampVerification: newVerifyTxOneBlock.timestamp,
+      });
+
+      // Advance time to the next epoch
+      await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      const newEpoch2 = (await veaOutbox.epochNow()).toNumber() - 1;
+      const newMerkleRoot2 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("newer2"));
+      const newClaimTxTwo = await veaOutbox.connect(bridger).claim(newEpoch2, newMerkleRoot2);
+
+      const newClaimTxTwoBlock = await ethers.provider.getBlock(newClaimTxTwo.blockNumber!);
+
+      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      await network.provider.send("evm_mine");
+
+      const newVerifyTxTwo = await veaOutbox.startVerification(
+        newEpoch2,
+        createClaim(newMerkleRoot2, bridger.address, newClaimTxTwoBlock.timestamp)
+      );
+      const newVerifyTxTwoBlock = await ethers.provider.getBlock(newVerifyTxTwo.blockNumber!);
+
+      await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
+      await network.provider.send("evm_mine");
+
+      await veaOutbox.connect(bridger).verifySnapshot(newEpoch2, {
+        ...createClaim(newMerkleRoot2, bridger.address, newClaimTxTwoBlock.timestamp),
+        timestampVerification: newVerifyTxTwoBlock.timestamp!,
+        blocknumberVerification: newVerifyTxTwo.blockNumber!,
+      });
+
+      // Resolve the dispute for the old epoch
+      await simulateDisputeResolution(epoch, {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+
+      // Check that latestEpoch and stateRoot weren't updated to the old epoch's data
+      expect(await veaOutbox.latestVerifiedEpoch()).to.equal(newEpoch2, "Latest verified epoch should not change");
+      expect(await veaOutbox.stateRoot()).to.equal(newMerkleRoot2, "State root should not change");
     });
 
     it("should not allow multiple withdrawals for the same challenge", async () => {

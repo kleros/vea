@@ -27,20 +27,28 @@ const paramsByChainId = {
 const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
   const { deploy } = deployments;
-  const chainId = Number(await getChainId());
 
   // fallback to hardhat node signers on local network
-  const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
-  console.log("deployer: %s", deployer);
+  const [namedAccounts, signers, rawChainId] = await Promise.all([
+    getNamedAccounts(),
+    hre.ethers.getSigners(),
+    getChainId(),
+  ]);
+
+  const deployer = namedAccounts.deployer ?? signers[0].address;
+  const chainId = Number(rawChainId);
+
+  console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const { arbitrumBridge, amb } = paramsByChainId[RouterChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
-    const veaOutbox = await deployments.get("VeaOutboxArbToGnosis");
-    const veaInbox = await deployments.get("VeaInboxArbToGnosis");
-    const amb = await deployments.get("MockAMB");
-    //const ArbSysMock = await deployments.get('arbSysMock');
+    const [veaOutbox, veaInbox, amb] = await Promise.all([
+      deployments.get("VeaOutboxArbToGnosis"),
+      deployments.get("VeaInboxArbToGnosis"),
+      deployments.get("MockAMB"),
+    ]);
 
     const sequencerInbox = await deploy("SequencerInboxMock", {
       from: deployer,

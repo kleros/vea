@@ -36,7 +36,7 @@ const paramsByChainId = {
     sequencerLimit: 86400, // 24 hours
   },
   HARDHAT: {
-    deposit: parseEther("10"), // 120 xDAI budget for timeout
+    deposit: parseEther("10"),
     // Average happy path wait time is 22.5 mins, assume no censorship
     epochPeriod: 600, // 10 min
     minChallengePeriod: 600, // 10 min (assume no sequencer backdating)
@@ -56,8 +56,15 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { providers } = ethers;
 
   // fallback to hardhat node signers on local network
-  const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
-  const chainId = Number(await getChainId());
+  const [namedAccounts, signers, rawChainId] = await Promise.all([
+    getNamedAccounts(),
+    hre.ethers.getSigners(),
+    getChainId(),
+  ]);
+
+  const deployer = namedAccounts.deployer ?? signers[0].address;
+  const chainId = Number(rawChainId);
+
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const routerNetworks = {
@@ -89,7 +96,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     console.log("calculated future router for nonce %d: %s", nonce + 10, routerAddress);
 
     const senderGatewayAddress = getContractAddress(deployer, nonce + 6); // with the current order of transaction ,nonce for sender gateway would be 14.
-    console.log("calculated future SenderGatewayToGnosis address for nonce %d: %s", nonce, senderGatewayAddress);
+    console.log("calculated future SenderGatewayToGnosis address for nonce %d: %s", nonce + 6, senderGatewayAddress);
 
     const ambMock = await deploy("MockAMB", {
       from: deployer,
