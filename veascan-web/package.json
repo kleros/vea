@@ -31,13 +31,21 @@
     "queries": "./src/hooks/queries"
   },
   "scripts": {
-    "clear": "rm -r .parcel-cache",
-    "clean": "rm dist/bundle.js",
-    "start": "parcel",
-    "build": "parcel build",
+    "clean": "rm -rf dist/bundle.js .parcel-cache",
+    "start": "yarn start-devnet",
+    "start-devnet": "scripts/runEnv.sh devnet 'yarn parcel'",
+    "start-testnet": "scripts/runEnv.sh testnet 'yarn parcel'",
+    "start-mainnet": "scripts/runEnv.sh mainnet 'yarn parcel'",
+    "build": "yarn build-devnet",
+    "build-devnet": "scripts/runEnv.sh devnet 'yarn parcel build'",
+    "build-testnet": "scripts/runEnv.sh testnet 'yarn parcel build'",
+    "build-mainnet": "scripts/runEnv.sh mainnet 'yarn parcel build'",
     "check-style": "eslint 'src/**/*.{js,jsx,ts,tsx}'",
     "check-types": "tsc --noEmit",
-    "generate": "graphql-codegen --config codegen.ts",
+    "generate": "yarn generate-devnet",
+    "generate-devnet": "scripts/runEnv.sh devnet 'yarn codegen'",
+    "generate-testnet": "scripts/runEnv.sh testnet 'yarn codegen'",
+    "generate-mainnet": "scripts/runEnv.sh mainnet 'yarn codegen'",
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "devDependencies": {
