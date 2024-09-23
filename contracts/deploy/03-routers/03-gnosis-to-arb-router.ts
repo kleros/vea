@@ -15,7 +15,7 @@ const paramsByChainId = {
   },
   ETHEREUM_SEPOLIA: {
     arbitrumBridge: "0x38f918D0E9F1b721EDaA41302E399fa1B79333a9", // https://developer.arbitrum.io/useful-addresses
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    amb: "0xf2546D6648BD2af6a008A7e7C1542BB240329E11", // https://docs.gnosischain.com/bridges/About%20Token%20Bridges/amb-bridge#key-contracts
   },
   HARDHAT: {
     arbitrumBridge: ethers.constants.AddressZero,

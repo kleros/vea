@@ -10,11 +10,11 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 #### Sepolia
 
-- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0x5AD255400913515C8DA7E82E6b8A109fA5c46135)
+- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0xb8BF3B6bd3E1a0Cc9E2dB77dd492503310514674)
 
 #### Arbitrum Sepolia
 
-- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0x77e95F54032f467eC45c48C6affc203f93858783)
+- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0x0B5851fE2a931F619F73E739E5435C43976f1D68)
 
 #### Chiado
 
