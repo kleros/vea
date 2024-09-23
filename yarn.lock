@@ -3225,7 +3225,7 @@ __metadata:
   resolution: "@kleros/vea-contracts@workspace:contracts"
   dependencies:
     "@nomicfoundation/hardhat-chai-matchers": "npm:^1.0.6"
-    "@nomicfoundation/hardhat-network-helpers": "npm:^1.0.8"
+    "@nomicfoundation/hardhat-network-helpers": "npm:^1.0.12"
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.13"
     "@typechain/ethers-v5": "npm:^10.2.0"
     "@typechain/hardhat": "npm:^6.1.5"
@@ -3764,14 +3764,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nomicfoundation/hardhat-network-helpers@npm:^1.0.8":
-  version: 1.0.8
-  resolution: "@nomicfoundation/hardhat-network-helpers@npm:1.0.8"
+"@nomicfoundation/hardhat-network-helpers@npm:^1.0.12":
+  version: 1.0.12
+  resolution: "@nomicfoundation/hardhat-network-helpers@npm:1.0.12"
   dependencies:
     ethereumjs-util: "npm:^7.1.4"
   peerDependencies:
     hardhat: ^2.9.5
-  checksum: 10/b10dc93f0e692dfac42754dd39f88e558411394fbbf793468386e5c78ecc4e4bf0badd7b8723bb40bf6f2b34dac84a6e6633472248d9c8f914977fd9d8020047
+  checksum: 10/6774bdaa76b6792b408dbdf9b4ff5c19315fa9d5be53e53d6b68cd56aba82d18cfa2548a71a2ced41542989bddd3ab4d11e009579d34678202e26f11c43c2a44
   languageName: node
   linkType: hard
 
