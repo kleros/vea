@@ -10,5 +10,8 @@
   ],
   "prettier.configPath": ".prettierrc.json",
   "eslint.alwaysShowStatus": true,
-  "eslint.packageManager": "yarn"
+  "eslint.packageManager": "yarn",
+  "shellcheck.customArgs": [
+    "--external-sources"
+  ]
 }

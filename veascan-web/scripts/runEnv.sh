@@ -7,26 +7,27 @@ NC='\033[0m'
 
 deployment="$1"
 shift
-commands="$@"
+commands="$*"
 
 if [[ -z "$deployment" ]]; then
-    echo "usage: $(basename $0) <local|devnet|testnet|mainnet>"
+    echo "usage: $(basename "$0") <local|devnet|testnet|mainnet>"
     exit 1
 fi
 
 valid_deployments=("local" "devnet" "testnet" "mainnet")
-if [[ ! " ${valid_deployments[@]} " =~ " ${deployment} " ]]; then
-    echo "Invalid deployment option. Please choose either: ${valid_deployments[@]}."
+if [[ ! " ${valid_deployments[*]} " =~ ${deployment} ]]; then
+    echo "Invalid deployment option. Please choose either: ${valid_deployments[*]}."
     exit 1
 fi
 
 function sourceEnvFile() { #envFile
     envFile="$1"
     if [ -f "$envFile" ]; then
-        echo -e "${GREEN}✔${NC} $(basename $envFile)"
-        . $envFile
+        echo -e "${GREEN}✔${NC} $(basename "$envFile")"
+        # shellcheck source=SCRIPTDIR/../.env.devnet
+        . "$envFile"
     else
-        echo -e "${RED}✖${NC} $(basename $envFile)"
+        echo -e "${RED}✖${NC} $(basename "$envFile")"
     fi
 }
 
