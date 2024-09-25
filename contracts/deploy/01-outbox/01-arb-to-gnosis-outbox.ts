@@ -31,7 +31,7 @@ const paramsByChainId = {
     numEpochTimeout: 1000000, // never
     maxMissingBlocks: 1000000, // any
     routerChainId: 11155111,
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    amb: "0x8448E15d0e706C0298dECA99F0b4744030e59d7d", // https://docs.gnosischain.com/bridges/About%20Token%20Bridges/amb-bridge#key-contracts
     WETH: "0x8d74e5e4DA11629537C4575cB0f33b4F0Dfa42EB",
     sequencerLimit: 86400, // 24 hours
   },

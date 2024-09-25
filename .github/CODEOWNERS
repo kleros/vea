@@ -1,5 +1,5 @@
 # Default
-*                          @jaybuidl @shotaronowhere
+*                          @jaybuidl @mani99brar
 
 # Veascan
 veascan-subgraph-inbox/    @jaybuidl @alcercu
@@ -7,5 +7,5 @@ veascan-subgraph-outbox/   @jaybuidl @alcercu
 veascan-web/               @jaybuidl @alcercu
 
 # Owned by everyone
-yarn.lock                  @jaybuidl @shotaronowhere @alcercu
-.gitignore                 @jaybuidl @shotaronowhere @alcercu
+yarn.lock                  @jaybuidl @mani99brar @alcercu
+.gitignore                 @jaybuidl @mani99brar @alcercu

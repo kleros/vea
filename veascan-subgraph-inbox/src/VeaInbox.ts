@@ -5,7 +5,7 @@ import {
   SnapshotSaved,
   SnapshotSent,
   VeaInbox,
-} from "../generated/VeaInboxArbToGnosis/VeaInbox";
+} from "../generated/VeaInbox/VeaInbox";
 
 export function handleMessageSent(event: MessageSent): void {
   const snapshot = getCurrentSnapshot();

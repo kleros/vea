@@ -6,9 +6,9 @@ dataSources:
     name: VeaOutbox
     network: sepolia
     source:
-      address: "0x5AD255400913515C8DA7E82E6b8A109fA5c46135"
+      address: "0xb8BF3B6bd3E1a0Cc9E2dB77dd492503310514674"
       abi: VeaOutbox
-      startBlock: 5379614
+      startBlock: 6458841
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

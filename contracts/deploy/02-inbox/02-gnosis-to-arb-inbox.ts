@@ -15,7 +15,7 @@ const paramsByChainId = {
   },
   GNOSIS_CHIADO: {
     epochPeriod: 7200, // 2 hours
-    amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
+    amb: "0x8448E15d0e706C0298dECA99F0b4744030e59d7d",
   },
   HARDHAT: {
     epochPeriod: 600, // 10 minutes
