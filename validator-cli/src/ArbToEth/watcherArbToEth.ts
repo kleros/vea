@@ -1,6 +1,6 @@
 import { getVeaOutboxArbToEthProvider, getVeaInboxArbToEthProvider } from "../utils/ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { getL2Network } from "@arbitrum/sdk";
+import { getArbitrumNetwork } from "@arbitrum/sdk";
 import { NODE_INTERFACE_ADDRESS } from "@arbitrum/sdk/dist/lib/dataEntities/constants";
 import { NodeInterface__factory } from "@arbitrum/sdk/dist/lib/abi/factories/NodeInterface__factory";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
@@ -32,7 +32,7 @@ const watch = async () => {
   );
 
   // get Arb sequencer params
-  const l2Network = await getL2Network(providerArb);
+  const l2Network = await getArbitrumNetwork(providerArb);
   const sequencer = SequencerInbox__factory.connect(l2Network.ethBridge.sequencerInbox, providerEth);
   const maxDelaySeconds = (
     (await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1] as BigNumber

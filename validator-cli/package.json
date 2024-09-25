@@ -15,7 +15,7 @@
     "start-sepolia-devnet": "npx ts-node ./src/devnet/arbToSepolia/happyPath.ts"
   },
   "dependencies": {
-    "@arbitrum/sdk": "^3.1.2",
+    "@arbitrum/sdk": "4.0.1",
     "@flashbots/ethers-provider-bundle": "^0.6.2",
     "@kleros/vea-contracts": "workspace:^",
     "@typechain/ethers-v5": "^10.2.0",
