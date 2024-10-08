@@ -1,10 +1,11 @@
-import { BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes, log } from "@graphprotocol/graph-ts";
 import {
   Challenged,
   Claimed,
   MessageRelayed,
   Verified,
   VeaOutbox,
+  VerificationStarted,
 } from "../generated/VeaOutbox/VeaOutbox";
 import {
   Challenge,
@@ -59,22 +60,54 @@ export function handleChallenged(event: Challenged): void {
   }
 }
 
+export function handleVerificationStarted(event: VerificationStarted): void {
+  const ref = getRef();
+  let claim: Claim | null = null;
+
+  // Find the corresponding claim
+  for (
+    let i = ref.totalClaims.minus(BigInt.fromI32(1));
+    i.ge(BigInt.fromI32(0));
+    i = i.minus(BigInt.fromI32(1))
+  ) {
+    const potentialClaim = Claim.load(i.toString());
+    if (potentialClaim && potentialClaim.epoch.equals(event.params._epoch)) {
+      claim = potentialClaim;
+      break;
+    }
+  }
+  if (!claim) {
+    log.warning("No corresponding claim found for epoch: {}", [
+      event.params._epoch.toString(),
+    ]);
+    return;
+  }
+  let verification: Verification;
+
+  verification = new Verification(claim.id);
+  verification.claim = claim.id;
+  verification.caller = event.transaction.from;
+  verification.timestamp = event.block.timestamp;
+  verification.txHash = event.transaction.hash;
+  verification.save();
+  log.info("VerificationStarted event received for epoch: {}", [
+    event.params._epoch.toString(),
+  ]);
+}
+
 export function handleVerified(event: Verified): void {
   const ref = getRef();
   for (
     let i = ref.totalClaims.minus(BigInt.fromI32(1));
     i.ge(BigInt.fromI32(0));
-    i.minus(BigInt.fromI32(1))
+    i = i.minus(BigInt.fromI32(1))
   ) {
     const claim = Claim.load(i.toString());
-    if (claim!.epoch.equals(event.params._epoch)) {
-      const verification = new Verification(claim!.id);
-      verification.claim = claim!.id;
-      verification.timestamp = event.block.timestamp;
-      verification.caller = event.transaction.from;
-      verification.txHash = event.transaction.hash;
-      verification.save();
-      break;
+    if (claim && claim.epoch.equals(event.params._epoch)) {
+      claim.verified = true;
+      claim.honest = true;
+      claim.save();
+      log.info("Updated claim entity for claim_id {} as complete", [claim.id]);
     }
   }
 }

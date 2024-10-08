@@ -30,4 +30,6 @@ dataSources:
           handler: handleMessageRelayed
         - event: Verified(uint256)
           handler: handleVerified
+        - event: VerificationStarted(indexed uint256)
+          handler: handleVerificationStarted
       file: ./src/VeaOutbox.ts
