@@ -5,7 +5,7 @@ pragma solidity 0.8.24;
 import "../../../canonical/gnosis-chain/IAMB.sol";
 
 contract MockAMB is IAMB {
-    event MockedEvent(bytes32 indexed messageId, bytes encodedData);
+    event MockedEvent(bytes32 indexed messageId, bytes encodedData, bytes _data);
 
     address public messageSender;
     uint256 public maxGasPerTx;
@@ -34,8 +34,14 @@ contract MockAMB is IAMB {
         messageSender = _sender;
         messageId = _messageId;
         transactionHash = _messageId;
-        messageSourceChainId = bytes32(uint256(1337));
-        (bool status, ) = _contract.call{gas: _gas}(_data);
+        messageSourceChainId = bytes32(uint256(31337));
+        (bool status, bytes memory returnData) = _contract.call{gas: _gas}(_data);
+
+        if (!status) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
         messageSender = address(0);
         messageId = bytes32(0);
         transactionHash = bytes32(0);
@@ -64,7 +70,7 @@ contract MockAMB is IAMB {
         uint256 _dataType
     ) internal returns (bytes32) {
         require(messageId == bytes32(0));
-        bytes32 bridgeId = keccak256(abi.encodePacked(uint16(1337), address(this))) &
+        bytes32 bridgeId = keccak256(abi.encodePacked(uint16(31337), address(this))) &
             0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
 
         bytes32 _messageId = bytes32(uint256(0x11223344 << 224)) | bridgeId | bytes32(uint256(nonce));
@@ -77,12 +83,12 @@ contract MockAMB is IAMB {
             uint8(2),
             uint8(2),
             uint8(_dataType),
-            uint16(1337),
-            uint16(1338),
+            uint16(31337),
+            uint16(31337),
             _data
         );
 
-        emit MockedEvent(_messageId, eventData);
+        emit MockedEvent(_messageId, eventData, _data);
         return _messageId;
     }
 
