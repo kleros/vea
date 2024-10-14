@@ -2,8 +2,8 @@ import { relayAllFrom } from "./utils/relay";
 import * as fs from "fs";
 
 // let chain_ids = [5, 10200];
-let chain_ids = [11155111];
-const epochPeriod = 1800; // 30 min
+let chain_ids = [10200, 11155111];
+const epochPeriod = 3600; // 30 min
 ["SIGINT", "SIGTERM", "SIGQUIT", "EXIT", "MODULE_NOT_FOUND"].forEach((signal) =>
   process.on(signal, async () => {
     console.log("exit");
@@ -22,7 +22,7 @@ const epochPeriod = 1800; // 30 min
     for (const chain_id of chain_ids) {
       let nonce = await initialize(chain_id);
       // This is libghtbulb switch address in arbitrum sepolia
-      const sender = "0x28d6D503F4c5734cD926E96b63C61527d975B382";
+      const sender = "0x79bbe10dd6625ae26eb857d5940154f8765dba82";
       nonce = await relayAllFrom(chain_id, nonce, sender);
       if (nonce != null) await updateStateFile(chain_id, Math.floor(Date.now() / 1000), nonce);
     }
@@ -34,7 +34,7 @@ const epochPeriod = 1800; // 30 min
 })();
 
 async function initialize(chain_id: number): Promise<number> {
-  if (chain_id !== 11155111) throw new Error("Invalid chainid");
+  if (!chain_ids.includes(chain_id)) throw new Error("Invalid chainid");
 
   const lock_file_name = "./src/state/" + chain_id + ".pid";
 

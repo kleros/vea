@@ -5,19 +5,20 @@ import {
   getWalletRPC,
 } from "../utils/ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { getL2Network } from "@arbitrum/sdk";
+import { getArbitrumNetwork } from "@arbitrum/sdk";
 import { NODE_INTERFACE_ADDRESS } from "@arbitrum/sdk/dist/lib/dataEntities/constants";
 import { NodeInterface__factory } from "@arbitrum/sdk/dist/lib/abi/factories/NodeInterface__factory";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
 import { BigNumber, ContractTransaction, constants } from "ethers";
 import { Block, Log, TransactionReceipt, BlockWithTransactions } from "@ethersproject/abstract-provider";
 import { SequencerInbox } from "@arbitrum/sdk/dist/lib/abi/SequencerInbox";
+import { NodeInterface } from "@arbitrum/sdk/dist/lib/abi/NodeInterface";
 
 require("dotenv").config();
 
-interface ChallengeTxn {
-  timeSent: string;
-  timeRamp: number;
+interface ChallengeProgess {
+  challengeTnxHash: string;
+  sentSnapshotTnxHash?: string;
 }
 
 // https://github.com/prysmaticlabs/prysm/blob/493905ee9e33a64293b66823e69704f012b39627/config/params/mainnet_config.go#L103
@@ -52,7 +53,7 @@ const watch = async () => {
   )) as BigNumber;
 
   // get Arb sequencer params
-  const l2Network = await getL2Network(providerArb);
+  const l2Network = await getArbitrumNetwork(providerArb);
   const sequencer = SequencerInbox__factory.connect(l2Network.ethBridge.sequencerInbox, providerEth);
   const maxDelaySeconds = (
     (await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1] as BigNumber
@@ -115,7 +116,8 @@ const watch = async () => {
     .fill(veaEpochOutboxWacthLowerBound)
     .map((el, i) => el + i);
   // epoch => (minChallengePeriodDeadline, maxPriorityFeePerGas, maxFeePerGas)
-  const challengeTxnHashes = new Map<number, string>();
+
+  const challenges = new Map<number, ChallengeProgess>();
 
   console.log(
     "cold start: checking past claim history from epoch " +
@@ -346,11 +348,20 @@ const watch = async () => {
                 }
               } else {
                 console.log("claim " + veaEpochOutboxCheck + " is already challenged");
+                console.log("challenge is finalized");
                 if (logChallenges[0].blockNumber < blockFinalizedGnosis.number) {
-                  veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
-                  index--;
-                  // the challenge is finalized, no further action needed
-                  console.log("challenge is finalized");
+                  if (logChallenges[0].topics[1] === watcherAddress) {
+                    console.log("challenge by bot detected, calling sendSnaphot");
+                    const txnReceipt = (await retryOperation(
+                      () => providerArb.getTransactionReceipt(challenges.get(index)),
+                      10,
+                      1000
+                    )) as TransactionReceipt;
+                    if (!txnReceipt) {
+                      console.log("challenge txn " + challengeTxnHashes.get(index) + " not mined yet");
+                      continue;
+                    }
+                  }
                   continue;
                 } else {
                   console.log(
@@ -360,14 +371,15 @@ const watch = async () => {
                 continue;
               }
 
-              if (challengeTxnHashes.has(index)) {
+              if (challenges.has(index)) {
+                const challengeProgess = challenges.get(index);
                 const txnReceipt = (await retryOperation(
-                  () => providerGnosis.getTransactionReceipt(challengeTxnHashes.get(index)),
+                  () => providerGnosis.getTransactionReceipt(challengeProgess.challengeTnxHash),
                   10,
                   1000
                 )) as TransactionReceipt;
                 if (!txnReceipt) {
-                  console.log("challenge txn " + challengeTxnHashes.get(index) + " not mined yet");
+                  console.log("challenge txn " + challengeProgess.challengeTnxHash + " not mined yet");
                   continue;
                 }
                 const blockNumber = txnReceipt.blockNumber;
@@ -378,7 +390,6 @@ const watch = async () => {
                 )) as Block;
                 if (challengeBlock.number < blockFinalizedGnosis.number) {
                   veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
-                  challengeTxnHashes.get(index);
                   index--;
                   // the challenge is finalized, no further action needed
                   console.log("challenge is finalized");
@@ -464,11 +475,144 @@ const watch = async () => {
                     10
                   )) as ContractTransaction;
 
-                  challengeTxnHashes.set(index, txnChallenge.hash);
+                  challenges.set(index, { challengeTnxHash: txnChallenge.hash });
                   console.log(
                     "challenging claim for epoch " + veaEpochOutboxCheck + " with txn hash " + txnChallenge.hash
                   );
                 }
+              }
+            }
+            if (challenges.has(index)) {
+              const challengeProgress = challenges.get(index);
+              const txnReceipt = (await retryOperation(
+                () => providerGnosis.getTransactionReceipt(challenges.get(index).challengeTnxHash),
+                10,
+                1000
+              )) as TransactionReceipt;
+              if (!txnReceipt) {
+                console.log("challenge txn " + challenges.get(index).challengeTnxHash + " not mined yet");
+                continue;
+              }
+              const blockNumber = txnReceipt.blockNumber;
+              const challengeBlock = (await retryOperation(
+                () => providerGnosis.getBlock(blockNumber),
+                1000,
+                10
+              )) as Block;
+              if (challengeBlock.number < blockFinalizedGnosis.number) {
+                if (!challengeProgress.sentSnapshotTnxHash) {
+                  console.log("Sending snapshot for challenged claim in epoch " + veaEpochOutboxCheck);
+                  try {
+                    const sendSnapshotTx = await veaInbox.sendSnapshot(
+                      veaEpochOutboxCheck,
+                      30000000, // gas limit, you might want to adjust this
+                      {
+                        stateRoot: claimSnapshot,
+                        claimer: claim.claimer,
+                        timestampClaimed: claim.timestampClaimed,
+                        timestampVerification: claim.timestampVerification,
+                        blocknumberVerification: claim.blocknumberVerification,
+                        honest: claim.honest,
+                        challenger: watcherAddress,
+                      },
+                      { gasLimit: 30000000 }
+                    );
+                    console.log("Sent snapshot with transaction hash: " + sendSnapshotTx.hash);
+                    challenges.set(index, {
+                      ...challengeProgress,
+                      sentSnapshotTnxHash: sendSnapshotTx.hash,
+                    });
+                  } catch (error) {
+                    console.error("Failed to send snapshot: ", error);
+                  }
+                } else {
+                  console.log("Snapshot already sent for challenge in epoch " + veaEpochOutboxCheck);
+                }
+              }
+            } else {
+              let gasEstimate: BigNumber;
+              try {
+                gasEstimate = (await retryOperation(
+                  () => veaOutbox.estimateGas.challenge(veaEpochOutboxCheck, claim),
+                  1000,
+                  10
+                )) as BigNumber;
+              } catch (e) {
+                console.log(e);
+                console.log("Challenge failed to estimate gas, skipping.");
+                const logChallenges = (await retryOperation(
+                  () =>
+                    providerGnosis.getLogs({
+                      address: veaOutboxAddress,
+                      topics: veaOutbox.filters.Challenged(veaEpochOutboxCheck, null).topics,
+                      fromBlock: blockNumberOutboxLowerBound,
+                      toBlock: blockTagGnosis,
+                    }),
+                  1000,
+                  10
+                )) as Log[];
+
+                // if already challenged, no action needed
+
+                // if not challenged, keep checking all claim struct variables
+                if (logChallenges.length == 0) {
+                }
+              }
+              // deposit / 2 is the profit for challengers
+              // the initial challenge txn is roughly 1/3 of the cost of completing the challenge process.
+              const maxFeePerGasProfitable = deposit.div(gasEstimate.mul(3 * 2));
+
+              // there's practically very little MEV on gnosis
+              // priority fee should just be a small amount to get the txn included in a block
+
+              let maxPriorityFeePerGas = BigNumber.from("3000000000"); // 3 gwei
+
+              // if claim is in min challenge period, we can use a higher priority fee
+              // this ensures the txn is always competitive during the censorship test (min challenge period)
+              if (claim.timestampClaimed < timeLocal - sequencerDelayLimit - epochPeriod) {
+                try {
+                  const blockPendingGnosis = (await retryOperation(
+                    () => providerGnosis.getBlockWithTransactions("pending"),
+                    1000,
+                    10
+                  )) as BlockWithTransactions;
+                  // can't access actual gas used from pending block, consider all txns equal weight
+                  let maxPriorityFeePerGasAvg = BigNumber.from("0");
+                  for (const txn of blockPendingGnosis.transactions) {
+                    maxPriorityFeePerGasAvg = maxPriorityFeePerGasAvg.add(txn.maxPriorityFeePerGas);
+                  }
+                  maxPriorityFeePerGasAvg = maxPriorityFeePerGasAvg.div(blockPendingGnosis.transactions.length);
+                  if (maxPriorityFeePerGas.lt(maxPriorityFeePerGasAvg)) {
+                    maxPriorityFeePerGas = maxPriorityFeePerGasAvg;
+                  }
+                } catch (e) {}
+
+                // there's almost no MEV on gnosis
+                // will update this default value if there is more MEV on gnosis in the future
+                if (maxPriorityFeePerGas.lt(BigNumber.from("100000000000"))) {
+                  maxPriorityFeePerGas = BigNumber.from("100000000000"); // 100 gwei
+                }
+
+                if (maxPriorityFeePerGas.gt(maxFeePerGasProfitable)) {
+                  maxPriorityFeePerGas = maxFeePerGasProfitable;
+                }
+              }
+
+              if (!inactive) {
+                const txnChallenge = (await retryOperation(
+                  () =>
+                    veaOutbox.challenge(veaEpochOutboxCheck, claim, {
+                      maxFeePerGas: maxFeePerGasProfitable,
+                      maxPriorityFeePerGas: maxPriorityFeePerGas,
+                    }),
+                  1000,
+                  10
+                )) as ContractTransaction;
+
+                challenges.set(index, { challengeTnxHash: txnChallenge.hash });
+                console.log(
+                  "challenging claim for epoch " + veaEpochOutboxCheck + " with txn hash " + txnChallenge.hash
+                );
               }
             }
           }
@@ -522,7 +666,6 @@ const getBlocksAndCheckFinality = async (
   const blockFinalizedArb = (await retryOperation(() => ArbProvider.getBlock("finalized"), 1000, 10)) as Block;
   const blockFinalizedEth = (await retryOperation(() => EthProvider.getBlock("finalized"), 1000, 10)) as Block;
   const blockFinalizedGnosis = (await retryOperation(() => GnosisProvider.getBlock("finalized"), 1000, 10)) as Block;
-
   const finalityBuffer = 300; // 5 minutes, allows for network delays
   const maxFinalityTimeSecondsEth = (slotsPerEpochEth * 3 - 1) * secondsPerSlotEth; // finalization after 2 justified epochs
   const maxFinalityTimeSecondsGnosis = (slotsPerEpochGnosis * 3 - 1) * secondsPerSlotGnosis; // finalization after 2 justified epochs
@@ -530,9 +673,12 @@ const getBlocksAndCheckFinality = async (
   let finalityIssueFlagArb = false;
   let finalityIssueFlagEth = false;
   let finalityIssueFlagGnosis = false;
-
   // check latest arb block to see if there are any sequencer issues
   let blockLatestArb = (await retryOperation(() => ArbProvider.getBlock("latest"), 1000, 10)) as Block;
+  let blockoldArb = (await retryOperation(() => ArbProvider.getBlock(blockLatestArb.number - 100), 1000, 10)) as Block;
+  const arbAverageBlockTime = (blockLatestArb.timestamp - blockoldArb.timestamp) / 100;
+  const maxDelayInSeconds = 7 * 24 * 60 * 60; // 7 days in seconds
+  const fromBlockArbFinalized = blockFinalizedArb.number - Math.ceil(maxDelayInSeconds / arbAverageBlockTime);
 
   // to performantly query the sequencerInbox's SequencerBatchDelivered event on Eth, we limit the block range
   // we use the heuristic that. delta blocknumber <= delta timestamp / secondsPerSlot
@@ -553,6 +699,7 @@ const getBlocksAndCheckFinality = async (
     sequencer,
     blockFinalizedArb,
     fromBlockEthFinalized,
+    fromBlockArbFinalized,
     false
   );
 
@@ -570,6 +717,7 @@ const getBlocksAndCheckFinality = async (
     sequencer,
     blockLatestArb,
     fromBlockEthFinalized,
+    fromBlockArbFinalized,
     true
   );
 
@@ -635,10 +783,10 @@ const ArbBlockToL1Block = async (
   sequencer: SequencerInbox,
   L2Block: Block,
   fromBlockEth: number,
+  fromArbBlock: number,
   fallbackLatest: boolean
 ): Promise<[Block, number] | undefined> => {
   const nodeInterface = NodeInterface__factory.connect(NODE_INTERFACE_ADDRESS, L2Provider);
-
   let latestL2batchOnEth: number;
   let latestL2BlockNumberOnEth: number;
   let result = (await nodeInterface.functions
@@ -651,16 +799,20 @@ const ArbBlockToL1Block = async (
       const errMsg = JSON.parse(JSON.parse(JSON.stringify(e)).error.body).error.message;
 
       if (fallbackLatest) {
-        latestL2batchOnEth = parseInt(errMsg.split(" published in batch ")[1]);
-        latestL2BlockNumberOnEth = parseInt(errMsg.split(" is after latest on-chain block ")[1]);
-        if (Number.isNaN(latestL2batchOnEth)) {
-          console.error(errMsg);
-        }
       }
     })) as [BigNumber] & { batch: BigNumber };
 
-  if (!result && !fallbackLatest) return undefined;
-
+  if (!result) {
+    if (!fallbackLatest) {
+      return undefined;
+    } else {
+      [latestL2batchOnEth, latestL2BlockNumberOnEth] = await findLatestL2BatchAndBlock(
+        nodeInterface,
+        fromArbBlock,
+        L2Block.number
+      );
+    }
+  }
   const batch = result?.batch?.toNumber() ?? latestL2batchOnEth;
   const L2BlockNumberFallback = latestL2BlockNumberOnEth ?? L2Block.number;
   /**
@@ -680,6 +832,29 @@ const ArbBlockToL1Block = async (
 
   const L1Block = (await retryOperation(() => emittedEvent[0].getBlock(), 1000, 10)) as Block;
   return [L1Block, L2BlockNumberFallback];
+};
+
+const findLatestL2BatchAndBlock = async (
+  nodeInterface: NodeInterface,
+  fromArbBlock: number,
+  latestBlockNumber: number
+): Promise<[number, number]> => {
+  let low = fromArbBlock;
+  let high = latestBlockNumber;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    try {
+      (await nodeInterface.functions.findBatchContainingBlock(mid, { blockTag: "latest" })) as any;
+      low = mid + 1;
+    } catch (e) {
+      high = mid - 1;
+    }
+  }
+  if (high < low) return [undefined, undefined];
+  // high is now the latest L2 block number that has a corresponding batch on L1
+  const result = (await nodeInterface.functions.findBatchContainingBlock(high, { blockTag: "latest" })) as any;
+  return [result.batch.toNumber(), high];
 };
 
 (async () => {
