@@ -2,6 +2,7 @@ import VeaInboxArbitrumSepolia from "@kleros/vea-contracts/deployments/arbitrumS
 import VeaOutboxSepolia from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
 import VeaInboxArbitrumSepoliaChiado from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json";
 import VeaOutboxArbitrumSepoliaChiado from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
+
 import {
   Chain,
   arbitrumSepolia,
@@ -41,22 +42,18 @@ export const bridges: IBridge[] = [
     from: arbitrumSepolia.id,
     to: sepolia.id,
     inboxAddress: VeaInboxArbitrumSepolia.address as `0x${string}`,
-    inboxEndpoint:
-      "https://api.studio.thegraph.com/query/67213/veascan-inbox-arb-sep-devnet/version/latest",
+    inboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_INBOX_ARBSEPOLIA_TO_SEPOLIA_SUBGRAPH}`,
     outboxAddress: VeaOutboxSepolia.address as `0x${string}`,
-    outboxEndpoint:
-      "https://api.studio.thegraph.com/query/67213/veascan-outbox-arb-sep-devnet/version/latest",
+    outboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_OUTBOX_ARBSEPOLIA_TO_SEPOLIA_SUBGRAPH}`,
   },
   {
     id: 1,
     from: arbitrumSepolia.id,
     to: gnosisChiado.id,
     inboxAddress: VeaInboxArbitrumSepoliaChiado.address as `0x${string}`,
-    inboxEndpoint:
-      "https://api.studio.thegraph.com/query/67213/veascan-inbox-arb-sep-chiado-devnet/version/latest",
+    inboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_INBOX_ARBSEPOLIA_TO_CHIADO_SUBGRAPH}`,
     outboxAddress: VeaOutboxArbitrumSepoliaChiado.address as `0x${string}`,
-    outboxEndpoint:
-      "https://api.studio.thegraph.com/query/67213/veascan-outbox-arb-chiado-devnet/version/latest",
+    outboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_OUTBOX_ARBSEPOLIA_TO_CHIADO_SUBGRAPH}`,
   },
 ];
 
