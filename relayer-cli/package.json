@@ -10,7 +10,8 @@
     "yarn": "4.2.2"
   },
   "scripts": {
-    "start-devnet-relayer": "npx ts-node ./src/devnetRelayExample.ts"
+    "start-devnet-relayer": "npx ts-node ./src/devnetRelayExample.ts",
+    "start-testnet-sepolia": "npx ts-node ./src/testnet/arbSepToSepRelayer.ts"
   },
   "dependencies": {
     "@kleros/vea-contracts": "workspace:^",
