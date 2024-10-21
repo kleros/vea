@@ -1,7 +1,7 @@
 import { getProofAtCount, getMessageDataToRelay } from "./proof";
-import { getVeaOutboxArbToEth } from "./ethers";
+import { getVeaOutbox } from "./ethers";
 import request from "graphql-request";
-import { VeaOutboxArbToEth } from "@kleros/vea-contracts/typechain-types";
+import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "@kleros/vea-contracts/typechain-types";
 import { getBridgeConfig, getInboxSubgraph } from "../consts/bridgeRoutes";
 const fs = require("fs");
 
@@ -9,9 +9,8 @@ require("dotenv").config();
 
 const Web3 = require("web3");
 const _batchedSend = require("web3-batched-send");
-const _contract = require("@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json");
 
-const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<number> => {
+const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, chainid: number): Promise<number> => {
   const subgraph = getInboxSubgraph(chainid);
   const stateRoot = await veaOutbox.stateRoot();
 
@@ -31,8 +30,7 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth, chainid: number): Promise<
 
 const relay = async (chainid: number, nonce: number) => {
   const routeParams = getBridgeConfig(chainid);
-
-  const veaOutbox = getVeaOutboxArbToEth(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox);
+  const veaOutbox = getVeaOutbox(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainid);
   const count = await getCount(veaOutbox, chainid);
 
   const proof = await getProofAtCount(chainid, nonce, count);
@@ -42,32 +40,41 @@ const relay = async (chainid: number, nonce: number) => {
   await txn.wait();
 };
 
-const relayBatch = async (chainid: number, nonce: number, iterations: number) => {
+const relayBatch = async (chainid: number, nonce: number, maxBatchSize: number, _contract: any) => {
   const routeParams = getBridgeConfig(chainid);
-
   const web3 = new Web3(routeParams.rpcOutbox);
-  const batchedSend = _batchedSend(web3, routeParams.rpcOutbox, process.env.PRIVATE_KEY, 0);
-
+  const batchedSend = _batchedSend(web3, routeParams.batcher, process.env.PRIVATE_KEY, 0);
   const contract = new web3.eth.Contract(_contract.abi, routeParams.veaOutbox);
-  const veaOutbox = getVeaOutboxArbToEth(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox);
+  const veaOutbox = getVeaOutbox(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainid);
   const count = await getCount(veaOutbox, chainid);
 
-  let txns = [];
-
-  for (let i = 0; i < iterations; i++) {
-    const proof = await getProofAtCount(chainid, nonce + i, count);
-    const [to, data] = await getMessageDataToRelay(chainid, nonce + i);
-    txns.push({
-      args: [proof, nonce + i, to, data],
-      method: contract.methods.sendMessage,
-      to: contract.options.address,
-    });
+  while (nonce <= count) {
+    let batchMessages = 0;
+    let txns = [];
+    for (let i = 0; batchMessages < maxBatchSize && nonce + i < count; i++) {
+      const isMsgRelayed = await veaOutbox.isMsgRelayed(nonce + i);
+      if (isMsgRelayed) continue;
+      const proof = await getProofAtCount(chainid, nonce + i, count);
+      const [to, data] = await getMessageDataToRelay(chainid, nonce + i);
+      txns.push({
+        args: [proof, nonce + i, to, data],
+        method: contract.methods.sendMessage,
+        to: contract.options.address,
+      });
+      batchMessages += 1;
+    }
+    try {
+      await batchedSend(txns);
+      // Updating nonce to the next message to be sent
+      nonce += batchMessages + 1;
+    } catch (error) {
+      console.error(`Unable to execute messgae batch(${batchMessages} msgs) from nonce:${nonce} `, error);
+    }
   }
-
-  await batchedSend(txns);
+  return nonce;
 };
 
-const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): Promise<number> => {
+const relayAllFrom = async (chainid: number, nonce: number, msgSender: string, _contract: any): Promise<number> => {
   const routeParams = getBridgeConfig(chainid);
 
   const web3 = new Web3(routeParams.rpcOutbox);
@@ -80,7 +87,7 @@ const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): 
   );
 
   const contract = new web3.eth.Contract(_contract.abi, routeParams.veaOutbox);
-  const veaOutbox = getVeaOutboxArbToEth(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox);
+  const veaOutbox = getVeaOutbox(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainid);
   const count = await getCount(veaOutbox, chainid);
 
   if (!count) return null;

@@ -3,8 +3,9 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import {
   VeaOutboxArbToEth__factory,
   VeaOutboxArbToEthDevnet__factory,
-  VeaOutboxArbToGnosisDevnet__factory,
   VeaInboxArbToEth__factory,
+  VeaInboxArbToGnosis__factory,
+  VeaOutboxArbToGnosis__factory,
 } from "@kleros/vea-contracts/typechain-types";
 
 function getWallet(privateKey: string, web3ProviderURL: string) {
@@ -15,20 +16,37 @@ function getWalletRPC(privateKey: string, rpc: JsonRpcProvider) {
   return new Wallet(privateKey, rpc);
 }
 
-function getVeaInboxArbToEth(veaInboxAddress: string, privateKey: string, web3ProviderURL: string) {
-  return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+// Using destination chainId as identifier, Ex: Arbitrum One (42161) -> Ethereum Mainnet (1): Use "1" as chainId
+function getVeaInbox(veaInboxAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
+  if (chainId == 11155111) {
+    return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+  } else if (chainId == 10200) {
+    return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+  }
 }
 
-function getVeaInboxArbToEthProvider(veaInboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
+function getVeaInboxProvider(veaInboxAddress: string, privateKey: string, rpc: JsonRpcProvider, chainId: number) {
+  if (chainId == 11155111) {
+    return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
+  } else if (chainId == 10200) {
+    return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
+  }
 }
 
-function getVeaOutboxArbToEthProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
+function getVeaOutbox(veaInboxAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
+  if (chainId == 11155111) {
+    return VeaOutboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+  } else if (chainId == 10200) {
+    return VeaOutboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+  }
 }
 
-function getVeaOutboxArbToEth(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
-  return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+function getVeaOutboxProvider(veaInboxAddress: string, privateKey: string, rpc: JsonRpcProvider, chainId: number) {
+  if (chainId == 11155111) {
+    return VeaOutboxArbToEth__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
+  } else if (chainId == 10200) {
+    return VeaOutboxArbToGnosis__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
+  }
 }
 
 function getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
@@ -39,19 +57,12 @@ function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
 }
 
-function getVeaOutboxArbToGnosisProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
-}
-
-function getVeaOutboxArbToGnosis(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
-  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
-}
-
 export {
-  getVeaOutboxArbToEth,
   getWalletRPC,
   getVeaOutboxArbToEthDevnetProvider,
-  getVeaInboxArbToEth,
-  getVeaInboxArbToEthProvider,
-  getVeaOutboxArbToEthProvider,
+  getVeaOutbox,
+  getVeaInbox,
+  getVeaOutboxProvider,
+  getVeaInboxProvider,
+  getVeaOutboxArbToEthDevnet,
 };
