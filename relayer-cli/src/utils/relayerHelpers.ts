@@ -11,7 +11,7 @@ async function initialize(chain_id: number, network: string): Promise<number> {
 
   // STATE_DIR is absolute path of the directory where the state files are stored
   // STATE_DIR must have trailing slash
-  const state_file = process.env.STATE_DIR + chain_id + ".json";
+  const state_file = process.env.STATE_DIR + network + "_" + chain_id + ".json";
   if (!fs.existsSync(state_file)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
@@ -38,10 +38,14 @@ async function updateStateFile(chain_id: number, createdTimestamp: number, nonce
   };
   fs.writeFileSync(chain_state_file, JSON.stringify(json), { encoding: "utf8" });
 
-  const lock_file_name = "./src/state/testnet_" + chain_id + ".pid";
+  const lock_file_name = "./src/state/" + network + "_" + chain_id + ".pid";
   if (fs.existsSync(lock_file_name)) {
     fs.unlinkSync(lock_file_name);
   }
 }
 
-export { initialize, updateStateFile };
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export { initialize, updateStateFile, delay };

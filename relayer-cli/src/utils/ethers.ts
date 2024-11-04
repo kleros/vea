@@ -22,6 +22,8 @@ function getVeaInbox(veaInboxAddress: string, privateKey: string, web3ProviderUR
     return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
   } else if (chainId == 10200) {
     return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+  } else {
+    throw new Error(`Unsupported chainId: ${chainId}`);
   }
 }
 
@@ -38,14 +40,18 @@ function getVeaOutbox(veaInboxAddress: string, privateKey: string, web3ProviderU
     return VeaOutboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
   } else if (chainId == 10200) {
     return VeaOutboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+  } else {
+    throw new Error(`Unsupported chainId: ${chainId}`);
   }
 }
 
-function getVeaOutboxProvider(veaInboxAddress: string, privateKey: string, rpc: JsonRpcProvider, chainId: number) {
+function getVeaOutboxProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider, chainId: number) {
   if (chainId == 11155111) {
-    return VeaOutboxArbToEth__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
+    return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
   } else if (chainId == 10200) {
-    return VeaOutboxArbToGnosis__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
+    return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
+  } else {
+    throw new Error(`Unsupported chainId: ${chainId}`);
   }
 }
 

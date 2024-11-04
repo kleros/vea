@@ -48,27 +48,31 @@ const relayBatch = async (chainid: number, nonce: number, maxBatchSize: number, 
   const veaOutbox = getVeaOutbox(routeParams.veaOutbox, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainid);
   const count = await getCount(veaOutbox, chainid);
 
-  while (nonce <= count) {
+  while (nonce < count) {
     let batchMessages = 0;
     let txns = [];
-    for (let i = 0; batchMessages < maxBatchSize && nonce + i < count; i++) {
-      const isMsgRelayed = await veaOutbox.isMsgRelayed(nonce + i);
-      if (isMsgRelayed) continue;
-      const proof = await getProofAtCount(chainid, nonce + i, count);
-      const [to, data] = await getMessageDataToRelay(chainid, nonce + i);
+    while (batchMessages < maxBatchSize && nonce < count) {
+      const isMsgRelayed = await veaOutbox.isMsgRelayed(nonce);
+      if (isMsgRelayed) {
+        nonce++;
+        continue;
+      }
+      const proof = await getProofAtCount(chainid, nonce, count);
+      const [to, data] = await getMessageDataToRelay(chainid, nonce);
       txns.push({
-        args: [proof, nonce + i, to, data],
+        args: [proof, nonce, to, data],
         method: contract.methods.sendMessage,
         to: contract.options.address,
       });
       batchMessages += 1;
+      nonce++;
     }
-    try {
-      await batchedSend(txns);
-      // Updating nonce to the next message to be sent
-      nonce += batchMessages + 1;
-    } catch (error) {
-      console.error(`Unable to execute messgae batch(${batchMessages} msgs) from nonce:${nonce} `, error);
+    if (batchMessages > 0) {
+      try {
+        await batchedSend(txns);
+      } catch (error) {
+        console.error(`Unable to execute messgae batch(${batchMessages} msgs) from nonce:${nonce} `, error);
+      }
     }
   }
   return nonce;
