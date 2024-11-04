@@ -12,7 +12,8 @@
   "scripts": {
     "start": "npx ts-node ./src/ArbToEth/watcher.ts",
     "start-chiado-devnet": "npx ts-node ./src/devnet/arbToChiado/happyPath.ts",
-    "start-sepolia-devnet": "npx ts-node ./src/devnet/arbToSepolia/happyPath.ts"
+    "start-sepolia-devnet": "npx ts-node ./src/devnet/arbToSepolia/happyPath.ts",
+    "start-sepolia-testnet": "npx ts-node ./src/ArbToEth/watcherArbToEth.ts"
   },
   "dependencies": {
     "@arbitrum/sdk": "4.0.1",

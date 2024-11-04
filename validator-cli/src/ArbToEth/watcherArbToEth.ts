@@ -1,12 +1,14 @@
-import { getVeaOutboxArbToEthProvider, getVeaInboxArbToEthProvider } from "../utils/ethers";
+import { getVeaOutboxArbToEth, getVeaInboxArbToEth } from "../utils/ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { getArbitrumNetwork } from "@arbitrum/sdk";
 import { NODE_INTERFACE_ADDRESS } from "@arbitrum/sdk/dist/lib/dataEntities/constants";
 import { NodeInterface__factory } from "@arbitrum/sdk/dist/lib/abi/factories/NodeInterface__factory";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
-import { BigNumber, ContractTransaction } from "ethers";
+import { BigNumber, ContractTransaction, ethers } from "ethers";
 import { Block, Log, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { SequencerInbox } from "@arbitrum/sdk/dist/lib/abi/SequencerInbox";
+import { NodeInterface } from "@arbitrum/sdk/dist/lib/abi/NodeInterface";
+import { getMessageStatus, messageExecutor } from "../utils/arbMsgExecutor";
 
 require("dotenv").config();
 
@@ -14,21 +16,28 @@ require("dotenv").config();
 const slotsPerEpochEth = 32;
 const secondsPerSlotEth = 12;
 
+// This script monitors claims made on VeaOutbox and initiates challenges if required.
+// The core flow includes:
+// 1. `challenge(veaOutbox)`: Check claims and challenge if necassary.
+// 2. `sendSnapshot(veaInbox)`: Send the snapshot from veaInbox for a challenged epoch.
+// 3. `resolveDisputeClaim(arbitrumBridge)`: Execute the sent snapshot to resolve the dispute.
+// 4. `withdrawChallengeDeposit(veaOutbox)`: Withdraw the deposit if the challenge is successful.
+
 const watch = async () => {
   // connect to RPCs
   const providerEth = new JsonRpcProvider(process.env.RPC_ETH);
   const providerArb = new JsonRpcProvider(process.env.RPC_ARB);
 
   // use typechain generated contract factories for vea outbox and inbox
-  const veaOutbox = getVeaOutboxArbToEthProvider(
+  const veaOutbox = getVeaOutboxArbToEth(
     process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
     process.env.PRIVATE_KEY,
-    providerEth
+    process.env.RPC_ETH
   );
-  const veaInbox = getVeaInboxArbToEthProvider(
+  const veaInbox = getVeaInboxArbToEth(
     process.env.VEAINBOX_ARB_TO_ETH_ADDRESS,
     process.env.PRIVATE_KEY,
-    providerEth
+    process.env.RPC_ARB
   );
 
   // get Arb sequencer params
@@ -71,7 +80,6 @@ const watch = async () => {
   const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
     .fill(veaEpochOutboxWatchLowerBound)
     .map((el, i) => el + i);
-  const challengeTxnHashes = new Map<number, string>();
 
   console.log(
     "cold start: checking past claim history from epoch " +
@@ -79,6 +87,8 @@ const watch = async () => {
       " to the current claimable epoch " +
       veaEpochOutboxCheckClaimsRangeArray[veaEpochOutboxCheckClaimsRangeArray.length - 1]
   );
+
+  const challengeTxnHashes = new Map<number, string>();
 
   while (true) {
     // returns the most recent finalized arbBlock found on Ethereum and info about finality issues on Eth.
@@ -108,14 +118,16 @@ const watch = async () => {
     // the latest epoch that is finalized from the L2 POV
     // this depends on the L2 clock
     const veaEpochInboxFinalized = Math.floor(l2Time / epochPeriod) - 1;
-
     const veaEpochOutboxClaimableNowOld = veaEpochOutboxClaimableNow;
     veaEpochOutboxClaimableNow = Math.floor(timeEth / epochPeriod) - 1;
-    const veaEpochsOutboxClaimableNew: number[] = new Array(veaEpochOutboxClaimableNow - veaEpochOutboxClaimableNowOld)
-      .fill(veaEpochOutboxClaimableNowOld + 1)
-      .map((el, i) => el + i);
-
-    veaEpochOutboxCheckClaimsRangeArray.concat(veaEpochsOutboxClaimableNew);
+    if (veaEpochOutboxClaimableNow > veaEpochOutboxClaimableNowOld) {
+      const veaEpochsOutboxClaimableNew: number[] = new Array(
+        veaEpochOutboxClaimableNow - veaEpochOutboxClaimableNowOld
+      )
+        .fill(veaEpochOutboxClaimableNowOld + 1)
+        .map((el, i) => el + i);
+      veaEpochOutboxCheckClaimsRangeArray.push(...veaEpochsOutboxClaimableNew);
+    }
 
     if (veaEpochOutboxCheckClaimsRangeArray.length == 0) {
       console.log("no claims to check");
@@ -125,8 +137,10 @@ const watch = async () => {
     }
 
     for (let index = 0; index < veaEpochOutboxCheckClaimsRangeArray.length; index++) {
+      console.log("Checking claim for epoch " + veaEpochOutboxCheckClaimsRangeArray[index]);
+      const challenge = challengeTxnHashes.get(index);
       const veaEpochOutboxCheck = veaEpochOutboxCheckClaimsRangeArray[index];
-      console.log("checking claim for epoch " + veaEpochOutboxCheck);
+
       // if L1 experiences finality failure, we use the latest block
       const blockTagEth = finalityIssueFlagEth ? "latest" : "finalized";
       const claimHash = (await retryOperation(
@@ -156,9 +170,6 @@ const watch = async () => {
         }
       } else {
         // claim exists
-
-        console.log("claim exists for epoch " + veaEpochOutboxCheck);
-
         let blockNumberOutboxLowerBound: number;
 
         // to query event performantly, we limit the block range with the heuristic that. delta blocknumber <= delta timestamp / secondsPerSlot
@@ -184,7 +195,6 @@ const watch = async () => {
             10
           )
         )[0] as Log;
-
         // check the snapshot on the inbox on Arbitrum
         // only check the state from L1 POV, don't trust the sequencer feed.
         // arbBlock is a recent (finalized or latest if there are finality problems) block found posted on L1
@@ -196,41 +206,20 @@ const watch = async () => {
 
         // claim differs from snapshot
         if (logClaimed.data != claimSnapshot) {
-          console.log("claimed merkle root mismatch for epoch " + veaEpochOutboxCheck);
+          console.log("!! Claimed merkle root mismatch for epoch " + veaEpochOutboxCheck);
 
           // if Eth is finalizing but sequencer is malfunctioning, we can wait until the snapshot is considered finalized (L2 time is in the next epoch)
           if (!finalityIssueFlagEth && veaEpochInboxFinalized < veaEpochOutboxCheck) {
             // note as long as L1 does not have finalization probelms, sequencer could still be malfunctioning
             console.log("L2 snapshot is not yet finalized, waiting for finalization to determine challengable status");
           } else {
-            console.log("claim " + veaEpochOutboxCheck + " is challengable");
-
             const timestampClaimed = (
               (await retryOperation(() => providerEth.getBlock(logClaimed.blockNumber), 1000, 10)) as Block
             ).timestamp;
 
-            var claim = {
-              stateRoot: logClaimed.data,
-              claimer: "0x" + logClaimed.topics[1].substring(26),
-              timestampClaimed: timestampClaimed,
-              timestampVerification: 0,
-              blocknumberVerification: 0,
-              honest: 0,
-              challenger: "0x0000000000000000000000000000000000000000",
-            };
+            /*
 
-            const claimHashCalculated = (await retryOperation(
-              () => veaOutbox.hashClaim(claim, { blockTag: blockTagEth }),
-              1000,
-              10
-            )) as string;
-            if (claimHashCalculated != claimHash) {
-              // either claim is already challenged
-              // or claim is in verification or verified
-
-              /*
-
-              we want to reconstruct the struct below from events, since only the hash is stored onchain
+              we want to constrcut the struct below from events, since only the hash is stored onchain
 
               struct Claim {
                 bytes32 stateRoot;
@@ -243,92 +232,223 @@ const watch = async () => {
               }
               
               */
-              const logChallenges = (await retryOperation(
-                () =>
-                  providerEth.getLogs({
-                    address: process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
-                    topics: veaOutbox.filters.Challenged(veaEpochOutboxCheck, null).topics,
-                    fromBlock: blockNumberOutboxLowerBound,
-                    toBlock: blockTagEth,
-                  }),
-                1000,
-                10
-              )) as Log[];
+            var claim = {
+              stateRoot: logClaimed.data,
+              claimer: "0x" + logClaimed.topics[1].substring(26),
+              timestampClaimed: timestampClaimed,
+              timestampVerification: 0,
+              blocknumberVerification: 0,
+              honest: 0,
+              challenger: "0x0000000000000000000000000000000000000000",
+            };
 
-              // if already challenged, no action needed
+            // check if the claim is in verification or verified
+            const logVerficiationStarted = (await retryOperation(
+              () =>
+                providerEth.getLogs({
+                  address: process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
+                  topics: veaOutbox.filters.VerificationStarted(veaEpochOutboxCheck).topics,
+                  fromBlock: blockNumberOutboxLowerBound,
+                  toBlock: blockTagEth,
+                }),
+              1000,
+              10
+            )) as Log[];
 
-              // if not challenged, keep checking all claim struct variables
-              if (logChallenges.length == 0) {
-                const logVerficiationStarted = (await retryOperation(
+            if (logVerficiationStarted.length > 1) {
+              const timestampVerification = (
+                (await retryOperation(
+                  () => providerEth.getBlock(logVerficiationStarted[logVerficiationStarted.length - 1].blockNumber),
+                  1000,
+                  10
+                )) as Block
+              ).timestamp;
+
+              // Update the claim struct with verification details
+              claim.timestampVerification = timestampVerification;
+              claim.blocknumberVerification = logVerficiationStarted[logVerficiationStarted.length - 1].blockNumber;
+
+              const claimHashCalculated = hashClaim(claim);
+
+              // The hash should match if there is no challenge made and no honest party yet
+              if (claimHashCalculated != claimHash) {
+                // Either challenge is made or honest party is set with or without a challenge
+                claim.honest = 1;
+                const claimerHonestHash = hashClaim(claim);
+                if (claimerHonestHash == claimHash) {
+                  console.log("Claim is honest for epoch " + veaEpochOutboxCheck);
+                  // As the claim is honest, remove the epoch from the local array
+                  veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
+                  continue;
+                }
+                // The claim is challenged and anyone can be the honest party
+              }
+            }
+
+            const logChallenges = (await retryOperation(
+              () =>
+                providerEth.getLogs({
+                  address: process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
+                  topics: veaOutbox.filters.Challenged(veaEpochOutboxCheck, null).topics,
+                  fromBlock: blockNumberOutboxLowerBound,
+                  toBlock: blockTagEth,
+                }),
+              1000,
+              10
+            )) as Log[];
+
+            // if not challenged, keep checking all claim struct variables
+            if (logChallenges.length == 0 && challengeTxnHashes[index] == undefined) {
+              console.log("Claim is challengeable for epoch " + veaEpochOutboxCheck);
+            } else if (logChallenges.length > 0) {
+              // Claim is challenged, we check if the snapShot is sent and if the dispute is resolved
+              console.log("Claim is already challenged for epoch " + veaEpochOutboxCheck);
+              claim.challenger = "0x" + logChallenges[0].topics[2].substring(26);
+
+              // if claim hash with challenger as winner matches the claimHash, then the challenge is over and challenger won
+              const challengerWinClaim = { ...claim };
+              challengerWinClaim.honest = 2; // challenger wins
+
+              const claimerWinClaim = { ...claim };
+              claimerWinClaim.honest = 1; // claimer wins
+              if (hashClaim(challengerWinClaim) == claimHash) {
+                // The challenge is over and challenger won
+                console.log("Challenger won the challenge for epoch " + veaEpochOutboxCheck);
+                const withdrawChlngDepositTxn = (await retryOperation(
+                  () => veaOutbox.withdrawChallengeDeposit(veaEpochOutboxCheck, challengerWinClaim),
+                  1000,
+                  10
+                )) as ContractTransaction;
+                console.log(
+                  "Deposit withdrawn by challenger for " +
+                    veaEpochOutboxCheck +
+                    " with txn hash " +
+                    withdrawChlngDepositTxn.hash
+                );
+                // As the challenge is over, remove the epoch from the local array
+                veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
+                continue;
+              } else if (hashClaim(claimerWinClaim) == claimHash) {
+                // The challenge is over and claimer won
+                console.log("Claimer won the challenge for epoch " + veaEpochOutboxCheck);
+                veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
+                continue;
+              }
+
+              // Claim is challenged, no honest party yet
+              if (logChallenges[0].blockNumber < blockFinalizedEth.number) {
+                // Send the "stateRoot" snapshot from Arbitrum to the Eth inbox if not sent already
+                const claimTimestamp = veaEpochOutboxCheckClaimsRangeArray[index] * epochPeriod;
+
+                let blockLatestArb = (await retryOperation(() => providerArb.getBlock("latest"), 1000, 10)) as Block;
+                let blockoldArb = (await retryOperation(
+                  () => providerArb.getBlock(blockLatestArb.number - 100),
+                  1000,
+                  10
+                )) as Block;
+
+                const arbAverageBlockTime = (blockLatestArb.timestamp - blockoldArb.timestamp) / 100;
+
+                const fromClaimEpochBlock = Math.ceil(
+                  blockLatestArb.number - (blockLatestArb.timestamp - claimTimestamp) / arbAverageBlockTime
+                );
+                const sendSnapshotLogs = (await retryOperation(
                   () =>
-                    providerEth.getLogs({
-                      address: process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
-                      topics: veaOutbox.filters.VerificationStarted(veaEpochOutboxCheck).topics,
-                      fromBlock: blockNumberOutboxLowerBound,
-                      toBlock: blockTagEth,
+                    providerArb.getLogs({
+                      address: process.env.VEAINBOX_ARB_TO_ETH_ADDRESS,
+                      topics: veaInbox.filters.SnapshotSent(veaEpochOutboxCheck, null).topics,
+                      fromBlock: fromClaimEpochBlock,
+                      toBlock: "latest",
                     }),
                   1000,
                   10
                 )) as Log[];
-
-                if (logVerficiationStarted.length > 1) {
-                  const timestampVerification = (
-                    (await retryOperation(
-                      () => providerEth.getBlock(logVerficiationStarted[logVerficiationStarted.length - 1].blockNumber),
+                if (sendSnapshotLogs.length == 0) {
+                  // No snapshot sent so, send snapshot
+                  try {
+                    const gasEstimate = (await retryOperation(
+                      () =>
+                        veaInbox.estimateGas[
+                          "sendSnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
+                        ](veaEpochOutboxCheck, claim),
                       1000,
                       10
-                    )) as Block
-                  ).timestamp;
+                    )) as BigNumber;
+                    // Adjust the calculation to ensure maxFeePerGas is reasonable
+                    const maxFeePerGasProfitable = deposit.div(gasEstimate.mul(6));
 
-                  claim.timestampVerification = timestampVerification;
-                  claim.blocknumberVerification = logVerficiationStarted[logVerficiationStarted.length - 1].blockNumber;
+                    // Set a reasonable maxPriorityFeePerGas but ensure it's lower than maxFeePerGas
+                    let maxPriorityFeePerGasMEV = BigNumber.from("6667000000000"); // 6667 gwei
 
-                  const claimHashCalculated = (await retryOperation(
-                    () => veaOutbox.hashClaim(claim),
-                    1000,
-                    10
-                  )) as string;
-                  if (claimHashCalculated != claimHash) {
-                    claim.honest = 1;
-                    const claimHashCalculated = (await retryOperation(
-                      () => veaOutbox.hashClaim(claim),
-                      1000,
-                      10
-                    )) as string;
-                    if (claimHashCalculated != claimHash) {
-                      console.error(
-                        "Invalid claim hash calculated for epoch " +
-                          veaEpochOutboxCheck +
-                          " claim " +
-                          claimHashCalculated +
-                          " expected " +
-                          claimHash
+                    // Ensure maxPriorityFeePerGas <= maxFeePerGas
+                    if (maxPriorityFeePerGasMEV.gt(maxFeePerGasProfitable)) {
+                      console.warn(
+                        "maxPriorityFeePerGas is higher than maxFeePerGasProfitable, adjusting maxPriorityFeePerGas"
                       );
-                      continue;
+                      maxPriorityFeePerGasMEV = maxFeePerGasProfitable; // adjust to be equal or less
+                    }
+
+                    const txnSendSnapshot = (await retryOperation(
+                      () =>
+                        veaInbox["sendSnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
+                          veaEpochOutboxCheck,
+                          claim, // the claim struct has to be updated with the correct challenger
+                          {
+                            maxFeePerGas: maxFeePerGasProfitable,
+                            maxPriorityFeePerGas: maxPriorityFeePerGasMEV,
+                            gasLimit: gasEstimate,
+                          }
+                        ),
+                      1000,
+                      10
+                    )) as ContractTransaction;
+                    console.log(
+                      "Snapshot message sent for epoch " +
+                        veaEpochOutboxCheck +
+                        " with txn hash " +
+                        txnSendSnapshot.hash
+                    );
+                  } catch (error) {
+                    console.error("Error sending snapshot for epoch " + veaEpochOutboxCheck + " with error " + error);
+                  }
+                } else {
+                  // snapshot already sent, check if the snapshot can be relayed to veaOutbox
+                  console.log("Snapshot already sent for epoch " + veaEpochOutboxCheck);
+                  const msgStatus = await getMessageStatus(
+                    sendSnapshotLogs[0].transactionHash,
+                    process.env.RPC_ARB,
+                    process.env.RPC_ETH
+                  );
+                  if (msgStatus === 1) {
+                    // msg waiting for execution
+                    const msgExecuteTrnx = await messageExecutor(
+                      sendSnapshotLogs[0].transactionHash,
+                      process.env.RPC_ARB,
+                      process.env.RPC_ETH
+                    );
+                    if (msgExecuteTrnx) {
+                      // msg executed successfully
+                      console.log("Snapshot message relayed to veaOutbox for epoch " + veaEpochOutboxCheck);
+                      veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
+                    } else {
+                      // msg failed to execute
+                      console.error("Error sending snapshot to veaOutbox for epoch " + veaEpochOutboxCheck);
                     }
                   }
                 }
-              } else {
-                console.log("claim " + veaEpochOutboxCheck + " is already challenged");
-                if (logChallenges[0].blockNumber < blockFinalizedEth.number) {
-                  veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
-                  index--;
-                  // the challenge is finalized, no further action needed
-                  console.log("challenge is finalized");
-                  continue;
-                }
                 continue;
               }
+              continue;
             }
 
-            if (challengeTxnHashes[index] != "") {
+            if (challengeTxnHashes[index] != undefined) {
               const txnReceipt = (await retryOperation(
                 () => providerEth.getTransactionReceipt(challengeTxnHashes[index]),
                 10,
                 1000
               )) as TransactionReceipt;
               if (!txnReceipt) {
-                console.log("challenge txn " + challengeTxnHashes[index] + " not mined yet");
+                console.log("challenge txn " + challenge[index] + " not mined yet");
                 continue;
               }
               const blockNumber = txnReceipt.blockNumber;
@@ -341,7 +461,6 @@ const watch = async () => {
                 continue;
               }
             }
-
             const gasEstimate = (await retryOperation(
               () =>
                 veaOutbox.estimateGas["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
@@ -353,34 +472,44 @@ const watch = async () => {
               10
             )) as BigNumber;
 
-            // deposit / 2 is the profit for challengers
-            // the initial challenge txn is roughly 1/3 of the cost of completing the challenge process.
-            const maxFeePerGasProfitable = deposit.div(gasEstimate.mul(3 * 2));
+            // Adjust the calculation to ensure maxFeePerGas is reasonable
+            const maxFeePerGasProfitable = deposit.div(gasEstimate.mul(6));
 
-            // priority fee must be higher than MEV to be competitive
-            // https://boost-relay.flashbots.net/?order_by=-value
-            // eg there's never been > 100 eth in MEV in a block
-            // so 100 eth / 15000000 gas per block = 6667 gwei per gas is competitive
-            // Set this more modestly if you want to be more conservative
-            const maxPriorityFeePerGasMEV = BigNumber.from("6667000000000"); // 6667 gwei
+            // Set a reasonable maxPriorityFeePerGas but ensure it's lower than maxFeePerGas
+            let maxPriorityFeePerGasMEV = BigNumber.from("6667000000000"); // 6667 gwei
+            console.log("Transaction Challenge Gas Estimate", gasEstimate.toString());
 
-            const txnChallenge = (await retryOperation(
-              () =>
-                veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
-                  veaEpochOutboxCheck,
-                  claim,
-                  {
-                    maxFeePerGas: maxFeePerGasProfitable,
-                    maxPriorityFeePerGas: maxPriorityFeePerGasMEV,
-                    value: deposit,
-                  }
-                ),
-              1000,
-              10
-            )) as ContractTransaction;
-
-            txnChallenge.nonce;
-            console.log("challenging claim for epoch " + veaEpochOutboxCheck + " with txn hash " + txnChallenge.hash);
+            // Ensure maxPriorityFeePerGas <= maxFeePerGas
+            if (maxPriorityFeePerGasMEV.gt(maxFeePerGasProfitable)) {
+              console.warn(
+                "maxPriorityFeePerGas is higher than maxFeePerGasProfitable, adjusting maxPriorityFeePerGas"
+              );
+              maxPriorityFeePerGasMEV = maxFeePerGasProfitable; // adjust to be equal or less
+            }
+            try {
+              const txnChallenge = (await retryOperation(
+                () =>
+                  veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
+                    veaEpochOutboxCheck,
+                    claim,
+                    {
+                      maxFeePerGas: maxFeePerGasProfitable,
+                      maxPriorityFeePerGas: maxPriorityFeePerGasMEV,
+                      value: deposit,
+                      gasLimit: gasEstimate,
+                    }
+                  ),
+                1000,
+                10
+              )) as ContractTransaction;
+              // Make wait for receipt and check if the challenge is finalized
+              console.log("Transaction Challenge Hash", txnChallenge.hash);
+              // Update local var with the challenge txn hash
+              challengeTxnHashes.set(index, txnChallenge.hash);
+              console.log("challenging claim for epoch " + veaEpochOutboxCheck + " with txn hash " + txnChallenge.hash);
+            } catch (error) {
+              console.error("Error challenging claim for epoch " + veaEpochOutboxCheck + " with error " + error);
+            }
           }
         } else {
           console.log("claim hash matches snapshot for epoch " + veaEpochOutboxCheck);
@@ -439,6 +568,10 @@ const getBlocksAndCheckFinality = async (
   // check latest arb block to see if there are any sequencer issues
   let blockLatestArb = (await retryOperation(() => ArbProvider.getBlock("latest"), 1000, 10)) as Block;
 
+  const maxDelayInSeconds = 7 * 24 * 60 * 60; // 7 days
+  let blockoldArb = (await retryOperation(() => ArbProvider.getBlock(blockLatestArb.number - 100), 1000, 10)) as Block;
+  const arbAverageBlockTime = (blockLatestArb.timestamp - blockoldArb.timestamp) / 100;
+  const fromBlockArbFinalized = blockFinalizedArb.number - Math.ceil(maxDelayInSeconds / arbAverageBlockTime);
   // to performantly query the sequencerInbox's SequencerBatchDelivered event on Eth, we limit the block range
   // we use the heuristic that. delta blocknumber <= delta timestamp / secondsPerSlot
   // Arb: -----------x                   <-- Finalized
@@ -458,6 +591,7 @@ const getBlocksAndCheckFinality = async (
     sequencer,
     blockFinalizedArb,
     fromBlockEthFinalized,
+    fromBlockArbFinalized,
     false
   );
 
@@ -475,6 +609,7 @@ const getBlocksAndCheckFinality = async (
     sequencer,
     blockLatestArb,
     fromBlockEthFinalized,
+    fromBlockArbFinalized,
     true
   );
 
@@ -534,6 +669,7 @@ const ArbBlockToL1Block = async (
   sequencer: SequencerInbox,
   L2Block: Block,
   fromBlockEth: number,
+  fromArbBlock: number,
   fallbackLatest: boolean
 ): Promise<[Block, number] | undefined> => {
   const nodeInterface = NodeInterface__factory.connect(NODE_INTERFACE_ADDRESS, L2Provider);
@@ -543,19 +679,21 @@ const ArbBlockToL1Block = async (
   let result = (await nodeInterface.functions
     .findBatchContainingBlock(L2Block.number, { blockTag: "latest" })
     .catch((e) => {
-      // if L2 block is ahead of latest L2 batch on L1, we get an error
-      // catch the error and parse it to get the latest L2 batch on L1
-
-      // https://github.com/OffchainLabs/nitro/blob/af87ba29bc34c27bd4d85b3066a1cc3a759bab66/nodeInterface/NodeInterface.go#L544
-      const errMsg = JSON.parse(JSON.parse(JSON.stringify(e)).error.body).error.message;
-      console.error(errMsg);
-      if (fallbackLatest) {
-        latestL2batchOnEth = parseInt(errMsg.split(" published in batch ")[1]);
-        latestL2BlockNumberOnEth = parseInt(errMsg.split(" is after latest on-chain block ")[1]);
-      }
+      // If the L2Block is the latest ArbBlock this will always throw an error
+      console.log("Error finding batch containing block, searching heuristically...");
     })) as [BigNumber] & { batch: BigNumber };
 
-  if (!result && !fallbackLatest) return undefined;
+  if (!result) {
+    if (!fallbackLatest) {
+      return undefined;
+    } else {
+      [latestL2batchOnEth, latestL2BlockNumberOnEth] = await findLatestL2BatchAndBlock(
+        nodeInterface,
+        fromArbBlock,
+        L2Block.number
+      );
+    }
+  }
 
   const batch = result?.batch?.toNumber() ?? latestL2batchOnEth;
   const L2BlockNumberFallback = latestL2BlockNumberOnEth ?? L2Block.number;
@@ -576,6 +714,44 @@ const ArbBlockToL1Block = async (
 
   const L1Block = (await retryOperation(() => emittedEvent[0].getBlock(), 1000, 10)) as Block;
   return [L1Block, L2BlockNumberFallback];
+};
+
+const findLatestL2BatchAndBlock = async (
+  nodeInterface: NodeInterface,
+  fromArbBlock: number,
+  latestBlockNumber: number
+): Promise<[number, number]> => {
+  let low = fromArbBlock;
+  let high = latestBlockNumber;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    try {
+      (await nodeInterface.functions.findBatchContainingBlock(mid, { blockTag: "latest" })) as any;
+      low = mid + 1;
+    } catch (e) {
+      high = mid - 1;
+    }
+  }
+  if (high < low) return [undefined, undefined];
+  // high is now the latest L2 block number that has a corresponding batch on L1
+  const result = (await nodeInterface.functions.findBatchContainingBlock(high, { blockTag: "latest" })) as any;
+  return [result.batch.toNumber(), high];
+};
+
+const hashClaim = (claim) => {
+  return ethers.utils.solidityKeccak256(
+    ["bytes32", "address", "uint32", "uint32", "uint32", "uint8", "address"],
+    [
+      claim.stateRoot,
+      claim.claimer,
+      claim.timestampClaimed,
+      claim.timestampVerification,
+      claim.blocknumberVerification,
+      claim.honest,
+      claim.challenger,
+    ]
+  );
 };
 
 (async () => {
