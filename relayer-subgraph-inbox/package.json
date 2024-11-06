@@ -22,7 +22,7 @@
     "@graphprotocol/graph-ts": "^0.35.1"
   },
   "devDependencies": {
-    "@graphprotocol/graph-cli": "^0.73.0",
+    "@graphprotocol/graph-cli": "^0.88.0",
     "concat-stream": "^2.0.0",
     "gluegun": "^5.1.2",
     "matchstick-as": "0.5.2"
