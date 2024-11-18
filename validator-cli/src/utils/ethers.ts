@@ -9,6 +9,8 @@ import {
   VeaInboxArbToEth__factory,
   VeaInboxArbToGnosis__factory,
   IWETH__factory,
+  RouterArbToGnosis__factory,
+  IAMB__factory,
 } from "@kleros/vea-contracts/typechain-types";
 
 function getWallet(privateKey: string, web3ProviderURL: string) {
@@ -63,6 +65,13 @@ function getVeaOutboxArbToGnosis(veaOutboxAddress: string, privateKey: string, w
   return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
 }
 
+function getVeaRouterArbToGnosisProvider(veaRouterAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+  return RouterArbToGnosis__factory.connect(veaRouterAddress, getWalletRPC(privateKey, rpc));
+}
+
+function getAMBProvider(privateKey: string, rpc: JsonRpcProvider) {
+  return IAMB__factory.connect(process.env.GNO_AMB_ADDRESS, getWalletRPC(privateKey, rpc));
+}
 export {
   getVeaOutboxArbToEth,
   getWalletRPC,
@@ -72,5 +81,7 @@ export {
   getVeaOutboxArbToEthProvider,
   getVeaOutboxArbToGnosisProvider,
   getVeaInboxArbToGnosisProvider,
+  getVeaRouterArbToGnosisProvider,
   getWETHProvider,
+  getAMBProvider,
 };

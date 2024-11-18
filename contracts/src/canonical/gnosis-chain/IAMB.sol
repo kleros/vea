@@ -12,4 +12,11 @@ interface IAMB {
     function messageSender() external view returns (address);
 
     function messageSourceChainId() external view returns (bytes32);
+
+    event AffirmationCompleted(
+        address indexed sender,
+        address indexed executor,
+        bytes32 indexed messageId,
+        bool status
+    );
 }
