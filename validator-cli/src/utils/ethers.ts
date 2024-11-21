@@ -69,8 +69,8 @@ function getVeaRouterArbToGnosisProvider(veaRouterAddress: string, privateKey: s
   return RouterArbToGnosis__factory.connect(veaRouterAddress, getWalletRPC(privateKey, rpc));
 }
 
-function getAMBProvider(privateKey: string, rpc: JsonRpcProvider) {
-  return IAMB__factory.connect(process.env.GNO_AMB_ADDRESS, getWalletRPC(privateKey, rpc));
+function getAMBProvider(ambAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+  return IAMB__factory.connect(ambAddress, getWalletRPC(privateKey, rpc));
 }
 export {
   getVeaOutboxArbToEth,

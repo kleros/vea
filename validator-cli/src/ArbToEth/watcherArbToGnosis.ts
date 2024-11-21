@@ -86,6 +86,7 @@ const secondsPerSlotGnosis = 5;
 const veaOutboxAddress = process.env.VEAOUTBOX_ARB_TO_GNOSIS_ADDRESS;
 const veaInboxAddress = process.env.VEAINBOX_ARB_TO_GNOSIS_ADDRESS;
 const veaRouterAddress = process.env.VEAROUTER_ARB_TO_GNOSIS_ADDRESS;
+const gnosisAMBAddress = process.env.GNOSIS_AMB_ADDRESS;
 
 const challenges = new Map<number, ChallengeProgress>();
 
@@ -101,7 +102,7 @@ const watch = async () => {
   const veaOutbox = getVeaOutboxArbToGnosisProvider(veaOutboxAddress, process.env.PRIVATE_KEY, providerGnosis);
   const veaInbox = getVeaInboxArbToGnosisProvider(veaInboxAddress, process.env.PRIVATE_KEY, providerArb);
   const veaRouter = getVeaRouterArbToGnosisProvider(veaRouterAddress, process.env.PRIVATE_KEY, providerEth);
-  const amb = getAMBProvider(process.env.PRIVATE_KEY, providerGnosis);
+  const amb = getAMBProvider(gnosisAMBAddress, process.env.PRIVATE_KEY, providerGnosis);
 
   const wethAddress = (await retryOperation(() => veaOutbox.weth(), 1000, 10)) as string;
   const weth = getWETHProvider(wethAddress, process.env.PRIVATE_KEY, providerGnosis);
@@ -932,7 +933,9 @@ async function reconstructChallengeProgress(
     retryOperation(() => providerArb.getBlock("latest"), 1000, 10) as any,
   ]);
 
-  const averageArbitrumBlocktime = 0.26;
+  const blockTimeWindow = 100; // Calculate average over last 100 blocks
+  const oldBlock = await providerArb.getBlock(arbLatest.number - blockTimeWindow);
+  const averageArbitrumBlocktime = (arbLatest.timestamp - oldBlock.timestamp) / blockTimeWindow;
   const estimatedArbBlocks = Math.ceil((arbLatest.timestamp - challengeBlock.timestamp) / averageArbitrumBlocktime);
 
   const snapshotSentFilter = veaInbox.filters.SnapshotSent(epoch, null);
