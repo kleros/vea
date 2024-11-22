@@ -3197,6 +3197,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@kleros/bridger-cli@workspace:bridger-cli":
+  version: 0.0.0-use.local
+  resolution: "@kleros/bridger-cli@workspace:bridger-cli"
+  dependencies:
+    "@kleros/vea-contracts": "workspace:^"
+    "@typechain/ethers-v5": "npm:^10.2.0"
+    dotenv: "npm:^16.4.5"
+    typescript: "npm:^4.9.5"
+    web3: "npm:^1.10.4"
+  languageName: unknown
+  linkType: soft
+
 "@kleros/ui-components-library@npm:^2.14.0":
   version: 2.14.0
   resolution: "@kleros/ui-components-library@npm:2.14.0"

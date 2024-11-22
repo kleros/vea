@@ -16,6 +16,7 @@
   "license": "MIT",
   "private": true,
   "workspaces": [
+    "bridger-cli",
     "contracts",
     "relayer-subgraph-inbox",
     "validator-cli",
