@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers } from "hardhat";
+import { ZeroAddress } from "ethers";
 
 enum RouterChains {
   ETHEREUM_MAINNET = 1,
@@ -18,10 +18,20 @@ const paramsByChainId = {
     amb: "0xf2546D6648BD2af6a008A7e7C1542BB240329E11", // https://docs.gnosischain.com/bridges/About%20Token%20Bridges/amb-bridge#key-contracts
   },
   HARDHAT: {
-    arbitrumBridge: ethers.constants.AddressZero,
-    amb: ethers.constants.AddressZero,
+    arbitrumBridge: ZeroAddress,
+    amb: ZeroAddress,
   },
-};
+} as const;
+
+interface NetworkConfig {
+  outboxNetwork: string;
+  inboxNetwork: string;
+}
+
+const getNetworkConfig = (chainId: number): NetworkConfig => ({
+  outboxNetwork: chainId === RouterChains.ETHEREUM_MAINNET ? "arbitrum" : "arbitrumSepolia",
+  inboxNetwork: chainId === RouterChains.ETHEREUM_MAINNET ? "gnosischain" : "chiado",
+});
 
 // TODO: use deterministic deployments
 const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
@@ -30,42 +40,59 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const chainId = Number(await getChainId());
 
   // fallback to hardhat node signers on local network
-  const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
-  console.log("deployer: %s", deployer);
+  const namedAccounts = await getNamedAccounts();
+  const signers = await hre.ethers.getSigners();
+  const deployer = namedAccounts.deployer ?? signers[0].address;
+  console.log("Deploying with address:", deployer);
 
-  const { arbitrumBridge, amb } = paramsByChainId[RouterChains[chainId]];
+  const { arbitrumBridge, amb } = paramsByChainId[RouterChains[chainId] as keyof typeof paramsByChainId];
+  const suffix = chainId === RouterChains.ETHEREUM_MAINNET ? "" : "Testnet";
+  const contractBaseName = "RouterGnosisToArb";
+  const deploymentName = `${contractBaseName}${suffix}`;
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
-    const veaOutbox = await deployments.get("VeaOutboxGnosisToArb" + (chainId === 100 ? "" : "Testnet"));
-    const veaInbox = await deployments.get("VeaInboxGnosisToArb" + (chainId === 100 ? "" : "Testnet"));
+    const [veaOutbox, veaInbox] = await Promise.all([
+      deployments.get(`VeaOutboxGnosisToArb${suffix}`),
+      deployments.get(`VeaInboxGnosisToArb${suffix}`),
+    ]);
 
-    const router = await deploy("RouterGnosisToArb" + (chainId === 100 ? "" : "Testnet"), {
+    const router = await deploy(deploymentName, {
       from: deployer,
-      contract: "RouterGnosisToArb",
-      args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address, chainId],
-    });
-  };
-
-  // ----------------------------------------------------------------------------------------------
-  const liveDeployer = async () => {
-    const outboxNetwork = chainId === 1 ? hre.companionNetworks.arbitrum : hre.companionNetworks.arbitrumSepolia;
-    const inboxNetwork = chainId === 1 ? hre.companionNetworks.gnosischain : hre.companionNetworks.chiado;
-    const veaOutbox = await outboxNetwork.deployments.get("VeaOutboxGnosisToArb" + (chainId === 1 ? "" : "Testnet"));
-    const veaInbox = await inboxNetwork.deployments.get("VeaInboxGnosisToArb" + (chainId === 1 ? "" : "Testnet"));
-
-    const router = await deploy("RouterGnosisToArb" + (chainId === 1 ? "" : "Testnet"), {
-      from: deployer,
-      contract: "RouterGnosisToArb",
+      contract: contractBaseName,
       args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address, chainId],
       log: true,
     });
 
-    console.log("RouterGnosisToArb" + (chainId === 1 ? "" : "Testnet") + " deployed to: %s", router.address);
+    console.log(`Local deployment complete - ${deploymentName} deployed to: ${router.address}`);
   };
 
   // ----------------------------------------------------------------------------------------------
-  if (chainId === 31337) {
+  const liveDeployer = async () => {
+    const { outboxNetwork, inboxNetwork } = getNetworkConfig(chainId);
+
+    try {
+      const [veaOutbox, veaInbox] = await Promise.all([
+        hre.companionNetworks[outboxNetwork].deployments.get(`VeaOutboxGnosisToArb${suffix}`),
+        hre.companionNetworks[inboxNetwork].deployments.get(`VeaInboxGnosisToArb${suffix}`),
+      ]);
+
+      const router = await deploy(deploymentName, {
+        from: deployer,
+        contract: contractBaseName,
+        args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address, chainId],
+        log: true,
+      });
+
+      console.log(`${deploymentName} deployed to: ${router.address}`);
+    } catch (error) {
+      console.error("Failed to deploy:", error);
+      throw error;
+    }
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  if (chainId === RouterChains.HARDHAT) {
     await hardhatDeployer();
   } else {
     await liveDeployer();
@@ -75,8 +102,12 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 deployRouter.tags = ["GnosisToArbRouter"];
 deployRouter.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
-  console.log(chainId);
-  return !RouterChains[chainId];
+  console.log("Current chain ID:", chainId);
+  const shouldSkip = !RouterChains[chainId];
+  if (shouldSkip) {
+    console.log(`Skipping deployment for chain ${chainId} - not in supported chains`);
+  }
+  return shouldSkip;
 };
 deployRouter.runAtTheEnd = true;
 

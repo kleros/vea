@@ -1,5 +1,4 @@
-import { Wallet } from "@ethersproject/wallet";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { Wallet, JsonRpcProvider, Provider } from "ethers";
 import {
   VeaOutboxArbToEth__factory,
   VeaOutboxArbToEthDevnet__factory,
@@ -9,11 +8,11 @@ import {
 } from "@kleros/vea-contracts/typechain-types";
 import { getBridgeConfig } from "consts/bridgeRoutes";
 
-function getWallet(privateKey: string, web3ProviderURL: string) {
+function getWallet(privateKey: string, web3ProviderURL: string): Wallet {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
 }
 
-function getWalletRPC(privateKey: string, rpc: JsonRpcProvider) {
+function getWalletRPC(privateKey: string, rpc: Provider): Wallet {
   return new Wallet(privateKey, rpc);
 }
 
@@ -74,12 +73,20 @@ function getVeaOutboxProvider(veaOutboxAddress: string, privateKey: string, rpc:
   }
 }
 
-function getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+function getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress: string, privateKey: string, rpc: Provider) {
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
 }
 
 function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+}
+
+function getVeaOutboxArbToGnosisProvider(veaOutboxAddress: string, privateKey: string, rpc: Provider) {
+  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
+}
+
+function getVeaOutboxArbToGnosis(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
+  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
 }
 
 export {

@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers } from "hardhat";
+import { ZeroAddress } from "ethers";
 
 enum RouterChains {
   ETHEREUM_SEPOLIA = 11155111,
@@ -13,8 +13,8 @@ const paramsByChainId = {
     amb: "0x99Ca51a3534785ED619f46A79C7Ad65Fa8d85e7a",
   },
   HARDHAT: {
-    arbitrumBridge: ethers.constants.AddressZero,
-    amb: ethers.constants.AddressZero,
+    arbitrumBridge: ZeroAddress,
+    amb: ZeroAddress,
   },
 };
 
@@ -25,7 +25,9 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const chainId = Number(await getChainId());
 
   // fallback to hardhat node signers on local network
-  const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
+  const namedAccounts = await getNamedAccounts();
+  const signers = await hre.ethers.getSigners();
+  const deployer = namedAccounts.deployer ?? signers[0].address;
   console.log("deployer: %s", deployer);
 
   const { arbitrumBridge, amb } = paramsByChainId[RouterChains[chainId]];
@@ -58,7 +60,7 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   };
 
   // ----------------------------------------------------------------------------------------------
-  if (chainId === 31337) {
+  if (chainId === RouterChains.HARDHAT) {
     await hardhatDeployer();
   } else {
     await liveDeployer();

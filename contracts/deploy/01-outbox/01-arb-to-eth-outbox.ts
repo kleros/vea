@@ -1,8 +1,9 @@
-import { parseEther } from "ethers/lib/utils";
+import { parseEther } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
+import { BigNumber } from "@ethersproject/bignumber";
 
 enum ReceiverChains {
   ETHEREUM_MAINNET = 1,
@@ -35,14 +36,13 @@ const paramsByChainId = {
     minChallengePeriod: 600, // 10 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10,
-    arbitrumBridge: ethers.constants.AddressZero,
+    arbitrumBridge: ethers.ZeroAddress,
   },
 };
 
 const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { ethers, deployments, getNamedAccounts, getChainId, config } = hre;
   const { deploy } = deployments;
-  const { providers } = ethers;
 
   // fallback to hardhat node signers on local network
   const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
@@ -112,7 +112,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       from: deployer,
       contract: "ReceiverGatewayMock",
       args: [veaOutbox.address, senderGatewayAddress],
-      gasLimit: 4000000,
+      gasLimit: BigNumber.from(4000000),
       log: true,
     });
   };
@@ -120,7 +120,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
     console.log(config.networks);
-    const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
+    const senderChainProvider = new ethers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
     const veaInboxAddress = getContractAddress(deployer, nonce);

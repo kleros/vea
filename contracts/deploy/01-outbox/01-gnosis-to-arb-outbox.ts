@@ -1,8 +1,9 @@
-import { parseEther } from "ethers/lib/utils";
+import { parseEther } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
+import { BigNumber } from "@ethersproject/bignumber";
 
 enum ReceiverChains {
   ARBITRUM_SEPOLIA = 421614,
@@ -40,7 +41,6 @@ const paramsByChainId = {
 const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { ethers, deployments, getNamedAccounts, getChainId, config } = hre;
   const { deploy } = deployments;
-  const { providers } = ethers;
 
   // fallback to hardhat node signers on local network
   const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
@@ -83,7 +83,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         challengePeriod,
         numEpochTimeout,
         amb,
-        ethers.constants.AddressZero,
+        ethers.ZeroAddress,
         sequencerLimit,
         maxMissingBlocks,
         routerChainId,
@@ -98,14 +98,14 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
     const gasOptions = {
-      maxFeePerGas: ethers.utils.parseUnits("1", "gwei"),
-      maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+      maxFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
+      maxPriorityFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
     };
 
-    const senderChainProvider = new providers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
+    const senderChainProvider = new ethers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
-    const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
+    const routerChainProvider = new ethers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
     let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
 
     const routerAddress = getContractAddress(deployer, nonceRouter);

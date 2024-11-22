@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
+import { BigNumber } from "@ethersproject/bignumber";
 
 enum SenderChains {
   GNOSIS_CHIADO = 10200,
@@ -13,7 +14,7 @@ const paramsByChainId = {
     amb: "0x8448E15d0e706C0298dECA99F0b4744030e59d7d", // https://docs.gnosischain.com/bridges/About%20Token%20Bridges/amb-bridge#key-contracts
   },
   HARDHAT: {
-    amb: ethers.constants.AddressZero,
+    amb: ethers.ZeroAddress,
     epochPeriod: 600, // 10 minutes
   },
 };
@@ -34,8 +35,8 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const veaOutboxArb = await hre.companionNetworks.arbitrumSepolia.deployments.get("VeaOutboxGnosisToArbDevnet");
 
   const gasOptions = {
-    maxFeePerGas: ethers.utils.parseUnits("1", "gwei"),
-    maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+    maxFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
+    maxPriorityFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
   };
 
   const inbox = await deploy("VeaInboxGnosisToArbDevnet", {

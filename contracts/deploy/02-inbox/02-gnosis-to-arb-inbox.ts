@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers } from "hardhat";
+import { BigNumber } from "@ethersproject/bignumber";
 
 enum SenderChains {
   GNOSIS = 100,
@@ -40,8 +40,8 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   );
 
   const gasOptions = {
-    maxFeePerGas: ethers.utils.parseUnits("1", "gwei"),
-    maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+    maxFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
+    maxPriorityFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
   };
 
   const inbox = await deploy("VeaInboxGnosisToArb" + (chainId === 100 ? "" : "Testnet"), {
