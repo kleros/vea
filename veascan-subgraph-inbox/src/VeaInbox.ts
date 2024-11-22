@@ -115,12 +115,14 @@ export function handleSnapshotSent(event: SnapshotSent): void {
     const snapshotId = BigInt.fromI32(i).toString();
     snapshot = Snapshot.load(snapshotId);
 
-    if (snapshot && snapshot.epoch === epochSent) {
-      // Snapshot found, update resolving field and save
-      snapshot.resolving = true;
-      snapshot.save();
-      fallback.snapshot = snapshotId;
-      break;
+    if (snapshot && snapshot.epoch) {
+      if (BigInt.compare(snapshot.epoch as BigInt, epochSent) == 0) {
+        // Snapshot found, update resolving field and save
+        snapshot.resolving = true;
+        snapshot.save();
+        fallback.snapshot = snapshotId;
+        break;
+      }
     }
   }
   fallback.save();

@@ -64,12 +64,12 @@ export function handleVerified(event: Verified): void {
   for (
     let i = ref.totalClaims.minus(BigInt.fromI32(1));
     i.ge(BigInt.fromI32(0));
-    i.minus(BigInt.fromI32(1))
+    i = i.minus(BigInt.fromI32(1))
   ) {
     const claim = Claim.load(i.toString());
-    if (claim!.epoch.equals(event.params._epoch)) {
-      const verification = new Verification(claim!.id);
-      verification.claim = claim!.id;
+    if (claim && claim.epoch.equals(event.params._epoch)) {
+      const verification = new Verification(claim.id);
+      verification.claim = claim.id;
       verification.timestamp = event.block.timestamp;
       verification.caller = event.transaction.from;
       verification.txHash = event.transaction.hash;
