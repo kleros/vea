@@ -255,7 +255,7 @@ const watch = async () => {
               10
             )) as Log[];
 
-            if (logVerficiationStarted.length > 1) {
+            if (logVerficiationStarted.length > 0) {
               const timestampVerification = (
                 (await retryOperation(
                   () => providerEth.getBlock(logVerficiationStarted[logVerficiationStarted.length - 1].blockNumber),
@@ -279,6 +279,7 @@ const watch = async () => {
                   console.log("Claim is honest for epoch " + veaEpochOutboxCheck);
                   // As the claim is honest, remove the epoch from the local array
                   veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
+                  challengeTxnHashes.delete(index);
                   continue;
                 }
                 // The claim is challenged and anyone can be the honest party
@@ -327,11 +328,13 @@ const watch = async () => {
                 );
                 // As the challenge is over, remove the epoch from the local array
                 veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
+                challengeTxnHashes.delete(index);
                 continue;
               } else if (hashClaim(claimerWinClaim) == claimHash) {
                 // The challenge is over and claimer won
                 console.log("Claimer won the challenge for epoch " + veaEpochOutboxCheck);
                 veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
+                challengeTxnHashes.delete(index);
                 continue;
               }
 
@@ -358,7 +361,7 @@ const watch = async () => {
                       address: process.env.VEAINBOX_ARB_TO_ETH_ADDRESS,
                       topics: veaInbox.filters.SnapshotSent(veaEpochOutboxCheck, null).topics,
                       fromBlock: fromClaimEpochBlock,
-                      toBlock: "latest",
+                      toBlock: blockTagEth,
                     }),
                   1000,
                   10
@@ -374,19 +377,6 @@ const watch = async () => {
                       1000,
                       10
                     )) as BigNumber;
-                    // Adjust the calculation to ensure maxFeePerGas is reasonable
-                    const maxFeePerGasProfitable = deposit.div(gasEstimate.mul(6));
-
-                    // Set a reasonable maxPriorityFeePerGas but ensure it's lower than maxFeePerGas
-                    let maxPriorityFeePerGasMEV = BigNumber.from("6667000000000"); // 6667 gwei
-
-                    // Ensure maxPriorityFeePerGas <= maxFeePerGas
-                    if (maxPriorityFeePerGasMEV.gt(maxFeePerGasProfitable)) {
-                      console.warn(
-                        "maxPriorityFeePerGas is higher than maxFeePerGasProfitable, adjusting maxPriorityFeePerGas"
-                      );
-                      maxPriorityFeePerGasMEV = maxFeePerGasProfitable; // adjust to be equal or less
-                    }
 
                     const txnSendSnapshot = (await retryOperation(
                       () =>
@@ -394,8 +384,6 @@ const watch = async () => {
                           veaEpochOutboxCheck,
                           claim, // the claim struct has to be updated with the correct challenger
                           {
-                            maxFeePerGas: maxFeePerGasProfitable,
-                            maxPriorityFeePerGas: maxPriorityFeePerGasMEV,
                             gasLimit: gasEstimate,
                           }
                         ),
@@ -430,6 +418,7 @@ const watch = async () => {
                       // msg executed successfully
                       console.log("Snapshot message relayed to veaOutbox for epoch " + veaEpochOutboxCheck);
                       veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
+                      challengeTxnHashes.delete(index);
                     } else {
                       // msg failed to execute
                       console.error("Error sending snapshot to veaOutbox for epoch " + veaEpochOutboxCheck);
@@ -456,6 +445,7 @@ const watch = async () => {
               if (challengeBlock.number < blockFinalizedEth.number) {
                 veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
                 index--;
+                challengeTxnHashes.delete(index);
                 // the challenge is finalized, no further action needed
                 console.log("challenge is finalized");
                 continue;

@@ -17,11 +17,7 @@ async function messageExecutor(trnxHash: string, childRpc: string, parentRpc: st
   const parentProvider = new JsonRpcProvider(parentRpc);
 
   let childReceipt: TransactionReceipt | null;
-  try {
-    childReceipt = await childProvider.getTransactionReceipt(trnxHash);
-  } catch (error) {
-    throw new Error(`Failed to get child transaction receipt: ${error.message}`);
-  }
+  childReceipt = await childProvider.getTransactionReceipt(trnxHash);
   if (!childReceipt) {
     throw new Error(`Transaction receipt not found for hash: ${trnxHash}`);
   }
@@ -30,23 +26,15 @@ async function messageExecutor(trnxHash: string, childRpc: string, parentRpc: st
   const parentSigner: Signer = new Wallet(PRIVATE_KEY, parentProvider);
 
   let childToParentMessage: ChildToParentMessageWriter;
-  try {
-    const messages = await messageReceipt.getChildToParentMessages(parentSigner);
-    childToParentMessage = messages[0];
-    if (!childToParentMessage) {
-      throw new Error("No child-to-parent messages found");
-    }
-  } catch (error) {
-    throw new Error(`Failed to retrieve child-to-parent messages: ${error.message}`);
+  const messages = await messageReceipt.getChildToParentMessages(parentSigner);
+  childToParentMessage = messages[0];
+  if (!childToParentMessage) {
+    throw new Error("No child-to-parent messages found");
   }
 
   // Execute the message
-  try {
-    const res = await childToParentMessage.execute(childProvider);
-    return res;
-  } catch (error) {
-    throw new Error(`Message execution failed: ${error.message}`);
-  }
+  const res = await childToParentMessage.execute(childProvider);
+  return res;
 }
 
 async function getMessageStatus(
@@ -60,11 +48,8 @@ async function getMessageStatus(
   const parentProvider = new JsonRpcProvider(parentRpc);
 
   let childReceipt: TransactionReceipt | null;
-  try {
-    childReceipt = await childProvider.getTransactionReceipt(trnxHash);
-  } catch (error) {
-    throw new Error(`Failed to get child transaction receipt: ${error.message}`);
-  }
+
+  childReceipt = await childProvider.getTransactionReceipt(trnxHash);
   if (!childReceipt) {
     throw new Error(`Transaction receipt not found for hash: ${trnxHash}`);
   }
@@ -75,13 +60,8 @@ async function getMessageStatus(
   if (!childToParentMessage) {
     console.error("No child-to-parent messages found");
   }
-  try {
-    const status = await childToParentMessage.status(childProvider);
-    return status;
-  } catch (error) {
-    console.error(`Failed to get message status: ${error.message}`);
-    return undefined;
-  }
+  const status = await childToParentMessage.status(childProvider);
+  return status;
 }
 
 export { messageExecutor, getMessageStatus };
