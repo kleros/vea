@@ -27,23 +27,50 @@ const paramsByChainId = {
 const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, getChainId } = hre;
   const { deploy } = deployments;
-  const chainId = Number(await getChainId());
 
   // fallback to hardhat node signers on local network
-  const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
-  console.log("deployer: %s", deployer);
+  const [namedAccounts, signers, rawChainId] = await Promise.all([
+    getNamedAccounts(),
+    hre.ethers.getSigners(),
+    getChainId(),
+  ]);
+
+  const deployer = namedAccounts.deployer ?? signers[0].address;
+  const chainId = Number(rawChainId);
+
+  console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const { arbitrumBridge, amb } = paramsByChainId[RouterChains[chainId]];
 
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
-    const veaOutbox = await deployments.get("VeaOutboxArbToGnosis");
-    const veaInbox = await deployments.get("VeaInboxArbToGnosis");
+    const [veaOutbox, veaInbox, amb] = await Promise.all([
+      deployments.get("VeaOutboxArbToGnosis"),
+      deployments.get("VeaInboxArbToGnosis"),
+      deployments.get("MockAMB"),
+    ]);
+
+    const sequencerInbox = await deploy("SequencerInboxMock", {
+      from: deployer,
+      contract: "SequencerInboxMock",
+      args: ["10"],
+    });
+    const outbox = await deploy("OutboxMock", {
+      from: deployer,
+      args: [veaInbox.address],
+      log: true,
+    });
+
+    const arbitrumBridge = await deploy("BridgeMock", {
+      from: deployer,
+      contract: "BridgeMock",
+      args: [outbox.address, sequencerInbox.address],
+    });
 
     const router = await deploy("RouterArbToGnosis", {
       from: deployer,
       contract: "RouterArbToGnosis",
-      args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address],
+      args: [arbitrumBridge.address, amb.address, veaInbox.address, veaOutbox.address],
     });
   };
 
@@ -73,7 +100,6 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 deployRouter.tags = ["ArbToGnosisRouter"];
 deployRouter.skip = async ({ getChainId }) => {
   const chainId = Number(await getChainId());
-  console.log(chainId);
   return !RouterChains[chainId];
 };
 deployRouter.runAtTheEnd = true;

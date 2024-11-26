@@ -36,17 +36,17 @@ const paramsByChainId = {
     sequencerLimit: 86400, // 24 hours
   },
   HARDHAT: {
-    deposit: parseEther("5"), // 120 xDAI budget for timeout
+    deposit: parseEther("10"),
     // Average happy path wait time is 22.5 mins, assume no censorship
     epochPeriod: 600, // 10 min
-    challengePeriod: 600, // 10 min (assume no sequencer backdating)
-    numEpochTimeout: 24, // 6 hours
+    minChallengePeriod: 600, // 10 min (assume no sequencer backdating)
+    numEpochTimeout: 21600, // 6 hours
     claimDelay: 2,
     amb: ethers.constants.AddressZero,
     routerAddress: ethers.constants.AddressZero,
     maxMissingBlocks: 10000000000000,
     routerChainId: 31337,
-    sequencerLimit: 86400, // 24 hours
+    sequencerLimit: 864,
   },
 };
 
@@ -56,8 +56,15 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { providers } = ethers;
 
   // fallback to hardhat node signers on local network
-  const deployer = (await getNamedAccounts()).deployer ?? (await hre.ethers.getSigners())[0].address;
-  const chainId = Number(await getChainId());
+  const [namedAccounts, signers, rawChainId] = await Promise.all([
+    getNamedAccounts(),
+    hre.ethers.getSigners(),
+    getChainId(),
+  ]);
+
+  const deployer = namedAccounts.deployer ?? signers[0].address;
+  const chainId = Number(rawChainId);
+
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const routerNetworks = {
@@ -84,25 +91,48 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
     let nonce = await ethers.provider.getTransactionCount(deployer);
-    nonce += 4; // SenderGatewayToEthereum deploy tx will be the 5th after this, same network for both sender/receiver.
 
-    const routerAddress = getContractAddress(deployer, nonce);
-    console.log("calculated future router for nonce %d: %s", nonce, routerAddress);
+    const routerAddress = getContractAddress(deployer, nonce + 10);
+    console.log("calculated future router for nonce %d: %s", nonce + 10, routerAddress);
 
-    await deploy("VeaOutboxGnosisMock", {
+    const senderGatewayAddress = getContractAddress(deployer, nonce + 6); // with the current order of transaction ,nonce for sender gateway would be 14.
+    console.log("calculated future SenderGatewayToGnosis address for nonce %d: %s", nonce + 6, senderGatewayAddress);
+
+    const ambMock = await deploy("MockAMB", {
       from: deployer,
+      args: [],
+      log: true,
+    });
+
+    const wethMock = await deploy("MockWETH", {
+      from: deployer,
+      args: [],
+      log: true,
+    });
+
+    const veaOutbox = await deploy("VeaOutboxArbToGnosis", {
+      from: deployer,
+      contract: "VeaOutboxArbToGnosis",
       args: [
         deposit,
         epochPeriod,
         minChallengePeriod,
         numEpochTimeout,
-        amb,
-        ethers.constants.AddressZero,
+        ambMock.address,
+        routerAddress,
         sequencerLimit,
         maxMissingBlocks,
         routerChainId,
-        WETH,
+        wethMock.address,
       ],
+      log: true,
+    });
+
+    await deploy("ArbToGnosisReceiverGateway", {
+      from: deployer,
+      contract: "ReceiverGatewayMock",
+      args: [veaOutbox.address, senderGatewayAddress],
+      gasLimit: 4000000,
       log: true,
     });
   };
