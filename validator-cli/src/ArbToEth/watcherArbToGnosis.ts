@@ -11,7 +11,7 @@ import { ChildToParentMessageStatus, ChildTransactionReceipt, getArbitrumNetwork
 import { NODE_INTERFACE_ADDRESS } from "@arbitrum/sdk/dist/lib/dataEntities/constants";
 import { NodeInterface__factory } from "@arbitrum/sdk/dist/lib/abi/factories/NodeInterface__factory";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
-import { BigNumber, ContractTransaction, Wallet, constants } from "ethers";
+import { BigNumber, ContractTransaction, Wallet, constants, ethers } from "ethers";
 import { Block, Log } from "@ethersproject/abstract-provider";
 import { SequencerInbox } from "@arbitrum/sdk/dist/lib/abi/SequencerInbox";
 import { NodeInterface } from "@arbitrum/sdk/dist/lib/abi/NodeInterface";
@@ -212,12 +212,15 @@ const watch = async () => {
 
     const veaEpochOutboxClaimableNowOld = veaEpochOutboxClaimableNow;
     veaEpochOutboxClaimableNow = Math.floor(timeGnosis / epochPeriod) - 1;
-    // TODO: sometimes veaEpochOutboxClaimableNow is 1 epoch behind veaEpochOutboxClaimableNowOld
-    const veaEpochsOutboxClaimableNew: number[] = new Array(veaEpochOutboxClaimableNow - veaEpochOutboxClaimableNowOld)
-      .fill(veaEpochOutboxClaimableNowOld + 1)
-      .map((el, i) => el + i);
 
-    veaEpochOutboxCheckClaimsRangeArray.concat(veaEpochsOutboxClaimableNew);
+    if (veaEpochOutboxClaimableNow > veaEpochOutboxClaimableNowOld) {
+      const veaEpochsOutboxClaimableNew: number[] = new Array(
+        veaEpochOutboxClaimableNow - veaEpochOutboxClaimableNowOld
+      )
+        .fill(veaEpochOutboxClaimableNowOld + 1)
+        .map((el, i) => el + i);
+      veaEpochOutboxCheckClaimsRangeArray.push(...veaEpochsOutboxClaimableNew);
+    }
 
     if (veaEpochOutboxCheckClaimsRangeArray.length == 0) {
       console.log("no claims to check");
@@ -248,7 +251,7 @@ const watch = async () => {
           );
           veaEpochOutboxCheckClaimsRangeArray.splice(index, 1);
           index--;
-          if (challenges.has(index)) challenges.delete(index);
+          if (challenges.has(veaEpochOutboxCheck)) challenges.delete(veaEpochOutboxCheck);
           continue;
         } else {
           console.log(
@@ -320,7 +323,7 @@ const watch = async () => {
             continue;
           }
           console.log(veaEpochOutboxCheck, "claim found ", { claim });
-          const previousProgress = challenges.get(index) || ({} as any);
+          const previousProgress = challenges.get(veaEpochOutboxCheck) || ({} as any);
           let challengeProgress = await reconstructChallengeProgress(
             veaEpochOutboxCheck,
             veaOutbox,
@@ -333,7 +336,7 @@ const watch = async () => {
             amb,
             previousProgress
           );
-          challenges.set(index, challengeProgress);
+          challenges.set(veaEpochOutboxCheck, challengeProgress);
           console.log(
             "challenge progess for epoch " + veaEpochOutboxCheck + "  is " + JSON.stringify(challengeProgress)
           );
@@ -347,6 +350,14 @@ const watch = async () => {
               10
             )) as ContractTransaction;
             console.log("Epoch " + veaEpochOutboxCheck + " challenged with txn " + txnChallenge.hash);
+            challengeProgress.challenge = {
+              status: "pending",
+              txHash: txnChallenge.hash,
+              timestamp: 0,
+              finalized: false,
+            };
+            challengeProgress.status = "ChallengePending";
+            challenges.set(veaEpochOutboxCheck, challengeProgress);
             continue;
           }
           if (claim?.challenger === watcherAddress) {
@@ -359,6 +370,14 @@ const watch = async () => {
                   10
                 )) as ContractTransaction;
                 console.log("Epoch " + veaEpochOutboxCheck + " sendSnapshot called with txn " + txnSendSnapshot.hash);
+                challengeProgress.snapshot = {
+                  status: "pending",
+                  txHash: txnSendSnapshot.hash,
+                  timestamp: 0,
+                  finalized: false,
+                };
+                challengeProgress.status = "SnapshotPending";
+                challenges.set(veaEpochOutboxCheck, challengeProgress);
               }
             }
             if (
@@ -389,7 +408,7 @@ const watch = async () => {
                   finalized: false,
                 };
                 challengeProgress.status = "WithdrawalPending";
-                challenges.set(index, challengeProgress);
+                challenges.set(veaEpochOutboxCheck, challengeProgress);
               }
             }
           }
@@ -567,7 +586,9 @@ const ArbBlockToL1Block = async (
   let latestL2BlockNumberOnEth: number;
   let result = (await nodeInterface.functions
     .findBatchContainingBlock(L2Block.number, { blockTag: "latest" })
-    .catch((e) => {})) as [BigNumber] & { batch: BigNumber };
+    .catch((e) => {
+      console.error("Error finding batch containing block:", JSON.parse(JSON.stringify(e)).error.body);
+    })) as [BigNumber] & { batch: BigNumber };
 
   if (!result) {
     if (!fallbackLatest) {
@@ -605,7 +626,7 @@ const findLatestL2BatchAndBlock = async (
   nodeInterface: NodeInterface,
   fromArbBlock: number,
   latestBlockNumber: number
-): Promise<[number, number]> => {
+): Promise<[number | undefined, number | undefined]> => {
   let low = fromArbBlock;
   let high = latestBlockNumber;
 
@@ -676,7 +697,7 @@ async function getClaimForEpoch(
     challenger: constants.AddressZero,
   };
   let other = {} as any;
-  let calculatedHash = await retryOperation(() => veaOutbox.hashClaim(claim), 1000, 10);
+  let calculatedHash = hashClaim(claim);
   if (calculatedHash == claimHash) return claim;
 
   // Check for Challenged event
@@ -698,7 +719,7 @@ async function getClaimForEpoch(
     other.challengeBlock = challengedEvents[0].blockNumber;
   }
 
-  calculatedHash = await retryOperation(() => veaOutbox.hashClaim(claim), 1000, 10);
+  calculatedHash = hashClaim(claim);
   if (calculatedHash == claimHash) return claim;
 
   // Check for VerificationStarted event
@@ -721,16 +742,13 @@ async function getClaimForEpoch(
     );
     claim.timestampVerification = verificationBlock.timestamp;
     claim.blocknumberVerification = verificationBlock.number;
-    claim.challenger = constants.AddressZero;
   }
 
-  calculatedHash = await retryOperation(() => veaOutbox.hashClaim(claim), 1000, 10);
+  calculatedHash = hashClaim(claim);
   if (calculatedHash == claimHash) return claim;
 
-  const [claimBridgerHonest, claimChallengerHonest] = await Promise.all([
-    retryOperation(() => veaOutbox.hashClaim({ ...claim, honest: 1 }), 1000, 10) as any,
-    retryOperation(() => veaOutbox.hashClaim({ ...claim, honest: 2 }), 1000, 10) as any,
-  ]);
+  const claimBridgerHonest = hashClaim({ ...claim, honest: 1 });
+  const claimChallengerHonest = hashClaim({ ...claim, honest: 2 });
 
   if (claimBridgerHonest === claimHash) return { ...claim, honest: 1 };
   if (claimChallengerHonest === claimHash) return { ...claim, honest: 2 };
@@ -1092,6 +1110,21 @@ async function reconstructChallengeProgress(
   // but if a withdrawal is processed ,claimHash for the epoch will be deleted ,challenged progess will not be recontructed in the first place.
   return challengeProgress;
 }
+
+const hashClaim = (claim) => {
+  return ethers.utils.solidityKeccak256(
+    ["bytes32", "address", "uint32", "uint32", "uint32", "uint8", "address"],
+    [
+      claim.stateRoot,
+      claim.claimer,
+      claim.timestampClaimed,
+      claim.timestampVerification,
+      claim.blocknumberVerification,
+      claim.honest,
+      claim.challenger,
+    ]
+  );
+};
 
 (async () => {
   retryOperation(() => watch(), 1000, 10);
