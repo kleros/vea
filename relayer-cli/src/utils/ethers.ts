@@ -46,9 +46,9 @@ function getVeaInboxProvider(veaInboxAddress: string, privateKey: string, rpc: J
   }
 }
 
-function getVeaOutbox(veaInboxAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
-  const bridges = getBridgeConfig(chainId);
-  switch (bridges.chain) {
+function getVeaOutbox(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
+  const bridge = getBridgeConfig(chainId);
+  switch (bridge.chain) {
     case "sepolia":
     case "mainnet":
       return VeaOutboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
