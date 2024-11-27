@@ -5,7 +5,7 @@ export async function start(shutdownManager: ShutdownManager = new ShutdownManag
   const chainId = parseInt(process.env.VEAOUTBOX_CHAIN_ID);
   const epochPeriod = 1800; // 30 min
   const network = "devnet";
-  await setupExitHandlers(chainId, shutdownManager);
+  await setupExitHandlers(chainId, shutdownManager, network);
   while (!shutdownManager.getIsShuttingDown()) {
     let nonce = await initialize(chainId, network);
     // This is libghtbulb switch address in arbitrum sepolia

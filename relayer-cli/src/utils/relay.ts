@@ -25,27 +25,27 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, cha
   return Number(result["snapshotSaveds"][0].count);
 };
 
-const relay = async (chainid: number, nonce: number) => {
-  const routeParams = getBridgeConfig(chainid);
-  const veaOutbox = getVeaOutbox(routeParams.veaOutboxAddress, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainid);
-  const count = await getCount(veaOutbox, chainid);
+const relay = async (chainId: number, nonce: number) => {
+  const routeParams = getBridgeConfig(chainId);
+  const veaOutbox = getVeaOutbox(routeParams.veaOutboxAddress, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainId);
+  const count = await getCount(veaOutbox, chainId);
 
   const [proof, [to, data]] = await Promise.all([
-    getProofAtCount(chainid, nonce, count),
-    getMessageDataToRelay(chainid, nonce),
+    getProofAtCount(chainId, nonce, count),
+    getMessageDataToRelay(chainId, nonce),
   ]);
 
   const txn = await veaOutbox.sendMessage(proof, nonce, to, data);
   await txn.wait();
 };
 
-const relayBatch = async (chainid: number, nonce: number, maxBatchSize: number) => {
-  const routeParams = getBridgeConfig(chainid);
+const relayBatch = async (chainId: number, nonce: number, maxBatchSize: number) => {
+  const routeParams = getBridgeConfig(chainId);
   const web3 = new Web3(routeParams.rpcOutbox);
   const batchedSend = initializeBatchedSend(web3, routeParams.batcher, process.env.PRIVATE_KEY, 0);
   const veaOutboxInstance = new web3.eth.Contract(routeParams.veaOutboxContract.abi, routeParams.veaOutboxAddress);
-  const veaOutbox = getVeaOutbox(routeParams.veaOutboxAddress, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainid);
-  const count = await getCount(veaOutbox, chainid);
+  const veaOutbox = getVeaOutbox(routeParams.veaOutboxAddress, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainId);
+  const count = await getCount(veaOutbox, chainId);
 
   while (nonce < count) {
     let batchMessages = 0;
@@ -57,8 +57,8 @@ const relayBatch = async (chainid: number, nonce: number, maxBatchSize: number) 
         continue;
       }
       const [proof, [to, data]] = await Promise.all([
-        getProofAtCount(chainid, nonce, count),
-        getMessageDataToRelay(chainid, nonce),
+        getProofAtCount(chainId, nonce, count),
+        getMessageDataToRelay(chainId, nonce),
       ]);
       txns.push({
         args: [proof, nonce, to, data],
@@ -75,8 +75,8 @@ const relayBatch = async (chainid: number, nonce: number, maxBatchSize: number) 
   return nonce;
 };
 
-const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): Promise<number> => {
-  const routeParams = getBridgeConfig(chainid);
+const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): Promise<number> => {
+  const routeParams = getBridgeConfig(chainId);
 
   const web3 = new Web3(routeParams.rpcOutbox);
   const batchedSend = initializeBatchedSend(
@@ -88,19 +88,19 @@ const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): 
   );
 
   const contract = new web3.eth.Contract(routeParams.veaOutboxContract.abi, routeParams.veaOutboxAddress);
-  const veaOutbox = getVeaOutbox(routeParams.veaOutboxAddress, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainid);
-  const count = await getCount(veaOutbox, chainid);
+  const veaOutbox = getVeaOutbox(routeParams.veaOutboxAddress, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainId);
+  const count = await getCount(veaOutbox, chainId);
 
   if (!count) return null;
 
   let txns = [];
 
-  const nonces = await getNonceFrom(chainid, nonce, msgSender);
+  const nonces = await getNonceFrom(chainId, nonce, msgSender);
 
   for (const x of nonces) {
     const [proof, [to, data]] = await Promise.all([
-      getProofAtCount(chainid, x, count),
-      getMessageDataToRelay(chainid, x),
+      getProofAtCount(chainId, x, count),
+      getMessageDataToRelay(chainId, x),
     ]);
     txns.push({
       args: [proof, x, to, data],
@@ -114,9 +114,9 @@ const relayAllFrom = async (chainid: number, nonce: number, msgSender: string): 
   return nonces[nonces.length - 1];
 };
 
-const getNonceFrom = async (chainid: number, nonce: number, msgSender: string) => {
+const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) => {
   try {
-    const subgraph = getInboxSubgraph(chainid);
+    const subgraph = getInboxSubgraph(chainId);
 
     const result = await request(
       `https://api.studio.thegraph.com/query/${subgraph}`,

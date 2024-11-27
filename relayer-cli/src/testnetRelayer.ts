@@ -9,7 +9,7 @@ export async function start(shutdownManager: ShutdownManager = new ShutdownManag
   const epochPeriod = getEpochPeriod(chainId);
   const batchSize = 10; // 10 messages per batch
 
-  await setupExitHandlers(chainId, shutdownManager);
+  await setupExitHandlers(chainId, shutdownManager, network);
 
   while (!shutdownManager.getIsShuttingDown()) {
     let nonce = await initialize(chainId, network);

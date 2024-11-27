@@ -60,15 +60,15 @@ async function updateStateFile(chainId: number, createdTimestamp: number, nonceF
   }
 }
 
-async function setupExitHandlers(chainId: number, shutdownManager: ShutdownManager) {
+async function setupExitHandlers(chainId: number, shutdownManager: ShutdownManager, network: string) {
   const cleanup = async () => {
     console.log("exit");
-    const lockFileName = `./state/${chainId}.pid`;
+    const lockFileName = "./state/" + network + "_" + chainId + ".pid";
     if (fs.existsSync(lockFileName)) {
       await fs.promises.unlink(lockFileName);
     }
   };
-  const handleExit = async () => {
+  const handleExit = async (exitCode: number = 0) => {
     shutdownManager.triggerShutdown();
     await cleanup();
     process.exit(0);
@@ -76,13 +76,23 @@ async function setupExitHandlers(chainId: number, shutdownManager: ShutdownManag
 
   ["SIGINT", "SIGTERM", "SIGQUIT"].forEach((signal) =>
     process.on(signal, async () => {
-      await handleExit();
+      await handleExit(0);
       process.exit(0);
     })
   );
 
   process.on("exit", async () => {
     await handleExit();
+  });
+
+  process.on("uncaughtException", async (err) => {
+    console.error("Uncaught exception:", err);
+    await handleExit(1);
+  });
+
+  process.on("unhandledRejection", async (reason, promise) => {
+    console.error("Unhandled promise rejection:", reason, "at", promise);
+    await handleExit(1);
   });
 }
 

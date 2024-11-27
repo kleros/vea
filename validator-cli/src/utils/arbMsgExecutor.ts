@@ -16,8 +16,7 @@ async function messageExecutor(trnxHash: string, childRpc: string, parentRpc: st
   const childProvider = new ArbitrumProvider(childJsonRpc);
   const parentProvider = new JsonRpcProvider(parentRpc);
 
-  let childReceipt: TransactionReceipt | null;
-  childReceipt = await childProvider.getTransactionReceipt(trnxHash);
+  const childReceipt: TransactionReceipt = await childProvider.getTransactionReceipt(trnxHash);
   if (!childReceipt) {
     throw new Error(`Transaction receipt not found for hash: ${trnxHash}`);
   }
@@ -25,9 +24,8 @@ async function messageExecutor(trnxHash: string, childRpc: string, parentRpc: st
   const messageReceipt = new ChildTransactionReceipt(childReceipt);
   const parentSigner: Signer = new Wallet(PRIVATE_KEY, parentProvider);
 
-  let childToParentMessage: ChildToParentMessageWriter;
   const messages = await messageReceipt.getChildToParentMessages(parentSigner);
-  childToParentMessage = messages[0];
+  const childToParentMessage: ChildToParentMessageWriter = messages[0];
   if (!childToParentMessage) {
     throw new Error("No child-to-parent messages found");
   }
