@@ -12,10 +12,11 @@
   "scripts": {
     "start": "npx ts-node ./src/ArbToEth/watcher.ts",
     "start-chiado-devnet": "npx ts-node ./src/devnet/arbToChiado/happyPath.ts",
-    "start-sepolia-devnet": "npx ts-node ./src/devnet/arbToSepolia/happyPath.ts"
+    "start-sepolia-devnet": "npx ts-node ./src/devnet/arbToSepolia/happyPath.ts",
+    "start-sepolia-testnet": "npx ts-node ./src/ArbToEth/watcherArbToEth.ts"
   },
   "dependencies": {
-    "@arbitrum/sdk": "^3.1.2",
+    "@arbitrum/sdk": "4.0.1",
     "@flashbots/ethers-provider-bundle": "^0.6.2",
     "@kleros/vea-contracts": "workspace:^",
     "@typechain/ethers-v5": "^10.2.0",
