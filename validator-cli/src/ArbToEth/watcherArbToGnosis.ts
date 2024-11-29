@@ -22,7 +22,7 @@ import {
   VeaOutboxArbToGnosis,
 } from "@kleros/vea-contracts/typechain-types";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import messageExecutor from "../utils/arbMsgExecutor";
+import { messageExecutor } from "../utils/arbMsgExecutor";
 
 require("dotenv").config();
 
