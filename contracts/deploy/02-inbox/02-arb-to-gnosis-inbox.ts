@@ -2,6 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
+import { providers } from "ethers";
 
 enum SenderChains {
   ARBITRUM = 42161,
@@ -38,6 +39,12 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log("deploying to chainId %s with deployer %s", chainId, deployer);
 
   const { epochPeriod } = paramsByChainId[SenderChains[chainId]];
+
+  const routerNetworks = {
+    ARBITRUM: config.networks.mainnet,
+    ARBITRUM_SEPOLIA: config.networks.sepolia,
+    HARDHAT: config.networks.localhost,
+  };
 
   // Hack to predict the deployment address on the sender chain.
   // TODO: use deterministic deployments
@@ -76,7 +83,20 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   };
 
   // ----------------------------------------------------------------------------------------------
-  const liveDeployer = async () => {};
+  const liveDeployer = async () => {
+    const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[SenderChains[chainId]].url);
+    let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
+
+    const routerAddress = getContractAddress(deployer, nonceRouter);
+    console.log("calculated future router for nonce %d: %s", nonceRouter, routerAddress);
+
+    await deploy("VeaInboxArbToGnosis" + (chainId === 42161 ? "" : "Testnet"), {
+      contract: "VeaInboxArbToGnosis",
+      from: deployer,
+      args: [epochPeriod, routerAddress],
+      log: true,
+    });
+  };
 
   // ----------------------------------------------------------------------------------------------
   if (chainId === 31337) {
@@ -93,5 +113,4 @@ deployInbox.skip = async ({ getChainId }) => {
   return !SenderChains[chainId];
 };
 deployInbox.runAtTheEnd = true;
-
 export default deployInbox;

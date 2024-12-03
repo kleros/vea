@@ -1,0 +1,449 @@
+{
+  "address": "0x854374483572FFcD4d0225290346279d0718240b",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epochPeriod",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_routerArbToGnosis",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "_nodeData",
+          "type": "bytes"
+        }
+      ],
+      "name": "MessageSent",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "_snapshot",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "_count",
+          "type": "uint64"
+        }
+      ],
+      "name": "SnapshotSaved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "_epochSent",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "_ticketId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "SnapshotSent",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "count",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "epochAt",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "epochFinalized",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "epochNow",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "epochPeriod",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "routerArbToGnosis",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "saveSnapshot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes4",
+          "name": "_fnSelector",
+          "type": "bytes4"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "name": "sendMessage",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_gasLimit",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "stateRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "claimer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampClaimed",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "timestampVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "blocknumberVerification",
+              "type": "uint32"
+            },
+            {
+              "internalType": "enum Party",
+              "name": "honest",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "challenger",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct Claim",
+          "name": "_claim",
+          "type": "tuple"
+        }
+      ],
+      "name": "sendSnapshot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "snapshots",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x3a9cfc748a95d422aca01d7392632aa24ba577e13408d65e14489b7fff6c4e1e",
+  "receipt": {
+    "to": null,
+    "from": "0xcAf9AdE1fDDf1b31d490A4629ADA638d104e9543",
+    "contractAddress": "0x72c7d51647cBeaca636d0E20A66ca2F682da3539",
+    "transactionIndex": 1,
+    "gasUsed": "674637",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x1fa0630de812732ef9a234872182a2798844fcdd41acaff9a28e9874899c452e",
+    "transactionHash": "0x3a9cfc748a95d422aca01d7392632aa24ba577e13408d65e14489b7fff6c4e1e",
+    "logs": [],
+    "blockNumber": 80843239,
+    "cumulativeGasUsed": "674637",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    3600,
+    "0x22d70804d4Ef5BB206C6B39e3267DFe8a0f97d27"
+  ],
+  "numDeployments": 2,
+  "solcInputHash": "0d66bd5cfdf493ed8e081e9f7e1bf4fa",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.24+commit.e11b9ed9\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epochPeriod\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_routerArbToGnosis\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"_nodeData\",\"type\":\"bytes\"}],\"name\":\"MessageSent\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"_snapshot\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"_count\",\"type\":\"uint64\"}],\"name\":\"SnapshotSaved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_epochSent\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"_ticketId\",\"type\":\"bytes32\"}],\"name\":\"SnapshotSent\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"count\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"epochAt\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochFinalized\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochNow\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"epochPeriod\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"routerArbToGnosis\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"saveSnapshot\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"_fnSelector\",\"type\":\"bytes4\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"sendMessage\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_epoch\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_gasLimit\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timestampClaimed\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timestampVerification\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"blocknumberVerification\",\"type\":\"uint32\"},{\"internalType\":\"enum Party\",\"name\":\"honest\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"challenger\",\"type\":\"address\"}],\"internalType\":\"struct Claim\",\"name\":\"_claim\",\"type\":\"tuple\"}],\"name\":\"sendSnapshot\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"}],\"name\":\"snapshots\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Vea Inbox From Arbitrum to Gnosis. Note: This contract is deployed on the Arbitrum.\",\"events\":{\"MessageSent(bytes)\":{\"details\":\"Relayers watch for these events to construct merkle proofs to execute transactions on Gnosis.\",\"params\":{\"_nodeData\":\"The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message).\"}},\"SnapshotSaved(bytes32,uint256,uint64)\":{\"params\":{\"_count\":\"The count of messages in the merkle tree.\",\"_epoch\":\"The epoch of the snapshot.\",\"_snapshot\":\"The snapshot of the merkle tree state root.\"}},\"SnapshotSent(uint256,bytes32)\":{\"details\":\"The event is emitted when a snapshot is sent through the canonical arbitrum bridge.\",\"params\":{\"_epochSent\":\"The epoch of the snapshot.\",\"_ticketId\":\"The ticketId of the L2->L1 message.\"}}},\"kind\":\"dev\",\"methods\":{\"constructor\":{\"details\":\"Constructor. Note: epochPeriod must match the VeaOutboxArbToGnosis contract deployment on Gnosis, since it's on a different chain, we can't read it and trust the deployer to set a correct value\",\"params\":{\"_epochPeriod\":\"The duration in seconds between epochs.\",\"_routerArbToGnosis\":\"The router on Ethereum that routes from Arbitrum to Gnosis.\"}},\"epochAt(uint256)\":{\"details\":\"Get the epoch from the inbox's point of view using timestamp.\",\"params\":{\"_timestamp\":\"The timestamp to calculate the epoch from.\"},\"returns\":{\"epoch\":\"The calculated epoch.\"}},\"epochFinalized()\":{\"details\":\"Get the most recent epoch for which snapshots are finalized.\",\"returns\":{\"epoch\":\"The epoch associated with the current inbox block.timestamp\"}},\"epochNow()\":{\"details\":\"Get the current epoch from the inbox's point of view using the Arbitrum L2 clock.\",\"returns\":{\"epoch\":\"The epoch associated with the current inbox block.timestamp\"}},\"saveSnapshot()\":{\"details\":\"Saves snapshot of state root. Snapshots can be saved a maximum of once per epoch.      `O(log(count))` where count number of messages in the inbox. Note: See merkle tree docs for details how inbox manages state.\"},\"sendMessage(address,bytes4,bytes)\":{\"details\":\"Sends an arbitrary message to Gnosis.      `O(log(count))` where count is the number of messages already sent.      Amortized cost is constant. Note: See docs for details how inbox manages merkle tree state.\",\"params\":{\"_data\":\"The message calldata, abi.encode(param1, param2, ...)\",\"_fnSelector\":\"The function selector of the receiving contract.\",\"_to\":\"The address of the contract on the receiving chain which receives the calldata.\"},\"returns\":{\"_0\":\"msgId The zero based index of the message in the inbox.\"}},\"sendSnapshot(uint256,uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))\":{\"details\":\"Sends the state root snapshot using Arbitrum's canonical bridge.\",\"params\":{\"_claim\":\"The claim associated with the epoch.\",\"_epoch\":\"The epoch of the snapshot requested to send.\",\"_gasLimit\":\"The gas limit for the AMB transaction on Gnosis.\"}}},\"version\":1},\"userdoc\":{\"events\":{\"SnapshotSaved(bytes32,uint256,uint64)\":{\"notice\":\"The bridgers can watch this event to claim the stateRoot on the veaOutbox.\"}},\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/arbitrumToGnosis/VeaInboxArbToGnosis.sol\":\"VeaInboxArbToGnosis\"},\"evmVersion\":\"shanghai\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/arbitrumToGnosis/VeaInboxArbToGnosis.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/// @custom:authors: [@jaybuidl, @shotaronowhere]\\n/// @custom:reviewers: []\\n/// @custom:auditors: []\\n/// @custom:bounties: []\\n/// @custom:deployments: []\\n\\npragma solidity 0.8.24;\\n\\nimport \\\"../canonical/arbitrum/IArbSys.sol\\\";\\nimport \\\"../interfaces/inboxes/IVeaInbox.sol\\\";\\nimport \\\"../interfaces/routers/IRouterToGnosis.sol\\\";\\n\\n/// @dev Vea Inbox From Arbitrum to Gnosis.\\n/// Note: This contract is deployed on the Arbitrum.\\ncontract VeaInboxArbToGnosis is IVeaInbox {\\n    // ************************************* //\\n    // *             Storage               * //\\n    // ************************************* //\\n\\n    // Arbitrum precompile ArbSys for L2->L1 messaging: https://developer.arbitrum.io/arbos/precompiles#arbsys\\n    IArbSys internal constant ARB_SYS = IArbSys(address(100));\\n\\n    uint256 public immutable epochPeriod; // Epochs mark the period between potential snapshots.\\n    address public immutable routerArbToGnosis; // The router on ethereum.\\n\\n    mapping(uint256 epoch => bytes32) public snapshots; // epoch => state root snapshot\\n\\n    // Inbox represents minimum data availability to maintain incremental merkle tree.\\n    // Supports a max of 2^64 - 1 messages. See merkle tree docs for details how inbox manages state.\\n\\n    bytes32[64] internal inbox; // stores minimal set of complete subtree roots of the merkle tree to increment.\\n    uint64 public count; // count of messages in the merkle tree\\n\\n    // ************************************* //\\n    // *              Events               * //\\n    // ************************************* //\\n\\n    /// @dev Relayers watch for these events to construct merkle proofs to execute transactions on Gnosis.\\n    /// @param _nodeData The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message).\\n    event MessageSent(bytes _nodeData);\\n\\n    /// The bridgers can watch this event to claim the stateRoot on the veaOutbox.\\n    /// @param _snapshot The snapshot of the merkle tree state root.\\n    /// @param _epoch The epoch of the snapshot.\\n    /// @param _count The count of messages in the merkle tree.\\n    event SnapshotSaved(bytes32 _snapshot, uint256 _epoch, uint64 _count);\\n\\n    /// @dev The event is emitted when a snapshot is sent through the canonical arbitrum bridge.\\n    /// @param _epochSent The epoch of the snapshot.\\n    /// @param _ticketId The ticketId of the L2->L1 message.\\n    event SnapshotSent(uint256 indexed _epochSent, bytes32 _ticketId);\\n\\n    /// @dev Constructor.\\n    /// Note: epochPeriod must match the VeaOutboxArbToGnosis contract deployment on Gnosis, since it's on a different chain, we can't read it and trust the deployer to set a correct value\\n    /// @param _epochPeriod The duration in seconds between epochs.\\n    /// @param _routerArbToGnosis The router on Ethereum that routes from Arbitrum to Gnosis.\\n    constructor(uint256 _epochPeriod, address _routerArbToGnosis) {\\n        epochPeriod = _epochPeriod;\\n        routerArbToGnosis = _routerArbToGnosis;\\n    }\\n\\n    // ************************************* //\\n    // *         State Modifiers           * //\\n    // ************************************* //\\n\\n    /// @dev Sends an arbitrary message to Gnosis.\\n    ///      `O(log(count))` where count is the number of messages already sent.\\n    ///      Amortized cost is constant.\\n    /// Note: See docs for details how inbox manages merkle tree state.\\n    /// @param _to The address of the contract on the receiving chain which receives the calldata.\\n    /// @param _fnSelector The function selector of the receiving contract.\\n    /// @param _data The message calldata, abi.encode(param1, param2, ...)\\n    /// @return msgId The zero based index of the message in the inbox.\\n    function sendMessage(address _to, bytes4 _fnSelector, bytes memory _data) external override returns (uint64) {\\n        uint64 oldCount = count;\\n\\n        // Given arbitrum's speed limit of 7 million gas / second, it would take atleast 8 million years of full blocks to overflow.\\n        // It *should* be impossible to overflow, but we check to be safe when appending to the tree.\\n        require(oldCount < type(uint64).max, \\\"Inbox is full.\\\");\\n\\n        bytes memory nodeData = abi.encodePacked(\\n            oldCount,\\n            _to,\\n            // _data is abi.encode(param1, param2, ...), we need to encode it again to get the correct leaf data\\n            abi.encodePacked( // equivalent to abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)\\n                _fnSelector,\\n                bytes32(uint256(uint160(msg.sender))), // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector\\n                _data\\n            )\\n        );\\n\\n        // single hashed leaf\\n        bytes32 newInboxNode = keccak256(nodeData);\\n\\n        // double hashed leaf\\n        // avoids second order preimage attacks\\n        // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/\\n        assembly {\\n            // efficient hash using EVM scratch space\\n            mstore(0x00, newInboxNode)\\n            newInboxNode := keccak256(0x00, 0x20)\\n        }\\n\\n        // increment merkle tree calculating minimal number of hashes\\n        unchecked {\\n            uint256 height;\\n\\n            // x = oldCount + 1; acts as a bit mask to determine if a hash is needed\\n            // note: x is always non-zero, and x is bit shifted to the right each loop\\n            // hence this loop will always terminate in a maximum of log_2(oldCount + 1) iterations\\n            for (uint64 x = oldCount + 1; x & 1 == 0; x = x >> 1) {\\n                // sort sibling hashes as a convention for efficient proof validation\\n                newInboxNode = sortConcatAndHash(inbox[height], newInboxNode);\\n                height++;\\n            }\\n\\n            inbox[height] = newInboxNode;\\n\\n            // finally increment count\\n            count = oldCount + 1;\\n        }\\n\\n        emit MessageSent(nodeData);\\n\\n        // old count is the zero indexed leaf position in the tree, acts as a msgId\\n        // gateways should index these msgIds to later relay proofs\\n        return oldCount;\\n    }\\n\\n    /// @dev Saves snapshot of state root. Snapshots can be saved a maximum of once per epoch.\\n    ///      `O(log(count))` where count number of messages in the inbox.\\n    /// Note: See merkle tree docs for details how inbox manages state.\\n    function saveSnapshot() external {\\n        uint256 epoch;\\n        bytes32 stateRoot;\\n\\n        unchecked {\\n            epoch = block.timestamp / epochPeriod;\\n\\n            // calculate the current root of the incremental merkle tree encoded in the inbox\\n\\n            uint256 height;\\n\\n            // x acts as a bit mask to determine if the hash stored in the inbox contributes to the root\\n            uint256 x;\\n\\n            // x is bit shifted to the right each loop, hence this loop will always terminate in a maximum of log_2(count) iterations\\n            for (x = uint256(count); x > 0; x = x >> 1) {\\n                if ((x & 1) == 1) {\\n                    // first hash is special case\\n                    // inbox stores the root of complete subtrees\\n                    // eg if count = 4 = 0b100, then the first complete subtree is inbox[2]\\n                    // inbox = [H(3), H(1,2), H(1,4)], we read inbox[2] directly\\n\\n                    stateRoot = inbox[height];\\n                    break;\\n                }\\n                height++;\\n            }\\n\\n            // after the first hash, we can calculate the root incrementally\\n            for (x = x >> 1; x > 0; x = x >> 1) {\\n                height++;\\n                if ((x & 1) == 1) {\\n                    // sort sibling hashes as a convention for efficient proof validation\\n                    stateRoot = sortConcatAndHash(inbox[height], stateRoot);\\n                }\\n            }\\n        }\\n\\n        snapshots[epoch] = stateRoot;\\n\\n        emit SnapshotSaved(stateRoot, epoch, count);\\n    }\\n\\n    /// @dev Helper function to calculate merkle tree interior nodes by sorting and concatenating and hashing a pair of children nodes, left and right.\\n    /// Note: EVM scratch space is used to efficiently calculate hashes.\\n    /// @param _left The left hash.\\n    /// @param _right The right hash.\\n    /// @return parent The parent hash.\\n    function sortConcatAndHash(bytes32 _left, bytes32 _right) internal pure returns (bytes32 parent) {\\n        // sort sibling hashes as a convention for efficient proof validation\\n        if (_left < _right) {\\n            // efficient hash using EVM scratch space\\n            assembly {\\n                mstore(0x00, _left)\\n                mstore(0x20, _right)\\n                parent := keccak256(0x00, 0x40)\\n            }\\n        } else {\\n            assembly {\\n                mstore(0x00, _right)\\n                mstore(0x20, _left)\\n                parent := keccak256(0x00, 0x40)\\n            }\\n        }\\n    }\\n\\n    /// @dev Sends the state root snapshot using Arbitrum's canonical bridge.\\n    /// @param _epoch The epoch of the snapshot requested to send.\\n    /// @param _gasLimit The gas limit for the AMB transaction on Gnosis.\\n    /// @param _claim The claim associated with the epoch.\\n    function sendSnapshot(uint256 _epoch, uint256 _gasLimit, Claim memory _claim) external virtual {\\n        unchecked {\\n            require(_epoch < block.timestamp / epochPeriod, \\\"Can only send past epoch snapshot.\\\");\\n        }\\n\\n        bytes memory data = abi.encodeCall(IRouterToGnosis.route, (_epoch, snapshots[_epoch], _gasLimit, _claim));\\n\\n        // Arbitrum -> Ethereum message with native bridge\\n        // docs: https://developer.arbitrum.io/for-devs/cross-chain-messsaging#arbitrum-to-ethereum-messaging\\n        // example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/2c1b7d2db8f36efa496e35b561864c0f94123a5f/packages/greeter/contracts/arbitrum/GreeterL2.sol#L25\\n        bytes32 ticketID = bytes32(ARB_SYS.sendTxToL1(routerArbToGnosis, data));\\n\\n        emit SnapshotSent(_epoch, ticketID);\\n    }\\n\\n    // ************************************* //\\n    // *           Pure / Views            * //\\n    // ************************************* //\\n\\n    /// @dev Get the current epoch from the inbox's point of view using the Arbitrum L2 clock.\\n    /// @return epoch The epoch associated with the current inbox block.timestamp\\n    function epochNow() external view returns (uint256 epoch) {\\n        epoch = block.timestamp / epochPeriod;\\n    }\\n\\n    /// @dev Get the most recent epoch for which snapshots are finalized.\\n    /// @return epoch The epoch associated with the current inbox block.timestamp\\n    function epochFinalized() external view returns (uint256 epoch) {\\n        epoch = block.timestamp / epochPeriod - 1;\\n    }\\n\\n    /// @dev Get the epoch from the inbox's point of view using timestamp.\\n    /// @param _timestamp The timestamp to calculate the epoch from.\\n    /// @return epoch The calculated epoch.\\n    function epochAt(uint256 _timestamp) external view returns (uint256 epoch) {\\n        epoch = _timestamp / epochPeriod;\\n    }\\n}\\n\",\"keccak256\":\"0xf5706fefe86eb3bf49a130df2b54030f325327729e9ade1a94be9132eb77e333\",\"license\":\"MIT\"},\"src/canonical/arbitrum/IArbSys.sol\":{\"content\":\"// SPDX-License-Identifier: BUSL-1.1\\n// https://developer.arbitrum.io/arbos/precompiles#arbsys\\n// https://github.com/OffchainLabs/nitro-contracts/blob/39ea5a163afc637e2706d9be29cf7a289c300d00/src/precompiles/ArbSys.sol\\n// https://arbiscan.io/address/0x0000000000000000000000000000000000000064#code\\n// interface is pruned for relevant function stubs\\n\\npragma solidity 0.8.24;\\n\\n///@title System level functionality\\n///@notice For use by contracts to interact with core L2-specific functionality.\\n///Precompiled contract that exists in every Arbitrum chain at address(100), 0x0000000000000000000000000000000000000064.\\ninterface IArbSys {\\n    /// @notice Send a transaction to L1\\n    /// @dev it is not possible to execute on the L1 any L2-to-L1 transaction which contains data\\n    /// to a contract address without any code (as enforced by the Bridge contract).\\n    /// @param destination recipient address on L1\\n    /// @param data (optional) calldata for L1 contract call\\n    /// @return a unique identifier for this L2-to-L1 transaction.\\n    function sendTxToL1(address destination, bytes calldata data) external payable returns (uint256);\\n}\\n\",\"keccak256\":\"0x5ae1fd0267552160821402b9bc50b2551b086904436e5abe838599179b279420\",\"license\":\"BUSL-1.1\"},\"src/interfaces/inboxes/IVeaInbox.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/// @custom:authors: [@jaybuidl, @shotaronowhere]\\n/// @custom:reviewers: []\\n/// @custom:auditors: []\\n/// @custom:bounties: []\\n/// @custom:deployments: []\\n\\npragma solidity 0.8.24;\\n\\ninterface IVeaInbox {\\n    /// @dev Sends an arbitrary message to receiving chain.\\n    /// Note: Calls authenticated by receiving gateway checking the sender argument.\\n    /// @param _to The cross-domain contract address which receives the calldata.\\n    /// @param _fnSelection The function selector of the receiving contract.\\n    /// @param _data The message calldata, abi.encode(...)\\n    /// @return msgId The index of the message in the inbox, as a message Id, needed to relay the message.\\n    function sendMessage(address _to, bytes4 _fnSelection, bytes memory _data) external returns (uint64 msgId);\\n\\n    /// @dev Snapshots can be saved a maximum of once per epoch.\\n    ///      Saves snapshot of state root.\\n    ///      `O(log(count))` where count number of messages in the inbox.\\n    function saveSnapshot() external;\\n}\\n\",\"keccak256\":\"0xa8e2f65b7596235422f39933af80f02473493d2b15b398d7e34b81c82bd24a29\",\"license\":\"MIT\"},\"src/interfaces/routers/IRouterToGnosis.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/// @custom:authors: [@shotaronowhere]\\n/// @custom:reviewers: []\\n/// @custom:auditors: []\\n/// @custom:bounties: []\\n/// @custom:deployments: []\\n\\npragma solidity 0.8.24;\\n\\nimport \\\"../types/VeaClaim.sol\\\";\\n\\n/// @dev Interface of the Vea Router which routes messages to Gnosis through the AMB.\\n/// @dev eg. L2 on Ethereum -> Ethereum (L1) -> Gnosis (L1), the IRouterToL1 will be deployed on Ethereum (L1) routing messages to Gnosis (L1).\\ninterface IRouterToGnosis {\\n    /// @dev Routes state root snapshots through intermediary chains to the final destination L1 chain.\\n    /// Note: Access restricted to canonical sending-chain bridge.\\n    /// @param _epoch The epoch to verify.\\n    /// @param _stateRoot The true state root for the epoch.\\n    /// @param _gasLimit The gas limit for the AMB message.\\n    /// @param _claim The claim associated with the epoch.\\n    function route(uint256 _epoch, bytes32 _stateRoot, uint256 _gasLimit, Claim memory _claim) external;\\n}\\n\",\"keccak256\":\"0x9d78c7872bd2bc3b206fc6d6dfa8f8b2dab4122b10bfe0d0ab1f76bec92613b6\",\"license\":\"MIT\"},\"src/interfaces/types/VeaClaim.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\n/// @custom:authors: [@jaybuidl, @shotaronowhere]\\n/// @custom:reviewers: []\\n/// @custom:auditors: []\\n/// @custom:bounties: []\\n/// @custom:deployments: []\\n\\npragma solidity 0.8.24;\\n\\nenum Party {\\n    None,\\n    Claimer,\\n    Challenger\\n}\\n\\nstruct Claim {\\n    bytes32 stateRoot;\\n    address claimer;\\n    uint32 timestampClaimed;\\n    uint32 timestampVerification;\\n    uint32 blocknumberVerification;\\n    Party honest;\\n    address challenger;\\n}\\n\",\"keccak256\":\"0xfef781e359c97aebbe8dbfcb75edb7cb962139fd9ea538b8b89a3f2e13a05bfe\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60c060405234801561000f575f80fd5b50604051610c01380380610c0183398101604081905261002e91610045565b6080919091526001600160a01b031660a05261007f565b5f8060408385031215610056575f80fd5b825160208401519092506001600160a01b0381168114610074575f80fd5b809150509250929050565b60805160a051610b376100ca5f395f818161014b01526105d201525f8181610124015281816101bd015281816101ef015281816102240152818161025301526104df0152610b375ff3fe608060405234801561000f575f80fd5b506004361061009b575f3560e01c80635f85896c116100635780635f85896c1461010c578063b5b7a1841461011f578063d5e6a9df14610146578063d6565a2d14610185578063dc881a72146101a4575f80fd5b806306661abd1461009f578063222ae786146100d15780633ac3b6b6146100e75780634a439cfe146100ef5780635192053514610102575b5f80fd5b6041546100b39067ffffffffffffffff1681565b60405167ffffffffffffffff90911681526020015b60405180910390f35b6100d96101b7565b6040519081526020016100c8565b6100d96101e7565b6100d96100fd3660046106a8565b61021e565b61010a61024f565b005b6100b361011a366004610748565b610370565b6100d97f000000000000000000000000000000000000000000000000000000000000000081565b61016d7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020016100c8565b6100d96101933660046106a8565b5f6020819052908152604090205481565b61010a6101b2366004610818565b6104dd565b5f6101e27f0000000000000000000000000000000000000000000000000000000000000000426108e3565b905090565b5f60016102147f0000000000000000000000000000000000000000000000000000000000000000426108e3565b6101e29190610902565b5f6102497f0000000000000000000000000000000000000000000000000000000000000000836108e3565b92915050565b5f807f00000000000000000000000000000000000000000000000000000000000000004281610280576102806108cf565b60415491900492505f9067ffffffffffffffff165b80156102ce57806001166001036102c257600182604081106102b9576102b9610921565b015492506102ce565b6001918201911c610295565b60011c5b801561031057600191820191818116900361030857610305600183604081106102fd576102fd610921565b01548461067b565b92505b60011c6102d2565b50505f8281526020818152604091829020839055604154825184815291820185905267ffffffffffffffff168183015290517f592424eb1d6135501bd20833f15fd127c29d08eed4f03872f6f75182126b1e489181900360600190a15050565b6041545f9067ffffffffffffffff9081169081106103c65760405162461bcd60e51b815260206004820152600e60248201526d24b73137bc1034b990333ab6361760911b60448201526064015b60405180910390fd5b6040515f90829087906103e190889033908990602001610957565b60408051601f198184030181529082905261040093929160200161098c565b60408051601f1981840301815291905280516020808301919091205f908152908120919250600184015b600181165f036104625761044a600183604081106102fd576102fd610921565b92506001918201911c677fffffffffffffff1661042a565b50816001826040811061047757610477610921565b0155506041805467ffffffffffffffff19166001850167ffffffffffffffff161790556040517f8c5261668696ce22758910d05bab8f186d6eb247ceac2af2e82c7dc17669b036906104ca908490610a05565b60405180910390a1509095945050505050565b7f0000000000000000000000000000000000000000000000000000000000000000428161050c5761050c6108cf565b0483106105665760405162461bcd60e51b815260206004820152602260248201527f43616e206f6e6c792073656e6420706173742065706f636820736e617073686f6044820152613a1760f11b60648201526084016103bd565b5f8381526020819052604080822054905161058991869186908690602401610a1e565b60408051601f198184030181529181526020820180516001600160e01b031663b1126dad60e01b179052516349460b4d60e11b81529091505f9060649063928c169a906105fc907f0000000000000000000000000000000000000000000000000000000000000000908690600401610abf565b6020604051808303815f875af1158015610618573d5f803e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061063c9190610aea565b60405181815290915085907f6fdd49f435101fc7b6ebdec7c8972932a926d18f6cb78a8891dfe950743b6b829060200160405180910390a25050505050565b5f8183101561069657825f528160205260405f209050610249565b505f9081526020919091526040902090565b5f602082840312156106b8575f80fd5b5035919050565b80356001600160a01b03811681146106d5575f80fd5b919050565b634e487b7160e01b5f52604160045260245ffd5b60405160e0810167ffffffffffffffff81118282101715610711576107116106da565b60405290565b604051601f8201601f1916810167ffffffffffffffff81118282101715610740576107406106da565b604052919050565b5f805f6060848603121561075a575f80fd5b610763846106bf565b92506020848101356001600160e01b031981168114610780575f80fd5b9250604085013567ffffffffffffffff8082111561079c575f80fd5b818701915087601f8301126107af575f80fd5b8135818111156107c1576107c16106da565b6107d3601f8201601f19168501610717565b915080825288848285010111156107e8575f80fd5b80848401858401375f848284010152508093505050509250925092565b803563ffffffff811681146106d5575f80fd5b5f805f83850361012081121561082c575f80fd5b843593506020850135925060e0603f1982011215610848575f80fd5b506108516106ee565b60408501358152610864606086016106bf565b602082015261087560808601610805565b604082015261088660a08601610805565b606082015261089760c08601610805565b608082015260e0850135600381106108ad575f80fd5b60a08201526108bf61010086016106bf565b60c0820152809150509250925092565b634e487b7160e01b5f52601260045260245ffd5b5f826108fd57634e487b7160e01b5f52601260045260245ffd5b500490565b8181038181111561024957634e487b7160e01b5f52601160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b5f5b8381101561094f578181015183820152602001610937565b50505f910152565b63ffffffff60e01b841681528260048201525f825161097d816024850160208701610935565b91909101602401949350505050565b67ffffffffffffffff60c01b8460c01b1681526bffffffffffffffffffffffff198360601b1660088201525f82516109cb81601c850160208701610935565b91909101601c01949350505050565b5f81518084526109f1816020860160208601610935565b601f01601f19169290920160200192915050565b602081525f610a1760208301846109da565b9392505050565b5f610140820190508582528460208301528360408301528251606083015260018060a01b036020840151166080830152604083015163ffffffff80821660a08501528060608601511660c08501528060808601511660e0850152505060a083015160038110610a9b57634e487b7160e01b5f52602160045260245ffd5b61010083015260c092909201516001600160a01b0316610120909101529392505050565b6001600160a01b03831681526040602082018190525f90610ae2908301846109da565b949350505050565b5f60208284031215610afa575f80fd5b505191905056fea26469706673582212202d649cbd9f2d8c6de23d68dcef4120219fd7f19544dca063a8d508394cfcb79764736f6c63430008180033",
+  "deployedBytecode": "0x608060405234801561000f575f80fd5b506004361061009b575f3560e01c80635f85896c116100635780635f85896c1461010c578063b5b7a1841461011f578063d5e6a9df14610146578063d6565a2d14610185578063dc881a72146101a4575f80fd5b806306661abd1461009f578063222ae786146100d15780633ac3b6b6146100e75780634a439cfe146100ef5780635192053514610102575b5f80fd5b6041546100b39067ffffffffffffffff1681565b60405167ffffffffffffffff90911681526020015b60405180910390f35b6100d96101b7565b6040519081526020016100c8565b6100d96101e7565b6100d96100fd3660046106a8565b61021e565b61010a61024f565b005b6100b361011a366004610748565b610370565b6100d97f000000000000000000000000000000000000000000000000000000000000000081565b61016d7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020016100c8565b6100d96101933660046106a8565b5f6020819052908152604090205481565b61010a6101b2366004610818565b6104dd565b5f6101e27f0000000000000000000000000000000000000000000000000000000000000000426108e3565b905090565b5f60016102147f0000000000000000000000000000000000000000000000000000000000000000426108e3565b6101e29190610902565b5f6102497f0000000000000000000000000000000000000000000000000000000000000000836108e3565b92915050565b5f807f00000000000000000000000000000000000000000000000000000000000000004281610280576102806108cf565b60415491900492505f9067ffffffffffffffff165b80156102ce57806001166001036102c257600182604081106102b9576102b9610921565b015492506102ce565b6001918201911c610295565b60011c5b801561031057600191820191818116900361030857610305600183604081106102fd576102fd610921565b01548461067b565b92505b60011c6102d2565b50505f8281526020818152604091829020839055604154825184815291820185905267ffffffffffffffff168183015290517f592424eb1d6135501bd20833f15fd127c29d08eed4f03872f6f75182126b1e489181900360600190a15050565b6041545f9067ffffffffffffffff9081169081106103c65760405162461bcd60e51b815260206004820152600e60248201526d24b73137bc1034b990333ab6361760911b60448201526064015b60405180910390fd5b6040515f90829087906103e190889033908990602001610957565b60408051601f198184030181529082905261040093929160200161098c565b60408051601f1981840301815291905280516020808301919091205f908152908120919250600184015b600181165f036104625761044a600183604081106102fd576102fd610921565b92506001918201911c677fffffffffffffff1661042a565b50816001826040811061047757610477610921565b0155506041805467ffffffffffffffff19166001850167ffffffffffffffff161790556040517f8c5261668696ce22758910d05bab8f186d6eb247ceac2af2e82c7dc17669b036906104ca908490610a05565b60405180910390a1509095945050505050565b7f0000000000000000000000000000000000000000000000000000000000000000428161050c5761050c6108cf565b0483106105665760405162461bcd60e51b815260206004820152602260248201527f43616e206f6e6c792073656e6420706173742065706f636820736e617073686f6044820152613a1760f11b60648201526084016103bd565b5f8381526020819052604080822054905161058991869186908690602401610a1e565b60408051601f198184030181529181526020820180516001600160e01b031663b1126dad60e01b179052516349460b4d60e11b81529091505f9060649063928c169a906105fc907f0000000000000000000000000000000000000000000000000000000000000000908690600401610abf565b6020604051808303815f875af1158015610618573d5f803e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061063c9190610aea565b60405181815290915085907f6fdd49f435101fc7b6ebdec7c8972932a926d18f6cb78a8891dfe950743b6b829060200160405180910390a25050505050565b5f8183101561069657825f528160205260405f209050610249565b505f9081526020919091526040902090565b5f602082840312156106b8575f80fd5b5035919050565b80356001600160a01b03811681146106d5575f80fd5b919050565b634e487b7160e01b5f52604160045260245ffd5b60405160e0810167ffffffffffffffff81118282101715610711576107116106da565b60405290565b604051601f8201601f1916810167ffffffffffffffff81118282101715610740576107406106da565b604052919050565b5f805f6060848603121561075a575f80fd5b610763846106bf565b92506020848101356001600160e01b031981168114610780575f80fd5b9250604085013567ffffffffffffffff8082111561079c575f80fd5b818701915087601f8301126107af575f80fd5b8135818111156107c1576107c16106da565b6107d3601f8201601f19168501610717565b915080825288848285010111156107e8575f80fd5b80848401858401375f848284010152508093505050509250925092565b803563ffffffff811681146106d5575f80fd5b5f805f83850361012081121561082c575f80fd5b843593506020850135925060e0603f1982011215610848575f80fd5b506108516106ee565b60408501358152610864606086016106bf565b602082015261087560808601610805565b604082015261088660a08601610805565b606082015261089760c08601610805565b608082015260e0850135600381106108ad575f80fd5b60a08201526108bf61010086016106bf565b60c0820152809150509250925092565b634e487b7160e01b5f52601260045260245ffd5b5f826108fd57634e487b7160e01b5f52601260045260245ffd5b500490565b8181038181111561024957634e487b7160e01b5f52601160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b5f5b8381101561094f578181015183820152602001610937565b50505f910152565b63ffffffff60e01b841681528260048201525f825161097d816024850160208701610935565b91909101602401949350505050565b67ffffffffffffffff60c01b8460c01b1681526bffffffffffffffffffffffff198360601b1660088201525f82516109cb81601c850160208701610935565b91909101601c01949350505050565b5f81518084526109f1816020860160208601610935565b601f01601f19169290920160200192915050565b602081525f610a1760208301846109da565b9392505050565b5f610140820190508582528460208301528360408301528251606083015260018060a01b036020840151166080830152604083015163ffffffff80821660a08501528060608601511660c08501528060808601511660e0850152505060a083015160038110610a9b57634e487b7160e01b5f52602160045260245ffd5b61010083015260c092909201516001600160a01b0316610120909101529392505050565b6001600160a01b03831681526040602082018190525f90610ae2908301846109da565b949350505050565b5f60208284031215610afa575f80fd5b505191905056fea26469706673582212202d649cbd9f2d8c6de23d68dcef4120219fd7f19544dca063a8d508394cfcb79764736f6c63430008180033",
+  "devdoc": {
+    "details": "Vea Inbox From Arbitrum to Gnosis. Note: This contract is deployed on the Arbitrum.",
+    "events": {
+      "MessageSent(bytes)": {
+        "details": "Relayers watch for these events to construct merkle proofs to execute transactions on Gnosis.",
+        "params": {
+          "_nodeData": "The data to create leaves in the merkle tree. abi.encodePacked(msgId, to, message), outbox relays to.call(message)."
+        }
+      },
+      "SnapshotSaved(bytes32,uint256,uint64)": {
+        "params": {
+          "_count": "The count of messages in the merkle tree.",
+          "_epoch": "The epoch of the snapshot.",
+          "_snapshot": "The snapshot of the merkle tree state root."
+        }
+      },
+      "SnapshotSent(uint256,bytes32)": {
+        "details": "The event is emitted when a snapshot is sent through the canonical arbitrum bridge.",
+        "params": {
+          "_epochSent": "The epoch of the snapshot.",
+          "_ticketId": "The ticketId of the L2->L1 message."
+        }
+      }
+    },
+    "kind": "dev",
+    "methods": {
+      "constructor": {
+        "details": "Constructor. Note: epochPeriod must match the VeaOutboxArbToGnosis contract deployment on Gnosis, since it's on a different chain, we can't read it and trust the deployer to set a correct value",
+        "params": {
+          "_epochPeriod": "The duration in seconds between epochs.",
+          "_routerArbToGnosis": "The router on Ethereum that routes from Arbitrum to Gnosis."
+        }
+      },
+      "epochAt(uint256)": {
+        "details": "Get the epoch from the inbox's point of view using timestamp.",
+        "params": {
+          "_timestamp": "The timestamp to calculate the epoch from."
+        },
+        "returns": {
+          "epoch": "The calculated epoch."
+        }
+      },
+      "epochFinalized()": {
+        "details": "Get the most recent epoch for which snapshots are finalized.",
+        "returns": {
+          "epoch": "The epoch associated with the current inbox block.timestamp"
+        }
+      },
+      "epochNow()": {
+        "details": "Get the current epoch from the inbox's point of view using the Arbitrum L2 clock.",
+        "returns": {
+          "epoch": "The epoch associated with the current inbox block.timestamp"
+        }
+      },
+      "saveSnapshot()": {
+        "details": "Saves snapshot of state root. Snapshots can be saved a maximum of once per epoch.      `O(log(count))` where count number of messages in the inbox. Note: See merkle tree docs for details how inbox manages state."
+      },
+      "sendMessage(address,bytes4,bytes)": {
+        "details": "Sends an arbitrary message to Gnosis.      `O(log(count))` where count is the number of messages already sent.      Amortized cost is constant. Note: See docs for details how inbox manages merkle tree state.",
+        "params": {
+          "_data": "The message calldata, abi.encode(param1, param2, ...)",
+          "_fnSelector": "The function selector of the receiving contract.",
+          "_to": "The address of the contract on the receiving chain which receives the calldata."
+        },
+        "returns": {
+          "_0": "msgId The zero based index of the message in the inbox."
+        }
+      },
+      "sendSnapshot(uint256,uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))": {
+        "details": "Sends the state root snapshot using Arbitrum's canonical bridge.",
+        "params": {
+          "_claim": "The claim associated with the epoch.",
+          "_epoch": "The epoch of the snapshot requested to send.",
+          "_gasLimit": "The gas limit for the AMB transaction on Gnosis."
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "events": {
+      "SnapshotSaved(bytes32,uint256,uint64)": {
+        "notice": "The bridgers can watch this event to claim the stateRoot on the veaOutbox."
+      }
+    },
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 2245,
+        "contract": "src/arbitrumToGnosis/VeaInboxArbToGnosis.sol:VeaInboxArbToGnosis",
+        "label": "snapshots",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_mapping(t_uint256,t_bytes32)"
+      },
+      {
+        "astId": 2249,
+        "contract": "src/arbitrumToGnosis/VeaInboxArbToGnosis.sol:VeaInboxArbToGnosis",
+        "label": "inbox",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_array(t_bytes32)64_storage"
+      },
+      {
+        "astId": 2251,
+        "contract": "src/arbitrumToGnosis/VeaInboxArbToGnosis.sol:VeaInboxArbToGnosis",
+        "label": "count",
+        "offset": 0,
+        "slot": "65",
+        "type": "t_uint64"
+      }
+    ],
+    "types": {
+      "t_array(t_bytes32)64_storage": {
+        "base": "t_bytes32",
+        "encoding": "inplace",
+        "label": "bytes32[64]",
+        "numberOfBytes": "2048"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_mapping(t_uint256,t_bytes32)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => bytes32)",
+        "numberOfBytes": "32",
+        "value": "t_bytes32"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      },
+      "t_uint64": {
+        "encoding": "inplace",
+        "label": "uint64",
+        "numberOfBytes": "8"
+      }
+    }
+  }
+}
