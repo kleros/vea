@@ -3229,7 +3229,7 @@ __metadata:
     "@nomicfoundation/hardhat-network-helpers": "npm:^1.0.8"
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.13"
     "@typechain/ethers-v5": "npm:^10.2.0"
-    "@typechain/hardhat": "npm:^6.1.5"
+    "@typechain/hardhat": "npm:^9.1.0"
     "@types/chai": "npm:^4.3.5"
     "@types/mocha": "npm:^10.0.1"
     "@types/node": "npm:^16.18.25"
@@ -5783,19 +5783,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typechain/hardhat@npm:^6.1.5":
-  version: 6.1.5
-  resolution: "@typechain/hardhat@npm:6.1.5"
+"@typechain/hardhat@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "@typechain/hardhat@npm:9.1.0"
   dependencies:
     fs-extra: "npm:^9.1.0"
   peerDependencies:
-    "@ethersproject/abi": ^5.4.7
-    "@ethersproject/providers": ^5.4.7
-    "@typechain/ethers-v5": ^10.2.0
-    ethers: ^5.4.7
+    "@typechain/ethers-v6": ^0.5.1
+    ethers: ^6.1.0
     hardhat: ^2.9.9
-    typechain: ^8.1.1
-  checksum: 10/b29c386bfaba704eb40ba29c2daa488e94a505847c81243bc09bbfb99e5cdc8cc188fa8f49c59390e364af477d716538c44254b131f10d63352d467b3e245565
+    typechain: ^8.3.2
+  checksum: 10/1f59d8243af020905f3cdb96125cf9fcad33bd16f919d5e07762c63e0220bccb658abf59b0ad74be784a3387c0a6b0262612fa1adeb9f6c99061a6abaa6afc53
   languageName: node
   linkType: hard
 
