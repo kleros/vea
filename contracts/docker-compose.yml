@@ -1,0 +1,91 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: some-postgres
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      LC_COLLATE: C
+      LC_CTYPE: C
+    ports:
+      - "5432:5432"
+    networks:
+      - graph-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      retries: 5
+    command:
+      - sh
+      - -c
+      - |
+        docker-entrypoint.sh postgres &
+        sleep 5;
+        psql -U postgres -c "CREATE DATABASE graphnode_db ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE template0;";
+        wait
+
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: ipfs_host
+    volumes:
+      - ./ipfs/staging:/export
+      - ./ipfs/data:/data/ipfs
+    ports:
+      - "4001:4001"
+      - "4001:4001/udp"
+      - "8080:8080"
+      - "5001:5001"
+    networks:
+      - graph-network
+
+  hardhat:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: hardhat
+    environment:
+      - NETWORK1=arbitrum-sepolia
+      - PORT1=8545
+      - NETWORK2=sepolia
+      - PORT2=8546
+      - INFURA_ID=63722640e4ec41a59e0105dd275c2e81
+    command: ["/bin/sh", "/start-forks.sh"]
+    ports:
+      - "8545:8545" 
+      - "8546:8546"
+    depends_on:
+      - postgres
+      - ipfs
+    networks:
+      - graph-network
+
+  graph-node:
+    image: graphprotocol/graph-node:latest
+    container_name: graph_node
+    environment:
+      postgres_host: some-postgres
+      postgres_port: 5432
+      postgres_user: postgres
+      postgres_pass: mysecretpassword
+      postgres_db: graphnode_db
+      ipfs: ipfs_host:5001
+      ethereum: mainnet:http://host.docker.internal:8546/
+      ETHEREUM_REORG_THRESHOLD: 1
+      ETHEREUM_ANCESTOR_COUNT: 10
+      GRAPH_LOG: debug
+    ports:
+      - "8020:8020"
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - ipfs
+      - hardhat
+    networks:
+      - graph-network
+
+networks:
+  graph-network:
+    driver: bridge
