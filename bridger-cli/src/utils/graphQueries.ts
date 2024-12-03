@@ -14,7 +14,7 @@ const getClaimForEpoch = async (chainid: number, epoch: number): Promise<ClaimDa
     const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
 
     const result = await request(
-      `https://api.studio.thegraph.com/query/${subgraph}`,
+      `${subgraph}`,
       `{
                         claims(where: {epoch: ${epoch}}) {
                         id
@@ -38,7 +38,7 @@ const getVerificationStatus = async (chainid: number, epoch: number): Promise<Cl
     const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
 
     const result = await request(
-      `https://api.studio.thegraph.com/query/${subgraph}`,
+      `${subgraph}`,
       `{
 	        verifications(where:{claim_:{epoch:${epoch}}}){
                 claim{
@@ -62,7 +62,7 @@ const getLastClaimedEpoch = async (chainid: number): Promise<ClaimData> => {
     const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
 
     const result = await request(
-      `https://api.studio.thegraph.com/query/${subgraph}`,
+      `${subgraph}`,
       `{
           claims(first:1, orderBy:timestamp, orderDirection:desc){
           id

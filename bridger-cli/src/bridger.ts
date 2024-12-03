@@ -2,10 +2,11 @@ require("dotenv").config();
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
 import { getClaimForEpoch, ClaimData, getLastClaimedEpoch } from "utils/graphQueries";
-import { getVeaInbox, getVeaOutboxDevnet } from "utils/ethers";
+import { getVeaInbox, getVeaOutbox } from "utils/ethers";
 import { getBridgeConfig } from "consts/bridgeRoutes";
 
-const watch = async () => {
+export const watch = async (shutDownSignal: ShutdownSignal = new ShutdownSignal(), startEpoch: number = 24) => {
+  console.log("Starting bridger");
   const chainId = Number(process.env.VEAOUTBOX_CHAIN_ID);
   const bridgeConfig = getBridgeConfig(chainId);
   const veaInboxAddress = process.env.VEAINBOX_ADDRESS;
@@ -16,14 +17,16 @@ const watch = async () => {
   const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
   const veaInbox = getVeaInbox(veaInboxAddress, PRIVATE_KEY, veaInboxProviderURL, chainId);
-  const veaOutbox = getVeaOutboxDevnet(veaOutboxAddress, PRIVATE_KEY, veaOutboxProviderURL, chainId);
+  const veaOutbox = getVeaOutbox(veaOutboxAddress, PRIVATE_KEY, veaOutboxProviderURL, chainId);
 
-  // Check if the current epoch is claimed on veaOutbox
-  const currentEpoch = Math.floor(Date.now() / 1000 / bridgeConfig.epochPeriod);
-  const epochs: number[] = new Array(24).fill(currentEpoch - 24).map((el, i) => el + i);
+  const currentEpoch = Number(await veaOutbox.epochNow());
+  if (currentEpoch < startEpoch) {
+    throw new Error("Current epoch is less than start epoch");
+  }
+  const epochs: number[] = new Array(currentEpoch - startEpoch).fill(startEpoch).map((el, i) => el + i);
   let verifiableEpoch = currentEpoch - 1;
-
-  while (true) {
+  console.log("Current epoch: " + currentEpoch);
+  while (!shutDownSignal.getIsShutdownSignal()) {
     let i = 0;
     while (i < epochs.length) {
       const activeEpoch = epochs[i];
@@ -102,7 +105,7 @@ const watch = async () => {
           // Check if the verification is already resolved
           if (hashClaim(claim) == claimableEpochHash) {
             // Claim not resolved yet, check if we can verifySnapshot
-            if (finalizedOutboxBlock.timestamp - claim.timestampVerification > bridgeConfig.minChallengePeriod) {
+            if (finalizedOutboxBlock.timestamp - claim.timestampVerification >= bridgeConfig.minChallengePeriod) {
               console.log("Verification period passed, verifying snapshot");
               // Estimate gas for verifySnapshot
               const verifySnapshotTxn = await veaOutbox.verifySnapshot(activeEpoch, claim);
@@ -125,7 +128,7 @@ const watch = async () => {
             epochs.splice(i, 1);
             i--;
           }
-        } else {
+        } else if (!claimData.challenged) {
           console.log("Verification not started yet");
           // No verification started yet, check if we can start it
           if (
@@ -143,6 +146,8 @@ const watch = async () => {
               bridgeConfig.epochPeriod;
             console.log("Sequencer delay not passed yet, seconds left: " + -1 * timeLeft);
           }
+        } else {
+          console.log("Claim was challenged, skipping");
         }
       } else {
         epochs.splice(i, 1);
@@ -162,7 +167,7 @@ const watch = async () => {
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const hashClaim = (claim) => {
+export const hashClaim = (claim) => {
   return ethers.utils.solidityKeccak256(
     ["bytes32", "address", "uint32", "uint32", "uint32", "uint8", "address"],
     [
@@ -177,4 +182,23 @@ const hashClaim = (claim) => {
   );
 };
 
-watch();
+export class ShutdownSignal {
+  private isShutdownSignal: boolean;
+
+  constructor(initialState: boolean = false) {
+    this.isShutdownSignal = initialState;
+  }
+
+  public getIsShutdownSignal(): boolean {
+    return this.isShutdownSignal;
+  }
+
+  public setShutdownSignal(): void {
+    this.isShutdownSignal = true;
+  }
+}
+
+if (require.main === module) {
+  const shutDownSignal = new ShutdownSignal(false);
+  watch(shutDownSignal);
+}
