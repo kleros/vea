@@ -101,7 +101,7 @@ describe("Testing bridger-cli", function () {
   });
 
   describe("Integration tests: Claiming", function () {
-    it.only("should claim for new saved snapshot", async function () {
+    it("should claim for new saved snapshot", async function () {
       // Send a message and save snapshot
       await veaInbox.sendMessage(mockMessage.to, mockMessage.fnSelector, mockMessage.data);
       await veaInbox.saveSnapshot();
@@ -152,13 +152,13 @@ describe("Testing bridger-cli", function () {
       await veaInbox.saveSnapshot();
 
       // Make claim and challenge it
-      await veaOutbox.claim(claimEpoch, FAKE_HASH, { value: deposit });
+      const claimTxn = await veaOutbox.claim(claimEpoch, FAKE_HASH, { value: deposit });
+      const claimBlock = await outboxProvider.getBlock(claimTxn.blockNumber);
 
-      const claimData = await getClaimForEpoch(Number(process.env.VEAOUTBOX_CHAIN_ID), claimEpoch);
       const claim = {
         stateRoot: FAKE_HASH,
-        claimer: claimData.bridger,
-        timestampClaimed: claimData.timestamp,
+        claimer: claimTxn.from,
+        timestampClaimed: claimBlock.timestamp,
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
