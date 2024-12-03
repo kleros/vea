@@ -51,7 +51,7 @@ services:
       - PORT1=8545
       - NETWORK2=sepolia
       - PORT2=8546
-      - INFURA_ID=63722640e4ec41a59e0105dd275c2e81
+      - INFURA_ID=${INFURA_API_KEY}
     command: ["/bin/sh", "/start-forks.sh"]
     ports:
       - "8545:8545" 
