@@ -1,5 +1,4 @@
-import { Wallet } from "@ethersproject/wallet";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { Wallet, JsonRpcProvider } from "ethers";
 import {
   VeaOutboxArbToEth__factory,
   VeaOutboxArbToGnosis__factory,

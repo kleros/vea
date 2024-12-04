@@ -81,14 +81,6 @@ function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
 }
 
-function getVeaOutboxArbToGnosisProvider(veaOutboxAddress: string, privateKey: string, rpc: Provider) {
-  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
-}
-
-function getVeaOutboxArbToGnosis(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
-  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
-}
-
 export {
   getWalletRPC,
   getVeaOutboxArbToEthDevnetProvider,

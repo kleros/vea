@@ -4,7 +4,7 @@ import { getArbitrumNetwork } from "@arbitrum/sdk";
 import { NODE_INTERFACE_ADDRESS } from "@arbitrum/sdk/dist/lib/dataEntities/constants";
 import { NodeInterface__factory } from "@arbitrum/sdk/dist/lib/abi/factories/NodeInterface__factory";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
-import { BigNumber, ContractTransaction, ethers } from "ethers";
+import { ContractTransaction, ContractTransactionResponse, ethers } from "ethers";
 import { Block, Log, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { SequencerInbox } from "@arbitrum/sdk/dist/lib/abi/SequencerInbox";
 import { NodeInterface } from "@arbitrum/sdk/dist/lib/abi/NodeInterface";
@@ -43,16 +43,12 @@ const watch = async () => {
   // get Arb sequencer params
   const l2Network = await getArbitrumNetwork(providerArb);
   const sequencer = SequencerInbox__factory.connect(l2Network.ethBridge.sequencerInbox, providerEth);
-  const maxDelaySeconds = (
-    (await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1] as BigNumber
-  ).toNumber();
+  const maxDelaySeconds = Number((await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1]);
 
   // get vea outbox params
-  const deposit = (await retryOperation(() => veaOutbox.deposit(), 1000, 10)) as BigNumber;
-  const epochPeriod = ((await retryOperation(() => veaOutbox.epochPeriod(), 1000, 10)) as BigNumber).toNumber();
-  const sequencerDelayLimit = (
-    (await retryOperation(() => veaOutbox.sequencerDelayLimit(), 1000, 10)) as BigNumber
-  ).toNumber();
+  const deposit = BigInt((await retryOperation(() => veaOutbox.deposit(), 1000, 10)) as any);
+  const epochPeriod = Number(await retryOperation(() => veaOutbox.epochPeriod(), 1000, 10));
+  const sequencerDelayLimit = Number(await retryOperation(() => veaOutbox.sequencerDelayLimit(), 1000, 10));
 
   // *
   // calculate epoch range to check claims on Eth
@@ -182,15 +178,14 @@ const watch = async () => {
         }
 
         // get claim data
-        const logClaimed: Log = (
+        const logClaimed = (
           await retryOperation(
             () =>
-              providerEth.getLogs({
-                address: process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
-                topics: veaOutbox.filters.Claimed(null, [veaEpochOutboxCheck], null).topics,
-                fromBlock: blockNumberOutboxLowerBound,
-                toBlock: blockTagEth,
-              }),
+              veaOutbox.queryFilter(
+                veaOutbox.filters.Claimed(null, veaEpochOutboxCheck, null),
+                blockNumberOutboxLowerBound,
+                blockTagEth
+              ),
             1000,
             10
           )
@@ -245,12 +240,11 @@ const watch = async () => {
             // check if the claim is in verification or verified
             const logVerficiationStarted = (await retryOperation(
               () =>
-                providerEth.getLogs({
-                  address: process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
-                  topics: veaOutbox.filters.VerificationStarted(veaEpochOutboxCheck).topics,
-                  fromBlock: blockNumberOutboxLowerBound,
-                  toBlock: blockTagEth,
-                }),
+                veaOutbox.queryFilter(
+                  veaOutbox.filters.VerificationStarted(veaEpochOutboxCheck),
+                  blockNumberOutboxLowerBound,
+                  blockTagEth
+                ),
               1000,
               10
             )) as Log[];
@@ -288,12 +282,11 @@ const watch = async () => {
 
             const logChallenges = (await retryOperation(
               () =>
-                providerEth.getLogs({
-                  address: process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
-                  topics: veaOutbox.filters.Challenged(veaEpochOutboxCheck, null).topics,
-                  fromBlock: blockNumberOutboxLowerBound,
-                  toBlock: blockTagEth,
-                }),
+                veaOutbox.queryFilter(
+                  veaOutbox.filters.Challenged(veaEpochOutboxCheck, null),
+                  blockNumberOutboxLowerBound,
+                  blockTagEth
+                ),
               1000,
               10
             )) as Log[];
@@ -319,7 +312,7 @@ const watch = async () => {
                   () => veaOutbox.withdrawChallengeDeposit(veaEpochOutboxCheck, challengerWinClaim),
                   1000,
                   10
-                )) as ContractTransaction;
+                )) as ContractTransactionResponse;
                 console.log(
                   "Deposit withdrawn by challenger for " +
                     veaEpochOutboxCheck +
@@ -355,28 +348,25 @@ const watch = async () => {
                 const fromClaimEpochBlock = Math.ceil(
                   blockLatestArb.number - (blockLatestArb.timestamp - claimTimestamp) / arbAverageBlockTime
                 );
+
                 const sendSnapshotLogs = (await retryOperation(
                   () =>
-                    providerArb.getLogs({
-                      address: process.env.VEAINBOX_ARB_TO_ETH_ADDRESS,
-                      topics: veaInbox.filters.SnapshotSent(veaEpochOutboxCheck, null).topics,
-                      fromBlock: fromClaimEpochBlock,
-                      toBlock: blockTagEth,
-                    }),
+                    veaInbox.queryFilter(
+                      veaInbox.filters.SnapshotSent(veaEpochOutboxCheck, null),
+                      fromClaimEpochBlock,
+                      blockTagEth
+                    ),
                   1000,
                   10
                 )) as Log[];
                 if (sendSnapshotLogs.length == 0) {
                   // No snapshot sent so, send snapshot
                   try {
-                    const gasEstimate = (await retryOperation(
-                      () =>
-                        veaInbox.estimateGas[
-                          "sendSnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
-                        ](veaEpochOutboxCheck, claim),
+                    const gasEstimate = await retryOperation(
+                      () => veaInbox.sendSnapshot.estimateGas(veaEpochOutboxCheck, claim),
                       1000,
                       10
-                    )) as BigNumber;
+                    );
 
                     const txnSendSnapshot = (await retryOperation(
                       () =>
@@ -389,7 +379,7 @@ const watch = async () => {
                         ),
                       1000,
                       10
-                    )) as ContractTransaction;
+                    )) as ContractTransactionResponse;
                     console.log(
                       "Snapshot message sent for epoch " +
                         veaEpochOutboxCheck +
@@ -451,26 +441,28 @@ const watch = async () => {
                 continue;
               }
             }
-            const gasEstimate = (await retryOperation(
-              () =>
-                veaOutbox.estimateGas["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
-                  veaEpochOutboxCheck,
-                  claim,
-                  { value: deposit }
-                ),
-              1000,
-              10
-            )) as BigNumber;
+            const gasEstimate = BigInt(
+              (await retryOperation(
+                () =>
+                  veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"].estimateGas(
+                    veaEpochOutboxCheck,
+                    claim,
+                    { value: deposit }
+                  ),
+                1000,
+                10
+              )) as any
+            );
 
             // Adjust the calculation to ensure maxFeePerGas is reasonable
-            const maxFeePerGasProfitable = deposit.div(gasEstimate.mul(6));
+            const maxFeePerGasProfitable = deposit / (gasEstimate * BigInt(6));
 
             // Set a reasonable maxPriorityFeePerGas but ensure it's lower than maxFeePerGas
-            let maxPriorityFeePerGasMEV = BigNumber.from("6667000000000"); // 6667 gwei
+            let maxPriorityFeePerGasMEV = BigInt(6667000000000); // 6667 gwei
             console.log("Transaction Challenge Gas Estimate", gasEstimate.toString());
 
             // Ensure maxPriorityFeePerGas <= maxFeePerGas
-            if (maxPriorityFeePerGasMEV.gt(maxFeePerGasProfitable)) {
+            if (maxPriorityFeePerGasMEV > maxFeePerGasProfitable) {
               console.warn(
                 "maxPriorityFeePerGas is higher than maxFeePerGasProfitable, adjusting maxPriorityFeePerGas"
               );
@@ -491,7 +483,7 @@ const watch = async () => {
                   ),
                 1000,
                 10
-              )) as ContractTransaction;
+              )) as ContractTransactionResponse;
               // Make wait for receipt and check if the challenge is finalized
               console.log("Transaction Challenge Hash", txnChallenge.hash);
               // Update local var with the challenge txn hash
@@ -671,7 +663,7 @@ const ArbBlockToL1Block = async (
     .catch((e) => {
       // If the L2Block is the latest ArbBlock this will always throw an error
       console.log("Error finding batch containing block, searching heuristically...");
-    })) as [BigNumber] & { batch: BigNumber };
+    })) as any;
 
   if (!result) {
     if (!fallbackLatest) {
@@ -729,8 +721,8 @@ const findLatestL2BatchAndBlock = async (
   return [result.batch.toNumber(), high];
 };
 
-const hashClaim = (claim) => {
-  return ethers.utils.solidityKeccak256(
+const hashClaim = (claim): any => {
+  return ethers.solidityPackedKeccak256(
     ["bytes32", "address", "uint32", "uint32", "uint32", "uint8", "address"],
     [
       claim.stateRoot,
