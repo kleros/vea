@@ -1,17 +1,18 @@
 import {
-  getVeaOutboxArbToGnosisProvider,
-  getVeaInboxArbToGnosisProvider,
-  getWETHProvider,
-  getWalletRPC,
-  getVeaRouterArbToGnosisProvider,
-  getAMBProvider,
+  getVeaOutboxArbToGnosis,
+  getVeaInboxArbToGnosis,
+  getWETH,
+  getWallet,
+  getVeaRouterArbToGnosis,
+  getAMB,
 } from "../utils/ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import { Wallet } from "@ethersproject/wallet";
 import { ChildToParentMessageStatus, ChildTransactionReceipt, getArbitrumNetwork } from "@arbitrum/sdk";
 import { NODE_INTERFACE_ADDRESS } from "@arbitrum/sdk/dist/lib/dataEntities/constants";
 import { NodeInterface__factory } from "@arbitrum/sdk/dist/lib/abi/factories/NodeInterface__factory";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
-import { BigNumber, ContractTransaction, Wallet, constants, ethers } from "ethers";
+import { ethers, ContractTransactionResponse } from "ethers";
 import { Block, Log } from "@ethersproject/abstract-provider";
 import { SequencerInbox } from "@arbitrum/sdk/dist/lib/abi/SequencerInbox";
 import { NodeInterface } from "@arbitrum/sdk/dist/lib/abi/NodeInterface";
@@ -21,7 +22,6 @@ import {
   VeaInboxArbToGnosis,
   VeaOutboxArbToGnosis,
 } from "@kleros/vea-contracts/typechain-types";
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { messageExecutor } from "../utils/arbMsgExecutor";
 
 require("dotenv").config();
@@ -96,38 +96,30 @@ const watch = async () => {
   const providerGnosis = new JsonRpcProvider(process.env.RPC_GNOSIS);
   const providerArb = new JsonRpcProvider(process.env.RPC_ARB);
 
-  const watcherAddress = getWalletRPC(process.env.PRIVATE_KEY, providerGnosis).address;
+  const watcherAddress = getWallet(process.env.PRIVATE_KEY, process.env.RPC_GNOSIS).address;
 
   // use typechain generated contract factories for vea outbox and inbox
-  const veaOutbox = getVeaOutboxArbToGnosisProvider(veaOutboxAddress, process.env.PRIVATE_KEY, providerGnosis);
-  const veaInbox = getVeaInboxArbToGnosisProvider(veaInboxAddress, process.env.PRIVATE_KEY, providerArb);
-  const veaRouter = getVeaRouterArbToGnosisProvider(veaRouterAddress, process.env.PRIVATE_KEY, providerEth);
-  const amb = getAMBProvider(gnosisAMBAddress, process.env.PRIVATE_KEY, providerGnosis);
+  const veaOutbox = getVeaOutboxArbToGnosis(veaOutboxAddress, process.env.PRIVATE_KEY, process.env.RPC_GNOSIS);
+  const veaInbox = getVeaInboxArbToGnosis(veaInboxAddress, process.env.PRIVATE_KEY, process.env.RPC_ARB);
+  const veaRouter = getVeaRouterArbToGnosis(veaRouterAddress, process.env.PRIVATE_KEY, process.env.RPC_ETH);
+  const amb = getAMB(gnosisAMBAddress, process.env.PRIVATE_KEY, process.env.RPC_GNOSIS);
 
   const wethAddress = (await retryOperation(() => veaOutbox.weth(), 1000, 10)) as string;
-  const weth = getWETHProvider(wethAddress, process.env.PRIVATE_KEY, providerGnosis);
-  const balance = (await retryOperation(() => weth.balanceOf(watcherAddress), 1000, 10)) as BigNumber;
-  const allowance = (await retryOperation(
-    () => weth.allowance(watcherAddress, veaOutboxAddress),
-    1000,
-    10
-  )) as BigNumber;
+  const weth = getWETH(wethAddress, process.env.PRIVATE_KEY, process.env.RPC_GNOSIS);
+  const balance = (await retryOperation(() => weth.balanceOf(watcherAddress), 1000, 10)) as BigInt;
+  const allowance = (await retryOperation(() => weth.allowance(watcherAddress, veaOutboxAddress), 1000, 10)) as BigInt;
 
   // get Arb sequencer params
   const l2Network = await getArbitrumNetwork(providerArb);
   const sequencer = SequencerInbox__factory.connect(l2Network.ethBridge.sequencerInbox, providerEth);
-  const maxDelaySeconds = (
-    (await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1] as BigNumber
-  ).toNumber();
+  const maxDelaySeconds = Number((await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1] as BigInt);
 
   // get vea outbox params
-  const deposit = (await retryOperation(() => veaOutbox.deposit(), 1000, 10)) as BigNumber;
-  const epochPeriod = ((await retryOperation(() => veaOutbox.epochPeriod(), 1000, 10)) as BigNumber).toNumber();
-  const sequencerDelayLimit = (
-    (await retryOperation(() => veaOutbox.sequencerDelayLimit(), 1000, 10)) as BigNumber
-  ).toNumber();
+  const deposit = await retryOperation(() => veaOutbox.deposit(), 1000, 10);
+  const epochPeriod = Number(await retryOperation(() => veaOutbox.epochPeriod(), 1000, 10));
+  const sequencerDelayLimit = Number(await retryOperation(() => veaOutbox.sequencerDelayLimit(), 1000, 10));
 
-  const inactive = balance.lt(deposit);
+  const inactive = balance < deposit;
   if (inactive) {
     console.error(
       "insufficient weth balance to run an active watcher. Try bridging eth to gnosis with https://omni.gnosischain.com/bridge"
@@ -135,13 +127,13 @@ const watch = async () => {
     console.log("running watcher in passive mode (no challenges)");
   }
 
-  if (allowance.lt(constants.MaxUint256.div(2))) {
+  if (BigInt(allowance.toString()) < ethers.MaxUint256 / BigInt(2)) {
     console.log("setting infinite weth approval to vea outbox to prepare to challenge. . .");
     const approvalTxn = (await retryOperation(
-      () => weth.approve(veaOutboxAddress, constants.MaxUint256),
+      () => weth.approve(veaOutboxAddress, ethers.MaxUint256),
       1000,
       10
-    )) as ContractTransaction;
+    )) as ContractTransactionResponse;
     await approvalTxn.wait();
     console.log("weth approval txn hash: " + approvalTxn.hash);
   }
@@ -241,7 +233,7 @@ const watch = async () => {
       )) as string;
 
       // no claim
-      if (claimHash == constants.HashZero) {
+      if (claimHash == ethers.ZeroHash) {
         // if epoch is not claimable anymore, remove from array
         if (veaEpochOutboxCheck <= veaEpochOutboxClaimableFinalized) {
           console.log(
@@ -281,12 +273,11 @@ const watch = async () => {
         const logClaimed: Log = (
           await retryOperation(
             () =>
-              providerGnosis.getLogs({
-                address: veaOutboxAddress,
-                topics: veaOutbox.filters.Claimed(null, [veaEpochOutboxCheck], null).topics,
-                fromBlock: blockNumberOutboxLowerBound,
-                toBlock: blockTagGnosis,
-              }),
+              veaOutbox.queryFilter(
+                veaOutbox.filters.Claimed(null, veaEpochOutboxCheck, null),
+                blockNumberOutboxLowerBound,
+                blockTagGnosis
+              ),
             1000,
             10
           )
@@ -342,13 +333,13 @@ const watch = async () => {
           );
           //TODO : check profitablity of the whole dispute resolution
           //const profitablity = await calculateDisputeResolutionProfitability(veaEpochOutboxCheck,claim,veaOutbox,veaInbox,providerGnosis,providerArb,providerEth);
-          if (claim.challenger == constants.AddressZero) {
+          if (claim.challenger == ethers.ZeroAddress) {
             if (challengeProgress?.challenge.status == "pending") continue;
             const txnChallenge = (await retryOperation(
               () => veaOutbox.challenge(veaEpochOutboxCheck, claim),
               1000,
               10
-            )) as ContractTransaction;
+            )) as ContractTransactionResponse;
             console.log("Epoch " + veaEpochOutboxCheck + " challenged with txn " + txnChallenge.hash);
             challengeProgress.challenge = {
               status: "pending",
@@ -368,7 +359,7 @@ const watch = async () => {
                   () => veaInbox.sendSnapshot(veaEpochOutboxCheck, 200000, claim), // execute transaction required around 142000 gas so  we set gas limit to 200000
                   1000,
                   10
-                )) as ContractTransaction;
+                )) as ContractTransactionResponse;
                 console.log("Epoch " + veaEpochOutboxCheck + " sendSnapshot called with txn " + txnSendSnapshot.hash);
                 challengeProgress.snapshot = {
                   status: "pending",
@@ -395,7 +386,7 @@ const watch = async () => {
                 () => veaOutbox.withdrawChallengeDeposit(veaEpochOutboxCheck, claim),
                 1000,
                 10
-              )) as ContractTransaction;
+              )) as ContractTransactionResponse;
 
               if (txnWithdrawalDeposit.hash) {
                 console.log(
@@ -588,7 +579,7 @@ const ArbBlockToL1Block = async (
     .findBatchContainingBlock(L2Block.number, { blockTag: "latest" })
     .catch((e) => {
       console.error("Error finding batch containing block:", JSON.parse(JSON.stringify(e)).error.body);
-    })) as [BigNumber] & { batch: BigNumber };
+    })) as any;
 
   if (!result) {
     if (!fallbackLatest) {
@@ -657,7 +648,7 @@ async function getClaimForEpoch(
   const claimHash = (await retryOperation(() => veaOutbox.claimHashes(epoch), 1000, 10)) as any;
 
   // If there's no claim, return null
-  if (claimHash === constants.HashZero) {
+  if (claimHash === ethers.ZeroHash) {
     return null;
   }
 
@@ -694,7 +685,7 @@ async function getClaimForEpoch(
     timestampVerification: 0,
     blocknumberVerification: 0,
     honest: 0, // 0 for None, 1 for Claimer, 2 for Challenger
-    challenger: constants.AddressZero,
+    challenger: ethers.ZeroAddress,
   };
   let other = {} as any;
   let calculatedHash = hashClaim(claim);
@@ -755,58 +746,58 @@ async function getClaimForEpoch(
   return null;
 }
 
-async function calculateDisputeResolutionProfitability(
-  epoch: number,
-  claim: ClaimStruct,
-  veaOutbox: VeaOutboxArbToGnosis,
-  veaInbox: VeaInboxArbToGnosis,
-  providerGnosis: JsonRpcProvider,
-  providerArb: JsonRpcProvider,
-  providerEth: JsonRpcProvider
-): Promise<{ profitable: boolean; estimatedProfit: BigNumber }> {
-  try {
-    const deposit = (await retryOperation(() => veaOutbox.deposit(), 1000, 10)) as BigNumber;
-    const totalReward = deposit;
-    const minimumProfit = totalReward.mul(40).div(100); // 40% of total reward
-    let maximumAllowableCost = totalReward.sub(minimumProfit);
-    let totalCost = BigNumber.from(0);
+// async function calculateDisputeResolutionProfitability(
+//   epoch: number,
+//   claim: ClaimStruct,
+//   veaOutbox: VeaOutboxArbToGnosis,
+//   veaInbox: VeaInboxArbToGnosis,
+//   providerGnosis: JsonRpcProvider,
+//   providerArb: JsonRpcProvider,
+//   providerEth: JsonRpcProvider
+// ): Promise<{ profitable: boolean; estimatedProfit: BigInt }> {
+//   try {
+//     const deposit = await retryOperation(() => veaOutbox.deposit(), 1000, 10) as bigint;
+//     const totalReward = deposit;
+//     const minimumProfit = totalReward * BigInt(40) / BigInt(100); // 40% of total reward
+//     let maximumAllowableCost = totalReward - minimumProfit;
+//     let totalCost = BigInt(0);
 
-    // 1. Costs on Gnosis Chain
-    const gnosisGasEstimate = await veaOutbox.estimateGas.challenge(epoch, claim);
+//     // 1. Costs on Gnosis Chain
+//     const gnosisGasEstimate = await veaOutbox.challenge.estimateGas(epoch, claim);
 
-    const gnosisGasPrice = await providerGnosis.getGasPrice();
-    const gnosisCost = gnosisGasEstimate.mul(gnosisGasPrice);
+//     const gnosisGasPrice = await providerGnosis.getGasPrice();
+//     const gnosisCost = gnosisGasEstimate * gnosisGasPrice;
 
-    if (gnosisCost.gt(maximumAllowableCost)) {
-      return { profitable: false, estimatedProfit: constants.Zero };
-    }
-    totalCost = totalCost.add(gnosisCost);
-    maximumAllowableCost = maximumAllowableCost.sub(gnosisCost);
+//     if (gnosisCost > maximumAllowableCost) {
+//       return { profitable: false, estimatedProfit: BigInt(0) };
+//     }
+//     totalCost = totalCost + gnosisCost;
+//     maximumAllowableCost = maximumAllowableCost - gnosisCost;
 
-    const l2Network = await getArbitrumNetwork(providerArb);
+//     const l2Network = await getArbitrumNetwork(providerArb);
 
-    const arbGasEstimate = (await retryOperation(
-      () => veaInbox.estimateGas.sendSnapshot(epoch, 200000, claim),
-      1000,
-      10
-    )) as BigNumber;
+//     const arbGasEstimate = (await retryOperation(
+//       () => veaInbox.sendSnapshot.estimateGas(epoch, 200000, claim),
+//       1000,
+//       10
+//     )) as BigInt;
 
-    const arbGasPrice = (await retryOperation(() => providerArb.getGasPrice(), 1000, 10)) as BigNumber;
-    const arbCost = arbGasEstimate.mul(arbGasPrice);
+//     const arbGasPrice = (await retryOperation(() => providerArb.getGasPrice(), 1000, 10)) as BigInt;
+//     const arbCost = arbGasEstimate * arbGasPrice;
 
-    if (arbCost.gt(maximumAllowableCost)) {
-      return { profitable: false, estimatedProfit: constants.Zero };
-    }
-    totalCost = totalCost.add(arbCost);
-    maximumAllowableCost = maximumAllowableCost.sub(arbCost);
+//     if (arbCost > maximumAllowableCost) {
+//       return { profitable: false, estimatedProfit: BigInt(0) };
+//     }
+//     totalCost = totalCost + arbCost;
+//     maximumAllowableCost = maximumAllowableCost - arbCost;
 
-    // 3. Costs on Ethereum (for Arbitrum -> Ethereum message)
-    //TODO : L2 to L1 message execution gas cost
-  } catch (error) {
-    console.error("Error calculating profitability:", error);
-    return { profitable: false, estimatedProfit: constants.Zero };
-  }
-}
+//     // 3. Costs on Ethereum (for Arbitrum -> Ethereum message)
+//     //TODO : L2 to L1 message execution gas cost
+//   } catch (error) {
+//     console.error("Error calculating profitability:", error);
+//     return { profitable: false, estimatedProfit: BigInt(0) };
+//   }
+// }
 
 function needsRetry(current: ChallengeProgress, previous: ChallengeProgress | undefined): boolean {
   if (!previous) return false;
@@ -1112,7 +1103,7 @@ async function reconstructChallengeProgress(
 }
 
 const hashClaim = (claim) => {
-  return ethers.utils.solidityKeccak256(
+  return ethers.solidityPackedKeccak256(
     ["bytes32", "address", "uint32", "uint32", "uint32", "uint8", "address"],
     [
       claim.stateRoot,

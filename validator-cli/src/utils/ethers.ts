@@ -44,8 +44,8 @@ function getVeaInboxArbToGnosisProvider(veaInboxAddress: string, privateKey: str
   return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
 }
 
-function getWETHProvider(WETH: string, privateKey: string, rpc: JsonRpcProvider) {
-  return IWETH__factory.connect(WETH, getWalletRPC(privateKey, rpc));
+function getWETH(WETH: string, privateKey: string, web3ProviderURL: string) {
+  return IWETH__factory.connect(WETH, getWallet(privateKey, web3ProviderURL));
 }
 
 function getVeaOutboxArbToEth(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
@@ -61,26 +61,31 @@ function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string
 }
 
 function getVeaOutboxArbToGnosis(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
-  return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+  return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
 }
 
-function getVeaRouterArbToGnosisProvider(veaRouterAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return RouterArbToGnosis__factory.connect(veaRouterAddress, getWalletRPC(privateKey, rpc));
+function getVeaInboxArbToGnosis(veaInboxAddress: string, privateKey: string, web3ProviderURL: string) {
+  return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
 }
 
-function getAMBProvider(ambAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return IAMB__factory.connect(ambAddress, getWalletRPC(privateKey, rpc));
+function getVeaRouterArbToGnosis(veaRouterAddress: string, privateKey: string, web3ProviderURL: string) {
+  return RouterArbToGnosis__factory.connect(veaRouterAddress, getWallet(privateKey, web3ProviderURL));
+}
+
+function getAMB(ambAddress: string, privateKey: string, web3ProviderURL: string) {
+  return IAMB__factory.connect(ambAddress, getWallet(privateKey, web3ProviderURL));
 }
 export {
   getVeaOutboxArbToEth,
   getWalletRPC,
+  getWallet,
   getVeaOutboxArbToEthDevnetProvider,
   getVeaInboxArbToEth,
   getVeaInboxArbToEthProvider,
   getVeaOutboxArbToEthProvider,
-  getVeaOutboxArbToGnosisProvider,
-  getVeaInboxArbToGnosisProvider,
-  getVeaRouterArbToGnosisProvider,
-  getWETHProvider,
-  getAMBProvider,
+  getVeaOutboxArbToGnosis,
+  getVeaInboxArbToGnosis,
+  getVeaRouterArbToGnosis,
+  getWETH,
+  getAMB,
 };
