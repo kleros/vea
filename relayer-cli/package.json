@@ -10,6 +10,7 @@
     "yarn": "4.2.2"
   },
   "scripts": {
+    "test": "jest --coverage",
     "start-devnet-relayer": "npx ts-node ./src/devnetRelayExample.ts",
     "start-testnet-relayer": "npx ts-node ./src/testnetRelayer.ts"
   },
@@ -23,6 +24,10 @@
     "web3-batched-send": "^1.0.3"
   },
   "devDependencies": {
-    "ts-node": "^10.9.2"
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "yarn": "^1.22.22"
   }
 }
