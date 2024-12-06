@@ -39,17 +39,11 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     "VeaOutboxGnosisToArb" + (chainId === 100 ? "" : "Testnet")
   );
 
-  const gasOptions = {
-    maxFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
-    maxPriorityFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
-  };
-
   const inbox = await deploy("VeaInboxGnosisToArb" + (chainId === 100 ? "" : "Testnet"), {
     from: deployer,
     contract: "VeaInboxGnosisToArb",
     args: [epochPeriod, veaOutboxArb.address, amb],
     log: true,
-    ...(chainId === 100 ? {} : gasOptions),
   });
 
   console.log("VeaInboxGnosisToArb" + (chainId === 100 ? "" : "Testnet") + " deployed to: %s", inbox.address);

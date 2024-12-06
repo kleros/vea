@@ -3,7 +3,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
-import { BigNumber } from "@ethersproject/bignumber";
 
 enum ReceiverChains {
   GNOSIS_CHIADO = 10200,
@@ -97,11 +96,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const gasOptions = {
-      maxFeePerGas: BigNumber.from(1000000000), // 1 gwei
-      maxPriorityFeePerGas: BigNumber.from(1000000000), // 1 gwei
-    };
-
     const senderChainProvider = new ethers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
@@ -126,7 +120,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         WETH,
       ],
       log: true,
-      ...gasOptions,
     });
 
     console.log("VeaOutboxArbToGnosisDevnet deployed to:", txn.address);

@@ -2,8 +2,6 @@ import { parseEther } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";
-import { ethers } from "hardhat";
-import { BigNumber } from "@ethersproject/bignumber";
 
 enum ReceiverChains {
   ARBITRUM_SEPOLIA = 421614,
@@ -97,11 +95,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const gasOptions = {
-      maxFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
-      maxPriorityFeePerGas: BigNumber.from(10 ** 9), // 1 gwei
-    };
-
     const senderChainProvider = new ethers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
@@ -124,7 +117,6 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         sequencerFutureLimit,
       ],
       log: true,
-      ...gasOptions,
     });
 
     console.log("VeaOutboxGnosisToArb" + (chainId === 42161 ? "" : "Testnet") + " deployed to:", txn.address);

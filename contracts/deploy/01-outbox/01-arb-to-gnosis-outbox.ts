@@ -161,7 +161,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         WETH,
       ],
       log: true,
-      gasPrice: BigNumber.from(10 ** 9), // chiado rpc response underprices gas, 1 gwei
+      gasPrice: String(10 ** 9), // chiado rpc response underprices gas, 1 gwei
     });
 
     console.log("VeaOutboxArbToGnosis deployed to:", txn.address);

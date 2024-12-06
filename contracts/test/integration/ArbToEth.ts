@@ -1,8 +1,6 @@
 import { expect } from "chai";
 import { deployments, ethers, getNamedAccounts, network } from "hardhat";
-import "@nomiclabs/hardhat-ethers";
-import { BigNumber, utils } from "ethers";
-import "@nomiclabs/hardhat-ethers";
+import "@nomicfoundation/hardhat-ethers";
 const { mine } = require("@nomicfoundation/hardhat-network-helpers");
 
 import {
@@ -13,18 +11,17 @@ import {
   BridgeMock,
   ArbSysMock,
 } from "../../typechain-types";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import "@nomicfoundation/hardhat-chai-matchers";
 import { MerkleTree } from "../merkle/MerkleTree";
-import { zeroAddress } from "ethereumjs-util";
 
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-unused-expressions */ // https://github.com/standard/standard/issues/690#issuecomment-278533482
 
-const ONE_HUNDREDTH_ETH = BigNumber.from(10).pow(16);
-const ONE_TENTH_ETH = BigNumber.from(10).pow(17);
-const ONE_ETH = BigNumber.from(10).pow(18);
-const TEN_ETH = BigNumber.from(10).pow(19);
+const ONE_HUNDREDTH_ETH = 10n ** 16n;
+const ONE_TENTH_ETH = 10n ** 17n;
+const ONE_ETH = 10n ** 18n;
+const TEN_ETH = 10n ** 19n;
 const HARDHAT_CHAIN_ID = 31337;
 const EPOCH_PERIOD = 600; // 10 minutes for Hardhat
 const CHALLENGE_PERIOD = 600; // 10 minutes for Hardhat
@@ -60,24 +57,24 @@ describe("Integration tests", async () => {
 
   it("should initialize contracts correctly", async () => {
     // Sender Gateway
-    expect(await senderGateway.veaInbox()).to.equal(veaInbox.address);
-    expect(await senderGateway.receiverGateway()).to.equal(receiverGateway.address);
+    expect(await senderGateway.veaInbox()).to.equal(veaInbox.target);
+    expect(await senderGateway.receiverGateway()).to.equal(receiverGateway.target);
 
     // veaInbox
-    expect(await veaInbox.arbSys()).to.equal(arbsysMock.address);
+    expect(await veaInbox.arbSys()).to.equal(arbsysMock.target);
     expect(await veaInbox.epochPeriod()).to.equal(EPOCH_PERIOD);
-    expect(await veaInbox.veaOutboxArbToEth()).to.equal(veaOutbox.address);
+    expect(await veaInbox.veaOutboxArbToEth()).to.equal(veaOutbox.target);
 
     // veaOutbox
     expect(await veaOutbox.deposit()).to.equal(TEN_ETH);
     expect(await veaOutbox.epochPeriod()).to.equal(EPOCH_PERIOD);
     expect(await veaOutbox.minChallengePeriod()).to.equal(CHALLENGE_PERIOD);
-    expect(await veaOutbox.veaInboxArbToEth()).to.equal(veaInbox.address);
-    expect(await veaOutbox.bridge()).to.equal(bridge.address);
+    expect(await veaOutbox.veaInboxArbToEth()).to.equal(veaInbox.target);
+    expect(await veaOutbox.bridge()).to.equal(bridge.target);
     // ReceiverGateway
-    expect(await receiverGateway.veaOutbox()).to.equal(veaOutbox.address);
+    expect(await receiverGateway.veaOutbox()).to.equal(veaOutbox.target);
 
-    expect(await receiverGateway.senderGateway()).to.equal(senderGateway.address);
+    expect(await receiverGateway.senderGateway()).to.equal(senderGateway.target);
   });
 
   describe("Honest Claim - No Challenge - Bridger Paid", async () => {
@@ -101,7 +98,7 @@ describe("Integration tests", async () => {
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
       const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
       );
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
@@ -115,10 +112,10 @@ describe("Integration tests", async () => {
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epochPeriod = (await veaInbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaInbox.epochPeriod());
       const epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / epochPeriod);
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
-      const invalidEpoch = BigNumber.from(2).add(epoch);
+      const invalidEpoch = 2 + epoch;
 
       await network.provider.send("evm_increaseTime", [epochPeriod]);
       await network.provider.send("evm_mine");
@@ -127,9 +124,9 @@ describe("Integration tests", async () => {
         veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: ONE_HUNDREDTH_ETH })
       ).to.be.revertedWith("Insufficient claim deposit.");
 
-      await expect(
-        veaOutbox.connect(bridger).claim(epoch, ethers.constants.HashZero, { value: TEN_ETH })
-      ).to.be.revertedWith("Invalid claim.");
+      await expect(veaOutbox.connect(bridger).claim(epoch, ethers.ZeroHash, { value: TEN_ETH })).to.be.revertedWith(
+        "Invalid claim."
+      );
 
       await expect(
         veaOutbox.connect(bridger).claim(invalidEpoch, batchMerkleRoot, { value: TEN_ETH })
@@ -149,7 +146,7 @@ describe("Integration tests", async () => {
 
       await expect(
         veaOutbox.connect(bridger).verifySnapshot(0, {
-          stateRoot: ethers.constants.HashZero,
+          stateRoot: ethers.ZeroHash,
           claimer: bridger.address,
           timestampClaimed: 0,
           timestampVerification: 0,
@@ -166,7 +163,7 @@ describe("Integration tests", async () => {
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epochPeriod = (await veaInbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaInbox.epochPeriod());
       const epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / epochPeriod);
 
       await network.provider.send("evm_increaseTime", [epochPeriod]);
@@ -177,6 +174,7 @@ describe("Integration tests", async () => {
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!blockClaim) return;
 
       // should revert as the challenge period has not passed
       await expect(
@@ -187,11 +185,11 @@ describe("Integration tests", async () => {
           timestampVerification: 0,
           blocknumberVerification: 0,
           honest: 0,
-          challenger: ethers.constants.AddressZero,
+          challenger: ethers.ZeroAddress,
         })
       ).to.be.revertedWith("Claim must wait atleast maxL2StateSyncDelay.");
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -202,13 +200,13 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
       await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
 
       const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
-
-      const minChallengePeriod = (await veaOutbox.minChallengePeriod()).toNumber();
+      if (!blockStartValidation) return;
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
 
@@ -220,7 +218,7 @@ describe("Integration tests", async () => {
           timestampVerification: blockStartValidation.timestamp!,
           blocknumberVerification: startValidationTxn.blockNumber!,
           honest: 0,
-          challenger: ethers.constants.AddressZero,
+          challenger: ethers.ZeroAddress,
         })
       ).to.be.revertedWith("Censorship test not passed.");
 
@@ -234,7 +232,7 @@ describe("Integration tests", async () => {
         timestampVerification: blockStartValidation.timestamp!,
         blocknumberVerification: startValidationTxn.blockNumber!,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
 
       expect(await veaOutbox.stateRoot()).to.equal(batchMerkleRoot);
@@ -273,11 +271,11 @@ describe("Integration tests", async () => {
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
       const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
       );
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
       // Honest Bridger
-      const epochPeriod = (await veaInbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaInbox.epochPeriod());
 
       await network.provider.send("evm_increaseTime", [epochPeriod]);
       await network.provider.send("evm_mine");
@@ -285,8 +283,8 @@ describe("Integration tests", async () => {
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
-
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
+      if (!blockClaim) return;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -297,13 +295,14 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
       await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
 
       const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+      if (!blockStartValidation) return;
 
-      const minChallengePeriod = (await veaOutbox.minChallengePeriod()).toNumber();
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
       const blocksToMine = Math.ceil(minChallengePeriod / 12);
@@ -316,7 +315,7 @@ describe("Integration tests", async () => {
         timestampVerification: blockStartValidation.timestamp!,
         blocknumberVerification: startValidationTxn.blockNumber!,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
 
       const mt = new MerkleTree(nodes);
@@ -355,11 +354,11 @@ describe("Integration tests", async () => {
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
       const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
       );
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
-      const epochPeriod = (await veaInbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaInbox.epochPeriod());
 
       await network.provider.send("evm_increaseTime", [epochPeriod]);
       await network.provider.send("evm_mine");
@@ -367,8 +366,8 @@ describe("Integration tests", async () => {
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
-
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
+      if (!blockClaim) return;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -379,13 +378,14 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
       await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
 
       const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+      if (!blockStartValidation) return;
 
-      const minChallengePeriod = (await veaOutbox.minChallengePeriod()).toNumber();
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
       const blocksToMine = Math.ceil(minChallengePeriod / 12);
@@ -398,7 +398,7 @@ describe("Integration tests", async () => {
         timestampVerification: blockStartValidation.timestamp!,
         blocknumberVerification: startValidationTxn.blockNumber!,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
 
       const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
@@ -411,7 +411,7 @@ describe("Integration tests", async () => {
         timestampVerification: blockStartValidation.timestamp!,
         blocknumberVerification: startValidationTxn.blockNumber!,
         honest: 1,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
     });
 
@@ -439,11 +439,11 @@ describe("Integration tests", async () => {
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
       const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
       );
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
-      const epochPeriod = (await veaInbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaInbox.epochPeriod());
 
       await network.provider.send("evm_increaseTime", [epochPeriod]);
       await network.provider.send("evm_mine");
@@ -451,8 +451,9 @@ describe("Integration tests", async () => {
       // Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!blockClaim) return;
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -463,13 +464,14 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
       await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
 
       const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+      if (!blockStartValidation) return;
 
-      const minChallengePeriod = (await veaOutbox.minChallengePeriod()).toNumber();
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
       const blocksToMine = Math.ceil(minChallengePeriod / 12);
@@ -482,7 +484,7 @@ describe("Integration tests", async () => {
         timestampVerification: blockStartValidation.timestamp!,
         blocknumberVerification: startValidationTxn.blockNumber!,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
 
       const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
@@ -495,7 +497,7 @@ describe("Integration tests", async () => {
         timestampVerification: blockStartValidation.timestamp!,
         blocknumberVerification: startValidationTxn.blockNumber!,
         honest: 1,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
     });
   });
@@ -511,7 +513,7 @@ describe("Integration tests", async () => {
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epochPeriod = (await veaInbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaInbox.epochPeriod());
       const epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / epochPeriod);
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
@@ -521,6 +523,7 @@ describe("Integration tests", async () => {
       // bridger tx starts - Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!block) return;
 
       const challengeTx = await veaOutbox
         .connect(challenger)
@@ -533,7 +536,7 @@ describe("Integration tests", async () => {
             timestampVerification: 0,
             blocknumberVerification: 0,
             honest: 0,
-            challenger: ethers.constants.AddressZero,
+            challenger: ethers.ZeroAddress,
           },
           { value: TEN_ETH }
         );
@@ -549,7 +552,7 @@ describe("Integration tests", async () => {
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epochPeriod = (await veaInbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaInbox.epochPeriod());
       const epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / epochPeriod);
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
@@ -559,6 +562,7 @@ describe("Integration tests", async () => {
       // bridger tx starts - Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!block) return;
 
       const challengeTx = await veaOutbox
         .connect(challenger)
@@ -571,7 +575,7 @@ describe("Integration tests", async () => {
             timestampVerification: 0,
             blocknumberVerification: 0,
             honest: 0,
-            challenger: ethers.constants.AddressZero,
+            challenger: ethers.ZeroAddress,
           },
           { value: TEN_ETH }
         );
@@ -591,7 +595,7 @@ describe("Integration tests", async () => {
       );
       await expect(sendSafeFallbackTx)
         .to.emit(veaInbox, "SnapshotSent")
-        .withArgs(epoch, ethers.utils.formatBytes32String("")); // ticketId is always 0x00..0
+        .withArgs(epoch, ethers.encodeBytes32String("")); // ticketId is always 0x00..0
     });
 
     it("challenger's deposit should be forfeited", async () => {
@@ -617,7 +621,7 @@ describe("Integration tests", async () => {
 
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epochPeriod = (await veaInbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaInbox.epochPeriod());
       const epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / epochPeriod);
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
 
@@ -627,7 +631,7 @@ describe("Integration tests", async () => {
       // bridger tx starts - Honest Bridger
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
       const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
-
+      if (!block) return;
       // withdraw challenge deposit should revert for invalid epoch
       await expect(
         veaOutbox.connect(challenger).withdrawChallengeDeposit(epoch, {
@@ -637,11 +641,11 @@ describe("Integration tests", async () => {
           timestampVerification: 0,
           blocknumberVerification: 0,
           honest: 0,
-          challenger: ethers.constants.AddressZero,
+          challenger: ethers.ZeroAddress,
         })
       ).to.be.revertedWith("Challenge failed.");
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -652,13 +656,14 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
       await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
 
       const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+      if (!blockStartValidation) return;
 
-      const minChallengePeriod = (await veaOutbox.minChallengePeriod()).toNumber();
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
       const blocksToMine = Math.ceil(minChallengePeriod / 12);
@@ -676,7 +681,7 @@ describe("Integration tests", async () => {
             timestampVerification: blockStartValidation.timestamp!,
             blocknumberVerification: startValidationTxn.blockNumber!,
             honest: 0,
-            challenger: ethers.constants.AddressZero,
+            challenger: ethers.ZeroAddress,
           },
           { value: TEN_ETH }
         );
@@ -760,9 +765,9 @@ describe("Integration tests", async () => {
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
       const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
       );
-      const epochPeriod = (await veaOutbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaOutbox.epochPeriod());
 
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
       await network.provider.send("evm_increaseTime", [epochPeriod]);
@@ -770,11 +775,12 @@ describe("Integration tests", async () => {
       // bridger tx starts - bridger creates fakeData & fakeHash
 
       const fakeData = "KlerosToTheMoon";
-      const fakeHash = utils.keccak256(utils.defaultAbiCoder.encode(["string"], [fakeData]));
+      const fakeHash = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["string"], [fakeData]));
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, fakeHash, { value: TEN_ETH });
       const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!block) return;
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -786,12 +792,13 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
       await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
       const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+      if (!blockStartValidation) return;
 
-      const minChallengePeriod = (await veaOutbox.minChallengePeriod()).toNumber();
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
       const blocksToMine = Math.ceil(minChallengePeriod / 12);
@@ -809,7 +816,7 @@ describe("Integration tests", async () => {
             timestampVerification: blockStartValidation.timestamp!,
             blocknumberVerification: startValidationTxn.blockNumber!,
             honest: 0,
-            challenger: ethers.constants.AddressZero,
+            challenger: ethers.ZeroAddress,
           },
           { value: TEN_ETH }
         );
@@ -890,9 +897,9 @@ describe("Integration tests", async () => {
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
       const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
       );
-      const epochPeriod = (await veaOutbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaOutbox.epochPeriod());
 
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
       await network.provider.send("evm_increaseTime", [epochPeriod]);
@@ -900,11 +907,12 @@ describe("Integration tests", async () => {
       // bridger tx starts - bridger creates fakeData & fakeHash
 
       const fakeData = "KlerosToTheMoon";
-      const fakeHash = utils.keccak256(utils.defaultAbiCoder.encode(["string"], [fakeData]));
+      const fakeHash = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["string"], [fakeData]));
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, fakeHash, { value: TEN_ETH });
       const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!block) return;
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -916,12 +924,13 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
       await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
       const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+      if (!blockStartValidation) return;
 
-      const minChallengePeriod = (await veaOutbox.minChallengePeriod()).toNumber();
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
       const blocksToMine = Math.ceil(minChallengePeriod / 12);
@@ -939,7 +948,7 @@ describe("Integration tests", async () => {
             timestampVerification: blockStartValidation.timestamp!,
             blocknumberVerification: startValidationTxn.blockNumber!,
             honest: 0,
-            challenger: ethers.constants.AddressZero,
+            challenger: ethers.ZeroAddress,
           },
           { value: TEN_ETH }
         );
@@ -988,20 +997,21 @@ describe("Integration tests", async () => {
       const BatchOutgoing = veaInbox.filters.SnapshotSaved();
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
       const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / (await veaInbox.epochPeriod()).toNumber()
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
       );
       const stateRoot1 = await veaInbox.snapshots(epoch);
-      const epochPeriod = (await veaOutbox.epochPeriod()).toNumber();
+      const epochPeriod = Number(await veaOutbox.epochPeriod());
       await network.provider.send("evm_increaseTime", [epochPeriod]);
       await network.provider.send("evm_mine");
 
       // bridger tx starts - bridger creates fakeData & fakeHash
       const fakeData = "KlerosToTheMoon";
-      const fakeHash = utils.keccak256(utils.defaultAbiCoder.encode(["string"], [fakeData]));
+      const fakeHash = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["string"], [fakeData]));
       const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, fakeHash, { value: TEN_ETH });
       const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!block) return;
 
-      const maxL2StateSyncDelay = (await veaOutbox.sequencerDelayLimit()).toNumber() + epochPeriod / 2;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
       await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
       await network.provider.send("evm_mine");
 
@@ -1013,12 +1023,13 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
       await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
 
       const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
-      const minChallengePeriod = (await veaOutbox.minChallengePeriod()).toNumber();
+      if (!blockStartValidation) return;
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
 
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
@@ -1037,7 +1048,7 @@ describe("Integration tests", async () => {
             timestampVerification: blockStartValidation.timestamp!,
             blocknumberVerification: startValidationTxn.blockNumber!,
             honest: 0,
-            challenger: ethers.constants.AddressZero,
+            challenger: ethers.ZeroAddress,
           },
           { value: TEN_ETH }
         );
@@ -1048,10 +1059,10 @@ describe("Integration tests", async () => {
       await network.provider.send("evm_increaseTime", [epochPeriod]);
       await network.provider.send("evm_mine");
 
-      const stateRoot2 = ethers.utils.keccak256(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("stateRoot2")));
+      const stateRoot2 = ethers.keccak256(ethers.keccak256(ethers.toUtf8Bytes("stateRoot2")));
       const claimTxn2 = await veaOutbox.connect(bridger).claim(epoch2, stateRoot2, { value: TEN_ETH });
       const claimTxn2Block = await ethers.provider.getBlock(claimTxn2.blockNumber!);
-
+      if (!claimTxn2Block) return;
       await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay + epochPeriod]);
       await network.provider.send("evm_mine");
 
@@ -1062,10 +1073,11 @@ describe("Integration tests", async () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
 
       const blockStartValidation2 = await ethers.provider.getBlock(startValidationTxn2.blockNumber!);
+      if (!blockStartValidation2) return;
       await network.provider.send("evm_increaseTime", [minChallengePeriod]);
       await network.provider.send("evm_mine");
       await mine(blocksToMine);
@@ -1077,7 +1089,7 @@ describe("Integration tests", async () => {
         timestampVerification: blockStartValidation2.timestamp!,
         blocknumberVerification: startValidationTxn2.blockNumber!,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress,
       });
 
       // Resolve dispute

@@ -36,7 +36,7 @@ export class MerkleTree {
     }
 
     // Updated to ethers v6
-    const result = ethers.keccak256(ethers.toUtf8Bytes(singleHash));
+    const result = ethers.keccak256(singleHash);
 
     if (!result) {
       throw new Error("Leaf node must not be empty");
