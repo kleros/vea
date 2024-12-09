@@ -62,7 +62,7 @@ export const watch = async (shutDownSignal: ShutdownSignal = new ShutdownSignal(
         }
       } else if (claimableEpochHash != ethers.constants.HashZero) {
         console.log("Claim is already made, checking for verification stage");
-        const claim = await fetchClaim(veaOutbox, activeEpoch, chainId);
+        const claim = await fetchClaim(veaOutbox, activeEpoch);
         console.log(claim);
         if (!transactionHandlers[activeEpoch]) {
           transactionHandlers[activeEpoch] = new TransactionHandler(chainId, activeEpoch, veaOutbox, claim);

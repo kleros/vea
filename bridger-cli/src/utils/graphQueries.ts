@@ -40,14 +40,12 @@ const getLastClaimedEpoch = async (): Promise<ClaimData> => {
     `${subgraph}`,
     `{
           claims(first:1, orderBy:timestamp, orderDirection:desc){
-          id
+                        id
                         bridger
                         stateroot
                         timestamp
-                        verification{
-                          timestamp
-                        }
-                          challenged
+                        challenged
+                        txHash
                         }
           
         }`

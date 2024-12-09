@@ -8,7 +8,6 @@ describe("snapshotClaim", () => {
     let getClaimForEpoch: jest.Mock;
     let veaOutbox: any;
     const epoch = 1;
-    const chainId = 1;
 
     beforeEach(() => {
       mockClaim = {
@@ -46,12 +45,12 @@ describe("snapshotClaim", () => {
       veaOutbox.queryFilter.mockImplementationOnce(() =>
         Promise.resolve([{ blockHash: "0x1234", args: { challenger: ethers.constants.AddressZero } }])
       );
-      const claim = await fetchClaim(veaOutbox, epoch, chainId, getClaimForEpoch);
+      const claim = await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
       console.log(claim);
       console.log(mockClaim);
       expect(claim).toBeDefined();
       expect(claim).toEqual(mockClaim);
-      expect(getClaimForEpoch).toHaveBeenCalledWith(chainId, epoch);
+      expect(getClaimForEpoch).toHaveBeenCalledWith(epoch);
     });
 
     it("should return a valid claim with challenger", async () => {
@@ -70,12 +69,12 @@ describe("snapshotClaim", () => {
         challenged: true,
       });
 
-      const claim = await fetchClaim(veaOutbox, epoch, chainId, getClaimForEpoch);
+      const claim = await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
       console.log(claim);
       console.log(mockClaim);
       expect(claim).toBeDefined();
       expect(claim).toEqual(mockClaim);
-      expect(getClaimForEpoch).toHaveBeenCalledWith(chainId, epoch);
+      expect(getClaimForEpoch).toHaveBeenCalledWith(epoch);
     });
 
     it("should return a valid claim with verification", async () => {
@@ -98,11 +97,11 @@ describe("snapshotClaim", () => {
         number: mockClaim.blocknumberVerification,
       });
 
-      const claim = await fetchClaim(veaOutbox, epoch, chainId, getClaimForEpoch);
+      const claim = await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
 
       expect(claim).toBeDefined();
       expect(claim).toEqual(mockClaim);
-      expect(getClaimForEpoch).toHaveBeenCalledWith(chainId, epoch);
+      expect(getClaimForEpoch).toHaveBeenCalledWith(epoch);
     });
 
     it("should fallback on logs if claimData is undefined", async () => {
@@ -119,12 +118,12 @@ describe("snapshotClaim", () => {
       veaOutbox.queryFilter.mockImplementationOnce(() => Promise.resolve([]));
       veaOutbox.queryFilter.mockImplementationOnce(() => Promise.resolve([]));
 
-      const claim = await fetchClaim(veaOutbox, epoch, chainId, getClaimForEpoch);
+      const claim = await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
       console.log(claim);
       console.log(mockClaim);
       expect(claim).toBeDefined();
       expect(claim).toEqual(mockClaim);
-      expect(getClaimForEpoch).toHaveBeenCalledWith(chainId, epoch);
+      expect(getClaimForEpoch).toHaveBeenCalledWith(epoch);
     });
 
     it("should throw an error if no claim is found", async () => {
@@ -134,7 +133,7 @@ describe("snapshotClaim", () => {
       veaOutbox.queryFilter.mockImplementationOnce(() => Promise.resolve([]));
 
       await expect(async () => {
-        await fetchClaim(veaOutbox, epoch, chainId, getClaimForEpoch);
+        await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
       }).rejects.toThrow(`No claim found for epoch ${epoch}`);
     });
   });

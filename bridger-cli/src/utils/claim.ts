@@ -1,6 +1,5 @@
 import { ClaimData, getClaimForEpoch } from "./graphQueries";
 import { ethers } from "ethers";
-import { getBlockNumberFromEpoch } from "./epochHandler";
 
 type ClaimStruct = {
   stateRoot: string;
@@ -15,7 +14,6 @@ type ClaimStruct = {
 const fetchClaim = async (
   veaOutbox,
   epoch,
-  chainId,
   fetchClaimForEpoch: typeof getClaimForEpoch = getClaimForEpoch
 ): Promise<ClaimStruct> => {
   let claimData: ClaimData | undefined = await fetchClaimForEpoch(epoch);
