@@ -9,7 +9,7 @@ interface ClaimData {
   txHash: string;
 }
 
-const getClaimForEpoch = async (chainid: number, epoch: number): Promise<ClaimData> => {
+const getClaimForEpoch = async (epoch: number): Promise<ClaimData | undefined> => {
   try {
     const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
 
@@ -33,37 +33,12 @@ const getClaimForEpoch = async (chainid: number, epoch: number): Promise<ClaimDa
   }
 };
 
-const getVerificationStatus = async (chainid: number, epoch: number): Promise<ClaimData> => {
-  try {
-    const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
+const getLastClaimedEpoch = async (): Promise<ClaimData> => {
+  const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
 
-    const result = await request(
-      `${subgraph}`,
-      `{
-	        verifications(where:{claim_:{epoch:${epoch}}}){
-                claim{
-                 stateroot
-                epoch
-                }
-            timestamp
-            id
-            }
-        }`
-    );
-    return result[`verifications`][0];
-  } catch (e) {
-    console.log(e);
-    return undefined;
-  }
-};
-
-const getLastClaimedEpoch = async (chainid: number): Promise<ClaimData> => {
-  try {
-    const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
-
-    const result = await request(
-      `${subgraph}`,
-      `{
+  const result = await request(
+    `${subgraph}`,
+    `{
           claims(first:1, orderBy:timestamp, orderDirection:desc){
           id
                         bridger
@@ -76,12 +51,8 @@ const getLastClaimedEpoch = async (chainid: number): Promise<ClaimData> => {
                         }
           
         }`
-    );
-    return result[`claims`][0];
-  } catch (e) {
-    console.log(e);
-    return undefined;
-  }
+  );
+  return result[`claims`][0];
 };
 
-export { getClaimForEpoch, getVerificationStatus, getLastClaimedEpoch, ClaimData };
+export { getClaimForEpoch, getLastClaimedEpoch, ClaimData };

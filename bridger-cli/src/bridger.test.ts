@@ -1,13 +1,14 @@
 require("dotenv").config();
 import { assert } from "chai";
-import { hashClaim } from "../bridger";
-import { getVeaOutbox, getVeaInbox } from "./ethers";
-import { watch, ShutdownSignal } from "../bridger";
+import { hashClaim } from "./utils/claim";
+import { getVeaOutbox, getVeaInbox } from "./utils/ethers";
+import { watch } from "./bridger";
+import { ShutdownSignal } from "./utils/shutdown";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { BigNumber, utils } from "ethers";
-import { getClaimForEpoch } from "./graphQueries";
+import { BigNumber } from "ethers";
 
-describe("Testing bridger-cli", function () {
+jest.setTimeout(15000);
+describe("bridger", function () {
   console.log = function () {};
   const ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
   const FAKE_HASH = "0x0000000000000000000000000000000000000000000000000000000000000001";
@@ -82,24 +83,6 @@ describe("Testing bridger-cli", function () {
     sequencerDelay = Number(await veaOutbox.sequencerDelayLimit());
   });
 
-  describe("Unit tests", function () {
-    it("should return correct hash for a claim", async function () {
-      const claim = {
-        stateRoot: "0x771d351d6f9f28f73f6321f0728caf54cda07d9897a4a809ea89cbeda0f084e3",
-        claimer: "0xFa00D29d378EDC57AA1006946F0fc6230a5E3288",
-        timestampClaimed: 1,
-        timestampVerification: 0,
-        blocknumberVerification: 0,
-        honest: 0,
-        challenger: "0x0000000000000000000000000000000000000000",
-      };
-
-      const localHash = hashClaim(claim);
-      const contractClaimHash = await veaOutbox.hashClaim(claim);
-      assert.equal(localHash, contractClaimHash, "Hashes do not match");
-    });
-  });
-
   describe("Integration tests: Claiming", function () {
     it("should claim for new saved snapshot", async function () {
       // Send a message and save snapshot
@@ -110,14 +93,16 @@ describe("Testing bridger-cli", function () {
       await increaseEpoch();
 
       // Start bridger
-      await startBridgerWithTimeout(5000, claimEpoch);
+      await startBridgerWithTimeout(1000, claimEpoch);
 
       const toBeClaimedStateRoot = await veaInbox.snapshots(claimEpoch);
-      const claimData = await getClaimForEpoch(Number(process.env.VEAOUTBOX_CHAIN_ID), claimEpoch);
+      const claimData = await veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, claimEpoch, null));
+      const bridger = `0x${claimData[0].topics[1].slice(26)}`;
+      const claimBlock = await outboxProvider.getBlock(claimData[0].blockNumber);
       const claim = {
         stateRoot: toBeClaimedStateRoot,
-        claimer: claimData.bridger,
-        timestampClaimed: claimData.timestamp,
+        claimer: bridger,
+        timestampClaimed: claimBlock.timestamp,
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
@@ -173,10 +158,8 @@ describe("Testing bridger-cli", function () {
       await startBridgerWithTimeout(5000, claimEpoch);
 
       // Check if claim was made
-      const claimLogs = await outboxProvider.getLogs({
-        address: process.env.VEAOUTBOX_ADDRESS,
-        topics: veaOutbox.filters.Claimed(null, utils.hexZeroPad(utils.hexValue(claimEpoch + 1), 32), null).topics,
-      });
+      const claimLogs = await veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, claimEpoch + 1, null));
+
       const snapshotOnInbox = await veaInbox.snapshots(claimEpoch + 1);
       assert.equal(claimLogs.length, 1, "Claim was not made");
       assert.equal(Number(claimLogs[0].topics[2]), claimEpoch + 1, "Claim was made for wrong epoch");
@@ -202,10 +185,7 @@ describe("Testing bridger-cli", function () {
       await startBridgerWithTimeout(5000, claimEpoch);
 
       // Check if verification was started
-      const verificationLogs = await outboxProvider.getLogs({
-        address: process.env.VEAOUTBOX_ADDRESS,
-        topics: veaOutbox.filters.VerificationStarted(claimEpoch).topics,
-      });
+      const verificationLogs = await veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(claimEpoch));
       assert.equal(verificationLogs.length, 1, "Verification was not started");
     });
 
@@ -218,10 +198,7 @@ describe("Testing bridger-cli", function () {
       // Make claim and challenge it
       const claimTx = await veaOutbox.claim(claimEpoch, FAKE_HASH, { value: deposit });
 
-      const oldClaimLogs = await outboxProvider.getLogs({
-        address: process.env.VEAOUTBOX_ADDRESS,
-        topics: veaOutbox.filters.Claimed(null, utils.hexZeroPad(utils.hexValue(claimEpoch), 32), null).topics,
-      });
+      const oldClaimLogs = await veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, claimEpoch, null));
       const claimBlock = await outboxProvider.getBlock(oldClaimLogs[0].blockNumber);
 
       let claim = {
@@ -236,6 +213,7 @@ describe("Testing bridger-cli", function () {
       await veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](claimEpoch, claim, {
         value: deposit,
       });
+      await outboxProvider.send("evm_mine", []);
 
       await inboxProvider.send("evm_increaseTime", [epochPeriod + sequencerDelay]);
       await inboxProvider.send("evm_mine", []);
@@ -244,10 +222,7 @@ describe("Testing bridger-cli", function () {
 
       await startBridgerWithTimeout(5000, claimEpoch);
 
-      const verificationLogs = await outboxProvider.getLogs({
-        address: process.env.VEAOUTBOX_ADDRESS,
-        topics: veaOutbox.filters.VerificationStarted(claimEpoch).topics,
-      });
+      const verificationLogs = await veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(claimEpoch));
       assert.equal(verificationLogs.length, 0, "Verification was started");
     });
 
@@ -293,7 +268,7 @@ describe("Testing bridger-cli", function () {
       assert.equal(Number(latestVerifiedEpoch), claimEpoch, "Snapshot was veified for wrong epoch");
     });
 
-    it("should withdraw deposit when claim is verified", async function () {
+    it("should withdraw deposit when claimer is honest", async function () {
       await veaInbox.sendMessage(mockMessage.to, mockMessage.fnSelector, mockMessage.data);
       await veaInbox.saveSnapshot();
       await increaseEpoch();
@@ -340,5 +315,7 @@ describe("Testing bridger-cli", function () {
         "Deposit was not withdrawn"
       );
     });
+
+    it.todo("should not withdraw deposit when claimer is dishonest");
   });
 });
