@@ -33,11 +33,17 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const veaOutboxArb = await hre.companionNetworks.arbitrumSepolia.deployments.get("VeaOutboxGnosisToArbDevnet");
 
+  const gasOptions = {
+    maxFeePerGas: String(ethers.parseUnits("1", "gwei")),
+    maxPriorityFeePerGas: String(ethers.parseUnits("1", "gwei")),
+  };
+
   const inbox = await deploy("VeaInboxGnosisToArbDevnet", {
     from: deployer,
     contract: "VeaInboxGnosisToArb",
     args: [epochPeriod, veaOutboxArb.address, amb],
     log: true,
+    ...gasOptions,
   });
 
   console.log("VeaInboxGnosisToArbDevnet deployed to: %s", inbox.address);

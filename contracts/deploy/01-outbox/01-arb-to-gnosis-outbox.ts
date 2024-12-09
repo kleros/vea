@@ -3,7 +3,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";
 import { ethers } from "hardhat";
-import { BigNumber } from "@ethersproject/bignumber";
 
 enum ReceiverChains {
   GNOSIS_MAINNET = 100,
@@ -132,7 +131,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       from: deployer,
       contract: "ReceiverGatewayMock",
       args: [veaOutbox.address, senderGatewayAddress],
-      gasLimit: BigNumber.from(4000000),
+      gasLimit: 4000000,
       log: true,
     });
   };

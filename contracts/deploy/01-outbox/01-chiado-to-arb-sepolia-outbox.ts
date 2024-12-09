@@ -90,6 +90,11 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
+    const gasOptions = {
+      maxFeePerGas: String(ethers.parseUnits("1", "gwei")),
+      maxPriorityFeePerGas: String(ethers.parseUnits("1", "gwei")),
+    };
+
     const senderChainProvider = new ethers.JsonRpcProvider(senderNetworks[ReceiverChains[chainId]].url);
     let nonce = await senderChainProvider.getTransactionCount(deployer);
 
@@ -111,6 +116,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         sequencerFutureLimit,
       ],
       log: true,
+      ...gasOptions,
     });
 
     console.log("VeaOutboxGnosisToArbDevnet deployed to:", txn.address);
