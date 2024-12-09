@@ -51,10 +51,10 @@ function getVeaOutbox(veaOutboxAddress: string, privateKey: string, web3Provider
   switch (bridge.chain) {
     case "sepolia":
     case "mainnet":
-      return VeaOutboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+      return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
     case "chiado":
     case "gnosis":
-      return VeaOutboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+      return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
     default:
       throw new Error(`Unsupported chainId: ${chainId}`);
   }
