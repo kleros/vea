@@ -24,7 +24,7 @@ describe("ShutdownManager", () => {
       expect(instance.getIsShuttingDown()).toBe(true);
     });
 
-    it("should return true when isShuttingDown is false", () => {
+    it("should return false when isShuttingDown is false", () => {
       const instance = new ShutdownManager(false);
       expect(instance.getIsShuttingDown()).toBe(false);
     });
