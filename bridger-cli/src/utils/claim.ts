@@ -11,9 +11,21 @@ type ClaimStruct = {
   challenger: `0x${string}`;
 };
 
+/**
+ * Fetches the claim data for a given epoch.
+ *
+ * @param veaOutbox - The VeaOutbox contract instance
+ * @param epoch - The epoch number for which the claim is needed
+ *
+ * @returns The claim data for the given epoch
+ *
+ * @example
+ * const claim = await fetchClaim(veaOutbox, 240752);
+ */
+
 const fetchClaim = async (
-  veaOutbox,
-  epoch,
+  veaOutbox: any,
+  epoch: number,
   fetchClaimForEpoch: typeof getClaimForEpoch = getClaimForEpoch
 ): Promise<ClaimStruct> => {
   let claimData: ClaimData | undefined = await fetchClaimForEpoch(epoch);
@@ -53,6 +65,16 @@ const fetchClaim = async (
   return claim;
 };
 
+/**
+ * Hashes the claim data.
+ *
+ * @param claim - The claim data to be hashed
+ *
+ * @returns The hash of the claim data
+ *
+ * @example
+ * const claimHash = hashClaim(claim);
+ */
 const hashClaim = (claim) => {
   return ethers.utils.solidityKeccak256(
     ["bytes32", "address", "uint32", "uint32", "uint32", "uint8", "address"],

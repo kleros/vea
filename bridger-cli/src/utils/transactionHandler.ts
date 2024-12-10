@@ -8,6 +8,20 @@ interface PendingTransactions {
   startVerification: string | null;
 }
 
+/**
+ * Handles transactions for a given veaOutbox and epoch.
+ *
+ * @param chainId - The chainId of veaOutbox chain
+ * @param epoch - The epoch number for which the transactions are being handled
+ * @param veaOutbox - The veaOutbox instance to use for sending transactions
+ * @param claim - The claim object for the epoch
+ * @returns An instance of the TransactionHandler class
+ *
+ * @example
+ * const txHandler = new TransactionHandler(11155111, 240752, veaOutbox, claim);
+ * txHandler.sendTransaction(txData);
+ */
+
 export class TransactionHandler {
   public epoch: number;
   public veaOutbox: any;
@@ -26,7 +40,7 @@ export class TransactionHandler {
   constructor(
     chainId: number,
     epoch: number,
-    veaOutbox,
+    veaOutbox: any,
     claim?: ClaimStruct,
     fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
   ) {

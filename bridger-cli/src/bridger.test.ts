@@ -301,19 +301,15 @@ describe("bridger", function () {
 
       await veaOutbox.verifySnapshot(claimEpoch, claim);
 
-      const balancePreWithdraw = Number(await outboxProvider.getBalance(claimTxn.from));
-      const contractBalancePreWithdraw = Number(await outboxProvider.getBalance(veaOutbox.address));
+      const balancePreWithdraw = await outboxProvider.getBalance(claimTxn.from);
+      const contractBalancePreWithdraw = await outboxProvider.getBalance(veaOutbox.address);
 
       await startBridgerWithTimeout(5000, claimEpoch);
-      const balancePostWithdraw = Number(await outboxProvider.getBalance(claimTxn.from));
-      const contractBalancePostWithdraw = Number(await outboxProvider.getBalance(veaOutbox.address));
-      // Check if deposit was withdrawn
-      assert.isAbove(balancePostWithdraw, balancePreWithdraw, "Deposit was not withdrawn");
-      assert.equal(
-        contractBalancePostWithdraw,
-        contractBalancePreWithdraw - Number(deposit),
-        "Deposit was not withdrawn"
-      );
+      const balancePostWithdraw = await outboxProvider.getBalance(claimTxn.from);
+      const contractBalancePostWithdraw = await outboxProvider.getBalance(veaOutbox.address);
+
+      assert(balancePostWithdraw.gt(balancePreWithdraw), "Deposit was not withdrawn");
+      assert(contractBalancePostWithdraw.eq(contractBalancePreWithdraw.sub(deposit)), "Deposit was not withdrawn");
     });
 
     it.todo("should not withdraw deposit when claimer is dishonest");
