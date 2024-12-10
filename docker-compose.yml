@@ -1,0 +1,6 @@
+services:
+  relayer-tests:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.relayer-cli
+    command: "yarn workspace @kleros/vea-relayer-cli test"
