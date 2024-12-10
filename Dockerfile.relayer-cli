@@ -1,21 +1,24 @@
 FROM node:18-alpine
 
+# Pin the yarn version
 RUN yarn policies set-version 4.2.2
 
+# Ensure we run the the process with minimum privileges
 USER node
 
 WORKDIR /home/node
 
+# Installation of dependencies from the monorepo
 COPY --chown=node:node package.json yarn.lock .yarnrc.yml ./
+COPY --chown=node:node ./contracts/ ./contracts/
 RUN yarn install
 
+# Workspace dependencies installation
 COPY --chown=node:node relayer-cli/package.json ./relayer-cli/
-COPY --chown=node:node contracts/package.json ./contracts/
+RUN yarn --cwd ./relayer-cli/ install && yarn cache clean
 
-RUN yarn --cwd ./relayer-cli/ install
-
+# Copy the rest of the code
 COPY --chown=node:node ./relayer-cli/ ./relayer-cli/
 
-CMD ["yarn", "workspace", "relayer-cli", "start-testnet-relayer"]
-
-
+# Example default command. This should be replaced to mainnet when available
+CMD ["yarn", "workspace", "@kleros/vea-relayer-cli", "run", "start-devnet-relayer"]

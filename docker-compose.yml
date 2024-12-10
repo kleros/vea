@@ -1,6 +1,18 @@
+x-relayer: &default-relayer
+  build:
+    context: .
+    dockerfile: ./Dockerfile.relayer-cli
+  env_file: "./relayer-cli/.env.dist"
+
 services:
+  relayer-devnet:
+    <<: *default-relayer
+    command: "yarn workspace @kleros/vea-relayer-cli run start-devnet-relayer"
+
+  relayer-testnet:
+    <<: *default-relayer
+    command: "yarn workspace @kleros/vea-relayer-cli run start-devnet-relayer"
+
   relayer-tests:
-    build:
-      context: .
-      dockerfile: ./Dockerfile.relayer-cli
-    command: "yarn workspace @kleros/vea-relayer-cli test"
+    <<: *default-relayer
+    command: "yarn workspace @kleros/vea-relayer-cli run test"
