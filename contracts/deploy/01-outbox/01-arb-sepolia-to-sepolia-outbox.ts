@@ -1,4 +1,4 @@
-import { parseEther, parseUnits } from "ethers";
+import { parseEther } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";

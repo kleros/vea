@@ -50,6 +50,10 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const contractBaseName = "RouterGnosisToArb";
   const deploymentName = `${contractBaseName}${suffix}`;
 
+  if (!(RouterChains[chainId] in paramsByChainId)) {
+    throw new Error(`Unsupported chain ID: ${chainId}`);
+  }
+
   // ----------------------------------------------------------------------------------------------
   const hardhatDeployer = async () => {
     const [veaOutbox, veaInbox] = await Promise.all([

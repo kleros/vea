@@ -3,8 +3,6 @@ import {
   VeaOutboxArbToEth__factory,
   VeaOutboxArbToGnosis__factory,
   VeaOutboxArbToEthDevnet__factory,
-  VeaOutboxArbToGnosisDevnet__factory,
-  VeaOutboxMultiChallenge__factory,
   VeaInboxArbToEth__factory,
   VeaInboxArbToGnosis__factory,
   IWETH__factory,
@@ -24,36 +22,12 @@ function getVeaInboxArbToEth(veaInboxAddress: string, privateKey: string, web3Pr
   return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
 }
 
-function getVeaInboxArbToEthProvider(veaInboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
-}
-
-function getVeaOutboxArbToEthProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
-}
-
-function getVeaOutboxMultiChallengeProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaOutboxMultiChallenge__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
-}
-
-function getVeaOutboxArbToGnosisProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
-}
-
-function getVeaInboxArbToGnosisProvider(veaInboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWalletRPC(privateKey, rpc));
-}
-
 function getWETH(WETH: string, privateKey: string, web3ProviderURL: string) {
   return IWETH__factory.connect(WETH, getWallet(privateKey, web3ProviderURL));
 }
 
 function getVeaOutboxArbToEth(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
   return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
-}
-
-function getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
-  return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
 }
 
 function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
@@ -79,10 +53,8 @@ export {
   getVeaOutboxArbToEth,
   getWalletRPC,
   getWallet,
-  getVeaOutboxArbToEthDevnetProvider,
+  getVeaOutboxArbToEthDevnet,
   getVeaInboxArbToEth,
-  getVeaInboxArbToEthProvider,
-  getVeaOutboxArbToEthProvider,
   getVeaOutboxArbToGnosis,
   getVeaInboxArbToGnosis,
   getVeaRouterArbToGnosis,

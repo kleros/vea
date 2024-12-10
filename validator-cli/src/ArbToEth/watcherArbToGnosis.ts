@@ -106,8 +106,8 @@ const watch = async () => {
 
   const wethAddress = (await retryOperation(() => veaOutbox.weth(), 1000, 10)) as string;
   const weth = getWETH(wethAddress, process.env.PRIVATE_KEY, process.env.RPC_GNOSIS);
-  const balance = (await retryOperation(() => weth.balanceOf(watcherAddress), 1000, 10)) as BigInt;
-  const allowance = (await retryOperation(() => weth.allowance(watcherAddress, veaOutboxAddress), 1000, 10)) as BigInt;
+  const balance = (await retryOperation(() => weth.balanceOf(watcherAddress), 1000, 10)) as bigint;
+  const allowance = (await retryOperation(() => weth.allowance(watcherAddress, veaOutboxAddress), 1000, 10)) as bigint;
 
   // get Arb sequencer params
   const l2Network = await getArbitrumNetwork(providerArb);
@@ -115,7 +115,7 @@ const watch = async () => {
   const maxDelaySeconds = Number((await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1] as BigInt);
 
   // get vea outbox params
-  const deposit = await retryOperation(() => veaOutbox.deposit(), 1000, 10);
+  const deposit = (await retryOperation(() => veaOutbox.deposit(), 1000, 10)) as bigint;
   const epochPeriod = Number(await retryOperation(() => veaOutbox.epochPeriod(), 1000, 10));
   const sequencerDelayLimit = Number(await retryOperation(() => veaOutbox.sequencerDelayLimit(), 1000, 10));
 
