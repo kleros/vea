@@ -45,9 +45,9 @@ describe("snapshotClaim", () => {
       veaOutbox.queryFilter.mockImplementationOnce(() =>
         Promise.resolve([{ blockHash: "0x1234", args: { challenger: ethers.constants.AddressZero } }])
       );
+
       const claim = await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
-      console.log(claim);
-      console.log(mockClaim);
+
       expect(claim).toBeDefined();
       expect(claim).toEqual(mockClaim);
       expect(getClaimForEpoch).toHaveBeenCalledWith(epoch);
@@ -70,8 +70,7 @@ describe("snapshotClaim", () => {
       });
 
       const claim = await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
-      console.log(claim);
-      console.log(mockClaim);
+
       expect(claim).toBeDefined();
       expect(claim).toEqual(mockClaim);
       expect(getClaimForEpoch).toHaveBeenCalledWith(epoch);
@@ -119,8 +118,7 @@ describe("snapshotClaim", () => {
       veaOutbox.queryFilter.mockImplementationOnce(() => Promise.resolve([]));
 
       const claim = await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
-      console.log(claim);
-      console.log(mockClaim);
+
       expect(claim).toBeDefined();
       expect(claim).toEqual(mockClaim);
       expect(getClaimForEpoch).toHaveBeenCalledWith(epoch);
