@@ -7,7 +7,8 @@
     "es6": true,
     "node": true,
     "mocha": true,
-    "es2020": true
+    "es2020": true,
+    "jest": true
   },
   "extends": [
     "eslint:recommended",

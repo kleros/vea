@@ -1,20 +1,5 @@
 import * as fs from "fs";
-
-class ShutdownManager {
-  private isShuttingDown: boolean;
-
-  constructor(initialState: boolean = false) {
-    this.isShuttingDown = initialState;
-  }
-
-  public getIsShuttingDown(): boolean {
-    return this.isShuttingDown;
-  }
-
-  public triggerShutdown() {
-    this.isShuttingDown = true;
-  }
-}
+import ShutdownManager from "./shutdownManager";
 
 async function initialize(chainId: number, network: string): Promise<number> {
   const lockFileName = "./state/" + network + "_" + chainId + ".pid";
