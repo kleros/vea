@@ -7,7 +7,7 @@ async function initialize(
   veaOutboxAddress: string,
   veaInboxAddress: string,
   outboxRPCUrl: string
-): Promise<[VeaInboxArbToEth, number, BigInt, VeaOutboxArbToEthDevnet, BigInt]> {
+): Promise<[VeaInboxArbToEth, number, bigint, VeaOutboxArbToEthDevnet, bigint]> {
   const outboxProvider = new JsonRpcProvider(outboxRPCUrl);
   const veaOutbox = getVeaOutboxArbToEthDevnet(veaOutboxAddress, process.env.PRIVATE_KEY, outboxRPCUrl);
 
@@ -41,10 +41,10 @@ async function initialize(
 async function happyPath(
   veaInbox: VeaInboxArbToEth,
   epochPeriod: number,
-  lastSavedCount: BigInt,
+  lastSavedCount: bigint,
   veaOutbox: VeaOutboxArbToEthDevnet,
-  deposit: BigInt
-): Promise<BigInt> {
+  deposit: bigint
+): Promise<bigint> {
   let currentTS = Math.floor(Date.now() / 1000);
   let claimableEpoch = Math.floor(currentTS / epochPeriod);
   let newCount = lastSavedCount;
@@ -52,7 +52,7 @@ async function happyPath(
 
   if (snapshot == "0x0000000000000000000000000000000000000000000000000000000000000000") {
     // check if snapshot should be taken
-    const inboxCount: BigInt = await veaInbox.count();
+    const inboxCount: bigint = await veaInbox.count();
     if (inboxCount > lastSavedCount) {
       // should take snapshot
       console.log("inbox updated: taking snapshot. . .");

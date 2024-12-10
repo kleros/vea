@@ -441,18 +441,16 @@ const watch = async () => {
                 continue;
               }
             }
-            const gasEstimate = BigInt(
-              (await retryOperation(
-                () =>
-                  veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"].estimateGas(
-                    veaEpochOutboxCheck,
-                    claim,
-                    { value: deposit }
-                  ),
-                1000,
-                10
-              )) as any
-            );
+            const gasEstimate = (await retryOperation(
+              () =>
+                veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"].estimateGas(
+                  veaEpochOutboxCheck,
+                  claim,
+                  { value: deposit }
+                ),
+              1000,
+              10
+            )) as bigint;
 
             // Adjust the calculation to ensure maxFeePerGas is reasonable
             const maxFeePerGasProfitable = deposit / (gasEstimate * BigInt(6));

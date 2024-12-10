@@ -112,7 +112,7 @@ const watch = async () => {
   // get Arb sequencer params
   const l2Network = await getArbitrumNetwork(providerArb);
   const sequencer = SequencerInbox__factory.connect(l2Network.ethBridge.sequencerInbox, providerEth);
-  const maxDelaySeconds = Number((await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1] as BigInt);
+  const maxDelaySeconds = Number((await retryOperation(() => sequencer.maxTimeVariation(), 1000, 10))[1] as bigint);
 
   // get vea outbox params
   const deposit = (await retryOperation(() => veaOutbox.deposit(), 1000, 10)) as bigint;
