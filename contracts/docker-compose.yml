@@ -41,26 +41,60 @@ services:
     networks:
       - graph-network
 
-  hardhat:
+  hardhat-inbox-fork:
     build:
       context: ./
       dockerfile: Dockerfile
-    container_name: hardhat
+    container_name: inbox_fork
     environment:
-      - NETWORK1=arbitrum-sepolia
-      - PORT1=8545
-      - NETWORK2=sepolia
-      - PORT2=8546
-      - INFURA_ID=${INFURA_API_KEY}
-    command: ["/bin/sh", "/start-forks.sh"]
+      - NETWORK=${INBOX_NETWORK}
+      - PORT=8545
+      - INFURA_API_KEY=${INFURA_API_KEY}
+    command: ["/bin/sh", "/home/node/start-forks.sh"]
     ports:
       - "8545:8545" 
-      - "8546:8546"
     depends_on:
       - postgres
       - ipfs
     networks:
       - graph-network
+
+  hardhat-outbox-fork:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: outbox_fork
+    environment:
+      - NETWORK=${OUTBOX_NETWORK}
+      - PORT=8546
+      - INFURA_API_KEY=${INFURA_API_KEY}
+    command: ["/bin/sh", "/home/node/start-forks.sh"]
+    ports:
+      - "8546:8546" 
+    depends_on:
+      - postgres
+      - ipfs
+    networks:
+      - graph-network
+
+  hardhat-router-fork:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: router_fork
+    environment:
+      - NETWORK=${ROUTER_NETWORK}
+      - PORT=8547
+      - INFURA_API_KEY=${INFURA_API_KEY}
+    command: ["/bin/sh", "/home/node/start-forks.sh"]
+    ports:
+      - "8547:8547" 
+    depends_on:
+      - postgres
+      - ipfs
+    networks:
+      - graph-network
+
 
   graph-node:
     image: graphprotocol/graph-node:latest
@@ -72,7 +106,7 @@ services:
       postgres_pass: mysecretpassword
       postgres_db: graphnode_db
       ipfs: ipfs_host:5001
-      ethereum: mainnet:http://host.docker.internal:8546/
+      ethereum: mainnet:http://host.docker.internal:${RPC_GRAPH}/
       ETHEREUM_REORG_THRESHOLD: 1
       ETHEREUM_ANCESTOR_COUNT: 10
       GRAPH_LOG: debug
@@ -82,7 +116,9 @@ services:
     depends_on:
       - postgres
       - ipfs
-      - hardhat
+      - hardhat-inbox-fork
+      - hardhat-outbox-fork
+      - hardhat-router-fork
     networks:
       - graph-network
 

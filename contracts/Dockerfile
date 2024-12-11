@@ -1,20 +1,19 @@
 FROM node:20.12.1-alpine
 
-WORKDIR /
+WORKDIR /home/node
 
 COPY package.json ./
 
-RUN yarn install
+RUN yarn install --ignore-scripts
 
 COPY . .
 
-ENV INFURA_ID=""
-RUN test -n "$INFURA_ID" || (echo "INFURA_ID must be set" && false)
+ENV INFURA_API_KEY=""
 
-COPY start-forks.sh /start-forks.sh
+RUN chmod +x /home/node/start-forks.sh
 
-RUN chmod +x /start-forks.sh
+USER node
 
-EXPOSE 8545 8546
+EXPOSE 8545 8546 8547
 
-CMD ["/bin/sh", "/start-forks.sh"]
+CMD ["/bin/sh", "/home/node/start-forks.sh"]
