@@ -39,9 +39,6 @@ describe("Merkle", () => {
 
       merkleTreeExposed = await merkleTreeExposedFactory.deploy();
       merkleProofExposed = await merkleProofExposedFactory.deploy();
-
-      // Note: In ethers v6, we don't need to call deployed() anymore
-      // The deploy() promise resolves only after the contract is deployed
     });
 
     it("Merkle Root verification", async () => {

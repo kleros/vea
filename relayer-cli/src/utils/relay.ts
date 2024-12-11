@@ -35,14 +35,9 @@ const relay = async (chainId: number, nonce: number) => {
     getMessageDataToRelay(chainId, nonce),
   ]);
 
-  try {
-    const txn = await veaOutbox.sendMessage(proof, nonce, to, data);
-    const receipt = await txn.wait();
-    return receipt;
-  } catch (error) {
-    console.error("Transaction failed:", error);
-    throw error;
-  }
+  const txn = await veaOutbox.sendMessage(proof, nonce, to, data);
+  const receipt = await txn.wait();
+  return receipt;
 };
 
 const relayBatch = async (chainId: number, nonce: number, maxBatchSize: number) => {
@@ -121,12 +116,11 @@ const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): 
 };
 
 const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) => {
-  try {
-    const subgraph = getInboxSubgraph(chainId);
+  const subgraph = getInboxSubgraph(chainId);
 
-    const result = await request(
-      `https://api.studio.thegraph.com/query/${subgraph}`,
-      `{
+  const result = await request(
+    `https://api.studio.thegraph.com/query/${subgraph}`,
+    `{
         messageSents(
           first: 1000, 
           where: {
@@ -139,13 +133,9 @@ const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) =
           nonce
         }
       }`
-    );
+  );
 
-    return result[`messageSents`].map((a: { nonce: number }) => a.nonce);
-  } catch (e) {
-    console.error("Error getting nonces:", e);
-    return undefined;
-  }
+  return result[`messageSents`].map((a: { nonce: number }) => a.nonce);
 };
 
 export { relayAllFrom, relay, relayBatch };

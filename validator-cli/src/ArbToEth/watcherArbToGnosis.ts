@@ -332,7 +332,6 @@ const watch = async () => {
             "challenge progess for epoch " + veaEpochOutboxCheck + "  is " + JSON.stringify(challengeProgress)
           );
           //TODO : check profitablity of the whole dispute resolution
-          //const profitablity = await calculateDisputeResolutionProfitability(veaEpochOutboxCheck,claim,veaOutbox,veaInbox,providerGnosis,providerArb,providerEth);
           if (claim.challenger == ethers.ZeroAddress) {
             if (challengeProgress?.challenge.status == "pending") continue;
             const txnChallenge = (await retryOperation(
@@ -745,59 +744,6 @@ async function getClaimForEpoch(
   if (claimChallengerHonest === claimHash) return { ...claim, honest: 2 };
   return null;
 }
-
-// async function calculateDisputeResolutionProfitability(
-//   epoch: number,
-//   claim: ClaimStruct,
-//   veaOutbox: VeaOutboxArbToGnosis,
-//   veaInbox: VeaInboxArbToGnosis,
-//   providerGnosis: JsonRpcProvider,
-//   providerArb: JsonRpcProvider,
-//   providerEth: JsonRpcProvider
-// ): Promise<{ profitable: boolean; estimatedProfit: BigInt }> {
-//   try {
-//     const deposit = await retryOperation(() => veaOutbox.deposit(), 1000, 10) as bigint;
-//     const totalReward = deposit;
-//     const minimumProfit = totalReward * BigInt(40) / BigInt(100); // 40% of total reward
-//     let maximumAllowableCost = totalReward - minimumProfit;
-//     let totalCost = BigInt(0);
-
-//     // 1. Costs on Gnosis Chain
-//     const gnosisGasEstimate = await veaOutbox.challenge.estimateGas(epoch, claim);
-
-//     const gnosisGasPrice = await providerGnosis.getGasPrice();
-//     const gnosisCost = gnosisGasEstimate * gnosisGasPrice;
-
-//     if (gnosisCost > maximumAllowableCost) {
-//       return { profitable: false, estimatedProfit: BigInt(0) };
-//     }
-//     totalCost = totalCost + gnosisCost;
-//     maximumAllowableCost = maximumAllowableCost - gnosisCost;
-
-//     const l2Network = await getArbitrumNetwork(providerArb);
-
-//     const arbGasEstimate = (await retryOperation(
-//       () => veaInbox.sendSnapshot.estimateGas(epoch, 200000, claim),
-//       1000,
-//       10
-//     )) as BigInt;
-
-//     const arbGasPrice = (await retryOperation(() => providerArb.getGasPrice(), 1000, 10)) as BigInt;
-//     const arbCost = arbGasEstimate * arbGasPrice;
-
-//     if (arbCost > maximumAllowableCost) {
-//       return { profitable: false, estimatedProfit: BigInt(0) };
-//     }
-//     totalCost = totalCost + arbCost;
-//     maximumAllowableCost = maximumAllowableCost - arbCost;
-
-//     // 3. Costs on Ethereum (for Arbitrum -> Ethereum message)
-//     //TODO : L2 to L1 message execution gas cost
-//   } catch (error) {
-//     console.error("Error calculating profitability:", error);
-//     return { profitable: false, estimatedProfit: BigInt(0) };
-//   }
-// }
 
 function needsRetry(current: ChallengeProgress, previous: ChallengeProgress | undefined): boolean {
   if (!previous) return false;

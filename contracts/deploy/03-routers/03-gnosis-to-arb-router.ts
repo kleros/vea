@@ -75,24 +75,19 @@ const deployRouter: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const liveDeployer = async () => {
     const { outboxNetwork, inboxNetwork } = getNetworkConfig(chainId);
 
-    try {
-      const [veaOutbox, veaInbox] = await Promise.all([
-        hre.companionNetworks[outboxNetwork].deployments.get(`VeaOutboxGnosisToArb${suffix}`),
-        hre.companionNetworks[inboxNetwork].deployments.get(`VeaInboxGnosisToArb${suffix}`),
-      ]);
+    const [veaOutbox, veaInbox] = await Promise.all([
+      hre.companionNetworks[outboxNetwork].deployments.get(`VeaOutboxGnosisToArb${suffix}`),
+      hre.companionNetworks[inboxNetwork].deployments.get(`VeaInboxGnosisToArb${suffix}`),
+    ]);
 
-      const router = await deploy(deploymentName, {
-        from: deployer,
-        contract: contractBaseName,
-        args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address, chainId],
-        log: true,
-      });
+    const router = await deploy(deploymentName, {
+      from: deployer,
+      contract: contractBaseName,
+      args: [arbitrumBridge, amb, veaInbox.address, veaOutbox.address, chainId],
+      log: true,
+    });
 
-      console.log(`${deploymentName} deployed to: ${router.address}`);
-    } catch (error) {
-      console.error("Failed to deploy:", error);
-      throw error;
-    }
+    console.log(`${deploymentName} deployed to: ${router.address}`);
   };
 
   // ----------------------------------------------------------------------------------------------
