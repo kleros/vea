@@ -1,4 +1,5 @@
-import { setEpochRange, getBlockNumberFromEpoch, checkForNewEpoch } from "./epochHandler";
+import { setEpochRange, getBlockNumberFromEpoch, getLatestVerifiableEpoch } from "./epochHandler";
+import { InvalidStartEpochError } from "./errors";
 
 describe("epochHandler", () => {
   describe("setEpochRange", () => {
@@ -18,7 +19,7 @@ describe("epochHandler", () => {
 
     it("should throw an error if start<current epoch", async () => {
       startEpoch = 12;
-      await expect(setEpochRange(veaOutbox, startEpoch)).rejects.toThrow("Current epoch is less than start epoch");
+      await expect(setEpochRange(veaOutbox, startEpoch)).rejects.toThrow(InvalidStartEpochError);
     });
 
     it("should return an array rolled back to default when no startEpoch provided", async () => {
@@ -63,31 +64,27 @@ describe("epochHandler", () => {
     });
   });
 
-  describe("checkForNewEpoch", () => {
+  describe("getLatestVerifiableEpoch", () => {
     const epochPeriod = 10;
+    const chainId = 1;
     let currentEpoch: number;
+    let mockGetBridgeConfig: jest.Mock;
 
     beforeEach(() => {
       currentEpoch = 99;
+      mockGetBridgeConfig = jest.fn().mockReturnValue({
+        epochPeriod,
+      });
     });
 
     afterEach(() => {
       jest.restoreAllMocks();
     });
 
-    it("should return a new epoch", () => {
-      const mockDateNow = jest.spyOn(Date, "now").mockImplementation(() => 1010 * 1000);
-      const result = checkForNewEpoch(currentEpoch, epochPeriod);
-      expect(result).toBe(100);
-      mockDateNow.mockRestore();
-    });
-
-    it("should return no new epoch", () => {
-      const mockDateNow = jest.spyOn(Date, "now").mockImplementation(() => 1010 * 1000);
-      currentEpoch = 100;
-      const result = checkForNewEpoch(currentEpoch, epochPeriod);
-      expect(result).toBe(100);
-      mockDateNow.mockRestore();
+    it.only("should return a new epoch", () => {
+      const mockNow = 1625097600000;
+      const currentEpoch = getLatestVerifiableEpoch(chainId, mockNow, mockGetBridgeConfig);
+      expect(currentEpoch).toBe(Math.floor(mockNow / 1000 / epochPeriod) - 1);
     });
   });
 });

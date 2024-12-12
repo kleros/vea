@@ -1,3 +1,6 @@
+/**
+ * A class to represent a shutdown signal.
+ */
 export class ShutdownSignal {
   private isShutdownSignal: boolean;
 

@@ -1,4 +1,6 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
+import { InvalidStartEpochError } from "./errors";
+import { getBridgeConfig } from "../consts/bridgeRoutes";
 
 /**
  * Sets the range of epochs from the start epoch to the current epoch.
@@ -14,7 +16,7 @@ const setEpochRange = async (veaOutbox: any, startEpoch: number): Promise<Array<
   const defaultEpochRollback = 10; // When no start epoch is provided, we will start from current epoch - defaultEpochRollback
   const currentEpoch = Number(await veaOutbox.epochNow());
   if (currentEpoch < startEpoch) {
-    throw new Error("Current epoch is less than start epoch");
+    throw new InvalidStartEpochError(startEpoch);
   }
   if (startEpoch == 0) {
     startEpoch = currentEpoch - defaultEpochRollback;
@@ -52,19 +54,22 @@ const getBlockNumberFromEpoch = async (
 /**
  * Checks if a new epoch has started.
  *
- * @param currentEpoch - The current epoch number
+ * @param currentVerifiableEpoch - The current verifiable epoch number
  * @param epochPeriod - The epoch period in seconds
+ * @param now - The current time in milliseconds (optional, defaults to Date.now())
  *
  * @returns The updated epoch number
  *
  * @example
  * currentEpoch = checkForNewEpoch(currentEpoch, 7200);
  */
-const checkForNewEpoch = (currentEpoch: number, epochPeriod: number): number => {
-  if (Math.floor(Date.now() / (1000 * epochPeriod)) - 1 > currentEpoch) {
-    currentEpoch = Math.floor(Date.now() / 1000 / epochPeriod) - 1;
-  }
-  return currentEpoch;
+const getLatestVerifiableEpoch = (
+  chainId: number,
+  now: number = Date.now(),
+  fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
+): number => {
+  const { epochPeriod } = fetchBridgeConfig(chainId);
+  return Math.floor(now / 1000 / epochPeriod) - 1;
 };
 
-export { setEpochRange, getBlockNumberFromEpoch, checkForNewEpoch };
+export { setEpochRange, getBlockNumberFromEpoch, getLatestVerifiableEpoch };

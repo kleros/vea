@@ -1,15 +1,15 @@
 require("dotenv").config();
 import { assert } from "chai";
+import { JsonRpcProvider } from "@ethersproject/providers";
+import { BigNumber } from "ethers";
+import { MockEmitter } from "./utils/emitter";
 import { hashClaim } from "./utils/claim";
 import { getVeaOutbox, getVeaInbox } from "./utils/ethers";
 import { watch } from "./bridger";
 import { ShutdownSignal } from "./utils/shutdown";
-import { JsonRpcProvider } from "@ethersproject/providers";
-import { BigNumber } from "ethers";
 
 jest.setTimeout(15000);
 describe("bridger", function () {
-  console.log = function () {};
   const ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
   const FAKE_HASH = "0x0000000000000000000000000000000000000000000000000000000000000001";
   const mockMessage = {
@@ -17,8 +17,8 @@ describe("bridger", function () {
     to: "0x1234567890abcdef1234567890abcdef12345678",
     fnSelector: "0x12345678",
   };
-  const inboxProvider = new JsonRpcProvider("http://localhost:8545");
-  const outboxProvider = new JsonRpcProvider("http://localhost:8546");
+  const inboxProvider = new JsonRpcProvider(process.env.VEAINBOX_PROVIDER);
+  const outboxProvider = new JsonRpcProvider(process.env.VEAOUTBOX_PROVIDER);
 
   let claimEpoch: number;
   let epochPeriod: number;
@@ -28,13 +28,13 @@ describe("bridger", function () {
   const veaInbox = getVeaInbox(
     process.env.VEAINBOX_ADDRESS,
     process.env.PRIVATE_KEY,
-    "http://localhost:8545",
+    process.env.VEAINBOX_PROVIDER,
     Number(process.env.VEAOUTBOX_CHAIN_ID)
   );
   const veaOutbox = getVeaOutbox(
     process.env.VEAOUTBOX_ADDRESS,
     process.env.PRIVATE_KEY,
-    "http://localhost:8546",
+    process.env.VEAOUTBOX_PROVIDER,
     Number(process.env.VEAOUTBOX_CHAIN_ID)
   );
 
@@ -49,7 +49,8 @@ describe("bridger", function () {
   // Start bridger with a timeout
   async function startBridgerWithTimeout(timeout: number, startEpoch: number = 0) {
     const shutDownSignal = new ShutdownSignal();
-    const bridgerPromise = watch(shutDownSignal, startEpoch);
+    const mockEmitter = new MockEmitter();
+    const bridgerPromise = watch(shutDownSignal, startEpoch, mockEmitter);
     const timeoutPromise = new Promise((resolve) => {
       setTimeout(() => {
         shutDownSignal.setShutdownSignal();
@@ -93,10 +94,11 @@ describe("bridger", function () {
       await increaseEpoch();
 
       // Start bridger
-      await startBridgerWithTimeout(1000, claimEpoch);
+      await startBridgerWithTimeout(5000, claimEpoch);
 
       const toBeClaimedStateRoot = await veaInbox.snapshots(claimEpoch);
       const claimData = await veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, claimEpoch, null));
+
       const bridger = `0x${claimData[0].topics[1].slice(26)}`;
       const claimBlock = await outboxProvider.getBlock(claimData[0].blockNumber);
       const claim = {

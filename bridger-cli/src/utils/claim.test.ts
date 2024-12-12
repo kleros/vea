@@ -1,5 +1,5 @@
 import { fetchClaim, ClaimStruct, hashClaim } from "./claim";
-
+import { ClaimNotFoundError } from "./errors";
 import { ethers } from "ethers";
 
 describe("snapshotClaim", () => {
@@ -132,7 +132,7 @@ describe("snapshotClaim", () => {
 
       await expect(async () => {
         await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
-      }).rejects.toThrow(`No claim found for epoch ${epoch}`);
+      }).rejects.toThrow(new ClaimNotFoundError(epoch));
     });
   });
 

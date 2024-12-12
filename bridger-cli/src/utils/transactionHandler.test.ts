@@ -1,4 +1,6 @@
 import { TransactionHandler } from "./transactionHandler";
+import { ClaimNotSetError } from "./errors";
+import { BotEvents } from "./botEvents";
 
 describe("TransactionHandler Tests", () => {
   let chainId: number;
@@ -72,40 +74,43 @@ describe("TransactionHandler Tests", () => {
         getBlock: jest.fn(),
       };
     });
-    it("should return true if transaction is pending", async () => {
+    it("should return true if transaction is not final", async () => {
       veaOutbox.provider.getBlock.mockReturnValue({
         number: blockNumber + transactionHandler.requiredConfirmations - 1,
       });
-      const consoleSpy = jest.spyOn(console, "log");
+      const emitSpy = jest.spyOn(transactionHandler.emitter, "emit");
       const result = await transactionHandler.checkTransactionPendingStatus(trnxHash);
       expect(result).toBeTruthy();
-      expect(consoleSpy).toHaveBeenCalledWith(`Transaction ${trnxHash} is not final yet.`);
+      expect(emitSpy).toHaveBeenCalledWith(
+        BotEvents.TXN_NOT_FINAL,
+        trnxHash,
+        transactionHandler.requiredConfirmations - 1
+      );
     });
 
     it("should return false if transaction is confirmed", async () => {
       veaOutbox.provider.getBlock.mockReturnValue({
         number: blockNumber + transactionHandler.requiredConfirmations,
       });
-      const consoleSpy = jest.spyOn(console, "log");
+      const emitSpy = jest.spyOn(transactionHandler.emitter, "emit");
       const result = await transactionHandler.checkTransactionPendingStatus(trnxHash);
       expect(result).toBeFalsy();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        `Transaction ${trnxHash} is final with ${transactionHandler.requiredConfirmations} confirmations`
-      );
+      expect(emitSpy).toHaveBeenCalledWith(BotEvents.TXN_FINAL, trnxHash, transactionHandler.requiredConfirmations);
     });
+
     it("should return true if transaction receipt is not found", async () => {
       veaOutbox.provider.getTransactionReceipt.mockResolvedValue(null);
-      const consoleSpy = jest.spyOn(console, "log");
+      const emitSpy = jest.spyOn(transactionHandler.emitter, "emit");
       const result = await transactionHandler.checkTransactionPendingStatus(trnxHash);
       expect(result).toBeTruthy();
-      expect(consoleSpy).toHaveBeenCalledWith(`Transaction ${trnxHash} is pending`);
+      expect(emitSpy).toHaveBeenCalledWith(BotEvents.TXN_PENDING, trnxHash);
     });
 
     it("should return false if transaction is null", async () => {
-      const consoleSpy = jest.spyOn(console, "log");
+      const emitSpy = jest.spyOn(transactionHandler.emitter, "emit");
       const result = await transactionHandler.checkTransactionPendingStatus(null);
       expect(result).toBeFalsy();
-      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(emitSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -178,7 +183,7 @@ describe("TransactionHandler Tests", () => {
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
       const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, null, mockGetBridgeConfig);
 
-      await expect(transactionHandler.startVerification(startVerifyTimeFlip)).rejects.toThrow("Claim is not set");
+      await expect(transactionHandler.startVerification(startVerifyTimeFlip)).rejects.toThrow(ClaimNotSetError);
     });
 
     it("should not start verification if a startVerification transaction is pending", async () => {
@@ -229,7 +234,7 @@ describe("TransactionHandler Tests", () => {
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
       const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, null, mockGetBridgeConfig);
 
-      await expect(transactionHandler.verifySnapshot(verificationFlipTime)).rejects.toThrow("Claim is not set");
+      await expect(transactionHandler.verifySnapshot(verificationFlipTime)).rejects.toThrow(ClaimNotSetError);
     });
 
     it("should not verify snapshot if a verifySnapshot transaction is pending", async () => {

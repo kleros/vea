@@ -1,5 +1,9 @@
+import { EventEmitter } from "node:events";
 import { getBridgeConfig } from "../consts/bridgeRoutes";
 import { ClaimStruct } from "./claim";
+import { ClaimNotSetError } from "./errors";
+import { defaultEmitter } from "./emitter";
+import { BotEvents } from "./botEvents";
 
 interface PendingTransactions {
   claim: string | null;
@@ -15,6 +19,8 @@ interface PendingTransactions {
  * @param epoch - The epoch number for which the transactions are being handled
  * @param veaOutbox - The veaOutbox instance to use for sending transactions
  * @param claim - The claim object for the epoch
+ * @param fetchBridgeConfig - The function to fetch the bridge config
+ * @param emiitter - The event emitter instance to use for emitting events
  * @returns An instance of the TransactionHandler class
  *
  * @example
@@ -29,6 +35,7 @@ export class TransactionHandler {
   public claim: ClaimStruct | null;
   public getBridgeConfig: typeof getBridgeConfig;
   public requiredConfirmations: number = 12;
+  public emitter: EventEmitter;
 
   public pendingTransactions: PendingTransactions = {
     claim: null,
@@ -42,13 +49,15 @@ export class TransactionHandler {
     epoch: number,
     veaOutbox: any,
     claim?: ClaimStruct,
-    fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
+    fetchBridgeConfig: typeof getBridgeConfig | null = getBridgeConfig,
+    emiitter?: EventEmitter
   ) {
     this.epoch = epoch;
     this.veaOutbox = veaOutbox;
     this.chainId = chainId;
     this.claim = claim;
-    this.getBridgeConfig = fetchBridgeConfig;
+    this.getBridgeConfig = getBridgeConfig || fetchBridgeConfig;
+    this.emitter = emiitter || defaultEmitter;
   }
 
   public async checkTransactionPendingStatus(trnxHash: string | null): Promise<boolean> {
@@ -59,7 +68,7 @@ export class TransactionHandler {
     const receipt = await this.veaOutbox.provider.getTransactionReceipt(trnxHash);
 
     if (!receipt) {
-      console.log(`Transaction ${trnxHash} is pending`);
+      this.emitter.emit(BotEvents.TXN_PENDING, trnxHash);
       return true;
     }
 
@@ -67,17 +76,17 @@ export class TransactionHandler {
     const confirmations = currentBlock.number - receipt.blockNumber;
 
     if (confirmations >= this.requiredConfirmations) {
-      console.log(`Transaction ${trnxHash} is final with ${confirmations} confirmations`);
+      this.emitter.emit(BotEvents.TXN_FINAL, trnxHash, confirmations);
       return false;
     } else {
-      console.log(`Transaction ${trnxHash} is not final yet.`);
+      this.emitter.emit(BotEvents.TXN_NOT_FINAL, trnxHash, confirmations);
       return true;
     }
   }
 
   public async makeClaim(stateRoot: string) {
+    this.emitter.emit(BotEvents.CLAIMING, this.epoch);
     if (await this.checkTransactionPendingStatus(this.pendingTransactions.claim)) {
-      console.log("Claim transaction is still pending with hash: " + this.pendingTransactions.claim);
       return;
     }
     const bridgeConfig = this.getBridgeConfig(this.chainId);
@@ -86,74 +95,68 @@ export class TransactionHandler {
       value: bridgeConfig.deposit,
       gasLimit: estimateGas,
     });
-    console.log(`Epoch ${this.epoch} was claimed with trnx hash ${claimTransaction.hash}`);
+    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, claimTransaction.hash, "Claim");
     this.pendingTransactions.claim = claimTransaction.hash;
   }
 
   public async startVerification(latestBlockTimestamp: number) {
+    this.emitter.emit(BotEvents.STARTING_VERIFICATION, this.epoch);
     if (this.claim == null) {
-      throw new Error("Claim is not set");
+      throw new ClaimNotSetError();
     }
     if (await this.checkTransactionPendingStatus(this.pendingTransactions.startVerification)) {
-      console.log(
-        "Start verification transaction is still pending with hash: " + this.pendingTransactions.startVerification
-      );
       return;
     }
     const bridgeConfig = this.getBridgeConfig(this.chainId);
     const timeOver =
       latestBlockTimestamp - this.claim.timestampClaimed - bridgeConfig.sequencerDelayLimit - bridgeConfig.epochPeriod;
-    console.log(timeOver);
-    if (timeOver >= 0) {
-      const estimateGas = await this.veaOutbox.estimateGas.startVerification(this.epoch, this.claim);
-      const startVerifTrx = await this.veaOutbox.startVerification(this.epoch, this.claim, { gasLimit: estimateGas });
-      console.log(`Verification started for epoch ${this.epoch} with trx hash ${startVerifTrx.hash}`);
-      this.pendingTransactions.startVerification = startVerifTrx.hash;
-    } else {
-      console.log("Sequencer delay not passed yet, seconds left: " + -1 * timeOver);
+
+    if (timeOver < 0) {
+      this.emitter.emit(BotEvents.VERFICATION_CANT_START, -1 * timeOver);
+      return;
     }
+    const estimateGas = await this.veaOutbox.estimateGas.startVerification(this.epoch, this.claim);
+    const startVerifTrx = await this.veaOutbox.startVerification(this.epoch, this.claim, { gasLimit: estimateGas });
+    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, startVerifTrx.hash, "Start Verification");
+    this.pendingTransactions.startVerification = startVerifTrx.hash;
   }
 
   public async verifySnapshot(latestBlockTimestamp: number) {
+    this.emitter.emit(BotEvents.VERIFYING, this.epoch);
     if (this.claim == null) {
-      throw new Error("Claim is not set");
+      throw new ClaimNotSetError();
     }
     if (await this.checkTransactionPendingStatus(this.pendingTransactions.verifySnapshot)) {
-      console.log("Verify snapshot transaction is still pending with hash: " + this.pendingTransactions.verifySnapshot);
       return;
     }
     const bridgeConfig = this.getBridgeConfig(this.chainId);
 
     const timeLeft = latestBlockTimestamp - this.claim.timestampClaimed - bridgeConfig.minChallengePeriod;
-    console.log("Time left for verification: " + timeLeft);
-    console.log(latestBlockTimestamp, this.claim.timestampClaimed, bridgeConfig.minChallengePeriod);
+
     // Claim not resolved yet, check if we can verifySnapshot
-    if (timeLeft >= 0) {
-      console.log("Verification period passed, verifying snapshot");
-      // Estimate gas for verifySnapshot
-      const estimateGas = await this.veaOutbox.estimateGas.verifySnapshot(this.epoch, this.claim);
-      const claimTransaction = await this.veaOutbox.verifySnapshot(this.epoch, this.claim, {
-        gasLimit: estimateGas,
-      });
-      console.log(`Epoch ${this.epoch} verification started with trnx hash ${claimTransaction.hash}`);
-      this.pendingTransactions.verifySnapshot = claimTransaction.hash;
-    } else {
-      console.log("Censorship test in progress, sec left: " + -1 * timeLeft);
+    if (timeLeft < 0) {
+      this.emitter.emit(BotEvents.CANT_VERIFY_SNAPSHOT, -1 * timeLeft);
+      return;
     }
+    // Estimate gas for verifySnapshot
+    const estimateGas = await this.veaOutbox.estimateGas.verifySnapshot(this.epoch, this.claim);
+    const claimTransaction = await this.veaOutbox.verifySnapshot(this.epoch, this.claim, {
+      gasLimit: estimateGas,
+    });
+    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, claimTransaction.hash, "Verify Snapshot");
+    this.pendingTransactions.verifySnapshot = claimTransaction.hash;
   }
 
   public async withdrawClaimDeposit() {
+    this.emitter.emit(BotEvents.WITHDRAWING, this.epoch);
     if (await this.checkTransactionPendingStatus(this.pendingTransactions.withdrawClaimDeposit)) {
-      console.log(
-        "Withdraw deposit transaction is still pending with hash: " + this.pendingTransactions.withdrawClaimDeposit
-      );
       return;
     }
     const estimateGas = await this.veaOutbox.estimateGas.withdrawClaimDeposit(this.epoch, this.claim);
-    const claimTransaction = await this.veaOutbox.withdrawClaimDeposit(this.epoch, this.claim, {
+    const withdrawTxn = await this.veaOutbox.withdrawClaimDeposit(this.epoch, this.claim, {
       gasLimit: estimateGas,
     });
-    console.log(`Deposit withdrawn with trnx hash ${claimTransaction.hash}`);
-    this.pendingTransactions.withdrawClaimDeposit = claimTransaction.hash;
+    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, withdrawTxn.hash, "Withdraw Deposit");
+    this.pendingTransactions.withdrawClaimDeposit = withdrawTxn.hash;
   }
 }

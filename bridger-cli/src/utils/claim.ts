@@ -1,5 +1,6 @@
 import { ClaimData, getClaimForEpoch } from "./graphQueries";
 import { ethers } from "ethers";
+import { ClaimNotFoundError } from "./errors";
 
 type ClaimStruct = {
   stateRoot: string;
@@ -29,14 +30,13 @@ const fetchClaim = async (
   fetchClaimForEpoch: typeof getClaimForEpoch = getClaimForEpoch
 ): Promise<ClaimStruct> => {
   let claimData: ClaimData | undefined = await fetchClaimForEpoch(epoch);
-  // ToDo: Check for logs block range Rpc dependency, if needed used claimEpochBlock
-  // let claimEpochBlock = await getBlockNumberFromEpoch(veaOutbox.provider, epoch, chainId);
+  // TODO: Check for logs block range Rpc dependency, if needed used claimEpochBlock
   if (claimData === undefined) {
     // Initialize claimData as an empty object
     claimData = {} as ClaimData;
     const claimLogs = await veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null));
     if (claimLogs.length === 0) {
-      throw new Error(`No claim found for epoch ${epoch}`);
+      throw new ClaimNotFoundError(epoch);
     }
     claimData.bridger = `0x${claimLogs[0].topics[1].slice(26)}`;
     claimData.stateroot = claimLogs[0].data;
@@ -51,13 +51,17 @@ const fetchClaim = async (
     honest: 0,
     challenger: ethers.constants.AddressZero,
   };
-  const verifyLogs = await veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch));
+  const [verifyLogs, challengeLogs] = await Promise.all([
+    veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch)),
+    veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch)),
+  ]);
+
   if (verifyLogs.length > 0) {
     const verificationStartBlock = await veaOutbox.provider.getBlock(verifyLogs[0].blockHash);
     claim.timestampVerification = verificationStartBlock.timestamp;
     claim.blocknumberVerification = verificationStartBlock.number;
   }
-  const challengeLogs = await veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch));
+
   if (challengeLogs.length > 0) {
     claim.challenger = challengeLogs[0].args.challenger;
   }

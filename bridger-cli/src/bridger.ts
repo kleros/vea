@@ -1,14 +1,24 @@
 require("dotenv").config();
 import { ethers } from "ethers";
+import { EventEmitter } from "events";
 import { getLastClaimedEpoch } from "./utils/graphQueries";
 import { getVeaInbox, getVeaOutbox } from "./utils/ethers";
 import { fetchClaim, hashClaim } from "./utils/claim";
 import { TransactionHandler } from "./utils/transactionHandler";
-import { setEpochRange, checkForNewEpoch } from "./utils/epochHandler";
+import { setEpochRange, getLatestVerifiableEpoch } from "./utils/epochHandler";
 import { ShutdownSignal } from "./utils/shutdown";
+import { initialize as initializeLogger } from "./utils/logger";
+import { defaultEmitter } from "./utils/emitter";
+import { BotEvents } from "./utils/botEvents";
+import { get } from "http";
 
-export const watch = async (shutDownSignal: ShutdownSignal = new ShutdownSignal(), startEpoch: number = 0) => {
-  console.log("Starting bridger");
+export const watch = async (
+  shutDownSignal: ShutdownSignal = new ShutdownSignal(),
+  startEpoch: number = 0,
+  emitter: EventEmitter = defaultEmitter
+) => {
+  initializeLogger(emitter);
+  emitter.emit(BotEvents.STARTED);
   const chainId = Number(process.env.VEAOUTBOX_CHAIN_ID);
   const veaInboxAddress = process.env.VEAINBOX_ADDRESS;
   const veaInboxProviderURL = process.env.VEAINBOX_PROVIDER;
@@ -26,7 +36,7 @@ export const watch = async (shutDownSignal: ShutdownSignal = new ShutdownSignal(
     let i = 0;
     while (i < epochs.length) {
       const activeEpoch = epochs[i];
-      console.log("Checking for epoch " + activeEpoch);
+      emitter.emit(BotEvents.CHECKING, activeEpoch);
       let claimableEpochHash = await veaOutbox.claimHashes(activeEpoch);
       let outboxStateRoot = await veaOutbox.stateRoot();
       const finalizedOutboxBlock = await veaOutbox.provider.getBlock("finalized");
@@ -42,30 +52,42 @@ export const watch = async (shutDownSignal: ShutdownSignal = new ShutdownSignal(
           if (claimData.challenged || claimData.stateroot != savedSnapshot) {
             // Making claim as either last claim was challenged or there are new messages
             if (!transactionHandlers[activeEpoch]) {
-              transactionHandlers[activeEpoch] = new TransactionHandler(chainId, activeEpoch, veaOutbox);
+              transactionHandlers[activeEpoch] = new TransactionHandler(
+                chainId,
+                activeEpoch,
+                veaOutbox,
+                null,
+                null,
+                emitter
+              );
             }
             await transactionHandlers[activeEpoch].makeClaim(savedSnapshot);
           } else {
-            console.log("No new messages, no need for a claim");
+            emitter.emit(BotEvents.NO_NEW_MESSAGES);
             epochs.splice(i, 1);
             i--;
             continue;
           }
         } else {
           if (savedSnapshot == ethers.constants.HashZero) {
-            console.log("No snapshot saved for epoch " + activeEpoch);
+            emitter.emit(BotEvents.NO_SNAPSHOT);
           } else {
-            console.log("No new messages after last claim");
+            emitter.emit(BotEvents.NO_NEW_MESSAGES);
           }
           epochs.splice(i, 1);
           i--;
         }
       } else if (claimableEpochHash != ethers.constants.HashZero) {
-        console.log("Claim is already made, checking for verification stage");
         const claim = await fetchClaim(veaOutbox, activeEpoch);
-        console.log(claim);
         if (!transactionHandlers[activeEpoch]) {
-          transactionHandlers[activeEpoch] = new TransactionHandler(chainId, activeEpoch, veaOutbox, claim);
+          transactionHandlers[activeEpoch] = new TransactionHandler(
+            chainId,
+            activeEpoch,
+            veaOutbox,
+            claim,
+            null,
+            emitter
+          );
         } else {
           transactionHandlers[activeEpoch].claim = claim;
         }
@@ -81,30 +103,32 @@ export const watch = async (shutDownSignal: ShutdownSignal = new ShutdownSignal(
             if (hashClaim(claim) == claimableEpochHash) {
               await transactionHandler.withdrawClaimDeposit();
             } else {
-              console.log("Challenger won claim");
+              emitter.emit(BotEvents.CHALLENGER_WON_CLAIM);
             }
             epochs.splice(i, 1);
             i--;
           }
         } else if (claim.challenger == ethers.constants.AddressZero) {
-          console.log("Verification not started yet");
           // No verification started yet, check if we can start it
           await transactionHandler.startVerification(finalizedOutboxBlock.timestamp);
         } else {
           epochs.splice(i, 1);
           i--;
-          console.log("Claim was challenged, skipping");
+          emitter.emit(BotEvents.CLAIM_CHALLENGED);
         }
       } else {
         epochs.splice(i, 1);
         i--;
-        console.log("Epoch has passed: " + activeEpoch);
+        emitter.emit(BotEvents.EPOCH_PASSED, activeEpoch);
       }
       i++;
     }
-    const newEpoch = checkForNewEpoch(verifiableEpoch, chainId);
-    if (newEpoch != verifiableEpoch) epochs.push(newEpoch);
-    console.log("Waiting for next verifiable epoch after " + verifiableEpoch);
+    const newEpoch = getLatestVerifiableEpoch(chainId);
+    if (newEpoch > verifiableEpoch) {
+      epochs.push(newEpoch);
+      verifiableEpoch = newEpoch;
+    }
+    emitter.emit(BotEvents.WAITING, verifiableEpoch);
     await wait(1000 * 10);
   }
   return epochs;

@@ -8,7 +8,7 @@ import {
   VeaInboxArbToGnosis__factory,
   VeaOutboxArbToGnosis__factory,
 } from "@kleros/vea-contracts/typechain-types";
-import { getBridgeConfig } from "consts/bridgeRoutes";
+import { getBridgeConfig } from "../consts/bridgeRoutes";
 
 function getWallet(privateKey: string, web3ProviderURL: string) {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
