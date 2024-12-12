@@ -10,7 +10,6 @@ import { ShutdownSignal } from "./utils/shutdown";
 import { initialize as initializeLogger } from "./utils/logger";
 import { defaultEmitter } from "./utils/emitter";
 import { BotEvents } from "./utils/botEvents";
-import { get } from "http";
 
 export const watch = async (
   shutDownSignal: ShutdownSignal = new ShutdownSignal(),
