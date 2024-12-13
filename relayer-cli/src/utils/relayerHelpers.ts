@@ -1,14 +1,9 @@
 import * as fs from "fs";
+import { claimLock, releaseLock } from "./lock";
 import ShutdownManager from "./shutdownManager";
 
 async function initialize(chainId: number, network: string): Promise<number> {
-  const lockFileName = "./state/" + network + "_" + chainId + ".pid";
-
-  if (fs.existsSync(lockFileName)) {
-    console.log("Skipping chain with process already running, delete pid file to force", chainId);
-    throw new Error("Already running");
-  }
-  fs.writeFileSync(lockFileName, process.pid.toString(), { encoding: "utf8" });
+  claimLock(network, chainId);
 
   // STATE_DIR is absolute path of the directory where the state files are stored
   // STATE_DIR must have trailing slash
@@ -39,10 +34,7 @@ async function updateStateFile(chainId: number, createdTimestamp: number, nonceF
   };
   fs.writeFileSync(chain_state_file, JSON.stringify(json), { encoding: "utf8" });
 
-  const lockFileName = "./state/" + network + "_" + chainId + ".pid";
-  if (fs.existsSync(lockFileName)) {
-    fs.unlinkSync(lockFileName);
-  }
+  releaseLock(network, chainId);
 }
 
 async function setupExitHandlers(chainId: number, shutdownManager: ShutdownManager, network: string) {
