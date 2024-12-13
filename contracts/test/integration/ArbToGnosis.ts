@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { deployments, ethers, network } from "hardhat";
-import { BigNumber, Contract } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { MerkleTree } from "../merkle/MerkleTree";
 const { mine } = require("@nomicfoundation/hardhat-network-helpers");
 
@@ -15,9 +14,11 @@ import {
   MockAMB,
   ArbSysMock,
 } from "../../typechain-types";
+import { bigint } from "hardhat/internal/core/params/argumentTypes";
+import { Block } from "ethers";
 
 // Constants
-const TEN_ETH = BigNumber.from(10).pow(19);
+const TEN_ETH = 10n ** 19n;
 const EPOCH_PERIOD = 600;
 const CHALLENGE_PERIOD = 600;
 const SEQUENCER_DELAY = 300;
@@ -47,7 +48,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     timestampVerification: 0,
     blocknumberVerification: 0,
     honest: 0,
-    challenger: ethers.constants.AddressZero,
+    challenger: ethers.ZeroAddress,
   });
 
   // Helper function to simulate dispute resolution
@@ -61,8 +62,8 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     const lastEvent = events[events.length - 1];
 
     await amb.executeMessageCall(
-      veaOutbox.address,
-      router.address,
+      veaOutbox.target,
+      router.target,
       lastEvent.args._data,
       lastEvent.args.messageId,
       1000000
@@ -72,7 +73,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
   // Helper function to setup a claim and challenge
   async function setupClaimAndChallenge(epoch: any, merkleRoot: string, honest: number) {
     const claimTx = await veaOutbox.connect(bridger).claim(epoch, merkleRoot);
-    const claimBlock = await ethers.provider.getBlock(claimTx.blockNumber!);
+    const claimBlock = (await ethers.provider.getBlock(claimTx.blockNumber!)) as Block;
 
     const challengeTx = await veaOutbox.connect(challenger).challenge(epoch, {
       stateRoot: merkleRoot,
@@ -81,7 +82,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       timestampVerification: 0,
       blocknumberVerification: 0,
       honest,
-      challenger: ethers.constants.AddressZero,
+      challenger: ethers.ZeroAddress,
     });
 
     return { claimBlock, merkleRoot, challengeTx };
@@ -109,8 +110,8 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     arbsysMock = (await ethers.getContract("ArbSysMock")) as ArbSysMock;
 
     // Setup initial token balances
-    await weth.deposit({ value: TEN_ETH.mul(100) });
-    await weth.transfer(bridger.address, TEN_ETH.mul(10));
+    await weth.deposit({ value: TEN_ETH * 100n });
+    await weth.transfer(bridger.address, TEN_ETH * 10n);
   });
 
   describe("Honest Claim - No Challenge - Bridger Paid", async () => {
@@ -143,7 +144,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_mine");
 
       // Approve WETH spending and claim
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH.mul(2));
+      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH * 2n);
       const claimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot);
 
       // Check claim event
@@ -168,14 +169,14 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
 
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH);
+      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH);
       const claimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot);
       const block = await ethers.provider.getBlock(claimTx.blockNumber!);
-
+      if (!block) return;
       // Calculate and advance time for maxL2StateSyncDelay
       const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
-      const maxL2StateSyncDelay = sequencerDelayLimit.add(EPOCH_PERIOD);
-      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      const maxL2StateSyncDelay = sequencerDelayLimit + BigInt(EPOCH_PERIOD);
+      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
       await network.provider.send("evm_mine");
 
       // Start verification
@@ -202,14 +203,15 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
 
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH);
+      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH);
       const claimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot);
       const block = await ethers.provider.getBlock(claimTx.blockNumber!);
+      if (!block) return;
 
       const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
-      const maxL2StateSyncDelay = sequencerDelayLimit.add(EPOCH_PERIOD);
+      const maxL2StateSyncDelay = sequencerDelayLimit + BigInt(EPOCH_PERIOD);
 
-      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
       await network.provider.send("evm_mine");
 
       const startVerificationTx = await veaOutbox.startVerification(
@@ -217,6 +219,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         createClaim(batchMerkleRoot, bridger.address, block.timestamp)
       );
       const verificationBlock = await ethers.provider.getBlock(startVerificationTx.blockNumber!);
+      if (!verificationBlock) return;
 
       // Advance time for challenge period
       const safeAdvanceTime = CHALLENGE_PERIOD + EPOCH_PERIOD;
@@ -261,14 +264,15 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
 
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH);
+      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH);
       const claimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot);
       const block = await ethers.provider.getBlock(claimTx.blockNumber!);
+      if (!block) return;
 
       const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
-      const maxL2StateSyncDelay = sequencerDelayLimit.add(EPOCH_PERIOD);
+      const maxL2StateSyncDelay = sequencerDelayLimit + BigInt(EPOCH_PERIOD);
 
-      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
       await network.provider.send("evm_mine");
 
       const startVerificationTx = await veaOutbox.startVerification(
@@ -276,6 +280,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         createClaim(batchMerkleRoot, bridger.address, block.timestamp)
       );
       const verificationBlock = await ethers.provider.getBlock(startVerificationTx.blockNumber!);
+      if (!verificationBlock) return;
 
       await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
       await mine(Math.ceil(CHALLENGE_PERIOD / 12));
@@ -311,14 +316,15 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
 
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH);
+      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH);
       const claimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot);
       const block = await ethers.provider.getBlock(claimTx.blockNumber!);
+      if (!block) return;
 
       const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
-      const maxL2StateSyncDelay = sequencerDelayLimit.add(EPOCH_PERIOD);
+      const maxL2StateSyncDelay = sequencerDelayLimit + BigInt(EPOCH_PERIOD);
 
-      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
       await network.provider.send("evm_mine");
 
       const startVerificationTx = await veaOutbox.startVerification(
@@ -326,6 +332,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         createClaim(batchMerkleRoot, bridger.address, block.timestamp)
       );
       const verificationBlock = await ethers.provider.getBlock(startVerificationTx.blockNumber!);
+      if (!verificationBlock) return;
 
       await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
       await mine(Math.ceil(CHALLENGE_PERIOD / 12));
@@ -346,7 +353,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       });
       const finalBalance = await weth.balanceOf(bridger.address);
 
-      expect(finalBalance.sub(initialBalance)).to.equal(TEN_ETH, "Incorrect withdrawal amount");
+      expect(finalBalance - initialBalance).to.equal(TEN_ETH, "Incorrect withdrawal amount");
     });
   });
 
@@ -369,12 +376,12 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_mine");
 
       // Ensure bridger and challenger have enough WETH
-      await weth.transfer(bridger.address, TEN_ETH.mul(10));
-      await weth.transfer(challenger.address, TEN_ETH.mul(10));
+      await weth.transfer(bridger.address, TEN_ETH * 10n);
+      await weth.transfer(challenger.address, TEN_ETH * 10n);
 
       // Approve WETH spending for both
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH.mul(10));
-      await weth.connect(challenger).approve(veaOutbox.address, TEN_ETH.mul(10));
+      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH * 10n);
+      await weth.connect(challenger).approve(veaOutbox.target, TEN_ETH * 10n);
       await amb.setMaxGasPerTx(100000);
     });
 
@@ -402,21 +409,15 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         { gasLimit: 100000 }
       );
 
-      await expect(sendSnapshotTx)
-        .to.emit(veaInbox, "SnapshotSent")
-        .withArgs(epoch, ethers.utils.formatBytes32String(""));
+      await expect(sendSnapshotTx).to.emit(veaInbox, "SnapshotSent").withArgs(epoch, ethers.encodeBytes32String(""));
 
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
-
-      const routerEvents = await router.queryFilter(router.filters.Routed(), sendSnapshotTx.blockNumber);
+      const routerEvents = await router.queryFilter(router.filters.Routed(), sendSnapshotTx.blockNumber as number);
       expect(routerEvents.length).to.equal(1, "Expected one Routed event");
       const routedEvent = routerEvents[0];
       expect(routedEvent.args._epoch).to.equal(epoch, "Routed event epoch mismatch");
-      expect(routedEvent.args._ticketID).to.not.equal(
-        ethers.constants.HashZero,
-        "Routed event ticketID should not be zero"
-      );
+      expect(routedEvent.args._ticketID).to.not.equal(ethers.ZeroHash, "Routed event ticketID should not be zero");
 
       // Simulate time passing for claim and challenge period
       await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD + SEQUENCER_DELAY]);
@@ -432,8 +433,8 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const lastEvent = events[events.length - 1];
 
       await amb.executeMessageCall(
-        veaOutbox.address,
-        router.address,
+        veaOutbox.target,
+        router.target,
         lastEvent.args._data,
         lastEvent.args.messageId,
         1000000
@@ -470,7 +471,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
 
       // Create and verify newer epochs
       const newEpoch1 = epoch + 1;
-      const newMerkleRoot1 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("newer1"));
+      const newMerkleRoot1 = ethers.keccak256(ethers.toUtf8Bytes("newer1"));
 
       // Advance time to the next epoch
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
@@ -478,10 +479,10 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
 
       const newClaimTxOne = await veaOutbox.connect(bridger).claim(newEpoch1, newMerkleRoot1);
       const newClaimTxOneBlock = await ethers.provider.getBlock(newClaimTxOne.blockNumber!);
-
+      if (!newClaimTxOneBlock) return;
       const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
-      const maxL2StateSyncDelay = sequencerDelayLimit.add(EPOCH_PERIOD);
-      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      const maxL2StateSyncDelay = sequencerDelayLimit + BigInt(EPOCH_PERIOD);
+      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
       await network.provider.send("evm_mine");
 
       const newVerifyTxOne = await veaOutbox.startVerification(
@@ -489,6 +490,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         createClaim(newMerkleRoot1, bridger.address, newClaimTxOneBlock.timestamp)
       );
       const newVerifyTxOneBlock = await ethers.provider.getBlock(newVerifyTxOne.blockNumber!);
+      if (!newVerifyTxOneBlock) return;
 
       await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
       await network.provider.send("evm_mine");
@@ -503,13 +505,14 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
 
-      const newEpoch2 = (await veaOutbox.epochNow()).toNumber() - 1;
-      const newMerkleRoot2 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("newer2"));
+      const newEpoch2 = Number(await veaOutbox.epochNow()) - 1;
+      const newMerkleRoot2 = ethers.keccak256(ethers.toUtf8Bytes("newer2"));
       const newClaimTxTwo = await veaOutbox.connect(bridger).claim(newEpoch2, newMerkleRoot2);
 
       const newClaimTxTwoBlock = await ethers.provider.getBlock(newClaimTxTwo.blockNumber!);
+      if (!newClaimTxTwoBlock) return;
 
-      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
       await network.provider.send("evm_mine");
 
       const newVerifyTxTwo = await veaOutbox.startVerification(
@@ -517,7 +520,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         createClaim(newMerkleRoot2, bridger.address, newClaimTxTwoBlock.timestamp)
       );
       const newVerifyTxTwoBlock = await ethers.provider.getBlock(newVerifyTxTwo.blockNumber!);
-
+      if (!newVerifyTxTwoBlock) return;
       await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
       await network.provider.send("evm_mine");
 
@@ -567,8 +570,8 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         challenger: challenger.address,
       });
       const bridgerFinalBalance = await weth.balanceOf(bridger.address);
-      expect(bridgerFinalBalance.sub(bridgerInitialBalance)).to.equal(
-        TEN_ETH.add(TEN_ETH.div(2)),
+      expect(bridgerFinalBalance - bridgerInitialBalance).to.equal(
+        TEN_ETH + TEN_ETH / 2n,
         "Incorrect withdrawal amount"
       );
     });
@@ -624,7 +627,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 
-      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.address, msgData);
+      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.target, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
     });
   });
@@ -643,19 +646,19 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
       epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / EPOCH_PERIOD);
       honestMerkleRoot = await veaInbox.snapshots(epoch);
-      dishonestMerkleRoot = ethers.utils.keccak256("0x123456"); // Simulating a dishonest state root
+      dishonestMerkleRoot = ethers.keccak256("0x123456"); // Simulating a dishonest state root
 
       // Advance time to next epoch
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
 
       // Ensure bridger and challenger have enough WETH
-      await weth.transfer(bridger.address, TEN_ETH.mul(10));
-      await weth.transfer(challenger.address, TEN_ETH.mul(10));
+      await weth.transfer(bridger.address, TEN_ETH * 10n);
+      await weth.transfer(challenger.address, TEN_ETH * 10n);
 
       // Approve WETH spending for both
-      await weth.connect(bridger).approve(veaOutbox.address, TEN_ETH.mul(10));
-      await weth.connect(challenger).approve(veaOutbox.address, TEN_ETH.mul(10));
+      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH * 10n);
+      await weth.connect(challenger).approve(veaOutbox.target, TEN_ETH * 10n);
     });
 
     it("should allow challenger to submit a challenge to a dishonest claim", async () => {
@@ -682,11 +685,9 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         { gasLimit: 100000 }
       );
 
-      await expect(sendSnapshotTx)
-        .to.emit(veaInbox, "SnapshotSent")
-        .withArgs(epoch, ethers.utils.formatBytes32String(""));
+      await expect(sendSnapshotTx).to.emit(veaInbox, "SnapshotSent").withArgs(epoch, ethers.encodeBytes32String(""));
 
-      const routerEvents = await router.queryFilter(router.filters.Routed(), sendSnapshotTx.blockNumber);
+      const routerEvents = await router.queryFilter(router.filters.Routed(), sendSnapshotTx.blockNumber as any);
       expect(routerEvents.length).to.equal(1, "Expected one Routed event");
       const routedEvent = routerEvents[0];
       expect(routedEvent.args._epoch).to.equal(epoch, "Routed event epoch mismatch");
@@ -773,8 +774,8 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         challenger: challenger.address,
       });
       const challengerFinalBalance = await weth.balanceOf(challenger.address);
-      expect(challengerFinalBalance.sub(challengerInitialBalance)).to.equal(
-        TEN_ETH.add(TEN_ETH.div(2)),
+      expect(challengerFinalBalance - challengerInitialBalance).to.equal(
+        TEN_ETH + TEN_ETH / 2n,
         "Incorrect withdrawal amount"
       );
     });
@@ -804,7 +805,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 
-      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.address, msgData);
+      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.target, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
     });
 
@@ -830,7 +831,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
 
       // Create and verify newer epochs
       const newEpoch1 = epoch + 1;
-      const newMerkleRoot1 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("newer1"));
+      const newMerkleRoot1 = ethers.keccak256(ethers.toUtf8Bytes("newer1"));
 
       // Advance time to the next epoch
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
@@ -838,10 +839,11 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
 
       const newClaimTxOne = await veaOutbox.connect(bridger).claim(newEpoch1, newMerkleRoot1);
       const newClaimTxOneBlock = await ethers.provider.getBlock(newClaimTxOne.blockNumber!);
+      if (!newClaimTxOneBlock) return;
 
       const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
-      const maxL2StateSyncDelay = sequencerDelayLimit.add(EPOCH_PERIOD);
-      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      const maxL2StateSyncDelay = sequencerDelayLimit + BigInt(EPOCH_PERIOD);
+      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
       await network.provider.send("evm_mine");
 
       const newVerifyTxOne = await veaOutbox.startVerification(
@@ -849,6 +851,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         createClaim(newMerkleRoot1, bridger.address, newClaimTxOneBlock.timestamp)
       );
       const newVerifyTxOneBlock = await ethers.provider.getBlock(newVerifyTxOne.blockNumber!);
+      if (!newVerifyTxOneBlock) return;
 
       await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
       await network.provider.send("evm_mine");
@@ -863,13 +866,13 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
 
-      const newEpoch2 = (await veaOutbox.epochNow()).toNumber() - 1;
-      const newMerkleRoot2 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("newer2"));
+      const newEpoch2 = Number(await veaOutbox.epochNow()) - 1;
+      const newMerkleRoot2 = ethers.keccak256(ethers.toUtf8Bytes("newer2"));
       const newClaimTxTwo = await veaOutbox.connect(bridger).claim(newEpoch2, newMerkleRoot2);
 
       const newClaimTxTwoBlock = await ethers.provider.getBlock(newClaimTxTwo.blockNumber!);
-
-      await network.provider.send("evm_increaseTime", [maxL2StateSyncDelay.toNumber()]);
+      if (!newClaimTxTwoBlock) return;
+      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
       await network.provider.send("evm_mine");
 
       const newVerifyTxTwo = await veaOutbox.startVerification(
@@ -877,7 +880,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         createClaim(newMerkleRoot2, bridger.address, newClaimTxTwoBlock.timestamp)
       );
       const newVerifyTxTwoBlock = await ethers.provider.getBlock(newVerifyTxTwo.blockNumber!);
-
+      if (!newVerifyTxTwoBlock) return;
       await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
       await network.provider.send("evm_mine");
 

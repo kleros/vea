@@ -2,7 +2,6 @@
 import { keccak256, bufferToHex, toBuffer } from "ethereumjs-util";
 import { soliditySha3, Mixed } from "web3-utils";
 import { ethers } from "hardhat";
-import { soliditySha256 } from "ethers/lib/utils";
 
 const isNil = (value: unknown): boolean => value === null || value === undefined;
 
@@ -36,7 +35,8 @@ export class MerkleTree {
       throw new Error("Leaf node must not be empty");
     }
 
-    const result = ethers.utils.keccak256(singleHash);
+    // Updated to ethers v6
+    const result = ethers.keccak256(singleHash);
 
     if (!result) {
       throw new Error("Leaf node must not be empty");

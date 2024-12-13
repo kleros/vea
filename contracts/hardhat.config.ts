@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomiclabs/hardhat-ethers";
+import "@nomicfoundation/hardhat-ethers";
 import "@typechain/hardhat";
 import "hardhat-deploy-tenderly";
 import "hardhat-gas-reporter";
@@ -9,7 +9,6 @@ import "solidity-coverage";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 import "hardhat-watcher";
-import "hardhat-docgen";
 import "hardhat-contract-sizer";
 import "hardhat-tracer";
 
@@ -187,11 +186,6 @@ const config: HardhatUserConfig = {
       ],
       files: ["./test/**/*", "./src/**/*"],
     },
-  },
-  docgen: {
-    path: "./docs",
-    clear: true,
-    runOnCompile: false,
   },
   tenderly: {
     project: process.env.TENDERLY_PROJECT !== undefined ? process.env.TENDERLY_PROJECT : "kleros-v2",

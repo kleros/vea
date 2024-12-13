@@ -14,10 +14,10 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, cha
   const result = await request(
     `https://api.studio.thegraph.com/query/${subgraph}`,
     `{
-              snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
-                count
-              }
-            }`
+      snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
+        count
+      }
+    }`
   );
 
   if (result["snapshotSaveds"].length == 0) return 0;
@@ -36,7 +36,8 @@ const relay = async (chainId: number, nonce: number) => {
   ]);
 
   const txn = await veaOutbox.sendMessage(proof, nonce, to, data);
-  await txn.wait();
+  const receipt = await txn.wait();
+  return receipt;
 };
 
 const relayBatch = async (chainId: number, nonce: number, maxBatchSize: number) => {
@@ -115,22 +116,26 @@ const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): 
 };
 
 const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) => {
-  try {
-    const subgraph = getInboxSubgraph(chainId);
+  const subgraph = getInboxSubgraph(chainId);
 
-    const result = await request(
-      `https://api.studio.thegraph.com/query/${subgraph}`,
-      `{
-            messageSents(first: 1000, where: {nonce_gte: ${nonce}, msgSender_: {id: "${msgSender}"}}, orderBy: nonce, orderDirection: asc) {
-              nonce
-            }
-        }`
-    );
+  const result = await request(
+    `https://api.studio.thegraph.com/query/${subgraph}`,
+    `{
+        messageSents(
+          first: 1000, 
+          where: {
+            nonce_gte: ${nonce}, 
+            msgSender_: {id: "${msgSender}"}
+          }, 
+          orderBy: nonce, 
+          orderDirection: asc
+        ) {
+          nonce
+        }
+      }`
+  );
 
-    return result[`messageSents`].map((a) => a.nonce);
-  } catch (e) {
-    console.log(e);
-  }
+  return result[`messageSents`].map((a: { nonce: number }) => a.nonce);
 };
 
 export { relayAllFrom, relay, relayBatch };
