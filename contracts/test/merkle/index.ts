@@ -17,7 +17,7 @@ function verify(proof: string[], root: string, leaf: string) {
   return (
     root ===
     proof.reduce(
-      (computedHash: string, proofElement: string, currentIndex: number): string =>
+      (computedHash: string, proofElement: string): string =>
         Buffer.compare(toBuffer(computedHash), toBuffer(proofElement)) <= 0
           ? (soliditySha3(computedHash, proofElement) as string)
           : (soliditySha3(proofElement, computedHash) as string),
@@ -26,20 +26,19 @@ function verify(proof: string[], root: string, leaf: string) {
   );
 }
 
-describe("Merkle", async () => {
-  describe("Sanity tests", async () => {
+describe("Merkle", () => {
+  describe("Sanity tests", () => {
     let merkleTreeExposed;
     let merkleProofExposed;
-    let data, nodes, mt;
-    let rootOnChain, rootOffChain, proof;
+    let data: string[], nodes: string[], mt: MerkleTree;
+    let rootOnChain: string, rootOffChain: string, proof: string[];
 
     before("Deploying", async () => {
       const merkleTreeExposedFactory = await ethers.getContractFactory("MerkleTreeExposed");
       const merkleProofExposedFactory = await ethers.getContractFactory("MerkleProofExposed");
+
       merkleTreeExposed = await merkleTreeExposedFactory.deploy();
       merkleProofExposed = await merkleProofExposedFactory.deploy();
-      await merkleTreeExposed.deployed();
-      await merkleProofExposed.deployed();
     });
 
     it("Merkle Root verification", async () => {

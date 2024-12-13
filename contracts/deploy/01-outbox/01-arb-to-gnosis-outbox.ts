@@ -1,4 +1,4 @@
-import { parseEther } from "ethers/lib/utils";
+import { parseEther } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";
@@ -42,8 +42,8 @@ const paramsByChainId = {
     minChallengePeriod: 600, // 10 min (assume no sequencer backdating)
     numEpochTimeout: 21600, // 6 hours
     claimDelay: 2,
-    amb: ethers.constants.AddressZero,
-    routerAddress: ethers.constants.AddressZero,
+    amb: ethers.ZeroAddress,
+    routerAddress: ethers.ZeroAddress,
     maxMissingBlocks: 10000000000000,
     routerChainId: 31337,
     sequencerLimit: 864,
@@ -53,7 +53,6 @@ const paramsByChainId = {
 const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { ethers, deployments, getNamedAccounts, getChainId, config } = hre;
   const { deploy } = deployments;
-  const { providers } = ethers;
 
   // fallback to hardhat node signers on local network
   const [namedAccounts, signers, rawChainId] = await Promise.all([
@@ -139,7 +138,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
+    const routerChainProvider = new ethers.JsonRpcProvider(routerNetworks[ReceiverChains[chainId]].url);
     let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
 
     const routerAddress = getContractAddress(deployer, nonceRouter);
@@ -161,7 +160,7 @@ const deployOutbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         WETH,
       ],
       log: true,
-      gasPrice: ethers.utils.parseUnits("1", "gwei"), // chiado rpc response underprices gas
+      gasPrice: String(10 ** 9), // chiado rpc response underprices gas, 1 gwei
     });
 
     console.log("VeaOutboxArbToGnosis deployed to:", txn.address);
