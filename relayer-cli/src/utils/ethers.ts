@@ -1,5 +1,4 @@
-import { Wallet } from "@ethersproject/wallet";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { Wallet, JsonRpcProvider, Provider } from "ethers";
 import {
   VeaOutboxArbToEth__factory,
   VeaOutboxArbToEthDevnet__factory,
@@ -9,11 +8,11 @@ import {
 } from "@kleros/vea-contracts/typechain-types";
 import { getBridgeConfig } from "consts/bridgeRoutes";
 
-function getWallet(privateKey: string, web3ProviderURL: string) {
+function getWallet(privateKey: string, web3ProviderURL: string): Wallet {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
 }
 
-function getWalletRPC(privateKey: string, rpc: JsonRpcProvider) {
+function getWalletRPC(privateKey: string, rpc: Provider): Wallet {
   return new Wallet(privateKey, rpc);
 }
 
@@ -51,10 +50,10 @@ function getVeaOutbox(veaOutboxAddress: string, privateKey: string, web3Provider
   switch (bridge.chain) {
     case "sepolia":
     case "mainnet":
-      return VeaOutboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+      return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
     case "chiado":
     case "gnosis":
-      return VeaOutboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+      return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
     default:
       throw new Error(`Unsupported chainId: ${chainId}`);
   }
@@ -74,7 +73,7 @@ function getVeaOutboxProvider(veaOutboxAddress: string, privateKey: string, rpc:
   }
 }
 
-function getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+function getVeaOutboxArbToEthDevnetProvider(veaOutboxAddress: string, privateKey: string, rpc: Provider) {
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
 }
 

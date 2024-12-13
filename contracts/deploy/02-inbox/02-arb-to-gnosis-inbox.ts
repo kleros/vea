@@ -1,8 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import getContractAddress from "../../deploy-helpers/getContractAddress";
-import { ethers } from "hardhat";
-import { providers } from "ethers";
 
 enum SenderChains {
   ARBITRUM = 42161,
@@ -84,7 +82,7 @@ const deployInbox: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   // ----------------------------------------------------------------------------------------------
   const liveDeployer = async () => {
-    const routerChainProvider = new providers.JsonRpcProvider(routerNetworks[SenderChains[chainId]].url);
+    const routerChainProvider = new ethers.JsonRpcProvider(routerNetworks[SenderChains[chainId]].url);
     let nonceRouter = await routerChainProvider.getTransactionCount(deployer);
 
     const routerAddress = getContractAddress(deployer, nonceRouter);
