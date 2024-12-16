@@ -7,12 +7,13 @@ const { mine } = require("@nomicfoundation/hardhat-network-helpers");
 import {
   VeaOutboxArbToGnosis,
   ReceiverGatewayMock,
-  VeaInboxArbToGnosis,
   SenderGatewayMock,
   RouterArbToGnosis,
   MockWETH,
   MockAMB,
   ArbSysMock,
+  BridgeMock,
+  VeaInboxArbToGnosisMock,
 } from "../../typechain-types";
 import { bigint } from "hardhat/internal/core/params/argumentTypes";
 import { Block } from "ethers";
@@ -24,6 +25,9 @@ const CHALLENGE_PERIOD = 600;
 const SEQUENCER_DELAY = 300;
 
 describe("Arbitrum to Gnosis Bridge Tests", async () => {
+  // Hardcoded ticket ID in ArbSysMockWithBridge
+  const TICKET_ID = "0x0000000000000000000000000000000000000000000000000000000000000001";
+
   // Test participants
   let bridger: SignerWithAddress;
   let sender: SignerWithAddress;
@@ -33,12 +37,13 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
   // Contracts
   let veaOutbox: VeaOutboxArbToGnosis;
   let receiverGateway: ReceiverGatewayMock;
-  let veaInbox: VeaInboxArbToGnosis;
+  let veaInbox: VeaInboxArbToGnosisMock;
   let senderGateway: SenderGatewayMock;
   let router: RouterArbToGnosis;
   let amb: MockAMB;
   let weth: MockWETH;
   let arbsysMock: ArbSysMock;
+  let bridgeMock: BridgeMock;
 
   // Helper function to create a claim object
   const createClaim = (stateRoot: string, claimer: string, timestamp: number) => ({
@@ -54,6 +59,10 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
   // Helper function to simulate dispute resolution
   async function simulateDisputeResolution(epoch: number, claim: any) {
     await veaInbox.connect(bridger).sendSnapshot(epoch, 100000, claim, { gasLimit: 100000 });
+
+    const callData = await veaInbox.connect(bridger).getCallData(epoch, 100000, claim);
+    const routerAddress = await router.getAddress();
+    await bridgeMock.connect(bridger).executeL1Message(routerAddress, callData);
 
     await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD + SEQUENCER_DELAY]);
     await network.provider.send("evm_mine");
@@ -102,12 +111,13 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     // Get contract instances
     veaOutbox = (await ethers.getContract("VeaOutboxArbToGnosis")) as VeaOutboxArbToGnosis;
     receiverGateway = (await ethers.getContract("ArbToGnosisReceiverGateway")) as ReceiverGatewayMock;
-    veaInbox = (await ethers.getContract("VeaInboxArbToGnosis")) as VeaInboxArbToGnosis;
+    veaInbox = (await ethers.getContract("VeaInboxArbToGnosis")) as VeaInboxArbToGnosisMock;
     senderGateway = (await ethers.getContract("ArbToGnosisSenderGateway")) as SenderGatewayMock;
     router = (await ethers.getContract("RouterArbToGnosis")) as RouterArbToGnosis;
     amb = (await ethers.getContract("MockAMB")) as MockAMB;
     weth = (await ethers.getContract("MockWETH")) as MockWETH;
     arbsysMock = (await ethers.getContract("ArbSysMock")) as ArbSysMock;
+    bridgeMock = (await ethers.getContract("BridgeMock")) as BridgeMock;
 
     // Setup initial token balances
     await weth.deposit({ value: TEN_ETH * 100n });
@@ -360,7 +370,6 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
   describe("Honest Claim - Dishonest Challenge - Bridger paid, challenger deposit forfeited", async () => {
     let epoch: number;
     let batchMerkleRoot: string;
-
     beforeEach(async () => {
       // Setup: Send message and save snapshot on Arbitrum
       await senderGateway.connect(sender).sendMessage(1121);
@@ -408,8 +417,19 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         },
         { gasLimit: 100000 }
       );
+      await expect(sendSnapshotTx).to.emit(veaInbox, "SnapshotSent").withArgs(epoch, TICKET_ID);
 
-      await expect(sendSnapshotTx).to.emit(veaInbox, "SnapshotSent").withArgs(epoch, ethers.encodeBytes32String(""));
+      const callData = await veaInbox.connect(bridger).getCallData(epoch, 100000, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      });
+      const routerAddress = await router.getAddress();
+      await bridgeMock.connect(bridger).executeL1Message(routerAddress, callData);
 
       await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
       await network.provider.send("evm_mine");
@@ -490,7 +510,6 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         createClaim(newMerkleRoot1, bridger.address, newClaimTxOneBlock.timestamp)
       );
       const newVerifyTxOneBlock = await ethers.provider.getBlock(newVerifyTxOne.blockNumber!);
-      if (!newVerifyTxOneBlock) return;
 
       await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
       await network.provider.send("evm_mine");
@@ -498,7 +517,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       await veaOutbox.connect(bridger).verifySnapshot(newEpoch1, {
         ...createClaim(newMerkleRoot1, bridger.address, newClaimTxOneBlock.timestamp),
         blocknumberVerification: newVerifyTxOne.blockNumber!,
-        timestampVerification: newVerifyTxOneBlock.timestamp,
+        timestampVerification: newVerifyTxOneBlock!.timestamp,
       });
 
       // Advance time to the next epoch
@@ -669,23 +688,23 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
 
     it("should initiate cross-chain dispute resolution for dishonest claim", async () => {
       const { claimBlock } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+      const claim = {
+        stateRoot: dishonestMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: challenger.address,
+      };
 
-      const sendSnapshotTx = await veaInbox.connect(bridger).sendSnapshot(
-        epoch,
-        100000,
-        {
-          stateRoot: dishonestMerkleRoot,
-          claimer: bridger.address,
-          timestampClaimed: claimBlock.timestamp,
-          timestampVerification: 0,
-          blocknumberVerification: 0,
-          honest: 0,
-          challenger: challenger.address,
-        },
-        { gasLimit: 100000 }
-      );
+      const sendSnapshotTx = await veaInbox.connect(bridger).sendSnapshot(epoch, 100000, claim, { gasLimit: 100000 });
 
-      await expect(sendSnapshotTx).to.emit(veaInbox, "SnapshotSent").withArgs(epoch, ethers.encodeBytes32String(""));
+      await expect(sendSnapshotTx).to.emit(veaInbox, "SnapshotSent").withArgs(epoch, TICKET_ID);
+
+      const callData = await veaInbox.connect(bridger).getCallData(epoch, 100000, claim);
+      const routerAddress = await router.getAddress();
+      await bridgeMock.connect(bridger).executeL1Message(routerAddress, callData);
 
       const routerEvents = await router.queryFilter(router.filters.Routed(), sendSnapshotTx.blockNumber as any);
       expect(routerEvents.length).to.equal(1, "Expected one Routed event");
