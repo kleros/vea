@@ -19,9 +19,10 @@ const setEpochRange = (
   const timeLocal = Math.floor(now / 1000);
 
   let veaEpochOutboxClaimableNow = Math.floor(timeLocal / epochPeriod) - 1;
+
   // only past epochs are claimable, hence shift by one here
   const veaEpochOutboxRange = veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound;
-  const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange + 1)
+  const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
     .fill(veaEpochOutboxWatchLowerBound)
     .map((el, i) => el + i);
 
@@ -40,13 +41,14 @@ const setEpochRange = (
  * @example
  * currentEpoch = checkForNewEpoch(currentEpoch, 7200);
  */
-const getLatestVerifiableEpoch = (
+const getLatestChallengeableEpoch = (
   chainId: number,
   now: number = Date.now(),
   fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
 ): number => {
+  // NOTE: Add logic to check if claim was made here or in main function?
   const { epochPeriod } = fetchBridgeConfig(chainId);
-  return Math.floor(now / 1000 / epochPeriod) - 1;
+  return Math.floor(now / 1000 / epochPeriod) - 2;
 };
 
-export { setEpochRange, getLatestVerifiableEpoch };
+export { setEpochRange, getLatestChallengeableEpoch };
