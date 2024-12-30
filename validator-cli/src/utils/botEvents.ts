@@ -3,6 +3,8 @@ export enum BotEvents {
   STARTED = "started",
   CHECKING = "checking",
   WAITING = "waiting",
+  NO_CLAIM = "no_claim",
+  VALID_CLAIM = "valid_claim",
 
   // Epoch state
   NO_NEW_MESSAGES = "no_new_messages",
@@ -16,6 +18,7 @@ export enum BotEvents {
   EXECUTING_SNAPSHOT = "executing_snapshot",
   CANT_EXECUTE_SNAPSHOT = "CANT_EXECUTE_SNAPSHOT",
   WITHDRAWING = "withdrawing",
+  WAITING_ARB_TIMEOUT = "waiting_arb_timeout",
 
   // Transaction state
   TXN_MADE = "txn_made",

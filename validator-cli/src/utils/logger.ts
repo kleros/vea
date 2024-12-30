@@ -19,7 +19,7 @@ export const initialize = (emitter: EventEmitter) => {
 export const configurableInitialize = (emitter: EventEmitter) => {
   // Bridger state logs
   emitter.on(BotEvents.STARTED, () => {
-    console.log("Bridger started");
+    console.log("Validator started");
   });
 
   emitter.on(BotEvents.CHECKING, (epoch: number) => {
@@ -28,10 +28,6 @@ export const configurableInitialize = (emitter: EventEmitter) => {
 
   emitter.on(BotEvents.WAITING, (epoch: number) => {
     console.log(`Waiting for next verifiable epoch after ${epoch}`);
-  });
-
-  emitter.on(BotEvents.NO_NEW_MESSAGES, () => {
-    console.log("No new messages found");
   });
 
   emitter.on(BotEvents.NO_SNAPSHOT, () => {
@@ -87,5 +83,17 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   // withdrawClaimDeposit()
   emitter.on(BotEvents.WITHDRAWING, () => {
     console.log(`Withdrawing challenge deposit for epoch`);
+  });
+
+  emitter.on(BotEvents.WAITING_ARB_TIMEOUT, (epoch: number) => {
+    console.log(`Waiting for arbitrum bridge timeout for epoch ${epoch}`);
+  });
+
+  // validator
+  emitter.on(BotEvents.NO_CLAIM, (epoch: number) => {
+    console.log(`No claim was made for ${epoch}`);
+  });
+  emitter.on(BotEvents.VALID_CLAIM, (epoch: number) => {
+    console.log(`Valid claim was made for ${epoch}`);
   });
 };

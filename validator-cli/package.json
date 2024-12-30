@@ -10,7 +10,7 @@
     "yarn": "4.2.2"
   },
   "scripts": {
-    "start": "npx ts-node ./src/ArbToEth/watcher.ts",
+    "start": "npx ts-node ./src/watcher.ts",
     "start-chiado-devnet": "npx ts-node ./src/devnet/arbToChiado/happyPath.ts",
     "start-sepolia-devnet": "npx ts-node ./src/devnet/arbToSepolia/happyPath.ts",
     "start-sepolia-testnet": "npx ts-node ./src/ArbToEth/watcherArbToEth.ts",

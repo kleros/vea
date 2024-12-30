@@ -1,8 +1,22 @@
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
 import { ClaimNotFoundError } from "./errors";
+import { getMessageStatus } from "./arbMsgExecutor";
 
-const fetchClaim = async (veaOutbox: any, epoch: number): Promise<ClaimStruct | null> => {
+/**
+ *
+ * @param veaOutbox VeaOutbox contract instance
+ * @param epoch epoch number of the claim to be fetched
+ * @returns claim type of ClaimStruct
+ */
+const getClaim = async (
+  veaOutbox: any,
+  veaOutboxProvider: JsonRpcProvider,
+  epoch: number,
+  fromBlock: number,
+  toBlock: number | string
+): Promise<ClaimStruct | null> => {
   let claim: ClaimStruct = {
     stateRoot: ethers.ZeroHash,
     claimer: ethers.ZeroAddress,
@@ -16,28 +30,73 @@ const fetchClaim = async (veaOutbox: any, epoch: number): Promise<ClaimStruct | 
   if (claimHash === ethers.ZeroHash) return null;
 
   const [claimLogs, challengeLogs, verificationLogs] = await Promise.all([
-    veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null)),
-    veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null)),
-    veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch)),
+    veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null), fromBlock, toBlock),
+    veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null), fromBlock, toBlock),
+    veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch), fromBlock, toBlock),
   ]);
+
   if (claimLogs.length === 0) throw new ClaimNotFoundError(epoch);
+
   claim.stateRoot = claimLogs[0].data;
   claim.claimer = `0x${claimLogs[0].topics[1].slice(26)}`;
-  claim.timestampClaimed = (await veaOutbox.provider.getBlock(claimLogs[0].blockNumber)).timestamp;
+  claim.timestampClaimed = (await veaOutboxProvider.getBlock(claimLogs[0].blockNumber)).timestamp;
 
   if (verificationLogs.length > 0) {
-    claim.timestampVerification = (await veaOutbox.provider.getBlock(verificationLogs[0].blockNumber)).timestamp;
+    claim.timestampVerification = (await veaOutboxProvider.getBlock(verificationLogs[0].blockNumber)).timestamp;
     claim.blocknumberVerification = verificationLogs[0].blockNumber;
   }
   if (challengeLogs.length > 0) {
+    console.log(challengeLogs);
     claim.challenger = "0x" + challengeLogs[0].topics[2].substring(26);
   }
 
   if (hashClaim(claim) == claimHash) {
     return claim;
-  } else {
-    throw new ClaimNotFoundError(epoch);
   }
+  claim.honest = 1; // Assuming claimer is honest
+  if (hashClaim(claim) == claimHash) {
+    return claim;
+  }
+  claim.honest = 2; // Assuming challenger is honest
+  if (hashClaim(claim) == claimHash) {
+    return claim;
+  }
+  throw new ClaimNotFoundError(epoch);
+};
+
+type ClaimResolveState = {
+  sendSnapshot: {
+    status: boolean;
+    txHash: string;
+  };
+  execution: {
+    status: number; // 0: not ready, 1: ready, 2: executed
+    txHash: string;
+  };
+};
+
+const getClaimResolveState = async (
+  veaInbox: any,
+  veaInboxProvider: JsonRpcProvider,
+  veaOutboxProvider: JsonRpcProvider,
+  epoch: number,
+  fromBlock: number,
+  toBlock: number | string
+): Promise<ClaimResolveState> => {
+  const sentSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSent(epoch, null), fromBlock, toBlock);
+
+  const claimResolveState: ClaimResolveState = {
+    sendSnapshot: { status: false, txHash: "" },
+    execution: { status: 0, txHash: "" },
+  };
+
+  if (sentSnapshotLogs.length === 0) return claimResolveState;
+  else claimResolveState.sendSnapshot.status = true;
+
+  const status = await getMessageStatus(sentSnapshotLogs[0].transactionHash, veaInboxProvider, veaOutboxProvider);
+  claimResolveState.execution.status = status;
+
+  return claimResolveState;
 };
 
 /**
@@ -47,8 +106,6 @@ const fetchClaim = async (veaOutbox: any, epoch: number): Promise<ClaimStruct | 
  *
  * @returns The hash of the claim data
  *
- * @example
- * const claimHash = hashClaim(claim);
  */
 const hashClaim = (claim: ClaimStruct) => {
   return ethers.solidityPackedKeccak256(
@@ -65,4 +122,4 @@ const hashClaim = (claim: ClaimStruct) => {
   );
 };
 
-export { fetchClaim, hashClaim };
+export { getClaim, hashClaim, getClaimResolveState };

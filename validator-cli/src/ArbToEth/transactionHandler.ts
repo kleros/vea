@@ -1,10 +1,11 @@
 import { VeaInboxArbToEth, VeaOutboxArbToEth } from "@kleros/vea-contracts/typechain-types";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { getMessageStatus, messageExecutor } from "../utils/arbMsgExecutor";
+import { messageExecutor } from "../utils/arbMsgExecutor";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
-import { ClaimNotSetError, ContractNotSupportedError } from "../utils/errors";
+import { ClaimNotSetError } from "../utils/errors";
+import { getBridgeConfig } from "../consts/bridgeRoutes";
 
 /**
  * @file This file contains the logic for handling transactions from Arbitrum to Ethereum.
@@ -25,13 +26,12 @@ type Transactions = {
 export enum ContractType {
   INBOX = "inbox",
   OUTBOX = "outbox",
-  ROUTER = "router",
 }
 
 export class ArbToEthTransactionHandler {
   public requiredConfirmations = 10;
   public claim: ClaimStruct | null = null;
-  public deposit: bigint;
+  public chainId = 11155111;
 
   public veaInbox: VeaInboxArbToEth;
   public veaOutbox: VeaOutboxArbToEth;
@@ -49,7 +49,6 @@ export class ArbToEthTransactionHandler {
 
   constructor(
     epoch: number,
-    deposit: bigint,
     veaInbox: VeaInboxArbToEth,
     veaOutbox: VeaOutboxArbToEth,
     veaInboxProvider: JsonRpcProvider,
@@ -58,7 +57,6 @@ export class ArbToEthTransactionHandler {
     claim: ClaimStruct | null = null
   ) {
     this.epoch = epoch;
-    this.deposit = deposit;
     this.veaInbox = veaInbox;
     this.veaOutbox = veaOutbox;
     this.veaInboxProvider = veaInboxProvider;
@@ -81,8 +79,6 @@ export class ArbToEthTransactionHandler {
       provider = this.veaInboxProvider;
     } else if (contract === ContractType.OUTBOX) {
       provider = this.veaOutboxProvider;
-    } else {
-      throw new ContractNotSupportedError(contract);
     }
 
     if (trnxHash == null) {
@@ -113,7 +109,6 @@ export class ArbToEthTransactionHandler {
    *
    */
   public async challengeClaim() {
-    // TODO: Add a check for finality of l2 transaction of saveSnapshot()
     this.emitter.emit(BotEvents.CHALLENGING);
     if (!this.claim) {
       throw new ClaimNotSetError();
@@ -121,10 +116,11 @@ export class ArbToEthTransactionHandler {
     if (await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX)) {
       return;
     }
+    const { deposit } = getBridgeConfig(this.chainId);
     const gasEstimate: bigint = await this.veaOutbox[
       "challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
-    ].estimateGas(this.epoch, this.claim, { value: this.deposit });
-    const maxFeePerGasProfitable = this.deposit / (gasEstimate * BigInt(6));
+    ].estimateGas(this.epoch, this.claim, { value: deposit });
+    const maxFeePerGasProfitable = deposit / (gasEstimate * BigInt(6));
 
     // Set a reasonable maxPriorityFeePerGas but ensure it's lower than maxFeePerGas
     let maxPriorityFeePerGasMEV = BigInt(6667000000000); // 6667 gwei
@@ -139,7 +135,7 @@ export class ArbToEthTransactionHandler {
     ](this.epoch, this.claim, {
       maxFeePerGas: maxFeePerGasProfitable,
       maxPriorityFeePerGas: maxPriorityFeePerGasMEV,
-      value: this.deposit,
+      value: deposit,
       gasLimit: gasEstimate,
     });
     this.emitter.emit(BotEvents.TXN_MADE, challengeTxn.hash, this.epoch, "Challenge");
@@ -182,27 +178,13 @@ export class ArbToEthTransactionHandler {
   /**
    * Execute a sent snapshot to resolve dispute in VeaOutbox (ETH).
    */
-  public async resolveChallengedClaim(
-    executeMsg: typeof messageExecutor = messageExecutor,
-    msgStatus: typeof getMessageStatus = getMessageStatus
-  ) {
+  public async resolveChallengedClaim(sendSnapshotTxn: string, executeMsg: typeof messageExecutor = messageExecutor) {
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
     if (await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.OUTBOX)) {
       return;
     }
-    // TODO: Add check for the status of the snapshot txn
-    const status = await msgStatus(this.transactions.sendSnapshotTxn, this.veaInboxProvider, this.veaOutboxProvider);
-    // 1 : ready to execute, 0 : cant execute yet
-    if (status == 1) {
-      const msgExecuteTrnx = await executeMsg(
-        this.transactions.sendSnapshotTxn,
-        this.veaInboxProvider,
-        this.veaOutboxProvider
-      );
-      this.emitter.emit(BotEvents.TXN_MADE, msgExecuteTrnx.hash, this.epoch, "Execute Snapshot");
-      this.transactions.executeSnapshotTxn = msgExecuteTrnx.hash;
-    } else {
-      this.emitter.emit(BotEvents.CANT_EXECUTE_SNAPSHOT);
-    }
+    const msgExecuteTrnx = await executeMsg(sendSnapshotTxn, this.veaInboxProvider, this.veaOutboxProvider);
+    this.emitter.emit(BotEvents.TXN_MADE, msgExecuteTrnx.hash, this.epoch, "Execute Snapshot");
+    this.transactions.executeSnapshotTxn = msgExecuteTrnx.hash;
   }
 }

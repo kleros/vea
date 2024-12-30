@@ -1,13 +1,11 @@
 import { ArbToEthTransactionHandler, ContractType } from "./transactionHandler";
 import { MockEmitter, defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
-import { ClaimNotSetError, ContractNotSupportedError } from "../utils/errors";
+import { ClaimNotSetError } from "../utils/errors";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { getMessageStatus } from "../utils/arbMsgExecutor";
 
 describe("ArbToEthTransactionHandler", () => {
   let epoch: number = 100;
-  let deposit: bigint = BigInt(100000);
   let veaInbox: any;
   let veaOutbox: any;
   let veaInboxProvider: any;
@@ -41,7 +39,6 @@ describe("ArbToEthTransactionHandler", () => {
     it("should create a new TransactionHandler without claim", () => {
       const transactionHandler = new ArbToEthTransactionHandler(
         epoch,
-        deposit,
         veaInbox,
         veaOutbox,
         veaInboxProvider,
@@ -56,7 +53,6 @@ describe("ArbToEthTransactionHandler", () => {
     it("should create a new TransactionHandler with claim", () => {
       const transactionHandler = new ArbToEthTransactionHandler(
         epoch,
-        deposit,
         veaInbox,
         veaOutbox,
         veaInboxProvider,
@@ -79,7 +75,6 @@ describe("ArbToEthTransactionHandler", () => {
     beforeEach(() => {
       transactionHandler = new ArbToEthTransactionHandler(
         epoch,
-        deposit,
         veaInbox,
         veaOutbox,
         veaInboxProvider,
@@ -128,13 +123,6 @@ describe("ArbToEthTransactionHandler", () => {
       );
     });
 
-    it("should throw an error if contract type is not supported", async () => {
-      const trnxHash = "0x123456";
-      await expect(transactionHandler.checkTransactionStatus(trnxHash, ContractType.ROUTER)).rejects.toThrow(
-        new ContractNotSupportedError(ContractType.ROUTER)
-      );
-    });
-
     it("should return false if transaction hash is null", async () => {
       const trnxHash = null;
       const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
@@ -148,7 +136,6 @@ describe("ArbToEthTransactionHandler", () => {
     beforeEach(() => {
       transactionHandler = new ArbToEthTransactionHandler(
         epoch,
-        deposit,
         veaInbox,
         veaOutbox,
         veaInboxProvider,
@@ -195,7 +182,6 @@ describe("ArbToEthTransactionHandler", () => {
     beforeEach(() => {
       transactionHandler = new ArbToEthTransactionHandler(
         epoch,
-        deposit,
         veaInbox,
         veaOutbox,
         veaInboxProvider,
@@ -242,7 +228,6 @@ describe("ArbToEthTransactionHandler", () => {
     beforeEach(() => {
       transactionHandler = new ArbToEthTransactionHandler(
         epoch,
-        deposit,
         veaInbox,
         veaOutbox,
         veaInboxProvider,
@@ -280,16 +265,13 @@ describe("ArbToEthTransactionHandler", () => {
   });
 
   describe("resolveChallengedClaim", () => {
-    let mockGetMessageStatus: any;
     let mockMessageExecutor: any;
     let transactionHandler: ArbToEthTransactionHandler;
     const mockEmitter = new MockEmitter();
     beforeEach(() => {
-      mockGetMessageStatus = jest.fn();
       mockMessageExecutor = jest.fn();
       transactionHandler = new ArbToEthTransactionHandler(
         epoch,
-        deposit,
         veaInbox,
         veaOutbox,
         veaInboxProvider,
@@ -299,18 +281,15 @@ describe("ArbToEthTransactionHandler", () => {
     });
     it("should resolve challenged claim", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(false);
-      mockGetMessageStatus.mockResolvedValue(1);
       transactionHandler.transactions.sendSnapshotTxn = "0x1234";
       mockMessageExecutor.mockResolvedValue({ hash: "0x1234" });
-      await transactionHandler.resolveChallengedClaim(mockMessageExecutor, mockGetMessageStatus);
+      await transactionHandler.resolveChallengedClaim(
+        transactionHandler.transactions.sendSnapshotTxn,
+        mockMessageExecutor
+      );
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
         transactionHandler.transactions.sendSnapshotTxn,
         ContractType.OUTBOX
-      );
-      expect(mockGetMessageStatus).toHaveBeenCalledWith(
-        transactionHandler.transactions.sendSnapshotTxn,
-        veaInboxProvider,
-        veaOutboxProvider
       );
       expect(transactionHandler.transactions.executeSnapshotTxn).toEqual("0x1234");
     });
@@ -318,28 +297,11 @@ describe("ArbToEthTransactionHandler", () => {
     it("should not resolve challenged claim if txn is pending", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(true);
       transactionHandler.transactions.sendSnapshotTxn = "0x1234";
-      await transactionHandler.resolveChallengedClaim(mockMessageExecutor, mockGetMessageStatus);
+      await transactionHandler.resolveChallengedClaim(mockMessageExecutor);
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
         transactionHandler.transactions.sendSnapshotTxn,
         ContractType.OUTBOX
       );
-    });
-
-    it("should not claim if snapshot txn is not ready to execute", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(false);
-      mockGetMessageStatus.mockResolvedValue(0);
-      transactionHandler.transactions.sendSnapshotTxn = "0x1234";
-      await transactionHandler.resolveChallengedClaim(mockMessageExecutor, mockGetMessageStatus);
-      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
-        transactionHandler.transactions.sendSnapshotTxn,
-        ContractType.OUTBOX
-      );
-      expect(mockGetMessageStatus).toHaveBeenCalledWith(
-        transactionHandler.transactions.sendSnapshotTxn,
-        veaInboxProvider,
-        veaOutboxProvider
-      );
-      expect(mockMessageExecutor).not.toHaveBeenCalled();
     });
   });
 });
