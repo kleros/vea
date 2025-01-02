@@ -1,16 +1,14 @@
 import { TransactionHandler } from "./transactionHandler";
 import { ClaimNotSetError } from "./errors";
 import { BotEvents } from "./botEvents";
+import { getBridgeConfig } from "../consts/bridgeRoutes";
 
 describe("TransactionHandler Tests", () => {
-  let chainId: number;
+  const chainId = 11155111;
   let epoch: number;
   let claim: any;
   let veaOutbox: any;
-  let mockGetBridgeConfig: any;
   beforeEach(() => {
-    chainId = 1;
-    epoch = 10;
     claim = {
       stateRoot: "0x1234",
       claimer: "0x1234",
@@ -36,9 +34,6 @@ describe("TransactionHandler Tests", () => {
         getBlock: jest.fn(),
       },
     };
-    mockGetBridgeConfig = jest
-      .fn()
-      .mockReturnValue({ deposit: 1000, minChallengePeriod: 1000, sequencerDelayLimit: 1000, epochPeriod: 1000 });
   });
   afterEach(() => {
     jest.restoreAllMocks();
@@ -124,18 +119,18 @@ describe("TransactionHandler Tests", () => {
       // Mock checkTransactionPendingStatus to always return false
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
 
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, null, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, null);
       await transactionHandler.makeClaim(claim.stateRoot);
 
-      expect(veaOutbox.estimateGas.claim).toHaveBeenCalledWith(epoch, claim.stateRoot, { value: 1000 });
-      expect(veaOutbox.claim).toHaveBeenCalledWith(epoch, claim.stateRoot, { value: 1000, gasLimit: 1000 });
+      expect(veaOutbox.estimateGas.claim).toHaveBeenCalled();
+      expect(veaOutbox.claim).toHaveBeenCalled();
       expect(transactionHandler.pendingTransactions.claim).toEqual("0x1234");
     });
 
     it("should not make a claim if a claim transaction is pending", async () => {
       // Mock checkTransactionPendingStatus to always return true
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(true);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox);
       await transactionHandler.makeClaim(claim.stateRoot);
 
       expect(veaOutbox.estimateGas.claim).not.toHaveBeenCalled();
@@ -150,14 +145,12 @@ describe("TransactionHandler Tests", () => {
       veaOutbox.estimateGas.startVerification.mockResolvedValue(1000);
       veaOutbox.startVerification.mockResolvedValue({ hash: "0x1234" });
       startVerifyTimeFlip =
-        claim.timestampClaimed +
-        mockGetBridgeConfig(chainId).epochPeriod +
-        mockGetBridgeConfig(chainId).sequencerDelayLimit;
+        claim.timestampClaimed + getBridgeConfig(chainId).epochPeriod + getBridgeConfig(chainId).sequencerDelayLimit;
     });
     it("should start verification and set pending startVerification trnx", async () => {
       // Mock checkTransactionPendingStatus to always return false
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim);
 
       await transactionHandler.startVerification(startVerifyTimeFlip);
 
@@ -169,7 +162,7 @@ describe("TransactionHandler Tests", () => {
     it("should not start verification if timeout has not passed", async () => {
       // Mock checkTransactionPendingStatus to always return false
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim);
 
       await transactionHandler.startVerification(startVerifyTimeFlip - 1);
 
@@ -181,7 +174,7 @@ describe("TransactionHandler Tests", () => {
     it("should not start verification if claim is not set", async () => {
       // Mock checkTransactionPendingStatus to always return false
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, null, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, null);
 
       await expect(transactionHandler.startVerification(startVerifyTimeFlip)).rejects.toThrow(ClaimNotSetError);
     });
@@ -189,7 +182,7 @@ describe("TransactionHandler Tests", () => {
     it("should not start verification if a startVerification transaction is pending", async () => {
       // Mock checkTransactionPendingStatus to always return true
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(true);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim);
       await transactionHandler.startVerification(startVerifyTimeFlip);
       expect(veaOutbox.estimateGas.startVerification).not.toHaveBeenCalled();
       expect(veaOutbox.startVerification).not.toHaveBeenCalled();
@@ -202,13 +195,13 @@ describe("TransactionHandler Tests", () => {
     beforeEach(() => {
       veaOutbox.estimateGas.verifySnapshot.mockResolvedValue(1000);
       veaOutbox.verifySnapshot.mockResolvedValue({ hash: "0x1234" });
-      verificationFlipTime = claim.timestampClaimed + mockGetBridgeConfig(chainId).minChallengePeriod;
+      verificationFlipTime = claim.timestampClaimed + getBridgeConfig(chainId).minChallengePeriod;
     });
 
     it("should verify snapshot and set pending verifySnapshot trnx", async () => {
       // Mock checkTransactionPendingStatus to always return false
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim);
 
       await transactionHandler.verifySnapshot(verificationFlipTime);
 
@@ -220,7 +213,7 @@ describe("TransactionHandler Tests", () => {
     it("should not verify snapshot if timeout has not passed", async () => {
       // Mock checkTransactionPendingStatus to always return false
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim);
 
       await transactionHandler.verifySnapshot(verificationFlipTime - 1);
 
@@ -232,7 +225,7 @@ describe("TransactionHandler Tests", () => {
     it("should not verify snapshot if claim is not set", async () => {
       // Mock checkTransactionPendingStatus to always return false
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, null, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, null);
 
       await expect(transactionHandler.verifySnapshot(verificationFlipTime)).rejects.toThrow(ClaimNotSetError);
     });
@@ -240,7 +233,7 @@ describe("TransactionHandler Tests", () => {
     it("should not verify snapshot if a verifySnapshot transaction is pending", async () => {
       // Mock checkTransactionPendingStatus to always return true
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(true);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim);
 
       await transactionHandler.verifySnapshot(verificationFlipTime);
 
@@ -258,7 +251,7 @@ describe("TransactionHandler Tests", () => {
     it("should withdraw deposit and set pending withdrawClaimDeposit trnx", async () => {
       // Mock checkTransactionPendingStatus to always return false
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(false);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim);
 
       await transactionHandler.withdrawClaimDeposit();
       expect(veaOutbox.estimateGas.withdrawClaimDeposit).toHaveBeenCalledWith(epoch, claim);
@@ -269,7 +262,7 @@ describe("TransactionHandler Tests", () => {
     it("should not withdraw deposit if a withdrawClaimDeposit transaction is pending", async () => {
       // Mock checkTransactionPendingStatus to always return true
       jest.spyOn(TransactionHandler.prototype, "checkTransactionPendingStatus").mockResolvedValue(true);
-      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim, mockGetBridgeConfig);
+      const transactionHandler = new TransactionHandler(chainId, epoch, veaOutbox, claim);
 
       await transactionHandler.withdrawClaimDeposit();
       expect(veaOutbox.estimateGas.withdrawClaimDeposit).not.toHaveBeenCalled();

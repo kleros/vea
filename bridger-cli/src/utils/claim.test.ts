@@ -17,7 +17,7 @@ describe("snapshotClaim", () => {
         timestampVerification: 0,
         blocknumberVerification: 0,
         honest: 0,
-        challenger: ethers.constants.AddressZero,
+        challenger: ethers.ZeroAddress as `0x${string}`,
       };
       getClaimForEpoch = jest.fn().mockResolvedValue({
         stateroot: mockClaim.stateRoot,
@@ -43,7 +43,7 @@ describe("snapshotClaim", () => {
     it("should return a valid claim", async () => {
       veaOutbox.queryFilter.mockImplementationOnce(() => Promise.resolve([]));
       veaOutbox.queryFilter.mockImplementationOnce(() =>
-        Promise.resolve([{ blockHash: "0x1234", args: { challenger: ethers.constants.AddressZero } }])
+        Promise.resolve([{ blockHash: "0x1234", args: { challenger: ethers.ZeroAddress } }])
       );
 
       const claim = await fetchClaim(veaOutbox, epoch, getClaimForEpoch);
@@ -80,7 +80,7 @@ describe("snapshotClaim", () => {
       mockClaim.timestampVerification = 1234;
       mockClaim.blocknumberVerification = 1234;
       veaOutbox.queryFilter.mockImplementationOnce(() =>
-        Promise.resolve([{ blockHash: "0x1234", args: { challenger: ethers.constants.AddressZero } }])
+        Promise.resolve([{ blockHash: "0x1234", args: { challenger: ethers.ZeroAddress } }])
       );
       veaOutbox.queryFilter.mockImplementationOnce(() => Promise.resolve([]));
       getClaimForEpoch.mockResolvedValueOnce({
@@ -110,7 +110,7 @@ describe("snapshotClaim", () => {
           {
             blockNumber: 1234,
             data: mockClaim.stateRoot,
-            topics: [ethers.constants.AddressZero, `0x${"0".repeat(24)}${mockClaim.claimer.slice(2)}`],
+            topics: [ethers.ZeroAddress, `0x${"0".repeat(24)}${mockClaim.claimer.slice(2)}`],
           },
         ])
       );
@@ -144,7 +144,7 @@ describe("snapshotClaim", () => {
       timestampVerification: 0,
       blocknumberVerification: 0,
       honest: 0,
-      challenger: ethers.constants.AddressZero,
+      challenger: ethers.ZeroAddress as `0x${string}`,
     };
     // Pre calculated from the deployed contracts
     const hashOfMockClaim = "0xfee47661ef0432da320c3b4706ff7d412f421b9d1531c33ce8f2e03bfe5dcfa2";

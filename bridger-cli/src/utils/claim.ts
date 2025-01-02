@@ -49,7 +49,7 @@ const fetchClaim = async (
     timestampVerification: 0,
     blocknumberVerification: 0,
     honest: 0,
-    challenger: ethers.constants.AddressZero,
+    challenger: ethers.ZeroAddress as `0x${string}`,
   };
   const [verifyLogs, challengeLogs] = await Promise.all([
     veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch)),
@@ -79,8 +79,8 @@ const fetchClaim = async (
  * @example
  * const claimHash = hashClaim(claim);
  */
-const hashClaim = (claim) => {
-  return ethers.utils.solidityKeccak256(
+const hashClaim = (claim: ClaimStruct) => {
+  return ethers.solidityPackedKeccak256(
     ["bytes32", "address", "uint32", "uint32", "uint32", "uint8", "address"],
     [
       claim.stateRoot,

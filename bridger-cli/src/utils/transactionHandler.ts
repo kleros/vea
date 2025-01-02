@@ -33,7 +33,6 @@ export class TransactionHandler {
   public veaOutbox: any;
   public chainId: number;
   public claim: ClaimStruct | null;
-  public getBridgeConfig: typeof getBridgeConfig;
   public requiredConfirmations: number = 12;
   public emitter: EventEmitter;
 
@@ -44,19 +43,11 @@ export class TransactionHandler {
     startVerification: null,
   };
 
-  constructor(
-    chainId: number,
-    epoch: number,
-    veaOutbox: any,
-    claim?: ClaimStruct,
-    fetchBridgeConfig: typeof getBridgeConfig | null = getBridgeConfig,
-    emiitter?: EventEmitter
-  ) {
+  constructor(chainId: number, epoch: number, veaOutbox: any, claim?: ClaimStruct, emiitter?: EventEmitter) {
     this.epoch = epoch;
     this.veaOutbox = veaOutbox;
     this.chainId = chainId;
     this.claim = claim;
-    this.getBridgeConfig = getBridgeConfig || fetchBridgeConfig;
     this.emitter = emiitter || defaultEmitter;
   }
 
@@ -89,10 +80,11 @@ export class TransactionHandler {
     if (await this.checkTransactionPendingStatus(this.pendingTransactions.claim)) {
       return;
     }
-    const bridgeConfig = this.getBridgeConfig(this.chainId);
-    const estimateGas = await this.veaOutbox.estimateGas.claim(this.epoch, stateRoot, { value: bridgeConfig.deposit });
+    const { deposit } = getBridgeConfig(this.chainId);
+
+    const estimateGas = await this.veaOutbox.estimateGas.claim(this.epoch, stateRoot, { value: deposit });
     const claimTransaction = await this.veaOutbox.claim(this.epoch, stateRoot, {
-      value: bridgeConfig.deposit,
+      value: deposit,
       gasLimit: estimateGas,
     });
     this.emitter.emit(BotEvents.TXN_MADE, this.epoch, claimTransaction.hash, "Claim");
@@ -107,7 +99,8 @@ export class TransactionHandler {
     if (await this.checkTransactionPendingStatus(this.pendingTransactions.startVerification)) {
       return;
     }
-    const bridgeConfig = this.getBridgeConfig(this.chainId);
+
+    const bridgeConfig = getBridgeConfig(this.chainId);
     const timeOver =
       latestBlockTimestamp - this.claim.timestampClaimed - bridgeConfig.sequencerDelayLimit - bridgeConfig.epochPeriod;
 
@@ -129,7 +122,7 @@ export class TransactionHandler {
     if (await this.checkTransactionPendingStatus(this.pendingTransactions.verifySnapshot)) {
       return;
     }
-    const bridgeConfig = this.getBridgeConfig(this.chainId);
+    const bridgeConfig = getBridgeConfig(this.chainId);
 
     const timeLeft = latestBlockTimestamp - this.claim.timestampClaimed - bridgeConfig.minChallengePeriod;
 

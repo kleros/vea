@@ -1,9 +1,8 @@
 require("dotenv").config();
 import { assert } from "chai";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { BigNumber } from "ethers";
 import { MockEmitter } from "./utils/emitter";
-import { hashClaim } from "./utils/claim";
+import { ClaimStruct, hashClaim } from "./utils/claim";
 import { getVeaOutbox, getVeaInbox } from "./utils/ethers";
 import { watch } from "./bridger";
 import { ShutdownSignal } from "./utils/shutdown";
@@ -22,7 +21,7 @@ describe("bridger", function () {
 
   let claimEpoch: number;
   let epochPeriod: number;
-  let deposit: BigNumber;
+  let deposit: bigint;
   let sequencerDelay: number;
 
   const veaInbox = getVeaInbox(
@@ -101,9 +100,9 @@ describe("bridger", function () {
 
       const bridger = `0x${claimData[0].topics[1].slice(26)}`;
       const claimBlock = await outboxProvider.getBlock(claimData[0].blockNumber);
-      const claim = {
+      const claim: ClaimStruct = {
         stateRoot: toBeClaimedStateRoot,
-        claimer: bridger,
+        claimer: bridger as `0x${string}`,
         timestampClaimed: claimBlock.timestamp,
         timestampVerification: 0,
         blocknumberVerification: 0,
@@ -304,11 +303,11 @@ describe("bridger", function () {
       await veaOutbox.verifySnapshot(claimEpoch, claim);
 
       const balancePreWithdraw = await outboxProvider.getBalance(claimTxn.from);
-      const contractBalancePreWithdraw = await outboxProvider.getBalance(veaOutbox.address);
+      const contractBalancePreWithdraw = await outboxProvider.getBalance(process.env.VEAOUTBOX_ADDRESS);
 
       await startBridgerWithTimeout(5000, claimEpoch);
       const balancePostWithdraw = await outboxProvider.getBalance(claimTxn.from);
-      const contractBalancePostWithdraw = await outboxProvider.getBalance(veaOutbox.address);
+      const contractBalancePostWithdraw = await outboxProvider.getBalance(process.env.VEAOUTBOX_ADDRESS);
 
       assert(balancePostWithdraw.gt(balancePreWithdraw), "Deposit was not withdrawn");
       assert(contractBalancePostWithdraw.eq(contractBalancePreWithdraw.sub(deposit)), "Deposit was not withdrawn");

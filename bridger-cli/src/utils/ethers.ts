@@ -1,5 +1,4 @@
-import { Wallet } from "@ethersproject/wallet";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { Wallet, JsonRpcProvider } from "ethers";
 import {
   VeaOutboxArbToEth__factory,
   VeaOutboxArbToEthDevnet__factory,
@@ -20,16 +19,11 @@ function getWalletRPC(privateKey: string, rpc: JsonRpcProvider) {
 
 // Using destination chainId as identifier, Ex: Arbitrum One (42161) -> Ethereum Mainnet (1): Use "1" as chainId
 function getVeaInbox(veaInboxAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
-  const bridge = getBridgeConfig(chainId);
-  switch (bridge.chain) {
-    case "sepolia":
-    case "mainnet":
+  switch (chainId) {
+    case 11155111:
       return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
-    case "chiado":
-    case "gnosis":
+    case 10200:
       return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
-    default:
-      throw new Error(`Unsupported chainId: ${chainId}`);
   }
 }
 
