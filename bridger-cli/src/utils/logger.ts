@@ -79,7 +79,7 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.STARTING_VERIFICATION, (epoch: number) => {
     console.log(`Starting verification for epoch ${epoch}`);
   });
-  emitter.on(BotEvents.VERFICATION_CANT_START, (time) => {
+  emitter.on(BotEvents.VERIFICATION_CANT_START, (time) => {
     console.log(`Waiting for sequencer delay to pass to start verification, seconds left: ${time}`);
   });
 

@@ -105,7 +105,7 @@ export class TransactionHandler {
       latestBlockTimestamp - this.claim.timestampClaimed - bridgeConfig.sequencerDelayLimit - bridgeConfig.epochPeriod;
 
     if (timeOver < 0) {
-      this.emitter.emit(BotEvents.VERFICATION_CANT_START, -1 * timeOver);
+      this.emitter.emit(BotEvents.VERIFICATION_CANT_START, -1 * timeOver);
       return;
     }
     const estimateGas = await this.veaOutbox.estimateGas.startVerification(this.epoch, this.claim);

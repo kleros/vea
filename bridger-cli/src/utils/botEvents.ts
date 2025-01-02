@@ -12,7 +12,7 @@ export enum BotEvents {
   // Claim state
   CLAIMING = "claiming",
   CHALLENGER_WON_CLAIM = "challenger_won_claim",
-  VERFICATION_CANT_START = "verification_cant_started",
+  VERIFICATION_CANT_START = "verification_cant_started",
   CANT_VERIFY_SNAPSHOT = "cant_verify_snapshot",
   CLAIM_CHALLENGED = "claim_challenged",
   STARTING_VERIFICATION = "starting_verification",
