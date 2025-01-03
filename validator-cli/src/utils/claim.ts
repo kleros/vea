@@ -46,7 +46,6 @@ const getClaim = async (
     claim.blocknumberVerification = verificationLogs[0].blockNumber;
   }
   if (challengeLogs.length > 0) {
-    console.log(challengeLogs);
     claim.challenger = "0x" + challengeLogs[0].topics[2].substring(26);
   }
 
@@ -91,7 +90,10 @@ const getClaimResolveState = async (
   };
 
   if (sentSnapshotLogs.length === 0) return claimResolveState;
-  else claimResolveState.sendSnapshot.status = true;
+  else {
+    claimResolveState.sendSnapshot.status = true;
+    claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
+  }
 
   const status = await getMessageStatus(sentSnapshotLogs[0].transactionHash, veaInboxProvider, veaOutboxProvider);
   claimResolveState.execution.status = status;
