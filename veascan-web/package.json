@@ -93,7 +93,7 @@
     "react-loading-skeleton": "^3.5.0",
     "react-router-dom": "^6.26.2",
     "react-use": "^17.5.1",
-    "styled-components": "^5.3.10",
+    "styled-components": "^6.1.14",
     "swr": "^2.2.5"
   }
 }
