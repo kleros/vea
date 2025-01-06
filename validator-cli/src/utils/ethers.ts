@@ -11,6 +11,7 @@ import {
 } from "@kleros/vea-contracts/typechain-types";
 import { challengeAndResolveClaim as challengeAndResolveClaimArbToEth } from "../ArbToEth/validator";
 import { ArbToEthTransactionHandler } from "../ArbToEth/transactionHandler";
+import { TransactionHandlerNotDefinedError } from "./errors";
 
 function getWallet(privateKey: string, web3ProviderURL: string) {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
@@ -68,6 +69,8 @@ const getTransactionHandler = (chainId: number) => {
   switch (chainId) {
     case 11155111:
       return ArbToEthTransactionHandler;
+    default:
+      throw new TransactionHandlerNotDefinedError();
   }
 };
 export {

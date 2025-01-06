@@ -6,7 +6,15 @@ import { getClaimValidator } from "./utils/ethers";
 import { defaultEmitter } from "./utils/emitter";
 import { BotEvents } from "./utils/botEvents";
 import { initialize as initializeLogger } from "./utils/logger";
-import { ShutdownSignal } from "./utils/shutDown";
+import { ShutdownSignal } from "./utils/shutdown";
+
+/**
+ * @file This file contains the logic for watching a bridge and validating/resolving for claims.
+ *
+ * @param shutDownSignal - The signal to shut down the watcher
+ * @param emitter - The emitter to emit events
+ *
+ */
 
 export const watch = async (
   shutDownSignal: ShutdownSignal = new ShutdownSignal(),

@@ -80,7 +80,8 @@ const getClaimResolveState = async (
   veaOutboxProvider: JsonRpcProvider,
   epoch: number,
   fromBlock: number,
-  toBlock: number | string
+  toBlock: number | string,
+  fetchMessageStatus: typeof getMessageStatus = getMessageStatus
 ): Promise<ClaimResolveState> => {
   const sentSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSent(epoch, null), fromBlock, toBlock);
 
@@ -95,7 +96,7 @@ const getClaimResolveState = async (
     claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
   }
 
-  const status = await getMessageStatus(sentSnapshotLogs[0].transactionHash, veaInboxProvider, veaOutboxProvider);
+  const status = await fetchMessageStatus(sentSnapshotLogs[0].transactionHash, veaInboxProvider, veaOutboxProvider);
   claimResolveState.execution.status = status;
 
   return claimResolveState;

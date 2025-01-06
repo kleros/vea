@@ -1,8 +1,7 @@
 import { ethers } from "ethers";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { getClaim, hashClaim } from "./claim";
+import { getClaim, hashClaim, getClaimResolveState } from "./claim";
 import { ClaimNotFoundError } from "./errors";
-import { getBlock } from "web3/lib/commonjs/eth.exports";
 
 let mockClaim: ClaimStruct;
 // Pre calculated from the deployed contracts
@@ -183,6 +182,64 @@ describe("snapshotClaim", () => {
       const hash = hashClaim(mockClaim);
       expect(hash).toBeDefined();
       expect(hash).not.toEqual(hashedMockClaim);
+    });
+  });
+
+  describe("getClaimResolveState", () => {
+    let veaInbox: any;
+    let veaInboxProvider: any;
+    let veaOutboxProvider: any;
+    const epoch = 1;
+    const blockNumberOutboxLowerBound = 1234;
+    const toBlock = "latest";
+    beforeEach(() => {
+      mockClaim = {
+        stateRoot: "0xeac817ed5c5b3d1c2c548f231b7cf9a0dfd174059f450ec6f0805acf6a16a551",
+        claimer: "0xFa00D29d378EDC57AA1006946F0fc6230a5E3288",
+        timestampClaimed: 1730276784,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: ethers.ZeroAddress,
+      };
+      veaInbox = {
+        queryFilter: jest.fn(),
+        filters: {
+          SnapshotSent: jest.fn(),
+        },
+      };
+    });
+
+    it("should return pending state for both", async () => {
+      veaInbox.queryFilter.mockResolvedValueOnce([]);
+      const claimResolveState = await getClaimResolveState(
+        veaInbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        epoch,
+        blockNumberOutboxLowerBound,
+        toBlock
+      );
+      expect(claimResolveState).toBeDefined();
+      expect(claimResolveState.sendSnapshot.status).toBeFalsy();
+      expect(claimResolveState.execution.status).toBe(0);
+    });
+
+    it("should return pending state for execution", async () => {
+      veaInbox.queryFilter.mockResolvedValueOnce([{ transactionHash: "0x1234" }]);
+      const mockGetMessageStatus = jest.fn().mockResolvedValueOnce(0);
+      const claimResolveState = await getClaimResolveState(
+        veaInbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        epoch,
+        blockNumberOutboxLowerBound,
+        toBlock,
+        mockGetMessageStatus
+      );
+      expect(claimResolveState).toBeDefined();
+      expect(claimResolveState.sendSnapshot.status).toBeTruthy();
+      expect(claimResolveState.execution.status).toBe(0);
     });
   });
 });

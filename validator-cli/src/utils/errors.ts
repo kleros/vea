@@ -22,4 +22,12 @@ class ContractNotSupportedError extends Error {
   }
 }
 
-export { ClaimNotFoundError, ClaimNotSetError, ContractNotSupportedError };
+class TransactionHandlerNotDefinedError extends Error {
+  constructor() {
+    super();
+    this.name = "TransactionHandlerNotDefinedError";
+    this.message = "TransactionHandler is not defined";
+  }
+}
+
+export { ClaimNotFoundError, ClaimNotSetError, ContractNotSupportedError, TransactionHandlerNotDefinedError };

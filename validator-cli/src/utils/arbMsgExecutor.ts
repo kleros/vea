@@ -9,7 +9,16 @@ import { JsonRpcProvider, TransactionReceipt } from "@ethersproject/providers";
 import { Signer } from "@ethersproject/abstract-signer";
 import { ContractTransaction } from "@ethersproject/contracts";
 
-// Execute the child-to-parent (arbitrum-to-ethereum) message, for reference see: https://docs.arbitrum.io/sdk/reference/message/ChildToParentMessage
+/**
+ * Execute the child-to-parent (arbitrum-to-ethereum) message,
+ * for reference see: https://docs.arbitrum.io/sdk/reference/message/ChildToParentMessage
+ *
+ * @param trnxHash Hash of the transaction
+ * @param childJsonRpc L2 provider
+ * @param parentJsonRpc L1 provider
+ * @returns Execution transaction for the message
+ *
+ * */
 async function messageExecutor(
   trnxHash: string,
   childJsonRpc: JsonRpcProvider,
@@ -37,6 +46,14 @@ async function messageExecutor(
   return res;
 }
 
+/**
+ *
+ * @param trnxHash Hash of the transaction
+ * @param childJsonRpc L2 provider
+ * @param parentJsonRpc L1 provider
+ * @returns status of the message: 0 - not ready, 1 - ready
+ *
+ */
 async function getMessageStatus(
   trnxHash: string,
   childJsonRpc: JsonRpcProvider,

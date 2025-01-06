@@ -73,7 +73,7 @@ export class ArbToEthTransactionHandler {
    *
    * @returns False if transaction is pending || not final || not made, else True.
    */
-  public async checkTransactionStatus(trnxHash: string | null, contract: ContractType): Promise<boolean> {
+  public async checkTransactionStatus(trnxHash: string | null, contract: ContractType): Promise<number> {
     let provider: JsonRpcProvider;
     if (contract === ContractType.INBOX) {
       provider = this.veaInboxProvider;
@@ -82,14 +82,15 @@ export class ArbToEthTransactionHandler {
     }
 
     if (trnxHash == null) {
-      return false;
+      return 0;
     }
 
     const receipt = await provider.getTransactionReceipt(trnxHash);
 
     if (!receipt) {
+      // TODO: Add transaction pending timeout- redo transaction.
       this.emitter.emit(BotEvents.TXN_PENDING, trnxHash);
-      return true;
+      return 1;
     }
 
     const currentBlock = await provider.getBlock("latest");
@@ -97,10 +98,10 @@ export class ArbToEthTransactionHandler {
 
     if (confirmations >= this.requiredConfirmations) {
       this.emitter.emit(BotEvents.TXN_FINAL, trnxHash, confirmations);
-      return false;
+      return 3;
     } else {
       this.emitter.emit(BotEvents.TXN_NOT_FINAL, trnxHash, confirmations);
-      return true;
+      return 2;
     }
   }
 
@@ -113,7 +114,7 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
-    if (await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX)) {
+    if ((await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX)) > 0) {
       return;
     }
     const { deposit } = getBridgeConfig(this.chainId);
@@ -151,7 +152,7 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
-    if (await this.checkTransactionStatus(this.transactions.withdrawChallengeDepositTxn, ContractType.OUTBOX)) {
+    if ((await this.checkTransactionStatus(this.transactions.withdrawChallengeDepositTxn, ContractType.OUTBOX)) > 0) {
       return;
     }
     const withdrawDepositTxn = await this.veaOutbox.withdrawChallengeDeposit(this.epoch, this.claim);
@@ -167,7 +168,7 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
-    if (await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.INBOX)) {
+    if ((await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.INBOX)) > 0) {
       return;
     }
     const sendSnapshotTxn = await this.veaInbox.sendSnapshot(this.epoch, this.claim);
@@ -180,7 +181,7 @@ export class ArbToEthTransactionHandler {
    */
   public async resolveChallengedClaim(sendSnapshotTxn: string, executeMsg: typeof messageExecutor = messageExecutor) {
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
-    if (await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.OUTBOX)) {
+    if ((await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.OUTBOX)) > 0) {
       return;
     }
     const msgExecuteTrnx = await executeMsg(sendSnapshotTxn, this.veaInboxProvider, this.veaOutboxProvider);

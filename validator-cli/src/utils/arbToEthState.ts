@@ -10,12 +10,23 @@ import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/Se
 const slotsPerEpochEth = 32;
 const secondsPerSlotEth = 12;
 
+/**
+ * This function checks the finality of the blocks on Arbitrum and Ethereum.
+ * It returns the latest/finalized block on Arbitrum(found on Ethereum) and Ethereum and a flag indicating if there is a finality issue on Ethereum.
+ *
+ * @param EthProvider Ethereum provider
+ * @param ArbProvider Arbitrum provider
+ * @param veaEpoch epoch number of the claim to be fetched
+ * @param veaEpochPeriod epoch period of the claim to be fetched
+ *
+ * @returns [Arbitrum block, Ethereum block, finalityIssueFlag]
+ * */
 const getBlocksAndCheckFinality = async (
   EthProvider: JsonRpcProvider,
   ArbProvider: JsonRpcProvider,
   veaEpoch: number,
   veaEpochPeriod: number
-): Promise<[Block, Block, Boolean] | undefined> => {
+): Promise<[Block, Block, boolean] | undefined> => {
   const currentEpoch = Math.floor(Date.now() / 1000 / veaEpochPeriod);
 
   const l2Network = await getArbitrumNetwork(ArbProvider);
@@ -134,6 +145,20 @@ const getBlocksAndCheckFinality = async (
   return [blockArbitrum, blockFinalizedEth, finalityIssueFlagEth];
 };
 
+/**
+ *
+ * This function finds the corresponding L1(Eth) block for a given L2(Arb) block.
+ *
+ * @param L2Provider Arbitrum provider
+ * @param sequencer Arbitrum sequencerInbox
+ * @param L2Block L2 block
+ * @param fromBlockEth from block number on Eth
+ * @param fromArbBlock from block number on Arb
+ * @param fallbackLatest fallback to latest L2 block if the L2 block is not found on L1
+ *
+ * @returns [L1Block, L2BlockNumberFallback]
+ */
+
 const ArbBlockToL1Block = async (
   L2Provider: JsonRpcProvider,
   sequencer: SequencerInbox,
@@ -181,6 +206,16 @@ const ArbBlockToL1Block = async (
   const L1Block = (await emittedEvent[0].getBlock()) as Block;
   return [L1Block, L2BlockNumberFallback];
 };
+
+/**
+ * This function finds the latest L2 batch and block number that has a corresponding batch on L1.
+ *
+ * @param nodeInterface Arbitrum NodeInterface
+ * @param fromArbBlock from block number on Arb
+ * @param latestBlockNumber latest block number on Arb
+ *
+ * @returns [latest L2 batch number, latest L2 block number]
+ */
 
 const findLatestL2BatchAndBlock = async (
   nodeInterface: NodeInterface,

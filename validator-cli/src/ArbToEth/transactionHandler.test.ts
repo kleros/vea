@@ -35,6 +35,7 @@ describe("ArbToEthTransactionHandler", () => {
       challenger: "0x1234",
     };
   });
+
   describe("constructor", () => {
     it("should create a new TransactionHandler without claim", () => {
       const transactionHandler = new ArbToEthTransactionHandler(
@@ -84,14 +85,14 @@ describe("ArbToEthTransactionHandler", () => {
       veaInboxProvider.getBlock.mockResolvedValue({ number: finalityBlock });
     });
 
-    it("should return false if transaction is not final", async () => {
+    it("should return 2 if transaction is not final", async () => {
       jest.spyOn(mockEmitter, "emit");
       veaInboxProvider.getTransactionReceipt.mockResolvedValue({
         blockNumber: finalityBlock - (transactionHandler.requiredConfirmations - 1),
       });
       const trnxHash = "0x123456";
       const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
-      expect(status).toBeTruthy();
+      expect(status).toEqual(2);
       expect(mockEmitter.emit).toHaveBeenCalledWith(
         BotEvents.TXN_NOT_FINAL,
         trnxHash,
@@ -99,23 +100,23 @@ describe("ArbToEthTransactionHandler", () => {
       );
     });
 
-    it("should return true if transaction is pending", async () => {
+    it("should return 1 if transaction is pending", async () => {
       jest.spyOn(mockEmitter, "emit");
       veaInboxProvider.getTransactionReceipt.mockResolvedValue(null);
       const trnxHash = "0x123456";
       const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
-      expect(status).toBeTruthy();
+      expect(status).toEqual(1);
       expect(mockEmitter.emit).toHaveBeenCalledWith(BotEvents.TXN_PENDING, trnxHash);
     });
 
-    it("should return false if transaction is final", async () => {
+    it("should return 3 if transaction is final", async () => {
       jest.spyOn(mockEmitter, "emit");
       veaInboxProvider.getTransactionReceipt.mockResolvedValue({
         blockNumber: finalityBlock - transactionHandler.requiredConfirmations,
       });
       const trnxHash = "0x123456";
       const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
-      expect(status).toBeFalsy();
+      expect(status).toEqual(3);
       expect(mockEmitter.emit).toHaveBeenCalledWith(
         BotEvents.TXN_FINAL,
         trnxHash,
@@ -123,10 +124,10 @@ describe("ArbToEthTransactionHandler", () => {
       );
     });
 
-    it("should return false if transaction hash is null", async () => {
+    it("should return 0 if transaction hash is null", async () => {
       const trnxHash = null;
       const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
-      expect(status).toBeFalsy();
+      expect(status).toEqual(0);
     });
   });
 
@@ -153,7 +154,7 @@ describe("ArbToEthTransactionHandler", () => {
     });
 
     it("should not challenge claim if txn is pending", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(true);
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
       transactionHandler.transactions.challengeTxn = "0x1234";
       await transactionHandler.challengeClaim();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
@@ -164,7 +165,7 @@ describe("ArbToEthTransactionHandler", () => {
     });
 
     it("should challenge claim", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(false);
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
       const mockChallenge = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
       (mockChallenge as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"] = mockChallenge;
@@ -193,7 +194,7 @@ describe("ArbToEthTransactionHandler", () => {
     });
 
     it("should withdraw deposit", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(false);
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
       veaOutbox.withdrawChallengeDeposit.mockResolvedValue({ hash: "0x1234" });
       await transactionHandler.withdrawChallengeDeposit();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(null, ContractType.OUTBOX);
@@ -201,7 +202,7 @@ describe("ArbToEthTransactionHandler", () => {
     });
 
     it("should not withdraw deposit if txn is pending", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(true);
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
       transactionHandler.transactions.withdrawChallengeDepositTxn = "0x1234";
       await transactionHandler.withdrawChallengeDeposit();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
@@ -238,7 +239,7 @@ describe("ArbToEthTransactionHandler", () => {
     });
 
     it("should send snapshot", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(false);
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
       veaInbox.sendSnapshot.mockResolvedValue({ hash: "0x1234" });
       await transactionHandler.sendSnapshot();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(null, ContractType.INBOX);
@@ -246,7 +247,7 @@ describe("ArbToEthTransactionHandler", () => {
     });
 
     it("should not send snapshot if txn is pending", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(true);
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
       transactionHandler.transactions.sendSnapshotTxn = "0x1234";
       await transactionHandler.sendSnapshot();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
@@ -280,7 +281,7 @@ describe("ArbToEthTransactionHandler", () => {
       );
     });
     it("should resolve challenged claim", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(false);
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
       transactionHandler.transactions.sendSnapshotTxn = "0x1234";
       mockMessageExecutor.mockResolvedValue({ hash: "0x1234" });
       await transactionHandler.resolveChallengedClaim(
@@ -295,7 +296,7 @@ describe("ArbToEthTransactionHandler", () => {
     });
 
     it("should not resolve challenged claim if txn is pending", async () => {
-      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(true);
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
       transactionHandler.transactions.sendSnapshotTxn = "0x1234";
       await transactionHandler.resolveChallengedClaim(mockMessageExecutor);
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(

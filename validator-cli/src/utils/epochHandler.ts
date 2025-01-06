@@ -1,5 +1,16 @@
 import { getBridgeConfig } from "../consts/bridgeRoutes";
 
+/**
+ * Sets the epoch range to check for claims.
+ *
+ * @param currentTimestamp - The current timestamp
+ * @param chainId - The chain ID
+ * @param now - The current time in milliseconds (optional, defaults to Date.now())
+ * @param fetchBridgeConfig - The function to fetch the bridge configuration (optional, defaults to getBridgeConfig)
+ *
+ * @returns The epoch range to check for claims
+ */
+
 const setEpochRange = (
   currentTimestamp: number,
   chainId: number,

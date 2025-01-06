@@ -11,7 +11,7 @@ interface Bridge {
   inboxAddress: string;
   outboxAddress: string;
   routerAddress?: string;
-  roueterProvider?: string;
+  routerProvider?: string;
 }
 
 const bridges: { [chainId: number]: Bridge } = {
@@ -34,7 +34,7 @@ const bridges: { [chainId: number]: Bridge } = {
     sequencerDelayLimit: 86400,
     inboxRPC: process.env.RPC_ARB,
     outboxRPC: process.env.RPC_GNOSIS,
-    roueterProvider: process.env.RPC_ETH,
+    routerProvider: process.env.RPC_ETH,
     inboxAddress: process.env.VEAINBOX_ARB_TO_GNOSIS_ADDRESS,
     routerAddress: process.env.VEA_ROUTER_ARB_TO_GNOSIS_ADDRESS,
     outboxAddress: process.env.VEAOUTBOX_ARB_TO_GNOSIS_ADDRESS,
