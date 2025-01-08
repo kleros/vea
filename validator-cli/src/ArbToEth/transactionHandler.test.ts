@@ -288,19 +288,15 @@ describe("ArbToEthTransactionHandler", () => {
         transactionHandler.transactions.sendSnapshotTxn,
         mockMessageExecutor
       );
-      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
-        transactionHandler.transactions.sendSnapshotTxn,
-        ContractType.OUTBOX
-      );
       expect(transactionHandler.transactions.executeSnapshotTxn).toEqual("0x1234");
     });
 
     it("should not resolve challenged claim if txn is pending", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
-      transactionHandler.transactions.sendSnapshotTxn = "0x1234";
+      transactionHandler.transactions.executeSnapshotTxn = "0x1234";
       await transactionHandler.resolveChallengedClaim(mockMessageExecutor);
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
-        transactionHandler.transactions.sendSnapshotTxn,
+        transactionHandler.transactions.executeSnapshotTxn,
         ContractType.OUTBOX
       );
     });

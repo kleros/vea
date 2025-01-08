@@ -23,6 +23,13 @@ type Transactions = {
   executeSnapshotTxn: string | null;
 };
 
+enum TransactionStatus {
+  NOT_MADE = 0,
+  PENDING = 1,
+  NOT_FINAL = 2,
+  FINAL = 3,
+}
+
 export enum ContractType {
   INBOX = "inbox",
   OUTBOX = "outbox",
@@ -71,9 +78,9 @@ export class ArbToEthTransactionHandler {
    * @param trnxHash Transaction hash to check the status of.
    * @param contract Contract type to check the transaction status in.
    *
-   * @returns False if transaction is pending || not final || not made, else True.
+   * @returns TransactionStatus.
    */
-  public async checkTransactionStatus(trnxHash: string | null, contract: ContractType): Promise<number> {
+  public async checkTransactionStatus(trnxHash: string | null, contract: ContractType): Promise<TransactionStatus> {
     let provider: JsonRpcProvider;
     if (contract === ContractType.INBOX) {
       provider = this.veaInboxProvider;
@@ -82,15 +89,14 @@ export class ArbToEthTransactionHandler {
     }
 
     if (trnxHash == null) {
-      return 0;
+      return TransactionStatus.NOT_MADE;
     }
 
     const receipt = await provider.getTransactionReceipt(trnxHash);
 
     if (!receipt) {
-      // TODO: Add transaction pending timeout- redo transaction.
       this.emitter.emit(BotEvents.TXN_PENDING, trnxHash);
-      return 1;
+      return TransactionStatus.PENDING;
     }
 
     const currentBlock = await provider.getBlock("latest");
@@ -98,11 +104,10 @@ export class ArbToEthTransactionHandler {
 
     if (confirmations >= this.requiredConfirmations) {
       this.emitter.emit(BotEvents.TXN_FINAL, trnxHash, confirmations);
-      return 3;
-    } else {
-      this.emitter.emit(BotEvents.TXN_NOT_FINAL, trnxHash, confirmations);
-      return 2;
+      return TransactionStatus.FINAL;
     }
+    this.emitter.emit(BotEvents.TXN_NOT_FINAL, trnxHash, confirmations);
+    return TransactionStatus.NOT_FINAL;
   }
 
   /**
@@ -114,7 +119,8 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
-    if ((await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX)) > 0) {
+    const transactionStatus = await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX);
+    if (transactionStatus > 0) {
       return;
     }
     const { deposit } = getBridgeConfig(this.chainId);
@@ -152,7 +158,11 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
-    if ((await this.checkTransactionStatus(this.transactions.withdrawChallengeDepositTxn, ContractType.OUTBOX)) > 0) {
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.withdrawChallengeDepositTxn,
+      ContractType.OUTBOX
+    );
+    if (transactionStatus > 0) {
       return;
     }
     const withdrawDepositTxn = await this.veaOutbox.withdrawChallengeDeposit(this.epoch, this.claim);
@@ -168,7 +178,8 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
-    if ((await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.INBOX)) > 0) {
+    const transactionStatus = await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.INBOX);
+    if (transactionStatus > 0) {
       return;
     }
     const sendSnapshotTxn = await this.veaInbox.sendSnapshot(this.epoch, this.claim);
@@ -181,7 +192,11 @@ export class ArbToEthTransactionHandler {
    */
   public async resolveChallengedClaim(sendSnapshotTxn: string, executeMsg: typeof messageExecutor = messageExecutor) {
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
-    if ((await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.OUTBOX)) > 0) {
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.executeSnapshotTxn,
+      ContractType.OUTBOX
+    );
+    if (transactionStatus > 0) {
       return;
     }
     const msgExecuteTrnx = await executeMsg(sendSnapshotTxn, this.veaInboxProvider, this.veaOutboxProvider);

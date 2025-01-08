@@ -14,14 +14,6 @@ class ClaimNotSetError extends Error {
   }
 }
 
-class ContractNotSupportedError extends Error {
-  constructor(contract: string) {
-    super();
-    this.name = "ContractNotSupportedError";
-    this.message = `Unsupported contract type: ${contract}`;
-  }
-}
-
 class TransactionHandlerNotDefinedError extends Error {
   constructor() {
     super();
@@ -30,4 +22,4 @@ class TransactionHandlerNotDefinedError extends Error {
   }
 }
 
-export { ClaimNotFoundError, ClaimNotSetError, ContractNotSupportedError, TransactionHandlerNotDefinedError };
+export { ClaimNotFoundError, ClaimNotSetError, TransactionHandlerNotDefinedError };

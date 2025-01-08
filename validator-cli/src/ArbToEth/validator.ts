@@ -10,19 +10,33 @@ import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
 // https://github.com/prysmaticlabs/prysm/blob/493905ee9e33a64293b66823e69704f012b39627/config/params/mainnet_config.go#L103
 const secondsPerSlotEth = 12;
 
-export async function challengeAndResolveClaim(
-  epoch: number,
-  epochPeriod: number,
-  veaInbox: VeaInboxArbToEth,
-  veaInboxProvider: JsonRpcProvider,
-  veaOutboxProvider: JsonRpcProvider,
-  veaOutbox: VeaOutboxArbToEth,
-  transactionHandler: ArbToEthTransactionHandler | null,
-  emitter: typeof defaultEmitter = defaultEmitter,
-  fetchClaim: typeof getClaim = getClaim,
-  fetchClaimResolveState: typeof getClaimResolveState = getClaimResolveState,
-  fetchBlocksAndCheckFinality: typeof getBlocksAndCheckFinality = getBlocksAndCheckFinality
-): Promise<ArbToEthTransactionHandler | null> {
+export interface ChallengeAndResolveClaimParams {
+  epoch: number;
+  epochPeriod: number;
+  veaInbox: any;
+  veaInboxProvider: JsonRpcProvider;
+  veaOutboxProvider: JsonRpcProvider;
+  veaOutbox: any;
+  transactionHandler: ArbToEthTransactionHandler | null;
+  emitter?: typeof defaultEmitter;
+  fetchClaim?: typeof getClaim;
+  fetchClaimResolveState?: typeof getClaimResolveState;
+  fetchBlocksAndCheckFinality?: typeof getBlocksAndCheckFinality;
+}
+
+export async function challengeAndResolveClaim({
+  epoch,
+  epochPeriod,
+  veaInbox,
+  veaInboxProvider,
+  veaOutboxProvider,
+  veaOutbox,
+  transactionHandler,
+  emitter = defaultEmitter,
+  fetchClaim = getClaim,
+  fetchClaimResolveState = getClaimResolveState,
+  fetchBlocksAndCheckFinality = getBlocksAndCheckFinality,
+}: ChallengeAndResolveClaimParams): Promise<ArbToEthTransactionHandler | null> {
   const [arbitrumBlock, ethFinalizedBlock, finalityIssueFlagEth] = await fetchBlocksAndCheckFinality(
     veaOutboxProvider,
     veaInboxProvider,

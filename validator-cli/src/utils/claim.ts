@@ -10,6 +10,12 @@ import { getMessageStatus } from "./arbMsgExecutor";
  * @param epoch epoch number of the claim to be fetched
  * @returns claim type of ClaimStruct
  */
+
+enum ClaimHonestState {
+  NONE = 0,
+  CLAIMER = 1,
+  CHALLENGER = 2,
+}
 const getClaim = async (
   veaOutbox: any,
   veaOutboxProvider: JsonRpcProvider,
@@ -52,11 +58,11 @@ const getClaim = async (
   if (hashClaim(claim) == claimHash) {
     return claim;
   }
-  claim.honest = 1; // Assuming claimer is honest
+  claim.honest = ClaimHonestState.CLAIMER; // Assuming claimer is honest
   if (hashClaim(claim) == claimHash) {
     return claim;
   }
-  claim.honest = 2; // Assuming challenger is honest
+  claim.honest = ClaimHonestState.CHALLENGER; // Assuming challenger is honest
   if (hashClaim(claim) == claimHash) {
     return claim;
   }
@@ -91,10 +97,9 @@ const getClaimResolveState = async (
   };
 
   if (sentSnapshotLogs.length === 0) return claimResolveState;
-  else {
-    claimResolveState.sendSnapshot.status = true;
-    claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
-  }
+
+  claimResolveState.sendSnapshot.status = true;
+  claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
 
   const status = await fetchMessageStatus(sentSnapshotLogs[0].transactionHash, veaInboxProvider, veaOutboxProvider);
   claimResolveState.execution.status = status;

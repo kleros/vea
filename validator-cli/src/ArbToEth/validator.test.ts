@@ -12,7 +12,7 @@ describe("validator", () => {
   let mockClaim: any;
   let mockGetClaimState: any;
   let mockGetBlockFinality: any;
-
+  let mockDeps: any;
   beforeEach(() => {
     veaInbox = {
       snapshots: jest.fn(),
@@ -41,24 +41,25 @@ describe("validator", () => {
     };
     mockGetClaim = jest.fn();
     mockGetBlockFinality = jest.fn().mockResolvedValue([{ number: 0 }, { number: 0, timestamp: 100 }, false]);
+    mockDeps = {
+      epoch: 0,
+      epochPeriod: 10,
+      veaInbox,
+      veaInboxProvider,
+      veaOutboxProvider,
+      veaOutbox,
+      transactionHandler: null,
+      emitter,
+      fetchClaim: mockGetClaim,
+      fetchClaimResolveState: mockGetClaimState,
+      fetchBlocksAndCheckFinality: mockGetBlockFinality,
+    };
   });
   describe("challengeAndResolveClaim", () => {
     it("should return null if no claim is made", async () => {
-      const transactionHandler = null;
       mockGetClaim = jest.fn().mockReturnValue(null);
-      const result = await challengeAndResolveClaim(
-        0,
-        10,
-        veaInbox,
-        veaInboxProvider,
-        veaOutbox,
-        veaOutboxProvider,
-        transactionHandler,
-        emitter,
-        mockGetClaim,
-        mockGetClaimState,
-        mockGetBlockFinality
-      );
+      mockDeps.fetchClaim = mockGetClaim;
+      const result = await challengeAndResolveClaim(mockDeps);
 
       expect(result).toBeNull();
       expect(emitter.emit).toHaveBeenCalledWith(BotEvents.NO_CLAIM, 0);
@@ -77,19 +78,10 @@ describe("validator", () => {
       };
       veaInbox.snapshots = jest.fn().mockReturnValue("0x321");
       mockGetClaim = jest.fn().mockReturnValue(mockClaim);
-      const updatedTransactionHandler = await challengeAndResolveClaim(
-        0,
-        10,
-        veaInbox,
-        veaInboxProvider,
-        veaOutbox,
-        veaOutboxProvider,
-        mockTransactionHandler as any,
-        emitter,
-        mockGetClaim,
-        mockGetClaimState,
-        mockGetBlockFinality
-      );
+
+      mockDeps.transactionHandler = mockTransactionHandler;
+      mockDeps.fetchClaim = mockGetClaim;
+      const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.challengeTxn).toBe(challengeTxn);
       expect(mockTransactionHandler.challengeClaim).toHaveBeenCalled();
     });
@@ -98,19 +90,8 @@ describe("validator", () => {
       mockClaim.challenger = mockClaim.claimer;
       mockGetClaim = jest.fn().mockReturnValue(mockClaim);
       veaInbox.snapshots = jest.fn().mockReturnValue(mockClaim.stateRoot);
-      const updatedTransactionHandler = await challengeAndResolveClaim(
-        0,
-        10,
-        veaInbox,
-        veaInboxProvider,
-        veaOutbox,
-        veaOutboxProvider,
-        null,
-        emitter,
-        mockGetClaim,
-        mockGetClaimState,
-        mockGetBlockFinality
-      );
+      mockDeps.fetchClaim = mockGetClaim;
+      const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler).toBeNull();
     });
 
@@ -130,19 +111,10 @@ describe("validator", () => {
           sendSnapshotTxn: "0x0",
         },
       };
-      const updatedTransactionHandler = await challengeAndResolveClaim(
-        0,
-        10,
-        veaInbox,
-        veaInboxProvider,
-        veaOutbox,
-        veaOutboxProvider,
-        mockTransactionHandler as any,
-        emitter,
-        mockGetClaim,
-        mockGetClaimState,
-        mockGetBlockFinality
-      );
+      mockDeps.transactionHandler = mockTransactionHandler;
+      mockDeps.fetchClaimResolveState = mockGetClaimState;
+      mockDeps.fetchClaim = mockGetClaim;
+      const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.sendSnapshotTxn).toEqual("0x123");
       expect(mockTransactionHandler.sendSnapshot).toHaveBeenCalled();
       expect(updatedTransactionHandler.claim).toEqual(mockClaim);
@@ -164,19 +136,10 @@ describe("validator", () => {
           executeSnapshotTxn: "0x0",
         },
       };
-      const updatedTransactionHandler = await challengeAndResolveClaim(
-        0,
-        10,
-        veaInbox,
-        veaInboxProvider,
-        veaOutbox,
-        veaOutboxProvider,
-        mockTransactionHandler as any,
-        emitter,
-        mockGetClaim,
-        mockGetClaimState,
-        mockGetBlockFinality
-      );
+      mockDeps.transactionHandler = mockTransactionHandler;
+      mockDeps.fetchClaimResolveState = mockGetClaimState;
+      mockDeps.fetchClaim = mockGetClaim;
+      const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.executeSnapshotTxn).toEqual("0x123");
       expect(mockTransactionHandler.resolveChallengedClaim).toHaveBeenCalled();
       expect(updatedTransactionHandler.claim).toEqual(mockClaim);
@@ -199,19 +162,10 @@ describe("validator", () => {
           withdrawChallengeDepositTxn: "0x0",
         },
       };
-      const updatedTransactionHandler = await challengeAndResolveClaim(
-        0,
-        10,
-        veaInbox,
-        veaInboxProvider,
-        veaOutbox,
-        veaOutboxProvider,
-        mockTransactionHandler as any,
-        emitter,
-        mockGetClaim,
-        mockGetClaimState,
-        mockGetBlockFinality
-      );
+      mockDeps.transactionHandler = mockTransactionHandler;
+      mockDeps.fetchClaimResolveState = mockGetClaimState;
+      mockDeps.fetchClaim = mockGetClaim;
+      const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.withdrawChallengeDepositTxn).toEqual("0x1234");
       expect(mockTransactionHandler.withdrawChallengeDeposit).toHaveBeenCalled();
       expect(updatedTransactionHandler.claim).toEqual(mockClaim);

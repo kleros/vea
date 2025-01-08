@@ -41,16 +41,17 @@ export const watch = async (
     while (i < epochRange.length) {
       const epoch = epochRange[i];
       emitter.emit(BotEvents.CHECKING, epoch);
-      const updatedTransactions = await checkAndChallengeResolve(
+      const checkAndChallengeResolveDeps = {
         epoch,
-        veaBridge.epochPeriod,
-        veaInbox as any,
+        epochPeriod: veaBridge.epochPeriod,
+        veaInbox,
         veaInboxProvider,
         veaOutboxProvider,
-        veaOutbox as any,
-        transactionHandlers[epoch],
-        emitter
-      );
+        veaOutbox,
+        transactionHandler: transactionHandlers[epoch],
+        emitter,
+      };
+      const updatedTransactions = await checkAndChallengeResolve(checkAndChallengeResolveDeps);
       if (updatedTransactions) {
         transactionHandlers[epoch] = updatedTransactions;
       } else {

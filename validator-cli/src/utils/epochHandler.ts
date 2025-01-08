@@ -57,7 +57,6 @@ const getLatestChallengeableEpoch = (
   now: number = Date.now(),
   fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
 ): number => {
-  // NOTE: Add logic to check if claim was made here or in main function?
   const { epochPeriod } = fetchBridgeConfig(chainId);
   return Math.floor(now / 1000 / epochPeriod) - 2;
 };
