@@ -4,7 +4,7 @@ import ShutdownManager from "./shutdownManager";
 
 async function initialize(chainId: number, network: string): Promise<number> {
   claimLock(network, chainId);
-
+  console.log("lock claimed");
   // STATE_DIR is absolute path of the directory where the state files are stored
   // STATE_DIR must have trailing slash
   const state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
@@ -13,9 +13,9 @@ async function initialize(chainId: number, network: string): Promise<number> {
     const tsnow = Math.floor(Date.now() / 1000);
     await updateStateFile(chainId, tsnow, 0, network);
   }
-
   // print pwd for debugging
   console.log(process.cwd());
+
   const chain_state_raw = fs.readFileSync(state_file, { encoding: "utf8" });
   const chain_state = JSON.parse(chain_state_raw);
   let nonce = 0;

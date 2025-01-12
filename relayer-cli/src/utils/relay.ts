@@ -7,6 +7,11 @@ import { getProofAtCount, getMessageDataToRelay } from "./proof";
 import { getVeaOutbox } from "./ethers";
 import { getBridgeConfig, getInboxSubgraph } from "../consts/bridgeRoutes";
 
+/**
+ * Get the count of the veaOutbox
+ * @param veaOutbox The veaOutbox contract instance
+ * @param chainId The chain id of the veaOutbox chain
+ */
 const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, chainId: number): Promise<number> => {
   const subgraph = getInboxSubgraph(chainId);
   const stateRoot = await veaOutbox.stateRoot();
@@ -25,6 +30,11 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, cha
   return Number(result["snapshotSaveds"][0].count);
 };
 
+/**
+ * Relay a message from the veaOutbox
+ * @param chainId The chain id of the veaOutbox chain
+ * @param nonce The nonce of the message
+ */
 const relay = async (chainId: number, nonce: number) => {
   const routeParams = getBridgeConfig(chainId);
   const veaOutbox = getVeaOutbox(routeParams.veaOutboxAddress, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainId);
@@ -40,13 +50,52 @@ const relay = async (chainId: number, nonce: number) => {
   return receipt;
 };
 
-const relayBatch = async (chainId: number, nonce: number, maxBatchSize: number) => {
-  const routeParams = getBridgeConfig(chainId);
-  const web3 = new Web3(routeParams.rpcOutbox);
-  const batchedSend = initializeBatchedSend(web3, routeParams.batcher, process.env.PRIVATE_KEY, 0);
-  const veaOutboxInstance = new web3.eth.Contract(routeParams.veaOutboxContract.abi, routeParams.veaOutboxAddress);
-  const veaOutbox = getVeaOutbox(routeParams.veaOutboxAddress, process.env.PRIVATE_KEY, routeParams.rpcOutbox, chainId);
-  const count = await getCount(veaOutbox, chainId);
+interface RelayBatchDeps {
+  chainId: number;
+  nonce: number;
+  maxBatchSize: number;
+  fetchVeaOutbox?: typeof getVeaOutbox;
+  fetchCount?: typeof getCount;
+  setBatchedSend?: typeof initializeBatchedSend;
+  fetchBridgeConfig?: typeof getBridgeConfig;
+  fetchProofAtCount?: typeof getProofAtCount;
+  fetchMessageDataToRelay?: typeof getMessageDataToRelay;
+  web3?: typeof Web3;
+}
+
+/**
+ * Relay a batch of messages from the veaOutbox
+ * @param chainId The chain id of the veaOutbox chain
+ * @param nonce The nonce of the message
+ * @param maxBatchSize The maximum number of messages to relay in a single batch
+ */
+const relayBatch = async ({
+  chainId,
+  nonce,
+  maxBatchSize,
+  fetchBridgeConfig = getBridgeConfig,
+  fetchCount = getCount,
+  setBatchedSend = initializeBatchedSend,
+  fetchVeaOutbox = getVeaOutbox,
+  fetchProofAtCount = getProofAtCount,
+  fetchMessageDataToRelay = getMessageDataToRelay,
+  web3 = Web3,
+}: RelayBatchDeps) => {
+  const routeParams = fetchBridgeConfig(chainId);
+  const web3Instance = new web3(routeParams.rpcOutbox);
+
+  const batchedSend = setBatchedSend(web3Instance, routeParams.batcher, process.env.PRIVATE_KEY, 0);
+  const veaOutboxInstance = new web3Instance.eth.Contract(
+    routeParams.veaOutboxContract.abi,
+    routeParams.veaOutboxAddress
+  );
+  const veaOutbox = fetchVeaOutbox(
+    routeParams.veaOutboxAddress,
+    process.env.PRIVATE_KEY,
+    routeParams.rpcOutbox,
+    chainId
+  );
+  const count = await fetchCount(veaOutbox, chainId);
 
   while (nonce < count) {
     let batchMessages = 0;
@@ -58,8 +107,8 @@ const relayBatch = async (chainId: number, nonce: number, maxBatchSize: number) 
         continue;
       }
       const [proof, [to, data]] = await Promise.all([
-        getProofAtCount(chainId, nonce, count),
-        getMessageDataToRelay(chainId, nonce),
+        fetchProofAtCount(chainId, nonce, count),
+        fetchMessageDataToRelay(chainId, nonce),
       ]);
       txns.push({
         args: [proof, nonce, to, data],
@@ -76,6 +125,12 @@ const relayBatch = async (chainId: number, nonce: number, maxBatchSize: number) 
   return nonce;
 };
 
+/**
+ * Relay all messages from the veaOutbox for a given sender
+ * @param chainId The chain id of the veaOutbox chain
+ * @param nonce The nonce of the first message to relay
+ * @param msgSender The address of the sender
+ */
 const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): Promise<number> => {
   const routeParams = getBridgeConfig(chainId);
 
@@ -115,6 +170,12 @@ const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): 
   return nonces[nonces.length - 1];
 };
 
+/**
+ * Get the nonces of messages sent by a given sender
+ * @param chainId The chain id of the veaOutbox chain
+ * @param nonce The nonce of the first message to relay
+ * @param msgSender The address of the sender
+ */
 const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) => {
   const subgraph = getInboxSubgraph(chainId);
 
@@ -138,4 +199,4 @@ const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) =
   return result[`messageSents`].map((a: { nonce: number }) => a.nonce);
 };
 
-export { relayAllFrom, relay, relayBatch };
+export { relayAllFrom, relay, relayBatch, RelayBatchDeps };

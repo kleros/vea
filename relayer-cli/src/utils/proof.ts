@@ -1,11 +1,17 @@
 import request from "graphql-request";
 import { getInboxSubgraph } from "../consts/bridgeRoutes";
 
-const getMessageDataToRelay = async (chainid: number, nonce: number) => {
+/**
+ * Get the message data to relay from the subgraph
+ * @param chainId The chain id of the veaOutbox chain
+ * @param nonce The nonce of the message
+ * @returns The message id and data to relay
+ */
+const getMessageDataToRelay = async (chainId: number, nonce: number, requestGraph: typeof request = request) => {
   try {
-    const subgraph = getInboxSubgraph(chainid);
+    const subgraph = getInboxSubgraph(chainId);
 
-    const result = await request(
+    const result = await requestGraph(
       `https://api.studio.thegraph.com/query/${subgraph}`,
       `{
                 messageSents(first: 5, where: {nonce: ${nonce}}) {
@@ -24,9 +30,22 @@ const getMessageDataToRelay = async (chainid: number, nonce: number) => {
   }
 };
 
-const getProofAtCount = async (chainid: number, nonce: number, count: number): Promise<string[]> => {
-  const proofIndices = getProofIndices(nonce, count);
-
+/**
+ * Get the proof of the message at a given count
+ * @param chainId The chain id of the veaOutbox chain
+ * @param nonce The nonce of the message
+ * @param count The current veaOutbox count
+ * @returns The proof of the message
+ */
+const getProofAtCount = async (
+  chainId: number,
+  nonce: number,
+  count: number,
+  requestGraph: typeof request = request,
+  calculateProofIndices: typeof getProofIndices = getProofIndices,
+  fetchInboxSubgraph: typeof getInboxSubgraph = getInboxSubgraph
+): Promise<string[]> => {
+  const proofIndices = calculateProofIndices(nonce, count);
   if (proofIndices.length == 0) return [];
 
   let query = "{";
@@ -38,16 +57,14 @@ const getProofAtCount = async (chainid: number, nonce: number, count: number): P
   query += "}";
 
   try {
-    const subgraph = getInboxSubgraph(chainid);
+    const subgraph = fetchInboxSubgraph(chainId);
 
-    const result = await request(`https://api.studio.thegraph.com/query/${subgraph}`, query);
+    const result = await requestGraph(`https://api.studio.thegraph.com/query/${subgraph}`, query);
 
     const proof = [];
-
     for (let i = 0; i < proofIndices.length; i++) {
       proof.push(result[`layer${i}`][0].hash);
     }
-
     return proof;
   } catch (e) {
     console.log(e);
@@ -55,6 +72,12 @@ const getProofAtCount = async (chainid: number, nonce: number, count: number): P
   }
 };
 
+/**
+ * Get the proof indices of the message
+ * @param nonce The nonce of the message
+ * @param count The current veaOutbox count
+ * @returns The proof indices of the message
+ */
 const getProofIndices = (nonce: number, count: number) => {
   let proof = [];
   if (nonce >= count) return proof;
@@ -76,4 +99,4 @@ const getProofIndices = (nonce: number, count: number) => {
   return proof;
 };
 
-export { getProofAtCount, getMessageDataToRelay };
+export { getProofAtCount, getMessageDataToRelay, getProofIndices };
