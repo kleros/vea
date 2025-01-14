@@ -1,4 +1,3 @@
-import { abi } from "web3/lib/commonjs/eth.exports";
 import { relayBatch } from "./relay";
 
 describe("relay", () => {

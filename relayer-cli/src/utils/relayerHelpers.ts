@@ -1,26 +1,36 @@
 import * as fs from "fs";
+import { EventEmitter } from "events";
 import { claimLock, releaseLock } from "./lock";
 import ShutdownManager from "./shutdownManager";
+import { BotEvents } from "./botEvents";
 
+/**
+ * Initialize the relayer by claiming the lock and reading the nonce from the state file.
+ * If the state file does not exist, it will be created with the current timestamp and nonce 0.
+ *
+ * @param chainId Chain ID of the relayer
+ * @param network Network name of the relayer (e.g. "testnet")
+ */
 async function initialize(
   chainId: number,
   network: string,
+  emitter: EventEmitter,
   setLock: typeof claimLock = claimLock,
   syncStateFile: typeof updateStateFile = updateStateFile,
   fileSystem: typeof fs = fs
 ): Promise<number> {
   setLock(network, chainId);
-  console.log("lock claimed");
+  emitter.emit(BotEvents.LOCK_CLAIMED);
   // STATE_DIR is absolute path of the directory where the state files are stored
   // STATE_DIR must have trailing slash
   const state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
   if (!fileSystem.existsSync(state_file)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
-    await syncStateFile(chainId, tsnow, 0, network);
+    await syncStateFile(chainId, tsnow, 0, network, emitter);
   }
   // print pwd for debugging
-  console.log(process.cwd());
+  emitter.emit(BotEvents.LOCK_DIRECTORY, process.cwd());
 
   const chain_state_raw = fileSystem.readFileSync(state_file, { encoding: "utf8" });
   const chain_state = JSON.parse(chain_state_raw);
@@ -37,6 +47,7 @@ async function updateStateFile(
   createdTimestamp: number,
   nonceFrom: number,
   network: string,
+  emitter: EventEmitter,
   fileSystem: typeof fs = fs,
   removeLock: typeof releaseLock = releaseLock
 ) {
@@ -48,11 +59,17 @@ async function updateStateFile(
   fileSystem.writeFileSync(chain_state_file, JSON.stringify(json), { encoding: "utf8" });
 
   removeLock(network, chainId);
+  emitter.emit(BotEvents.LOCK_RELEASED);
 }
 
-async function setupExitHandlers(chainId: number, shutdownManager: ShutdownManager, network: string) {
+async function setupExitHandlers(
+  chainId: number,
+  shutdownManager: ShutdownManager,
+  network: string,
+  emitter: EventEmitter
+) {
   const cleanup = async () => {
-    console.log("exit");
+    emitter.emit(BotEvents.EXIT);
     const lockFileName = "./state/" + network + "_" + chainId + ".pid";
     if (fs.existsSync(lockFileName)) {
       await fs.promises.unlink(lockFileName);
@@ -75,12 +92,12 @@ async function setupExitHandlers(chainId: number, shutdownManager: ShutdownManag
   });
 
   process.on("uncaughtException", async (err) => {
-    console.error("Uncaught exception:", err);
+    emitter.emit(BotEvents.EXCEPTION, err);
     await handleExit(1);
   });
 
   process.on("unhandledRejection", async (reason, promise) => {
-    console.error("Unhandled promise rejection:", reason, "at", promise);
+    emitter.emit(BotEvents.PROMISE_REJECTION, reason, promise);
     await handleExit(1);
   });
 }

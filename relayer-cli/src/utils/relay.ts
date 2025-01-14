@@ -11,6 +11,7 @@ import { getBridgeConfig, getInboxSubgraph } from "../consts/bridgeRoutes";
  * Get the count of the veaOutbox
  * @param veaOutbox The veaOutbox contract instance
  * @param chainId The chain id of the veaOutbox chain
+ * @returns The count of the veaOutbox
  */
 const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, chainId: number): Promise<number> => {
   const subgraph = getInboxSubgraph(chainId);
@@ -34,6 +35,7 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, cha
  * Relay a message from the veaOutbox
  * @param chainId The chain id of the veaOutbox chain
  * @param nonce The nonce of the message
+ * @returns The transaction receipt
  */
 const relay = async (chainId: number, nonce: number) => {
   const routeParams = getBridgeConfig(chainId);
@@ -68,6 +70,8 @@ interface RelayBatchDeps {
  * @param chainId The chain id of the veaOutbox chain
  * @param nonce The nonce of the message
  * @param maxBatchSize The maximum number of messages to relay in a single batch
+ *
+ * @returns The nonce of the last message relayed
  */
 const relayBatch = async ({
   chainId,
@@ -130,6 +134,7 @@ const relayBatch = async ({
  * @param chainId The chain id of the veaOutbox chain
  * @param nonce The nonce of the first message to relay
  * @param msgSender The address of the sender
+ * @returns The nonce of the last message relayed
  */
 const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): Promise<number> => {
   const routeParams = getBridgeConfig(chainId);
@@ -175,6 +180,7 @@ const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): 
  * @param chainId The chain id of the veaOutbox chain
  * @param nonce The nonce of the first message to relay
  * @param msgSender The address of the sender
+ * @returns The nonces of the messages sent by the sender
  */
 const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) => {
   const subgraph = getInboxSubgraph(chainId);

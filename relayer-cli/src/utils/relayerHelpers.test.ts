@@ -1,6 +1,8 @@
+import EventEmitter from "events";
 import { initialize, updateStateFile } from "./relayerHelpers";
 
 describe("relayerHelpers", () => {
+  const emitter = new EventEmitter();
   const chainId = 1;
   const network = "testing";
   const claimLock = jest.fn();
@@ -21,15 +23,29 @@ describe("relayerHelpers", () => {
     it("should claimLock and create a state file if it doesn't exist", async () => {
       fileSystem.existsSync.mockReturnValue(false);
       fileSystem.readFileSync.mockReturnValue('{"nonce":0}');
-      const nonce = await initialize(chainId, network, claimLock, mockUpdateStateFile, fileSystem as any);
+      const nonce = await initialize(
+        chainId,
+        network,
+        emitter as any,
+        claimLock,
+        mockUpdateStateFile,
+        fileSystem as any
+      );
       expect(claimLock).toHaveBeenCalledWith(network, chainId);
-      expect(mockUpdateStateFile).toHaveBeenCalledWith(chainId, expect.any(Number), 0, network);
+      expect(mockUpdateStateFile).toHaveBeenCalledWith(chainId, expect.any(Number), 0, network, emitter);
       expect(nonce).toBe(0);
     });
     it("should claimLock and return nonce from existing state file", async () => {
       fileSystem.existsSync.mockReturnValue(true);
       fileSystem.readFileSync.mockReturnValue('{"nonce":10}');
-      const nonce = await initialize(chainId, network, claimLock, mockUpdateStateFile, fileSystem as any);
+      const nonce = await initialize(
+        chainId,
+        network,
+        emitter as any,
+        claimLock,
+        mockUpdateStateFile,
+        fileSystem as any
+      );
       expect(claimLock).toHaveBeenCalledWith(network, chainId);
       expect(mockUpdateStateFile).not.toHaveBeenCalled();
       expect(nonce).toBe(10);
@@ -40,7 +56,7 @@ describe("relayerHelpers", () => {
     it("should write a state file with the provided nonce", async () => {
       const createdTimestamp = 123456;
       const fileDirectory = "./state/testing_1.json";
-      await updateStateFile(chainId, createdTimestamp, 10, network, fileSystem as any, releaseLock);
+      await updateStateFile(chainId, createdTimestamp, 10, network, emitter as any, fileSystem as any, releaseLock);
       expect(fileSystem.writeFileSync).toHaveBeenCalledWith(
         fileDirectory,
         JSON.stringify({ ts: createdTimestamp, nonce: 10 }),
