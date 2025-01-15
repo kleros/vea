@@ -32,7 +32,9 @@ describe("relay", () => {
         eth: {
           Contract: jest.fn().mockReturnValue({
             methods: {
-              sendMessage: jest.fn(),
+              sendMessage: jest.fn().mockReturnValue({
+                call: jest.fn(),
+              }),
             },
             options: {
               address: veaOutboxAddress,
@@ -169,6 +171,50 @@ describe("relay", () => {
       const batchCall = [
         {
           args: [[], 0, "to", "data"],
+          method: expect.any(Function),
+          to: veaOutboxAddress,
+        },
+        {
+          args: [[], 2, "to", "data"],
+          method: expect.any(Function),
+          to: veaOutboxAddress,
+        },
+      ];
+      expect(mockBatchedSend).toHaveBeenCalledWith(batchCall);
+      expect(updatedNonce).toBe(3);
+    });
+    it("should not relay messages that fail to execute", async () => {
+      fetchCount.mockReturnValue(3);
+      web3.mockReturnValue({
+        eth: {
+          Contract: jest.fn().mockReturnValue({
+            methods: {
+              sendMessage: jest.fn().mockReturnValue({
+                call: jest.fn().mockResolvedValueOnce(Promise.reject("Error")).mockResolvedValueOnce(Promise.resolve()),
+              }),
+            },
+            options: {
+              address: veaOutboxAddress,
+            },
+          }),
+        },
+      });
+      const updatedNonce = await relayBatch({
+        chainId,
+        nonce,
+        maxBatchSize,
+        fetchBridgeConfig,
+        fetchCount,
+        setBatchedSend,
+        fetchVeaOutbox,
+        fetchProofAtCount,
+        fetchMessageDataToRelay,
+        web3,
+      });
+      expect(mockBatchedSend).toHaveBeenCalledTimes(1);
+      const batchCall = [
+        {
+          args: [[], 1, "to", "data"],
           method: expect.any(Function),
           to: veaOutboxAddress,
         },

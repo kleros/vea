@@ -114,6 +114,12 @@ const relayBatch = async ({
         fetchProofAtCount(chainId, nonce, count),
         fetchMessageDataToRelay(chainId, nonce),
       ]);
+      try {
+        await veaOutboxInstance.methods.sendMessage(proof, nonce, to, data).call();
+      } catch {
+        nonce++;
+        continue;
+      }
       txns.push({
         args: [proof, nonce, to, data],
         method: veaOutboxInstance.methods.sendMessage,
