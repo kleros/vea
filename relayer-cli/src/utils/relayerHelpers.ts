@@ -51,7 +51,7 @@ async function updateStateFile(
   fileSystem: typeof fs = fs,
   removeLock: typeof releaseLock = releaseLock
 ) {
-  const chain_state_file = "./state/" + network + "_" + chainId + ".json";
+  const chain_state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
   const json = {
     ts: createdTimestamp,
     nonce: nonceFrom,
@@ -70,7 +70,7 @@ async function setupExitHandlers(
 ) {
   const cleanup = async () => {
     emitter.emit(BotEvents.EXIT);
-    const lockFileName = "./state/" + network + "_" + chainId + ".pid";
+    const lockFileName = process.env.STATE_DIR + network + "_" + chainId + ".pid";
     if (fs.existsSync(lockFileName)) {
       await fs.promises.unlink(lockFileName);
     }
