@@ -10,6 +10,10 @@ import { getBridgeConfig } from "../consts/bridgeRoutes";
 /**
  * @file This file contains the logic for handling transactions from Arbitrum to Ethereum.
  * It is responsible for:
+ *      makeClaim() - Make a claim on the VeaOutbox(ETH).
+ *      startVerification() - Start verification for this.epoch in VeaOutbox(ETH).
+ *      verifySnapshot() - Verify snapshot for this.epoch in VeaOutbox(ETH).
+ *      withdrawClaimDeposit() - Withdraw the claim deposit.
  *      challenge() - Challenge a claim on VeaOutbox(ETH).
  *      withdrawChallengeDeposit() - Withdraw the challenge deposit.
  *      sendSnapshot() - Send a snapshot from the VeaInbox(ARB) to the VeaOutox(ETH).
@@ -144,7 +148,7 @@ export class ArbToEthTransactionHandler {
   /**
    * Start verification for this.epoch in VeaOutbox(ETH).
    */
-  public async startVerification() {
+  public async startVerification(currentTimestamp: number) {
     this.emitter.emit(BotEvents.STARTING_VERIFICATION, this.epoch);
     if (this.claim == null) {
       throw new ClaimNotSetError();
@@ -152,11 +156,10 @@ export class ArbToEthTransactionHandler {
     if ((await this.checkTransactionStatus(this.transactions.startVerificationTxn, ContractType.OUTBOX)) > 0) {
       return;
     }
-    const latestBlockTimestamp = (await this.veaOutboxProvider.getBlock("latest")).timestamp;
 
     const bridgeConfig = getBridgeConfig(this.chainId);
     const timeOver =
-      latestBlockTimestamp -
+      currentTimestamp -
       Number(this.claim.timestampClaimed) -
       bridgeConfig.sequencerDelayLimit -
       bridgeConfig.epochPeriod;
@@ -176,7 +179,7 @@ export class ArbToEthTransactionHandler {
   /**
    * Verify snapshot for this.epoch in VeaOutbox(ETH).
    */
-  public async verifySnapshot() {
+  public async verifySnapshot(currentTimestamp: number) {
     this.emitter.emit(BotEvents.VERIFYING_SNAPSHOT, this.epoch);
     if (this.claim == null) {
       throw new ClaimNotSetError();
@@ -184,10 +187,9 @@ export class ArbToEthTransactionHandler {
     if ((await this.checkTransactionStatus(this.transactions.verifySnapshotTxn, ContractType.OUTBOX)) > 0) {
       return;
     }
-    const latestBlockTimestamp = (await this.veaOutboxProvider.getBlock("latest")).timestamp;
     const bridgeConfig = getBridgeConfig(this.chainId);
 
-    const timeLeft = latestBlockTimestamp - Number(this.claim.timestampClaimed) - bridgeConfig.minChallengePeriod;
+    const timeLeft = currentTimestamp - Number(this.claim.timestampClaimed) - bridgeConfig.minChallengePeriod;
 
     // Claim not resolved yet, check if we can verifySnapshot
     if (timeLeft < 0) {
@@ -211,6 +213,9 @@ export class ArbToEthTransactionHandler {
    */
   public async withdrawClaimDeposit() {
     this.emitter.emit(BotEvents.WITHDRAWING_CLAIM_DEPOSIT, this.epoch);
+    if (this.claim == null) {
+      throw new ClaimNotSetError();
+    }
     if ((await this.checkTransactionStatus(this.transactions.withdrawClaimDepositTxn, ContractType.OUTBOX)) > 0) {
       return;
     }

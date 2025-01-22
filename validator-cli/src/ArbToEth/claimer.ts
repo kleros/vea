@@ -68,9 +68,9 @@ export async function checkAndClaim({
       await transactionHandler.withdrawClaimDeposit();
     } else if (claim.honest == 0) {
       if (claim.timestampVerification == 0) {
-        await transactionHandler.startVerification();
+        await transactionHandler.startVerification(finalizedOutboxBlock.timestamp);
       } else {
-        await transactionHandler.verifySnapshot();
+        await transactionHandler.verifySnapshot(finalizedOutboxBlock.timestamp);
       }
     }
   } else {
