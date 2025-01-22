@@ -80,6 +80,17 @@ type ClaimResolveState = {
   };
 };
 
+/**
+ * Fetches the claim resolve state.
+ * @param veaInbox VeaInbox contract instance
+ * @param veaInboxProvider VeaInbox provider
+ * @param veaOutboxProvider VeaOutbox provider
+ * @param epoch epoch number of the claim to be fetched
+ * @param fromBlock from block number
+ * @param toBlock to block number
+ * @param fetchMessageStatus function to fetch message status
+ * @returns ClaimResolveState
+ **/
 const getClaimResolveState = async (
   veaInbox: any,
   veaInboxProvider: JsonRpcProvider,

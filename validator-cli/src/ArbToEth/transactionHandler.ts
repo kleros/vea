@@ -17,6 +17,10 @@ import { getBridgeConfig } from "../consts/bridgeRoutes";
  */
 
 type Transactions = {
+  claimTxn: string | null;
+  withdrawClaimDepositTxn: string | null;
+  startVerificationTxn: string | null;
+  verifySnapshotTxn: string | null;
   challengeTxn: string | null;
   withdrawChallengeDepositTxn: string | null;
   sendSnapshotTxn: string | null;
@@ -48,6 +52,10 @@ export class ArbToEthTransactionHandler {
   public emitter: typeof defaultEmitter;
 
   public transactions: Transactions = {
+    claimTxn: null,
+    withdrawClaimDepositTxn: null,
+    startVerificationTxn: null,
+    verifySnapshotTxn: null,
     challengeTxn: null,
     withdrawChallengeDepositTxn: null,
     sendSnapshotTxn: null,
@@ -111,6 +119,112 @@ export class ArbToEthTransactionHandler {
   }
 
   /**
+   * Make a claim on the VeaOutbox(ETH).
+   *
+   * @param snapshot - The snapshot to be claimed.
+   */
+  public async makeClaim(stateRoot: string) {
+    this.emitter.emit(BotEvents.CLAIMING, this.epoch);
+    if ((await this.checkTransactionStatus(this.transactions.claimTxn, ContractType.OUTBOX)) > 0) {
+      return;
+    }
+    const { deposit } = getBridgeConfig(this.chainId);
+
+    const estimateGas = await this.veaOutbox["claim(uint256,bytes32)"].estimateGas(this.epoch, stateRoot, {
+      value: deposit,
+    });
+    const claimTransaction = await this.veaOutbox.claim(this.epoch, stateRoot, {
+      value: deposit,
+      gasLimit: estimateGas,
+    });
+    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, claimTransaction.hash, "Claim");
+    this.transactions.claimTxn = claimTransaction.hash;
+  }
+
+  /**
+   * Start verification for this.epoch in VeaOutbox(ETH).
+   */
+  public async startVerification() {
+    this.emitter.emit(BotEvents.STARTING_VERIFICATION, this.epoch);
+    if (this.claim == null) {
+      throw new ClaimNotSetError();
+    }
+    if ((await this.checkTransactionStatus(this.transactions.startVerificationTxn, ContractType.OUTBOX)) > 0) {
+      return;
+    }
+    const latestBlockTimestamp = (await this.veaOutboxProvider.getBlock("latest")).timestamp;
+
+    const bridgeConfig = getBridgeConfig(this.chainId);
+    const timeOver =
+      latestBlockTimestamp -
+      Number(this.claim.timestampClaimed) -
+      bridgeConfig.sequencerDelayLimit -
+      bridgeConfig.epochPeriod;
+
+    if (timeOver < 0) {
+      this.emitter.emit(BotEvents.VERIFICATION_CANT_START, -1 * timeOver);
+      return;
+    }
+    const estimateGas = await this.veaOutbox[
+      "startVerification(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
+    ].estimateGas(this.epoch, this.claim);
+    const startVerifTrx = await this.veaOutbox.startVerification(this.epoch, this.claim, { gasLimit: estimateGas });
+    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, startVerifTrx.hash, "Start Verification");
+    this.transactions.startVerificationTxn = startVerifTrx.hash;
+  }
+
+  /**
+   * Verify snapshot for this.epoch in VeaOutbox(ETH).
+   */
+  public async verifySnapshot() {
+    this.emitter.emit(BotEvents.VERIFYING_SNAPSHOT, this.epoch);
+    if (this.claim == null) {
+      throw new ClaimNotSetError();
+    }
+    if ((await this.checkTransactionStatus(this.transactions.verifySnapshotTxn, ContractType.OUTBOX)) > 0) {
+      return;
+    }
+    const latestBlockTimestamp = (await this.veaOutboxProvider.getBlock("latest")).timestamp;
+    const bridgeConfig = getBridgeConfig(this.chainId);
+
+    const timeLeft = latestBlockTimestamp - Number(this.claim.timestampClaimed) - bridgeConfig.minChallengePeriod;
+
+    // Claim not resolved yet, check if we can verifySnapshot
+    if (timeLeft < 0) {
+      this.emitter.emit(BotEvents.CANT_VERIFY_SNAPSHOT, -1 * timeLeft);
+      return;
+    }
+    // Estimate gas for verifySnapshot
+    const estimateGas = await this.veaOutbox[
+      "verifySnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
+    ].estimateGas(this.epoch, this.claim);
+    const claimTransaction = await this.veaOutbox.verifySnapshot(this.epoch, this.claim, {
+      gasLimit: estimateGas,
+    });
+    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, claimTransaction.hash, "Verify Snapshot");
+    this.transactions.verifySnapshotTxn = claimTransaction.hash;
+  }
+
+  /**
+   * Withdraw the claim deposit.
+   *
+   */
+  public async withdrawClaimDeposit() {
+    this.emitter.emit(BotEvents.WITHDRAWING_CLAIM_DEPOSIT, this.epoch);
+    if ((await this.checkTransactionStatus(this.transactions.withdrawClaimDepositTxn, ContractType.OUTBOX)) > 0) {
+      return;
+    }
+    const estimateGas = await this.veaOutbox[
+      "withdrawClaimDeposit(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
+    ].estimateGas(this.epoch, this.claim);
+    const withdrawTxn = await this.veaOutbox.withdrawClaimDeposit(this.epoch, this.claim, {
+      gasLimit: estimateGas,
+    });
+    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, withdrawTxn.hash, "Withdraw Deposit");
+    this.transactions.withdrawClaimDepositTxn = withdrawTxn.hash;
+  }
+
+  /**
    * Challenge claim for this.epoch in VeaOutbox(ETH).
    *
    */
@@ -154,7 +268,7 @@ export class ArbToEthTransactionHandler {
    *
    */
   public async withdrawChallengeDeposit() {
-    this.emitter.emit(BotEvents.WITHDRAWING);
+    this.emitter.emit(BotEvents.WITHDRAWING_CHALLENGE_DEPOSIT);
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
