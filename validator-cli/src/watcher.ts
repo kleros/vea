@@ -22,7 +22,8 @@ export const watch = async (
   emitter: typeof defaultEmitter = defaultEmitter
 ) => {
   initializeLogger(emitter);
-  const path = getBotPath();
+  const cliCommand = process.argv;
+  const path = getBotPath({ cliCommand });
   const chainId = Number(process.env.VEAOUTBOX_CHAIN_ID);
   emitter.emit(BotEvents.STARTED, chainId, path);
 
