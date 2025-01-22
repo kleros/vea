@@ -1,7 +1,13 @@
+import { InvalidBotPathError } from "./errors";
 export enum BotPaths {
   CLAIMER = 0, // happy path
   CHALLENGER = 1, // unhappy path
   BOTH = 2, // both happy and unhappy path
+}
+
+interface BotPathParams {
+  cliCommand: string[];
+  defaultPath?: BotPaths;
 }
 
 /**
@@ -9,8 +15,8 @@ export enum BotPaths {
  * @param defaultPath - default path to use if not specified in the command line arguments
  * @returns BotPaths - the bot path (BotPaths)
  */
-export function getBotPath(defaultPath: number = BotPaths.BOTH): number {
-  const args = process.argv.slice(2);
+export function getBotPath({ cliCommand, defaultPath = BotPaths.BOTH }: BotPathParams): number {
+  const args = cliCommand.slice(2);
   const pathFlag = args.find((arg) => arg.startsWith("--path="));
 
   const path = pathFlag ? pathFlag.split("=")[1] : null;
@@ -22,8 +28,7 @@ export function getBotPath(defaultPath: number = BotPaths.BOTH): number {
   };
 
   if (path && !(path in pathMapping)) {
-    console.error(`Error: Invalid path '${path}'. Use one of: ${Object.keys(pathMapping).join(", ")}.`);
-    process.exit(1);
+    throw new InvalidBotPathError();
   }
 
   return path ? pathMapping[path] : defaultPath;
