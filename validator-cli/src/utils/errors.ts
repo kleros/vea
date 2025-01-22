@@ -1,3 +1,4 @@
+import { BotPaths } from "./cli";
 class ClaimNotFoundError extends Error {
   constructor(epoch: number) {
     super();
@@ -22,4 +23,12 @@ class TransactionHandlerNotDefinedError extends Error {
   }
 }
 
-export { ClaimNotFoundError, ClaimNotSetError, TransactionHandlerNotDefinedError };
+class InvalidBotPathError extends Error {
+  constructor() {
+    super();
+    this.name = "InvalidBotPath";
+    this.message = `Invalid path provided, Use one of: ${Object.keys(BotPaths).join("), ")}`;
+  }
+}
+
+export { ClaimNotFoundError, ClaimNotSetError, TransactionHandlerNotDefinedError, InvalidBotPathError };

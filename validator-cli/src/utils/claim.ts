@@ -141,4 +141,4 @@ const hashClaim = (claim: ClaimStruct) => {
   );
 };
 
-export { getClaim, hashClaim, getClaimResolveState };
+export { getClaim, hashClaim, getClaimResolveState, ClaimHonestState };
