@@ -21,10 +21,10 @@ interface RelayerConfig {
 
 /**
  * Start the relayer
- * @param chainId The chain id of the relayer
- * @param network The network of the relayer
- * @param shutdownManager The shutdown manager
- * @param emitter The event emitter
+ * @param config.chainId The chain id of the veaOutbox chain
+ * @param config.network The network of the veaOutbox chain
+ * @param config.shutdownManager The shutdown manager
+ * @param config.emitter The event emitter
  */
 export async function start({ chainId, network, shutdownManager, emitter }: RelayerConfig) {
   initializeEmitter(emitter);
