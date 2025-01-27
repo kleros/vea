@@ -3,6 +3,7 @@ import { EventEmitter } from "events";
 import { claimLock, releaseLock } from "./lock";
 import ShutdownManager from "./shutdownManager";
 import { BotEvents } from "./botEvents";
+require("dotenv").config();
 
 /**
  * Initialize the relayer by claiming the lock and reading the nonce from the state file.
@@ -51,6 +52,7 @@ async function updateStateFile(
   fileSystem: typeof fs = fs,
   removeLock: typeof releaseLock = releaseLock
 ) {
+  console.log(process.env.STATE_DIR);
   const chain_state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
   const json = {
     ts: createdTimestamp,

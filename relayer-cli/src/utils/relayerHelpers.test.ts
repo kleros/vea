@@ -55,7 +55,7 @@ describe("relayerHelpers", () => {
   describe("updateStateFile", () => {
     it("should write a state file with the provided nonce", async () => {
       const createdTimestamp = 123456;
-      const fileDirectory = "./state/testing_1.json";
+      const fileDirectory = process.env.STATE_DIR + network + "_" + chainId + ".json";
       await updateStateFile(chainId, createdTimestamp, 10, network, emitter as any, fileSystem as any, releaseLock);
       expect(fileSystem.writeFileSync).toHaveBeenCalledWith(
         fileDirectory,
