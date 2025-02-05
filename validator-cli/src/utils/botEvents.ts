@@ -32,4 +32,5 @@ export enum BotEvents {
   TXN_PENDING_CONFIRMATIONS = "txn_pending_confirmations",
   TXN_FINAL = "txn_final",
   TXN_NOT_FINAL = "txn_not_final",
+  TXN_EXPIRED = "txn_expired",
 }

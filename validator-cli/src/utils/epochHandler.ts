@@ -1,3 +1,4 @@
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { getBridgeConfig } from "../consts/bridgeRoutes";
 
 /**
@@ -30,7 +31,6 @@ const setEpochRange = (
   const timeLocal = Math.floor(now / 1000);
 
   let veaEpochOutboxClaimableNow = Math.floor(timeLocal / epochPeriod) - 1;
-
   // only past epochs are claimable, hence shift by one here
   const veaEpochOutboxRange = veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound;
   const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
@@ -61,4 +61,13 @@ const getLatestChallengeableEpoch = (
   return Math.floor(now / 1000 / epochPeriod) - 2;
 };
 
-export { setEpochRange, getLatestChallengeableEpoch };
+const getBlockFromEpoch = async (epoch: number, epochPeriod: number, provider: JsonRpcProvider): Promise<number> => {
+  const epochTimestamp = epoch * epochPeriod;
+  const latestBlock = await provider.getBlock("latest");
+  const baseBlock = await provider.getBlock(latestBlock.number - 100);
+  const secPerBlock = (latestBlock.timestamp - baseBlock.timestamp) / (latestBlock.number - baseBlock.number);
+  const blockFallBack = Math.floor((latestBlock.timestamp - epochTimestamp) / secPerBlock);
+  return latestBlock.number - blockFallBack;
+};
+
+export { setEpochRange, getLatestChallengeableEpoch, getBlockFromEpoch };

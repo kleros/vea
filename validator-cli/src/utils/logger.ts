@@ -64,6 +64,9 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.TXN_PENDING_CONFIRMATIONS, (transaction: string, confirmations: number) => {
     console.log(`Transaction(${transaction}) is pending with ${confirmations} confirmations`);
   });
+  emitter.on(BotEvents.TXN_EXPIRED, (transaction: string) => {
+    console.log(`Transaction(${transaction}) is expired`);
+  });
 
   // Claim state logs
   // claim()
