@@ -1,15 +1,13 @@
 import { ethers } from "ethers";
 import { checkAndClaim } from "./claimer";
-import { ArbToEthTransactionHandler } from "./transactionHandler";
 import { ClaimHonestState } from "../utils/claim";
-import { start } from "pm2";
+
 describe("claimer", () => {
   let veaOutbox: any;
   let veaInbox: any;
   let veaInboxProvider: any;
   let veaOutboxProvider: any;
   let emitter: any;
-  let mockGetClaim: any;
   let mockClaim: any;
   let mockGetLatestClaimedEpoch: any;
   let mockDeps: any;
@@ -31,15 +29,15 @@ describe("claimer", () => {
       stateRoot: jest.fn().mockResolvedValue(mockClaim.stateRoot),
     };
     veaOutboxProvider = {
-      getBlock: jest.fn().mockResolvedValue({ number: 0, timestamp: 100 }),
+      getBlock: jest.fn().mockResolvedValue({ number: 0, timestamp: 110 }),
     };
     emitter = {
       emit: jest.fn(),
     };
 
-    mockGetClaim = jest.fn();
     mockGetLatestClaimedEpoch = jest.fn();
     mockDeps = {
+      claim: mockClaim,
       epoch: 10,
       epochPeriod: 10,
       veaInbox,
@@ -48,7 +46,6 @@ describe("claimer", () => {
       veaOutbox,
       transactionHandler: null,
       emitter,
-      fetchClaim: mockGetClaim,
       fetchLatestClaimedEpoch: mockGetLatestClaimedEpoch,
     };
   });
@@ -90,36 +87,34 @@ describe("claimer", () => {
       };
     });
     it("should return null if no claim is made for a passed epoch", async () => {
-      mockGetClaim = jest.fn().mockReturnValue(null);
       mockDeps.epoch = 7; // claimable epoch - 3
-      mockDeps.fetchClaim = mockGetClaim;
+      mockDeps.claim = null;
       const result = await checkAndClaim(mockDeps);
       expect(result).toBeNull();
     });
     it("should return null if no snapshot is saved on the inbox for a claimable epoch", async () => {
-      mockGetClaim = jest.fn().mockReturnValue(null);
       veaInbox.snapshots = jest.fn().mockResolvedValue(ethers.ZeroHash);
       mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
         challenged: false,
         stateroot: "0x1111",
       });
+      mockDeps.claim = null;
       mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
       const result = await checkAndClaim(mockDeps);
       expect(result).toBeNull();
     });
     it("should return null if there are no new messages in the inbox", async () => {
-      mockGetClaim = jest.fn().mockReturnValue(null);
       veaInbox.snapshots = jest.fn().mockResolvedValue(mockClaim.stateRoot);
       mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
         challenged: false,
         stateroot: "0x1111",
       });
+      mockDeps.claim = null;
       mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
       const result = await checkAndClaim(mockDeps);
       expect(result).toBeNull();
     });
-    it("should make a valid calim if no claim is made", async () => {
-      mockGetClaim = jest.fn().mockReturnValue(null);
+    it("should make a valid claim if no claim is made", async () => {
       veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
       mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
         challenged: false,
@@ -127,13 +122,12 @@ describe("claimer", () => {
       });
       mockDeps.transactionHandler = mockTransactionHandler;
       mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
-      mockDeps.fetchClaim = mockGetClaim;
+      mockDeps.claim = null;
       mockDeps.veaInbox = veaInbox;
       const result = await checkAndClaim(mockDeps);
       expect(result.transactions.claimTxn).toBe(mockTransactions.claimTxn);
     });
-    it("should make a valid calim if last claim was challenged", async () => {
-      mockGetClaim = jest.fn().mockReturnValue(null);
+    it("should make a valid claim if last claim was challenged", async () => {
       veaInbox.snapshots = jest.fn().mockResolvedValue(mockClaim.stateRoot);
       mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
         challenged: true,
@@ -141,7 +135,7 @@ describe("claimer", () => {
       });
       mockDeps.transactionHandler = mockTransactionHandler;
       mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
-      mockDeps.fetchClaim = mockGetClaim;
+      mockDeps.claim = null;
       mockDeps.veaInbox = veaInbox;
       const result = await checkAndClaim(mockDeps);
       expect(result.transactions.claimTxn).toEqual(mockTransactions.claimTxn);
@@ -149,17 +143,12 @@ describe("claimer", () => {
     it("should withdraw claim deposit if claimer is honest", async () => {
       mockDeps.transactionHandler = mockTransactionHandler;
       mockClaim.honest = ClaimHonestState.CLAIMER;
-
-      mockGetClaim = jest.fn().mockResolvedValue(mockClaim);
-      mockDeps.fetchClaim = mockGetClaim;
       const result = await checkAndClaim(mockDeps);
       expect(result.transactions.withdrawClaimDepositTxn).toEqual(mockTransactions.withdrawClaimDepositTxn);
     });
     it("should start verification if verification is not started", async () => {
       mockDeps.transactionHandler = mockTransactionHandler;
       mockClaim.honest = ClaimHonestState.NONE;
-      mockGetClaim = jest.fn().mockResolvedValue(mockClaim);
-      mockDeps.fetchClaim = mockGetClaim;
       const result = await checkAndClaim(mockDeps);
       expect(result.transactions.startVerificationTxn).toEqual(mockTransactions.startVerificationTxn);
     });
@@ -167,8 +156,7 @@ describe("claimer", () => {
       mockDeps.transactionHandler = mockTransactionHandler;
       mockClaim.honest = ClaimHonestState.NONE;
       mockClaim.timestampVerification = 1234;
-      mockGetClaim = jest.fn().mockResolvedValue(mockClaim);
-      mockDeps.fetchClaim = mockGetClaim;
+      mockDeps.claim = mockClaim;
       const result = await checkAndClaim(mockDeps);
       expect(result.transactions.verifySnapshotTxn).toEqual(mockTransactions.verifySnapshotTxn);
     });

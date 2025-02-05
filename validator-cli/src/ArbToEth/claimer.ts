@@ -5,7 +5,9 @@ import { getClaim, ClaimHonestState } from "../utils/claim";
 import { getLastClaimedEpoch } from "../utils/graphQueries";
 import { ArbToEthTransactionHandler } from "./transactionHandler";
 import { BotEvents } from "../utils/botEvents";
+import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 interface checkAndClaimParams {
+  claim: ClaimStruct | null;
   epochPeriod: number;
   epoch: number;
   veaInbox: any;
@@ -19,6 +21,7 @@ interface checkAndClaimParams {
 }
 
 export async function checkAndClaim({
+  claim,
   epoch,
   epochPeriod,
   veaInbox,
@@ -27,13 +30,11 @@ export async function checkAndClaim({
   veaOutboxProvider,
   transactionHandler,
   emitter,
-  fetchClaim = getClaim,
   fetchLatestClaimedEpoch = getLastClaimedEpoch,
 }: checkAndClaimParams) {
   let outboxStateRoot = await veaOutbox.stateRoot();
   const finalizedOutboxBlock = await veaOutboxProvider.getBlock("finalized");
-  const claimAbleEpoch = finalizedOutboxBlock.timestamp / epochPeriod;
-  const claim = await fetchClaim(veaOutbox, veaOutboxProvider, epoch, finalizedOutboxBlock.number, "finalized");
+  const claimAbleEpoch = Math.floor(finalizedOutboxBlock.timestamp / epochPeriod) - 1;
   if (!transactionHandler) {
     transactionHandler = new ArbToEthTransactionHandler(
       epoch,
@@ -51,7 +52,6 @@ export async function checkAndClaim({
     const [savedSnapshot, claimData] = await Promise.all([veaInbox.snapshots(epoch), fetchLatestClaimedEpoch()]);
     const newMessagesToBridge: boolean = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
     const lastClaimChallenged: boolean = claimData.challenged && savedSnapshot == outboxStateRoot;
-
     if (newMessagesToBridge || lastClaimChallenged) {
       await transactionHandler.makeClaim(savedSnapshot);
       return transactionHandler;
