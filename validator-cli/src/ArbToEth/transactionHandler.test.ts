@@ -1,4 +1,10 @@
-import { ArbToEthTransactionHandler, ContractType } from "./transactionHandler";
+import {
+  ArbToEthTransactionHandler,
+  ContractType,
+  Transaction,
+  MAX_PENDING_CONFIRMATIONS,
+  MAX_PENDING_TIME,
+} from "./transactionHandler";
 import { MockEmitter, defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimNotSetError } from "../utils/errors";
@@ -81,6 +87,7 @@ describe("ArbToEthTransactionHandler", () => {
     let transactionHandler: ArbToEthTransactionHandler;
     let finalityBlock: number = 100;
     const mockEmitter = new MockEmitter();
+    let mockBroadcastedTimestamp: number = 1000;
     beforeEach(() => {
       transactionHandler = new ArbToEthTransactionHandler(
         epoch,
@@ -96,45 +103,54 @@ describe("ArbToEthTransactionHandler", () => {
     it("should return 2 if transaction is not final", async () => {
       jest.spyOn(mockEmitter, "emit");
       veaInboxProvider.getTransactionReceipt.mockResolvedValue({
-        blockNumber: finalityBlock - (transactionHandler.requiredConfirmations - 1),
+        blockNumber: finalityBlock - (MAX_PENDING_CONFIRMATIONS - 1),
       });
-      const trnxHash = "0x123456";
-      const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
-      expect(status).toEqual(2);
-      expect(mockEmitter.emit).toHaveBeenCalledWith(
-        BotEvents.TXN_NOT_FINAL,
-        trnxHash,
-        transactionHandler.requiredConfirmations - 1
+      const trnx: Transaction = { hash: "0x123456", broadcastedTimestamp: mockBroadcastedTimestamp };
+      const status = await transactionHandler.checkTransactionStatus(
+        trnx,
+        ContractType.INBOX,
+        mockBroadcastedTimestamp + 1
       );
+      expect(status).toEqual(2);
+      expect(mockEmitter.emit).toHaveBeenCalledWith(BotEvents.TXN_NOT_FINAL, trnx.hash, MAX_PENDING_CONFIRMATIONS - 1);
     });
 
     it("should return 1 if transaction is pending", async () => {
       jest.spyOn(mockEmitter, "emit");
       veaInboxProvider.getTransactionReceipt.mockResolvedValue(null);
-      const trnxHash = "0x123456";
-      const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
+      const trnx: Transaction = { hash: "0x123456", broadcastedTimestamp: mockBroadcastedTimestamp };
+      const status = await transactionHandler.checkTransactionStatus(
+        trnx,
+        ContractType.INBOX,
+        mockBroadcastedTimestamp + 1
+      );
       expect(status).toEqual(1);
-      expect(mockEmitter.emit).toHaveBeenCalledWith(BotEvents.TXN_PENDING, trnxHash);
+      expect(mockEmitter.emit).toHaveBeenCalledWith(BotEvents.TXN_PENDING, trnx.hash);
     });
 
     it("should return 3 if transaction is final", async () => {
       jest.spyOn(mockEmitter, "emit");
       veaInboxProvider.getTransactionReceipt.mockResolvedValue({
-        blockNumber: finalityBlock - transactionHandler.requiredConfirmations,
+        blockNumber: finalityBlock - MAX_PENDING_CONFIRMATIONS,
       });
-      const trnxHash = "0x123456";
-      const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
-      expect(status).toEqual(3);
-      expect(mockEmitter.emit).toHaveBeenCalledWith(
-        BotEvents.TXN_FINAL,
-        trnxHash,
-        transactionHandler.requiredConfirmations
+      const trnx: Transaction = { hash: "0x123456", broadcastedTimestamp: mockBroadcastedTimestamp };
+
+      const status = await transactionHandler.checkTransactionStatus(
+        trnx,
+        ContractType.INBOX,
+        mockBroadcastedTimestamp + 1
       );
+      expect(status).toEqual(3);
+      expect(mockEmitter.emit).toHaveBeenCalledWith(BotEvents.TXN_FINAL, trnx.hash, MAX_PENDING_CONFIRMATIONS);
     });
 
     it("should return 0 if transaction hash is null", async () => {
-      const trnxHash = null;
-      const status = await transactionHandler.checkTransactionStatus(trnxHash, ContractType.INBOX);
+      const trnx = null;
+      const status = await transactionHandler.checkTransactionStatus(
+        trnx,
+        ContractType.INBOX,
+        mockBroadcastedTimestamp
+      );
       expect(status).toEqual(0);
     });
   });
@@ -169,7 +185,10 @@ describe("ArbToEthTransactionHandler", () => {
         gasLimit: BigInt(100000),
         value: deposit,
       });
-      expect(transactionHandler.transactions.claimTxn).toEqual("0x1234");
+      expect(transactionHandler.transactions.claimTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
     });
 
     it("should not make a claim if a claim transaction is pending", async () => {
@@ -213,7 +232,10 @@ describe("ArbToEthTransactionHandler", () => {
         veaOutbox["startVerification(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"].estimateGas
       ).toHaveBeenCalledWith(epoch, claim);
       expect(veaOutbox.startVerification).toHaveBeenCalledWith(epoch, claim, { gasLimit: BigInt(100000) });
-      expect(transactionHandler.transactions.startVerificationTxn).toEqual("0x1234");
+      expect(transactionHandler.transactions.startVerificationTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
     });
 
     it("should not start verification if a startVerification transaction is pending", async () => {
@@ -255,7 +277,7 @@ describe("ArbToEthTransactionHandler", () => {
         veaOutboxProvider,
         mockEmitter
       );
-      verificationFlipTime = Number(claim.timestampClaimed) + getBridgeConfig(chainId).minChallengePeriod;
+      verificationFlipTime = Number(claim.timestampVerification) + getBridgeConfig(chainId).minChallengePeriod;
       transactionHandler.claim = claim;
     });
 
@@ -268,7 +290,10 @@ describe("ArbToEthTransactionHandler", () => {
         veaOutbox["verifySnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"].estimateGas
       ).toHaveBeenCalledWith(epoch, claim);
       expect(veaOutbox.verifySnapshot).toHaveBeenCalledWith(epoch, claim, { gasLimit: BigInt(100000) });
-      expect(transactionHandler.transactions.verifySnapshotTxn).toEqual("0x1234");
+      expect(transactionHandler.transactions.verifySnapshotTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
     });
 
     it("should not verify snapshot if a verifySnapshot transaction is pending", async () => {
@@ -317,17 +342,25 @@ describe("ArbToEthTransactionHandler", () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
       veaOutbox.withdrawClaimDeposit.mockResolvedValue({ hash: "0x1234" });
       await transactionHandler.withdrawClaimDeposit();
-      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(null, ContractType.OUTBOX);
-      expect(transactionHandler.transactions.withdrawClaimDepositTxn).toEqual("0x1234");
+      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
+        null,
+        ContractType.OUTBOX,
+        expect.any(Number)
+      );
+      expect(transactionHandler.transactions.withdrawClaimDepositTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
     });
 
     it("should not withdraw deposit if txn is pending", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
-      transactionHandler.transactions.withdrawClaimDepositTxn = "0x1234";
+      transactionHandler.transactions.withdrawClaimDepositTxn = { hash: "0x1234", broadcastedTimestamp: 1000 };
       await transactionHandler.withdrawClaimDeposit();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
         transactionHandler.transactions.withdrawClaimDepositTxn,
-        ContractType.OUTBOX
+        ContractType.OUTBOX,
+        expect.any(Number)
       );
     });
 
@@ -362,11 +395,12 @@ describe("ArbToEthTransactionHandler", () => {
 
     it("should not challenge claim if txn is pending", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
-      transactionHandler.transactions.challengeTxn = "0x1234";
+      transactionHandler.transactions.challengeTxn = { hash: "0x1234", broadcastedTimestamp: 1000 };
       await transactionHandler.challengeClaim();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
         transactionHandler.transactions.challengeTxn,
-        ContractType.OUTBOX
+        ContractType.OUTBOX,
+        expect.any(Number)
       );
       expect(
         veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"]
@@ -379,8 +413,15 @@ describe("ArbToEthTransactionHandler", () => {
       (mockChallenge as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"] = mockChallenge;
       await transactionHandler.challengeClaim();
-      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(null, ContractType.OUTBOX);
-      expect(transactionHandler.transactions.challengeTxn).toEqual("0x1234");
+      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
+        null,
+        ContractType.OUTBOX,
+        expect.any(Number)
+      );
+      expect(transactionHandler.transactions.challengeTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
     });
 
     it.todo("should set challengeTxn as completed when txn is final");
@@ -406,17 +447,25 @@ describe("ArbToEthTransactionHandler", () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
       veaOutbox.withdrawChallengeDeposit.mockResolvedValue({ hash: "0x1234" });
       await transactionHandler.withdrawChallengeDeposit();
-      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(null, ContractType.OUTBOX);
-      expect(transactionHandler.transactions.withdrawChallengeDepositTxn).toEqual("0x1234");
+      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
+        null,
+        ContractType.OUTBOX,
+        expect.any(Number)
+      );
+      expect(transactionHandler.transactions.withdrawChallengeDepositTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
     });
 
     it("should not withdraw deposit if txn is pending", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
-      transactionHandler.transactions.withdrawChallengeDepositTxn = "0x1234";
+      transactionHandler.transactions.withdrawChallengeDepositTxn = { hash: "0x1234", broadcastedTimestamp: 1000 };
       await transactionHandler.withdrawChallengeDeposit();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
         transactionHandler.transactions.withdrawChallengeDepositTxn,
-        ContractType.OUTBOX
+        ContractType.OUTBOX,
+        expect.any(Number)
       );
     });
 
@@ -451,17 +500,25 @@ describe("ArbToEthTransactionHandler", () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
       veaInbox.sendSnapshot.mockResolvedValue({ hash: "0x1234" });
       await transactionHandler.sendSnapshot();
-      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(null, ContractType.INBOX);
-      expect(transactionHandler.transactions.sendSnapshotTxn).toEqual("0x1234");
+      expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
+        null,
+        ContractType.INBOX,
+        expect.any(Number)
+      );
+      expect(transactionHandler.transactions.sendSnapshotTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
     });
 
     it("should not send snapshot if txn is pending", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
-      transactionHandler.transactions.sendSnapshotTxn = "0x1234";
+      transactionHandler.transactions.sendSnapshotTxn = { hash: "0x1234", broadcastedTimestamp: 1000 };
       await transactionHandler.sendSnapshot();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
         transactionHandler.transactions.sendSnapshotTxn,
-        ContractType.INBOX
+        ContractType.INBOX,
+        expect.any(Number)
       );
       expect(veaInbox.sendSnapshot).not.toHaveBeenCalled();
     });
@@ -491,22 +548,26 @@ describe("ArbToEthTransactionHandler", () => {
     });
     it("should resolve challenged claim", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
-      transactionHandler.transactions.sendSnapshotTxn = "0x1234";
+      transactionHandler.transactions.sendSnapshotTxn = { hash: "0x1234", broadcastedTimestamp: 1000 };
       mockMessageExecutor.mockResolvedValue({ hash: "0x1234" });
       await transactionHandler.resolveChallengedClaim(
-        transactionHandler.transactions.sendSnapshotTxn,
+        transactionHandler.transactions.sendSnapshotTxn.hash,
         mockMessageExecutor
       );
-      expect(transactionHandler.transactions.executeSnapshotTxn).toEqual("0x1234");
+      expect(transactionHandler.transactions.executeSnapshotTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
     });
 
     it("should not resolve challenged claim if txn is pending", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
-      transactionHandler.transactions.executeSnapshotTxn = "0x1234";
+      transactionHandler.transactions.executeSnapshotTxn = { hash: "0x1234", broadcastedTimestamp: 1000 };
       await transactionHandler.resolveChallengedClaim(mockMessageExecutor);
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
         transactionHandler.transactions.executeSnapshotTxn,
-        ContractType.OUTBOX
+        ContractType.OUTBOX,
+        expect.any(Number)
       );
     });
   });

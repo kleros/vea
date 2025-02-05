@@ -20,15 +20,20 @@ import { getBridgeConfig } from "../consts/bridgeRoutes";
  *      executeSnapshot() - Execute a sent snapshot to resolve dispute in VeaOutbox (ETH).
  */
 
+export type Transaction = {
+  hash: string;
+  broadcastedTimestamp: number;
+};
+
 type Transactions = {
-  claimTxn: string | null;
-  withdrawClaimDepositTxn: string | null;
-  startVerificationTxn: string | null;
-  verifySnapshotTxn: string | null;
-  challengeTxn: string | null;
-  withdrawChallengeDepositTxn: string | null;
-  sendSnapshotTxn: string | null;
-  executeSnapshotTxn: string | null;
+  claimTxn: Transaction | null;
+  withdrawClaimDepositTxn: Transaction | null;
+  startVerificationTxn: Transaction | null;
+  verifySnapshotTxn: Transaction | null;
+  challengeTxn: Transaction | null;
+  withdrawChallengeDepositTxn: Transaction | null;
+  sendSnapshotTxn: Transaction | null;
+  executeSnapshotTxn: Transaction | null;
 };
 
 enum TransactionStatus {
@@ -36,6 +41,7 @@ enum TransactionStatus {
   PENDING = 1,
   NOT_FINAL = 2,
   FINAL = 3,
+  EXPIRED = 4,
 }
 
 export enum ContractType {
@@ -43,10 +49,12 @@ export enum ContractType {
   OUTBOX = "outbox",
 }
 
+export const MAX_PENDING_TIME = 5 * 60 * 1000; // 3 minutes
+export const MAX_PENDING_CONFIRMATIONS = 10;
+const CHAIN_ID = 11155111;
+
 export class ArbToEthTransactionHandler {
-  public requiredConfirmations = 10;
   public claim: ClaimStruct | null = null;
-  public chainId = 11155111;
 
   public veaInbox: VeaInboxArbToEth;
   public veaOutbox: VeaOutboxArbToEth;
@@ -92,33 +100,35 @@ export class ArbToEthTransactionHandler {
    *
    * @returns TransactionStatus.
    */
-  public async checkTransactionStatus(trnxHash: string | null, contract: ContractType): Promise<TransactionStatus> {
-    let provider: JsonRpcProvider;
-    if (contract === ContractType.INBOX) {
-      provider = this.veaInboxProvider;
-    } else if (contract === ContractType.OUTBOX) {
-      provider = this.veaOutboxProvider;
-    }
-
-    if (trnxHash == null) {
+  public async checkTransactionStatus(
+    trnx: Transaction | null,
+    contract: ContractType,
+    currentTime: number
+  ): Promise<TransactionStatus> {
+    const provider = contract === ContractType.INBOX ? this.veaInboxProvider : this.veaOutboxProvider;
+    if (trnx == null) {
       return TransactionStatus.NOT_MADE;
     }
 
-    const receipt = await provider.getTransactionReceipt(trnxHash);
+    const receipt = await provider.getTransactionReceipt(trnx.hash);
 
     if (!receipt) {
-      this.emitter.emit(BotEvents.TXN_PENDING, trnxHash);
+      this.emitter.emit(BotEvents.TXN_PENDING, trnx.hash);
+      if (currentTime - trnx.broadcastedTimestamp > MAX_PENDING_TIME) {
+        this.emitter.emit(BotEvents.TXN_EXPIRED, trnx.hash);
+        return TransactionStatus.EXPIRED;
+      }
       return TransactionStatus.PENDING;
     }
 
     const currentBlock = await provider.getBlock("latest");
     const confirmations = currentBlock.number - receipt.blockNumber;
 
-    if (confirmations >= this.requiredConfirmations) {
-      this.emitter.emit(BotEvents.TXN_FINAL, trnxHash, confirmations);
+    if (confirmations >= MAX_PENDING_CONFIRMATIONS) {
+      this.emitter.emit(BotEvents.TXN_FINAL, trnx.hash, confirmations);
       return TransactionStatus.FINAL;
     }
-    this.emitter.emit(BotEvents.TXN_NOT_FINAL, trnxHash, confirmations);
+    this.emitter.emit(BotEvents.TXN_NOT_FINAL, trnx.hash, confirmations);
     return TransactionStatus.NOT_FINAL;
   }
 
@@ -129,10 +139,16 @@ export class ArbToEthTransactionHandler {
    */
   public async makeClaim(stateRoot: string) {
     this.emitter.emit(BotEvents.CLAIMING, this.epoch);
-    if ((await this.checkTransactionStatus(this.transactions.claimTxn, ContractType.OUTBOX)) > 0) {
+    const currentTime = Date.now();
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.claimTxn,
+      ContractType.OUTBOX,
+      currentTime
+    );
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
-    const { deposit } = getBridgeConfig(this.chainId);
+    const { deposit } = getBridgeConfig(CHAIN_ID);
 
     const estimateGas = await this.veaOutbox["claim(uint256,bytes32)"].estimateGas(this.epoch, stateRoot, {
       value: deposit,
@@ -141,8 +157,11 @@ export class ArbToEthTransactionHandler {
       value: deposit,
       gasLimit: estimateGas,
     });
-    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, claimTransaction.hash, "Claim");
-    this.transactions.claimTxn = claimTransaction.hash;
+    this.emitter.emit(BotEvents.TXN_MADE, claimTransaction.hash, this.epoch, "Claim");
+    this.transactions.claimTxn = {
+      hash: claimTransaction.hash,
+      broadcastedTimestamp: currentTime,
+    };
   }
 
   /**
@@ -153,11 +172,17 @@ export class ArbToEthTransactionHandler {
     if (this.claim == null) {
       throw new ClaimNotSetError();
     }
-    if ((await this.checkTransactionStatus(this.transactions.startVerificationTxn, ContractType.OUTBOX)) > 0) {
+    const currentTime = Date.now();
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.startVerificationTxn,
+      ContractType.OUTBOX,
+      currentTime
+    );
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
 
-    const bridgeConfig = getBridgeConfig(this.chainId);
+    const bridgeConfig = getBridgeConfig(CHAIN_ID);
     const timeOver =
       currentTimestamp -
       Number(this.claim.timestampClaimed) -
@@ -165,15 +190,18 @@ export class ArbToEthTransactionHandler {
       bridgeConfig.epochPeriod;
 
     if (timeOver < 0) {
-      this.emitter.emit(BotEvents.VERIFICATION_CANT_START, -1 * timeOver);
+      this.emitter.emit(BotEvents.VERIFICATION_CANT_START, this.epoch, -1 * timeOver);
       return;
     }
     const estimateGas = await this.veaOutbox[
       "startVerification(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
     ].estimateGas(this.epoch, this.claim);
     const startVerifTrx = await this.veaOutbox.startVerification(this.epoch, this.claim, { gasLimit: estimateGas });
-    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, startVerifTrx.hash, "Start Verification");
-    this.transactions.startVerificationTxn = startVerifTrx.hash;
+    this.emitter.emit(BotEvents.TXN_MADE, startVerifTrx.hash, this.epoch, "Start Verification");
+    this.transactions.startVerificationTxn = {
+      hash: startVerifTrx.hash,
+      broadcastedTimestamp: currentTime,
+    };
   }
 
   /**
@@ -184,16 +212,20 @@ export class ArbToEthTransactionHandler {
     if (this.claim == null) {
       throw new ClaimNotSetError();
     }
-    if ((await this.checkTransactionStatus(this.transactions.verifySnapshotTxn, ContractType.OUTBOX)) > 0) {
+    const currentTime = Date.now();
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.verifySnapshotTxn,
+      ContractType.OUTBOX,
+      currentTime
+    );
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
-    const bridgeConfig = getBridgeConfig(this.chainId);
-
-    const timeLeft = currentTimestamp - Number(this.claim.timestampClaimed) - bridgeConfig.minChallengePeriod;
-
+    const bridgeConfig = getBridgeConfig(CHAIN_ID);
+    const timeLeft = currentTimestamp - Number(this.claim.timestampVerification) - bridgeConfig.minChallengePeriod;
     // Claim not resolved yet, check if we can verifySnapshot
     if (timeLeft < 0) {
-      this.emitter.emit(BotEvents.CANT_VERIFY_SNAPSHOT, -1 * timeLeft);
+      this.emitter.emit(BotEvents.CANT_VERIFY_SNAPSHOT, this.epoch, -1 * timeLeft);
       return;
     }
     // Estimate gas for verifySnapshot
@@ -203,8 +235,11 @@ export class ArbToEthTransactionHandler {
     const claimTransaction = await this.veaOutbox.verifySnapshot(this.epoch, this.claim, {
       gasLimit: estimateGas,
     });
-    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, claimTransaction.hash, "Verify Snapshot");
-    this.transactions.verifySnapshotTxn = claimTransaction.hash;
+    this.emitter.emit(BotEvents.TXN_MADE, claimTransaction.hash, this.epoch, "Verify Snapshot");
+    this.transactions.verifySnapshotTxn = {
+      hash: claimTransaction.hash,
+      broadcastedTimestamp: currentTime,
+    };
   }
 
   /**
@@ -216,7 +251,13 @@ export class ArbToEthTransactionHandler {
     if (this.claim == null) {
       throw new ClaimNotSetError();
     }
-    if ((await this.checkTransactionStatus(this.transactions.withdrawClaimDepositTxn, ContractType.OUTBOX)) > 0) {
+    const currentTime = Date.now();
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.withdrawClaimDepositTxn,
+      ContractType.OUTBOX,
+      currentTime
+    );
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
     const estimateGas = await this.veaOutbox[
@@ -225,8 +266,11 @@ export class ArbToEthTransactionHandler {
     const withdrawTxn = await this.veaOutbox.withdrawClaimDeposit(this.epoch, this.claim, {
       gasLimit: estimateGas,
     });
-    this.emitter.emit(BotEvents.TXN_MADE, this.epoch, withdrawTxn.hash, "Withdraw Deposit");
-    this.transactions.withdrawClaimDepositTxn = withdrawTxn.hash;
+    this.emitter.emit(BotEvents.TXN_MADE, withdrawTxn.hash, this.epoch, "Withdraw Deposit");
+    this.transactions.withdrawClaimDepositTxn = {
+      hash: withdrawTxn.hash,
+      broadcastedTimestamp: currentTime,
+    };
   }
 
   /**
@@ -238,11 +282,16 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
-    const transactionStatus = await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX);
-    if (transactionStatus > 0) {
+    const currentTime = Date.now();
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.challengeTxn,
+      ContractType.OUTBOX,
+      currentTime
+    );
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
-    const { deposit } = getBridgeConfig(this.chainId);
+    const { deposit } = getBridgeConfig(CHAIN_ID);
     const gasEstimate: bigint = await this.veaOutbox[
       "challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
     ].estimateGas(this.epoch, this.claim, { value: deposit });
@@ -265,7 +314,10 @@ export class ArbToEthTransactionHandler {
       gasLimit: gasEstimate,
     });
     this.emitter.emit(BotEvents.TXN_MADE, challengeTxn.hash, this.epoch, "Challenge");
-    this.transactions.challengeTxn = challengeTxn.hash;
+    this.transactions.challengeTxn = {
+      hash: challengeTxn.hash,
+      broadcastedTimestamp: currentTime,
+    };
   }
 
   /**
@@ -277,16 +329,21 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
+    const currentTime = Date.now();
     const transactionStatus = await this.checkTransactionStatus(
       this.transactions.withdrawChallengeDepositTxn,
-      ContractType.OUTBOX
+      ContractType.OUTBOX,
+      currentTime
     );
-    if (transactionStatus > 0) {
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
     const withdrawDepositTxn = await this.veaOutbox.withdrawChallengeDeposit(this.epoch, this.claim);
     this.emitter.emit(BotEvents.TXN_MADE, withdrawDepositTxn.hash, this.epoch, "Withdraw");
-    this.transactions.withdrawChallengeDepositTxn = withdrawDepositTxn.hash;
+    this.transactions.withdrawChallengeDepositTxn = {
+      hash: withdrawDepositTxn.hash,
+      broadcastedTimestamp: currentTime,
+    };
   }
 
   /**
@@ -297,13 +354,21 @@ export class ArbToEthTransactionHandler {
     if (!this.claim) {
       throw new ClaimNotSetError();
     }
-    const transactionStatus = await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.INBOX);
-    if (transactionStatus > 0) {
+    const currentTime = Date.now();
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.sendSnapshotTxn,
+      ContractType.INBOX,
+      currentTime
+    );
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
     const sendSnapshotTxn = await this.veaInbox.sendSnapshot(this.epoch, this.claim);
     this.emitter.emit(BotEvents.TXN_MADE, sendSnapshotTxn.hash, this.epoch, "Send Snapshot");
-    this.transactions.sendSnapshotTxn = sendSnapshotTxn.hash;
+    this.transactions.sendSnapshotTxn = {
+      hash: sendSnapshotTxn.hash,
+      broadcastedTimestamp: currentTime,
+    };
   }
 
   /**
@@ -311,15 +376,20 @@ export class ArbToEthTransactionHandler {
    */
   public async resolveChallengedClaim(sendSnapshotTxn: string, executeMsg: typeof messageExecutor = messageExecutor) {
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
+    const currentTime = Date.now();
     const transactionStatus = await this.checkTransactionStatus(
       this.transactions.executeSnapshotTxn,
-      ContractType.OUTBOX
+      ContractType.OUTBOX,
+      currentTime
     );
-    if (transactionStatus > 0) {
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
     const msgExecuteTrnx = await executeMsg(sendSnapshotTxn, this.veaInboxProvider, this.veaOutboxProvider);
     this.emitter.emit(BotEvents.TXN_MADE, msgExecuteTrnx.hash, this.epoch, "Execute Snapshot");
-    this.transactions.executeSnapshotTxn = msgExecuteTrnx.hash;
+    this.transactions.executeSnapshotTxn = {
+      hash: msgExecuteTrnx.hash,
+      broadcastedTimestamp: currentTime,
+    };
   }
 }
