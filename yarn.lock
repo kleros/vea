@@ -3729,7 +3729,7 @@ __metadata:
     "@wagmi/core": "npm:^2.10.2"
     core-js: "npm:^3.30.1"
     eslint: "npm:^8.39.0"
-    eslint-config-prettier: "npm:^8.8.0"
+    eslint-config-prettier: "npm:^10.0.2"
     eslint-import-resolver-parcel: "npm:^1.10.6"
     eslint-plugin-import: "npm:^2.27.5"
     eslint-plugin-prettier: "npm:^4.2.1"
@@ -10876,14 +10876,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:^8.8.0":
-  version: 8.10.0
-  resolution: "eslint-config-prettier@npm:8.10.0"
+"eslint-config-prettier@npm:^10.0.2":
+  version: 10.0.2
+  resolution: "eslint-config-prettier@npm:10.0.2"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
-    eslint-config-prettier: bin/cli.js
-  checksum: 10/0a51ab1417cbf80fabcf7a406960a142663539c8140fdb0a187b78f3d708b9d137a62a4bc4e689150e290b667750ddabd1740a516623b0cb4adb6cc1962cfe2c
+    eslint-config-prettier: build/bin/cli.js
+  checksum: 10/6d4bbdd5d1810457c63035eef1a085e00bfce34873a5cf461fc696eb635c6aa408184aab6ff6c7e979bb0992485f6dc75e0c993f7193b0d4ceec25f32505c531
   languageName: node
   linkType: hard
 
@@ -22157,7 +22157,7 @@ __metadata:
     "@commitlint/config-conventional": "npm:^17.6.1"
     conventional-changelog-cli: "npm:^2.2.2"
     eslint: "npm:^8.39.0"
-    eslint-config-prettier: "npm:^8.8.0"
+    eslint-config-prettier: "npm:^10.0.2"
     eslint-config-standard: "npm:^17.0.0"
     eslint-import-resolver-parcel: "npm:^1.10.6"
     eslint-plugin-import: "npm:^2.27.5"
