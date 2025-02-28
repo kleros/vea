@@ -10,6 +10,7 @@ import {
   IAMB__factory,
 } from "@kleros/vea-contracts/typechain-types";
 import { challengeAndResolveClaim as challengeAndResolveClaimArbToEth } from "../ArbToEth/validator";
+import { checkAndClaim } from "../ArbToEth/claimer";
 import { ArbToEthTransactionHandler } from "../ArbToEth/transactionHandler";
 import { TransactionHandlerNotDefinedError } from "./errors";
 
@@ -64,7 +65,12 @@ const getClaimValidator = (chainId: number) => {
       return challengeAndResolveClaimArbToEth;
   }
 };
-
+const getClaimer = (chainId: number) => {
+  switch (chainId) {
+    case 11155111:
+      return checkAndClaim;
+  }
+};
 const getTransactionHandler = (chainId: number) => {
   switch (chainId) {
     case 11155111:
@@ -82,6 +88,7 @@ export {
   getWETH,
   getAMB,
   getClaimValidator,
+  getClaimer,
   getTransactionHandler,
   getVeaRouter,
 };

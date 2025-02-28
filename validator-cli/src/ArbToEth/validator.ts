@@ -6,11 +6,13 @@ import { getClaim, getClaimResolveState } from "../utils/claim";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
+import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 
 // https://github.com/prysmaticlabs/prysm/blob/493905ee9e33a64293b66823e69704f012b39627/config/params/mainnet_config.go#L103
 const secondsPerSlotEth = 12;
 
 export interface ChallengeAndResolveClaimParams {
+  claim: ClaimStruct;
   epoch: number;
   epochPeriod: number;
   veaInbox: any;
@@ -25,6 +27,7 @@ export interface ChallengeAndResolveClaimParams {
 }
 
 export async function challengeAndResolveClaim({
+  claim,
   epoch,
   epochPeriod,
   veaInbox,
@@ -33,10 +36,13 @@ export async function challengeAndResolveClaim({
   veaOutbox,
   transactionHandler,
   emitter = defaultEmitter,
-  fetchClaim = getClaim,
   fetchClaimResolveState = getClaimResolveState,
   fetchBlocksAndCheckFinality = getBlocksAndCheckFinality,
 }: ChallengeAndResolveClaimParams): Promise<ArbToEthTransactionHandler | null> {
+  if (!claim) {
+    emitter.emit(BotEvents.NO_CLAIM, epoch);
+    return null;
+  }
   const [arbitrumBlock, ethFinalizedBlock, finalityIssueFlagEth] = await fetchBlocksAndCheckFinality(
     veaOutboxProvider,
     veaInboxProvider,
@@ -53,11 +59,6 @@ export async function challengeAndResolveClaim({
     blockNumberOutboxLowerBound = ethFinalizedBlock.number - Math.ceil(epochPeriod / secondsPerSlotEth);
   }
   const ethBlockTag = finalityIssueFlagEth ? "finalized" : "latest";
-  const claim = await fetchClaim(veaOutbox, veaOutboxProvider, epoch, blockNumberOutboxLowerBound, ethBlockTag);
-  if (!claim) {
-    emitter.emit(BotEvents.NO_CLAIM, epoch);
-    return null;
-  }
   if (!transactionHandler) {
     transactionHandler = new ArbToEthTransactionHandler(
       epoch,
