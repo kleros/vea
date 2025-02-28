@@ -13,10 +13,9 @@
   },
   "homepage": "https://github.com/kleros/vea#readme",
   "license": "MIT",
-  "packageManager": "yarn@4.2.2",
   "volta": {
-    "node": "18.20.4",
-    "yarn": "4.2.2"
+    "node": "18.20.7",
+    "yarn": "4.6.0"
   },
   "alias": {
     "~": "./",
@@ -83,7 +82,6 @@
     "@wagmi/chains": "^1.8.0",
     "@wagmi/core": "^2.10.2",
     "core-js": "^3.30.1",
-    "ethers": "^5.7.2",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
     "react": "^18.3.1",

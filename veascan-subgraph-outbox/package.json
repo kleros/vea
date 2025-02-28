@@ -1,13 +1,12 @@
 {
   "name": "@kleros/veascan-subgraph-outbox",
   "license": "MIT",
-  "packageManager": "yarn@4.2.2",
   "engines": {
     "node": ">=18.0.0"
   },
   "volta": {
-    "node": "18.20.3",
-    "yarn": "4.2.2"
+    "node": "18.20.7",
+    "yarn": "4.6.0"
   },
   "scripts": {
     "update:sepolia": "./scripts/update.sh sepolia sepolia ArbToEthDevnet",

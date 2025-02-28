@@ -1,13 +1,12 @@
 {
   "name": "@kleros/vea-validator-cli",
   "license": "MIT",
-  "packageManager": "yarn@4.2.2",
   "engines": {
     "node": ">=18.0.0"
   },
   "volta": {
-    "node": "18.20.3",
-    "yarn": "4.2.2"
+    "node": "18.20.7",
+    "yarn": "4.6.0"
   },
   "scripts": {
     "start": "npx ts-node ./src/watcher.ts",
@@ -18,7 +17,7 @@
     "test": "jest --coverage"
   },
   "dependencies": {
-    "@arbitrum/sdk": "4.0.1",
+    "@arbitrum/sdk": "4.0.3",
     "@flashbots/ethers-provider-bundle": "^0.6.2",
     "@kleros/vea-contracts": "workspace:^",
     "@typechain/ethers-v6": "^0.5.1",
