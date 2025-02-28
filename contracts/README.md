@@ -10,18 +10,23 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 #### Sepolia
 
+- [RouterArbToGnosisDevnet](https://sepolia.etherscan.io/address/0xA699e7246D7AF936752789408A071805CC8c99c3)
+- [RouterArbToGnosisTestnet](https://sepolia.etherscan.io/address/0x22d70804d4Ef5BB206C6B39e3267DFe8a0f97d27)
 - [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0xb8BF3B6bd3E1a0Cc9E2dB77dd492503310514674)
+- [VeaOutboxArbToEthTestnet](https://sepolia.etherscan.io/address/0x209BFdC6B7c66b63A8382196Ba3d06619d0F12c9)
 
 #### Arbitrum Sepolia
 
 - [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0x0B5851fE2a931F619F73E739E5435C43976f1D68)
+- [VeaInboxArbToEthTestnet](https://sepolia.arbiscan.io/address/0xE12daFE59Bc3A996362d54b37DFd2BA9279cAd06)
+- [VeaInboxArbToGnosisDevnet](https://sepolia.arbiscan.io/address/0x496df82A2fE2f4aa6903C8bdcE759a94505E7D0c)
+- [VeaInboxArbToGnosisTestnet](https://sepolia.arbiscan.io/address/0x854374483572FFcD4d0225290346279d0718240b)
 
 #### Chiado
 
 - [VeaInboxGnosisToArbDevnet](https://blockscout.com/gnosis/chiado/address/0xc0804E4FcEEfD958050356A429DAaaA71aA39385)
-- [VeaInboxGnosisToArbTestnet](https://blockscout.com/gnosis/chiado/address/0xC21c20a719fAc23c54c336FA0E16a0CFdC4baA00)
-- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0x9481b3A49ac67d03D9022E6200eFD81850BADDB4)
-- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0x931FA807020231bCE1340Be8E1e5054207BbAFEd)
+- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xAebcedf346f168E5CEaB7Cd367118d2176486ad7)
+- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0x2f1788F7B74e01c4C85578748290467A5f063B0b)
 
 ## Getting Started
 
