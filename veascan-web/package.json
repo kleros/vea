@@ -14,7 +14,7 @@
   "homepage": "https://github.com/kleros/vea#readme",
   "license": "MIT",
   "volta": {
-    "node": "18.20.7",
+    "node": "22.14.0",
     "yarn": "4.6.0"
   },
   "alias": {

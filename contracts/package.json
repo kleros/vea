@@ -22,7 +22,7 @@
     "node": ">=18.0.0"
   },
   "volta": {
-    "node": "18.20.7",
+    "node": "22.14.0",
     "yarn": "4.6.0"
   },
   "publishConfig": {
