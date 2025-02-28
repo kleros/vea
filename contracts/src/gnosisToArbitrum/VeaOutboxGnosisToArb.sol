@@ -80,11 +80,11 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
 
     /// @dev This event indicates the sequencer delay limit updated.
     /// @param _newSequencerDelayLimit The new max sequencer past timestamping power.
-    event sequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
+    event SequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
 
     /// @dev This event indicates the sequencer futue limit updated.
     /// @param _newSequencerFutureLimit The new max sequencer future timestamping power.
-    event sequencerFutureLimitUpdateReceived(uint256 _newSequencerFutureLimit);
+    event SequencerFutureLimitUpdateReceived(uint256 _newSequencerFutureLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -157,7 +157,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (sequencerFutureLimit != _newSequencerFutureLimit) {
             sequencerFutureLimit = _newSequencerFutureLimit;
             timestampFutureUpdated = _timestamp;
-            emit sequencerFutureLimitUpdateReceived(_newSequencerFutureLimit);
+            emit SequencerFutureLimitUpdateReceived(_newSequencerFutureLimit);
         }
     }
 
@@ -176,7 +176,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (sequencerDelayLimit != _newSequencerDelayLimit) {
             sequencerDelayLimit = _newSequencerDelayLimit;
             timestampDelayUpdated = _timestamp;
-            emit sequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
+            emit SequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
         }
     }
 

@@ -86,11 +86,11 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
 
     /// @dev This event indicates the sequencer limit updated.
     /// @param _newSequencerDelayLimit The new sequencer delay limit.
-    event sequencerDelayLimitUpdated(uint256 _newSequencerDelayLimit);
+    event SequencerDelayLimitUpdated(uint256 _newSequencerDelayLimit);
 
     /// @dev This event indicates that a request to decrease the sequencer limit has been made.
     /// @param _requestedSequencerDelayLimit The new sequencer delay limit requested.
-    event sequencerDelayLimitDecreaseRequested(uint256 _requestedSequencerDelayLimit);
+    event SequencerDelayLimitDecreaseRequested(uint256 _requestedSequencerDelayLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -158,7 +158,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         if (newSequencerDelayLimit > sequencerDelayLimit) {
             // For sequencerDelayLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
             sequencerDelayLimit = newSequencerDelayLimit;
-            emit sequencerDelayLimitUpdated(newSequencerDelayLimit);
+            emit SequencerDelayLimitUpdated(newSequencerDelayLimit);
         } else if (newSequencerDelayLimit < sequencerDelayLimit) {
             require(
                 sequencerDelayLimitDecreaseRequest.timestamp == 0,
@@ -170,7 +170,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
                 timestamp: block.timestamp
             });
 
-            emit sequencerDelayLimitDecreaseRequested(newSequencerDelayLimit);
+            emit SequencerDelayLimitDecreaseRequested(newSequencerDelayLimit);
         }
     }
 
@@ -190,7 +190,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         // check the request is still consistent with the arbiturm bridge
         if (currentsequencerDelayLimit == requestedsequencerDelayLimit) {
             sequencerDelayLimit = requestedsequencerDelayLimit;
-            emit sequencerDelayLimitUpdated(requestedsequencerDelayLimit);
+            emit SequencerDelayLimitUpdated(requestedsequencerDelayLimit);
         }
     }
 

@@ -3628,7 +3628,7 @@ __metadata:
     mocha: "npm:^10.2.0"
     node-fetch: "npm:^3.3.2"
     shelljs: "npm:^0.8.5"
-    solhint: "npm:^3.6.2"
+    solhint: "npm:^5.0.5"
     solidity-coverage: "npm:^0.8.14"
     ts-node: "npm:^10.9.2"
     typechain: "npm:^8.3.2"
@@ -5767,15 +5767,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solidity-parser/parser@npm:^0.16.0":
-  version: 0.16.2
-  resolution: "@solidity-parser/parser@npm:0.16.2"
-  dependencies:
-    antlr4ts: "npm:^0.5.0-alpha.4"
-  checksum: 10/a95b0c45331623e587e938e69d49832814ab8867371bd58f9946346b99a18705ee47b98a1006c3da6dae33ec8c8c1bf7d203a4acfa1ced0bfd68632acf2cd19c
-  languageName: node
-  linkType: hard
-
 "@solidity-parser/parser@npm:^0.18.0":
   version: 0.18.0
   resolution: "@solidity-parser/parser@npm:0.18.0"
@@ -7235,19 +7226,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"antlr4@npm:^4.11.0, antlr4@npm:^4.13.1-patch-1":
+"antlr4@npm:^4.13.1-patch-1":
   version: 4.13.2
   resolution: "antlr4@npm:4.13.2"
   checksum: 10/23ab4742ec937adaaf20d13228c8cca58638e1aafeb28919bdeb4860776a403d0c7eb85a3f07fadc27fc03f773eed6bcc82bd8369b9d0e258e6502ba514cf87e
-  languageName: node
-  linkType: hard
-
-"antlr4ts@npm:^0.5.0-alpha.4":
-  version: 0.5.0-dev
-  resolution: "antlr4ts@npm:0.5.0-dev"
-  dependencies:
-    source-map-support: "npm:^0.5.16"
-  checksum: 10/a95a061fb2fc9e2a0cd065e112fbc3fb899f408feace51249367051711b2255488b4e89b5912a706080f807c72484499e0f61f6a782391ecaba39c556d479f55
   languageName: node
   linkType: hard
 
@@ -20226,37 +20208,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"solhint@npm:^3.6.2":
-  version: 3.6.2
-  resolution: "solhint@npm:3.6.2"
-  dependencies:
-    "@solidity-parser/parser": "npm:^0.16.0"
-    ajv: "npm:^6.12.6"
-    antlr4: "npm:^4.11.0"
-    ast-parents: "npm:^0.0.1"
-    chalk: "npm:^4.1.2"
-    commander: "npm:^10.0.0"
-    cosmiconfig: "npm:^8.0.0"
-    fast-diff: "npm:^1.2.0"
-    glob: "npm:^8.0.3"
-    ignore: "npm:^5.2.4"
-    js-yaml: "npm:^4.1.0"
-    lodash: "npm:^4.17.21"
-    pluralize: "npm:^8.0.0"
-    prettier: "npm:^2.8.3"
-    semver: "npm:^7.5.2"
-    strip-ansi: "npm:^6.0.1"
-    table: "npm:^6.8.1"
-    text-table: "npm:^0.2.0"
-  dependenciesMeta:
-    prettier:
-      optional: true
-  bin:
-    solhint: solhint.js
-  checksum: 10/3ee71c3e2363c046b2fe4379d8cd16283e2fd5c8e07d6200b324cd82c0f22c4765cecb9b0a3c9a8097158810b4f34c4a2320b0ad1f13343035f9cd8cc16e5a41
-  languageName: node
-  linkType: hard
-
 "solhint@npm:^5.0.2":
   version: 5.0.3
   resolution: "solhint@npm:5.0.3"
@@ -20286,6 +20237,38 @@ __metadata:
   bin:
     solhint: solhint.js
   checksum: 10/87bc03fce019a3b3443a37a1bdaaabcec9a19730175d306b1c21109dcc612a520eb710ab746850505494b509156dd3bcf21d77fdb176abd57d4d4e6ca76cd85e
+  languageName: node
+  linkType: hard
+
+"solhint@npm:^5.0.5":
+  version: 5.0.5
+  resolution: "solhint@npm:5.0.5"
+  dependencies:
+    "@solidity-parser/parser": "npm:^0.19.0"
+    ajv: "npm:^6.12.6"
+    antlr4: "npm:^4.13.1-patch-1"
+    ast-parents: "npm:^0.0.1"
+    chalk: "npm:^4.1.2"
+    commander: "npm:^10.0.0"
+    cosmiconfig: "npm:^8.0.0"
+    fast-diff: "npm:^1.2.0"
+    glob: "npm:^8.0.3"
+    ignore: "npm:^5.2.4"
+    js-yaml: "npm:^4.1.0"
+    latest-version: "npm:^7.0.0"
+    lodash: "npm:^4.17.21"
+    pluralize: "npm:^8.0.0"
+    prettier: "npm:^2.8.3"
+    semver: "npm:^7.5.2"
+    strip-ansi: "npm:^6.0.1"
+    table: "npm:^6.8.1"
+    text-table: "npm:^0.2.0"
+  dependenciesMeta:
+    prettier:
+      optional: true
+  bin:
+    solhint: solhint.js
+  checksum: 10/07cce3796e0123fda1e27bb0f81fb94290fb0d4bddc703a10236c81403a3a09fe1bfcbf37c583590778509546b92d43c0799456b4ae9dd183233fd8fe6e88554
   languageName: node
   linkType: hard
 
@@ -20330,7 +20313,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"source-map-support@npm:0.5.21, source-map-support@npm:^0.5.13, source-map-support@npm:^0.5.16, source-map-support@npm:^0.5.20":
+"source-map-support@npm:0.5.21, source-map-support@npm:^0.5.13, source-map-support@npm:^0.5.20":
   version: 0.5.21
   resolution: "source-map-support@npm:0.5.21"
   dependencies:

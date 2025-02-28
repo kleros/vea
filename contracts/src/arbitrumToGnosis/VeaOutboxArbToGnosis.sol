@@ -82,7 +82,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     /// @dev This event indicates the sequencer limit updated.
     /// @param _newSequencerDelayLimit The new sequencer delay limit.
-    event sequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
+    event SequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -164,7 +164,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             // If _newSequencerDelayLimit > timeout * epochPeriod, then the bridge will shutdown.
             sequencerDelayLimit = _newSequencerDelayLimit;
             timestampDelayUpdated = _timestamp;
-            emit sequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
+            emit SequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
         }
     }
 

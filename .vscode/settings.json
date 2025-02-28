@@ -5,8 +5,10 @@
     "Devnet",
     "IERC",
     "kleros",
+    "merkle",
     "stateroot",
-    "typechain"
+    "typechain",
+    "veascan"
   ],
   "prettier.configPath": ".prettierrc.json",
   "eslint.alwaysShowStatus": true,

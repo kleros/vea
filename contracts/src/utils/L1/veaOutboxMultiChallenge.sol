@@ -10,7 +10,7 @@ pragma solidity 0.8.24;
 
 /// @dev Vea Inbox Calldata Optimization.
 ///      No function selector required, only fallback function.
-contract veaOutboxMultiChallenge {
+contract VeaOutboxMultiChallenge {
     address public immutable veaOutboxOnL1;
     uint256 public immutable deposit;
 

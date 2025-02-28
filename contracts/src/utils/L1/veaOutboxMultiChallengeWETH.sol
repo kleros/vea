@@ -12,7 +12,7 @@ import "../../interfaces/tokens/gnosis/IWETH.sol";
 
 /// @dev Vea Inbox Calldata Optimization.
 ///      No function selector required, only fallback function.
-contract veaOutboxMultiChallengeWETH {
+contract VeaOutboxMultiChallengeWETH {
     address public immutable veaOutboxOnL1;
     IWETH public immutable weth;
     uint256 public immutable deposit;
