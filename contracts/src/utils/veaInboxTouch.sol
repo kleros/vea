@@ -12,7 +12,7 @@ import "../interfaces/inboxes/IVeaInbox.sol";
 
 /// @dev Vea Inbox Calldata Optimization.
 ///      No function selector required, only fallback function.
-contract veaInboxTouch {
+contract VeaInboxTouch {
     IVeaInbox public immutable veaInbox;
 
     constructor(IVeaInbox _veaInbox) {

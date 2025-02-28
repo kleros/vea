@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/5daaf60d11ee2075260d0f3adfb22b1c536db983/contracts/token/ERC20/StandardBurnableToken.sol
 // implementation: https://gnosisscan.io/address/0xf8d1677c8a0c961938bf2f9adc3f3cfda759a9d9#code
 // proxy: https://gnosisscan.io/token/0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1#readProxyContract
