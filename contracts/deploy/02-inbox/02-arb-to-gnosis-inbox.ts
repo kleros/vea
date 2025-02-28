@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import getContractAddress from "../../deploy-helpers/getContractAddress";
+import getContractAddress from "../utils/getContractAddress";
 
 enum SenderChains {
   ARBITRUM = 42161,

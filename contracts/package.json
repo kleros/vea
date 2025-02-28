@@ -31,7 +31,7 @@
   },
   "scripts": {
     "build": "hardhat compile",
-    "clean": "hardhat clean",
+    "clean": "hardhat clean && rm -rf dist typechain-types",
     "check": "hardhat check",
     "test": "TS_NODE_TRANSPILE_ONLY=1 hardhat test",
     "lint": "solhint --fix src/**/*.sol",
@@ -62,9 +62,10 @@
     "size": "hardhat size-contracts --no-compile",
     "watch": "hardhat watch",
     "docgen": "hardhat docgen",
-    "release:patch": "scripts/publish.sh patch",
-    "release:minor": "scripts/publish.sh minor",
-    "release:major": "scripts/publish.sh major"
+    "release:patch": "yarn version patch && yarn clean && yarn build && yarn npm publish",
+    "release:minor": "yarn version minor && yarn clean && yarn build && yarn npm publish",
+    "release:major": "yarn version major && yarn clean && yarn build && yarn npm publish",
+    "prepublish": "./scripts/prepublish.sh"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
@@ -95,11 +96,24 @@
     "json-schema": "^0.4.0",
     "mocha": "^10.2.0",
     "node-fetch": "^3.3.2",
-    "shelljs": "^0.8.5",
     "solhint": "^5.0.5",
     "solidity-coverage": "^0.8.14",
     "ts-node": "^10.9.2",
     "typechain": "^8.3.2",
     "typescript": "^4.9.5"
-  }
+  },
+  "files": [
+    "src",
+    "deployments",
+    "typechain-types",
+    "!hardhat.config.*",
+    "!src/test",
+    "!typechain-types/test",
+    "!typechain-types/factories/test",
+    "!test",
+    "!deploy",
+    "!deployments/localhost",
+    "!deployments/hardhat",
+    "!deployments/**/solcInputs"
+  ]
 }

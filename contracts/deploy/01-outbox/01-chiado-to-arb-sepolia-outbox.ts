@@ -1,7 +1,7 @@
 import { parseEther } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import getContractAddress from "../../deploy-helpers/getContractAddress";
+import getContractAddress from "../utils/getContractAddress";
 import { ethers } from "hardhat";
 
 enum ReceiverChains {

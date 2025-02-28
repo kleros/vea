@@ -4,24 +4,18 @@
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
-    "outDir": "dist",
+    "outDir": "typechain-types",
     "declaration": true,
     "sourceMap": true,
     "noImplicitAny": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
   "include": [
-    "./src",
-    "./scripts",
-    "./test",
-    "./typechain-types",
-    "./deploy"
+    "./typechain-types"
   ],
   "exclude": [
     "node_modules",
     "dist"
-  ],
-  "files": [
-    "./hardhat.config.ts"
   ]
 }
