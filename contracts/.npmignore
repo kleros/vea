@@ -1,6 +1,0 @@
-.env*
-scripts
-deploy
-tsconfig.json
-test
-hardhat.config.*
