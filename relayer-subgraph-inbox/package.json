@@ -1,6 +1,6 @@
 {
   "name": "@kleros/vea-relayer-subgraph-inbox",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
@@ -10,10 +10,11 @@
     "yarn": "4.6.0"
   },
   "scripts": {
-    "echo": "echo $npm_package_version",
+    "update:arbitrum-sepolia": "./scripts/update.sh arbitrumSepolia arbitrum-sepolia",
+    "clean": "graph clean; rm -f subgraph.yaml.bak.*",
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy vea-inbox-arb-sepolia-devnet -l v$npm_package_version",
+    "deploy:arbitrum-sepolia": "graph deploy vea-inbox-arb-sepolia -l v$npm_package_version",
     "create-local": "graph create --node http://localhost:8020/ kleros/vea-validator-inbox",
     "remove-local": "graph remove --node http://localhost:8020/ kleros/vea-validator-inbox",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/vea-validator-inbox",
