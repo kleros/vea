@@ -1,8 +1,6 @@
-/*
- * @author Hamdi Allam hamdi.allam97@gmail.com
- * Please reach out with any questions or concerns
- */
-pragma solidity ^0.8.0;
+/// @author Hamdi Allam hamdi.allam97@gmail.com
+/// Please reach out with any questions or concerns
+pragma solidity 0.8.24;
 
 library RLPReader {
     uint8 constant STRING_SHORT_START = 0x80;
@@ -21,11 +19,9 @@ library RLPReader {
         uint256 nextPtr; // Position of the next item in the list.
     }
 
-    /*
-     * @dev Returns the next element in the iteration. Reverts if it has not next element.
-     * @param self The iterator.
-     * @return The next element in the iteration.
-     */
+    /// @dev Returns the next element in the iteration. Reverts if it has not next element.
+    /// @param self The iterator.
+    /// @return The next element in the iteration.
     function next(Iterator memory self) internal pure returns (RLPItem memory) {
         require(hasNext(self));
 
@@ -36,19 +32,15 @@ library RLPReader {
         return RLPItem(itemLength, ptr);
     }
 
-    /*
-     * @dev Returns true if the iteration has more elements.
-     * @param self The iterator.
-     * @return true if the iteration has more elements.
-     */
+    /// @dev Returns true if the iteration has more elements.
+    /// @param self The iterator.
+    /// @return true if the iteration has more elements.
     function hasNext(Iterator memory self) internal pure returns (bool) {
         RLPItem memory item = self.item;
         return self.nextPtr < item.memPtr + item.len;
     }
 
-    /*
-     * @param item RLP encoded bytes
-     */
+    /// @param item RLP encoded bytes
     function toRlpItem(bytes memory item) internal pure returns (RLPItem memory) {
         uint256 memPtr;
         assembly {
@@ -58,11 +50,9 @@ library RLPReader {
         return RLPItem(item.length, memPtr);
     }
 
-    /*
-     * @dev Create an iterator. Reverts if item is not a list.
-     * @param self The RLP item.
-     * @return An 'Iterator' over the item.
-     */
+    /// @dev Create an iterator. Reverts if item is not a list.
+    /// @param self The RLP item.
+    /// @return An 'Iterator' over the item.
     function iterator(RLPItem memory self) internal pure returns (Iterator memory) {
         require(isList(self));
 
@@ -70,23 +60,17 @@ library RLPReader {
         return Iterator(self, ptr);
     }
 
-    /*
-     * @param item RLP encoded bytes
-     */
+    /// @param item RLP encoded bytes
     function rlpLen(RLPItem memory item) internal pure returns (uint256) {
         return item.len;
     }
 
-    /*
-     * @param item RLP encoded bytes
-     */
+    /// @param item RLP encoded bytes
     function payloadLen(RLPItem memory item) internal pure returns (uint256) {
         return item.len - _payloadOffset(item.memPtr);
     }
 
-    /*
-     * @param item RLP encoded list in bytes
-     */
+    /// @param item RLP encoded list in bytes
     function toList(RLPItem memory item) internal pure returns (RLPItem[] memory) {
         require(isList(item));
 
@@ -118,10 +102,8 @@ library RLPReader {
         return true;
     }
 
-    /*
-     * @dev A cheaper version of keccak256(toRlpBytes(item)) that avoids copying memory.
-     * @return keccak256 hash of RLP encoded bytes.
-     */
+    /// @dev A cheaper version of keccak256(toRlpBytes(item)) that avoids copying memory.
+    /// @return keccak256 hash of RLP encoded bytes.
     function rlpBytesKeccak256(RLPItem memory item) internal pure returns (bytes32) {
         uint256 ptr = item.memPtr;
         uint256 len = item.len;
@@ -139,10 +121,8 @@ library RLPReader {
         return (memPtr, len);
     }
 
-    /*
-     * @dev A cheaper version of keccak256(toBytes(item)) that avoids copying memory.
-     * @return keccak256 hash of the item payload.
-     */
+    /// @dev A cheaper version of keccak256(toBytes(item)) that avoids copying memory.
+    /// @return keccak256 hash of the item payload.
     function payloadKeccak256(RLPItem memory item) internal pure returns (bytes32) {
         (uint256 memPtr, uint256 len) = payloadLocation(item);
         bytes32 result;
@@ -152,7 +132,7 @@ library RLPReader {
         return result;
     }
 
-    /** RLPItem conversions into data types **/
+    // RLPItem conversions into data types
 
     // @returns raw rlp encoding in bytes
     function toRlpBytes(RLPItem memory item) internal pure returns (bytes memory) {
@@ -237,9 +217,7 @@ library RLPReader {
         return result;
     }
 
-    /*
-     * Private Helpers
-     */
+    /// Private Helpers
 
     // @return number of payload items inside an encoded list.
     function numItems(RLPItem memory item) private pure returns (uint256) {
@@ -270,7 +248,6 @@ library RLPReader {
             assembly {
                 let byteLen := sub(byte0, 0xb7) // # of bytes the actual length is
                 memPtr := add(memPtr, 1) // skip over the first byte
-                /* 32 byte word size */
                 let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) // right shifting to get the len
                 itemLen := add(dataLen, add(byteLen, 1))
             }
@@ -304,16 +281,10 @@ library RLPReader {
         else return byte0 - (LIST_LONG_START - 1) + 1;
     }
 
-    /*
-     * @param src Pointer to source
-     * @param dest Pointer to destination
-     * @param len Amount of memory to copy from the source
-     */
-    function copy(
-        uint256 src,
-        uint256 dest,
-        uint256 len
-    ) private pure {
+    /// @param src Pointer to source
+    /// @param dest Pointer to destination
+    /// @param len Amount of memory to copy from the source
+    function copy(uint256 src, uint256 dest, uint256 len) private pure {
         if (len == 0) return;
 
         // copy as many word sizes as possible
@@ -329,7 +300,7 @@ library RLPReader {
         if (len == 0) return;
 
         // left over bytes. Mask is used to remove unwanted bytes from the word
-        uint256 mask = 256**(WORD_SIZE - len) - 1;
+        uint256 mask = 256 ** (WORD_SIZE - len) - 1;
 
         assembly {
             let srcpart := and(mload(src), not(mask)) // zero out src

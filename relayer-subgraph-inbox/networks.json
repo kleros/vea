@@ -1,0 +1,8 @@
+{
+  "arbitrum-sepolia": {
+    "VeaInbox": {
+      "address": "0x77e95F54032f467eC45c48C6affc203f93858783",
+      "startBlock": 18210847
+    }
+  }
+}

@@ -1,61 +1,45 @@
 // SPDX-License-Identifier: MIT
 
-/**
- *  @authors: [@shotaronowhere, @adi274]
- *  @reviewers: []
- *  @auditors: []
- *  @bounties: []
- *  @deployments: []
- */
+/// @custom:authors: [@shotaronowhere, @adi274]
+/// @custom:reviewers: []
+/// @custom:auditors: []
+/// @custom:bounties: []
+/// @custom:deployments: []
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
 
 import "./IReceiverGatewayMock.sol";
 
-/**
- * Receiver Gateway Mock
- * Counterpart of `SenderGatewayMock`
- */
+/// Receiver Gateway Mock
+/// Counterpart of `SenderGatewayMock`
 contract ReceiverGatewayMock is IReceiverGatewayMock {
-    IFastBridgeReceiver public immutable fastBridgeReceiver;
+    address public immutable veaOutbox;
     address public immutable override senderGateway;
-    uint256 public immutable override senderChainID;
 
     uint256 public messageCount;
     uint256 public data;
 
-    constructor(
-        IFastBridgeReceiver _fastBridgeReceiver,
-        address _senderGateway,
-        uint256 _senderChainID
-    ) {
-        fastBridgeReceiver = _fastBridgeReceiver;
+    constructor(address _veaOutbox, address _senderGateway) {
+        veaOutbox = _veaOutbox;
         senderGateway = _senderGateway;
-        senderChainID = _senderChainID;
     }
 
-    modifier onlyFromFastBridge() {
-        require(address(fastBridgeReceiver) == msg.sender, "Fast Bridge only.");
+    modifier onlyFromAuthenticatedVeaSender(address messageSender) {
+        require(veaOutbox == msg.sender, "Vea Bridge only.");
+        require(messageSender == senderGateway, "Only the sender gateway is allowed.");
         _;
     }
 
-    function receiveMessage(uint256 _data) external override onlyFromFastBridge {
-        _receiveMessage(_data);
-    }
-
-    /**
-     * Receive the message from the sender gateway.
-     */
-    function receiveMessage(address _messageSender) external onlyFromFastBridge {
-        require(_messageSender == senderGateway, "Only the sender gateway is allowed.");
+    /// Receive the message from the sender gateway.
+    function receiveMessage(address messageSender) external onlyFromAuthenticatedVeaSender(messageSender) {
         _receiveMessage();
     }
 
-    /**
-     * Receive the message from the sender gateway.
-     */
-    function receiveMessage(address _messageSender, uint256 _data) external onlyFromFastBridge {
-        require(_messageSender == senderGateway, "Only the sender gateway is allowed.");
+    /// Receive the message from the sender gateway.
+    function receiveMessage(
+        address messageSender,
+        uint256 _data
+    ) external onlyFromAuthenticatedVeaSender(messageSender) {
         _receiveMessage(_data);
     }
 

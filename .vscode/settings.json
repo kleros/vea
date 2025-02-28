@@ -1,12 +1,17 @@
 {
-  "solidity.compileUsingRemoteVersion": "v0.8.10+commit.fc410830",
+  "solidity.compileUsingRemoteVersion": "v0.8.18+commit.87f61d96",
   "cSpell.words": [
     "arbitrum",
+    "Devnet",
     "IERC",
     "kleros",
+    "stateroot",
     "typechain"
   ],
   "prettier.configPath": ".prettierrc.json",
   "eslint.alwaysShowStatus": true,
-  "eslint.packageManager": "yarn"
+  "eslint.packageManager": "yarn",
+  "shellcheck.customArgs": [
+    "--external-sources"
+  ]
 }

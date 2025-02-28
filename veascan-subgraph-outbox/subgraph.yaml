@@ -1,0 +1,33 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: VeaOutbox
+    network: sepolia
+    source:
+      address: "0xb8BF3B6bd3E1a0Cc9E2dB77dd492503310514674"
+      abi: VeaOutbox
+      startBlock: 6458841
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Challenged
+        - Claimed
+        - MessageRelayed
+        - Verified
+      abis:
+        - name: VeaOutbox
+          file: ../contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json
+      eventHandlers:
+        - event: Challenged(indexed uint256,indexed address)
+          handler: handleChallenged
+        - event: Claimed(indexed address,indexed uint256,bytes32)
+          handler: handleClaimed
+        - event: MessageRelayed(uint64)
+          handler: handleMessageRelayed
+        - event: Verified(uint256)
+          handler: handleVerified
+      file: ./src/VeaOutbox.ts

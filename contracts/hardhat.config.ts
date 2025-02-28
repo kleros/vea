@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomiclabs/hardhat-ethers";
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-ethers";
 import "@typechain/hardhat";
 import "hardhat-deploy-tenderly";
 import "hardhat-gas-reporter";
@@ -9,7 +9,6 @@ import "solidity-coverage";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 import "hardhat-watcher";
-import "hardhat-docgen";
 import "hardhat-contract-sizer";
 import "hardhat-tracer";
 
@@ -17,7 +16,7 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.9",
+    version: "0.8.24",
     settings: {
       optimizer: {
         enabled: true,
@@ -56,19 +55,21 @@ const config: HardhatUserConfig = {
       tags: ["test", "local"],
     },
 
-    // Sender chain ---------------------------------------------------------------------------------
-    arbitrumGoerli: {
-      chainId: 421613,
-      url: "https://goerli-rollup.arbitrum.io/rpc",
+    // INBOX ---------------------------------------------------------------------------------------
+    arbitrumSepolia: {
+      chainId: 421614,
+      url: "https://sepolia-rollup.arbitrum.io/rpc",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["staging", "sender", "layer2"],
+      tags: ["staging", "inbox", "layer2"],
       companionNetworks: {
-        receiver: "chiado",
+        sepolia: "sepolia",
+        chiado: "chiado",
       },
       verify: {
         etherscan: {
+          apiUrl: "https://api-sepolia.arbiscan.io",
           apiKey: process.env.ARBISCAN_API_KEY,
         },
       },
@@ -79,42 +80,61 @@ const config: HardhatUserConfig = {
       accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["production", "sender", "layer2"],
+      tags: ["production", "inbox", "layer2"],
       companionNetworks: {
-        receiver: "mainnet",
+        mainnet: "mainnet",
+        gnosischain: "gnosischain",
       },
       verify: {
         etherscan: {
+          apiUrl: "https://api.arbiscan.io/api",
           apiKey: process.env.ARBISCAN_API_KEY,
         },
       },
     },
-    // Receiver chain ---------------------------------------------------------------------------------
+    // OUTBOX ---------------------------------------------------------------------------------------
     chiado: {
       chainId: 10200,
       url: "https://rpc.chiadochain.net",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["staging", "receiver", "layer1"],
+      tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
-        sender: "arbitrumGoerli",
+        arbitrumSepolia: "arbitrumSepolia",
       },
       verify: {
         etherscan: {
-          apiUrl: "https://blockscout.com/gnosis/chiado",
+          apiUrl: "https://gnosis-chiado.blockscout.com",
         },
       },
     },
-    goerli: {
-      chainId: 5,
-      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    gnosischain: {
+      chainId: 100,
+      url: "https://rpc.gnosischain.net",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["staging", "receiver", "layer1"],
+      tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
-        sender: "arbitrumGoerli",
+        arbitrumSepolia: "arbitrumSepolia",
+      },
+      verify: {
+        etherscan: {
+          apiUrl: "https://blockscout.com/gnosis",
+        },
+      },
+    },
+    sepolia: {
+      chainId: 11155111,
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      live: true,
+      saveDeployments: true,
+      tags: ["staging", "outbox", "layer1"],
+      companionNetworks: {
+        arbitrumSepolia: "arbitrumSepolia",
+        chiado: "chiado",
       },
     },
     mainnet: {
@@ -123,9 +143,10 @@ const config: HardhatUserConfig = {
       accounts: process.env.MAINNET_PRIVATE_KEY !== undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
       live: true,
       saveDeployments: true,
-      tags: ["production", "receiver", "layer1"],
+      tags: ["production", "outbox", "layer1"],
       companionNetworks: {
-        sender: "arbitrum",
+        arbitrum: "arbitrum",
+        gnosischain: "gnosischain",
       },
     },
   },
@@ -165,11 +186,6 @@ const config: HardhatUserConfig = {
       ],
       files: ["./test/**/*", "./src/**/*"],
     },
-  },
-  docgen: {
-    path: "./docs",
-    clear: true,
-    runOnCompile: false,
   },
   tenderly: {
     project: process.env.TENDERLY_PROJECT !== undefined ? process.env.TENDERLY_PROJECT : "kleros-v2",

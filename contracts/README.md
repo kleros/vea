@@ -8,13 +8,20 @@ Refresh the list of deployed contracts by running `./scripts/generateDeployments
 
 ### Current version
 
-#### Arbitrum Goerli
+#### Sepolia
 
-- [FastBridgeSenderToGnosis](https://goerli.arbiscan.io/address/0xd599f19e8e2b5CE6ad94328be138B11bA97A7F21)
+- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0xb8BF3B6bd3E1a0Cc9E2dB77dd492503310514674)
+
+#### Arbitrum Sepolia
+
+- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0x0B5851fE2a931F619F73E739E5435C43976f1D68)
 
 #### Chiado
 
-- [FastBridgeReceiverOnGnosis](https://blockscout.com/gnosis/chiado/address/0x26858D60FE92b50b34e236B46874e02724344275)
+- [VeaInboxGnosisToArbDevnet](https://blockscout.com/gnosis/chiado/address/0xc0804E4FcEEfD958050356A429DAaaA71aA39385)
+- [VeaInboxGnosisToArbTestnet](https://blockscout.com/gnosis/chiado/address/0xC21c20a719fAc23c54c336FA0E16a0CFdC4baA00)
+- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0x9481b3A49ac67d03D9022E6200eFD81850BADDB4)
+- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0x931FA807020231bCE1340Be8E1e5054207BbAFEd)
 
 ## Getting Started
 
@@ -39,16 +46,10 @@ yarn build
 ### Run Linter on Files
 
 ```bash
-yarn lint
+yarn check
 ```
 
-### Fix Linter Issues on Files
-
-```bash
-yarn fix
-```
-
-### Deploy Instructions
+### Deployment
 
 **NOTICE:** the commands below work only if you are inside the `contracts/` directory.
 
@@ -77,35 +78,34 @@ If some of the constructor parameters (such as the Meta Evidence) needs to chang
 
 #### 2. Deploy to a Local Network
 
-:warning: TODO: OUTDATED, FIX ME
-The complete deployment is multi-chain, so a deployment to the local network can only simulate either the Home chain or the Foreign chain.
-
-**Shell 1: the node**
-
 ```bash
-yarn hardhat node --tags nothing
+yarn start-local
 ```
 
-**Shell 2: the deploy script**
+#### 3. Deploy to Public Networks
+
+##### Testnets
 
 ```bash
-yarn hardhat deploy --network localhost --tags HomeChain
+# arbitrumSepolia -> Sepolia
+yarn deploy --network sepolia --tags ArbSepoliaToSepoliaOutbox
+yarn deploy --network arbitrumSepolia --tags ArbSepoliaToSepoliaInbox
+
+# arbitrumSepolia -> Chiado
+yarn deploy --network chiado --tags ArbSepoliaToChiadoOutbox
+yarn deploy --network arbitrumSepolia --tags ArbSepoliaToChiadoInbox
 ```
 
-#### 3. Deploy to Public Testnets
-
-:warning: TODO: OUTDATED, FIX ME
+##### Mainnets
 
 ```bash
-# Goerli
-yarn hardhat deploy --network arbitrumGoerli --tags Arbitration
-yarn hardhat deploy --network goerli --tags ForeignChain
-yarn hardhat deploy --network arbitrumGoerli --tags HomeChain
+# Arbitrum -> Ethereum
+yarn deploy --network mainnet --tags ArbToEthOutbox
+yarn deploy --network arbitrum --tags ArbToEthInbox
 
-# Rinkeby
-yarn hardhat deploy --network arbitrumRinkeby --tags Arbitration
-yarn hardhat deploy --network rinkeby --tags ForeignChain
-yarn hardhat deploy --network arbitrumRinkeby --tags HomeChain
+# Arbitrum -> Gnosis chain
+yarn deploy --network gnosischain --tags ArbToGnosisOutbox
+yarn deploy --network arbitrum --tags ArbToGnosisInbox
 ```
 
 The deployed addresses should be output to the screen after the deployment is complete.
@@ -113,24 +113,18 @@ If you miss that, you can always go to the `deployments/<network>` directory and
 
 #### Running Test Fixtures
 
-:warning: TODO: OUTDATED, FIX ME
-
-**Shell 1: the node**
-
 ```bash
-yarn hardhat node --tags Arbitration,ForeignGateway,HomeGateway
+yarn test
 ```
 
-**Shell 2: the test script**
-
-```bash
-yarn hardhat test --network localhost test/pre-alpha1/index.ts
-```
-
-#### 4. Verify the Source Code for Contracts
+#### 4. Verify the Source Code
 
 This must be done for each network separately.
 
 ```bash
-yarn hardhat --network <arbitrumGoerli|arbitrumRinkeby|arbitrum|goerli|rinkeby|mainnet> etherscan-verify
+# explorer
+yarn etherscan-verify --network <arbitrumSepolia|arbitrum|sepolia|mainnet|chiado|gnosischain>
+
+# sourcify
+yarn sourcify --network <arbitrumSepolia|arbitrum|sepolia|mainnet|chiado|gnosischain>
 ```

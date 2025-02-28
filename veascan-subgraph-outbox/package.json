@@ -1,0 +1,30 @@
+{
+  "name": "@kleros/veascan-subgraph-outbox",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "volta": {
+    "node": "18.20.7",
+    "yarn": "4.6.0"
+  },
+  "scripts": {
+    "update:sepolia": "./scripts/update.sh sepolia sepolia ArbToEthDevnet",
+    "update:chiado": "./scripts/update.sh chiado chiado ArbToGnosisDevnet",
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy:sepolia": "yarn build:sepolia && yarn graph deploy --studio veascan-outbox-arb-sep-devnet",
+    "build:chiado": "yarn update:chiado && graph build",
+    "deploy:chiado": "yarn build:chiado && goldsky subgraph deploy kleros-veascan-outbox-chiado/latest",
+    "create-local": "graph create --node http://localhost:8020/ kleros/veascan-outbox",
+    "remove-local": "graph remove --node http://localhost:8020/ kleros/veascan-outbox",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/veascan-outbox"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-ts": "^0.35.1"
+  },
+  "devDependencies": {
+    "@goldskycom/cli": "^1.6.0",
+    "@graphprotocol/graph-cli": "^0.73.0"
+  }
+}

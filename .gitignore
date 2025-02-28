@@ -1,3 +1,15 @@
+# misc
+.DS_Store
+.env
+.env.test
+.env.testnet
+.env.devnet
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+
 #------------------------------------
 # FILE GENERATED AS FOLLOWS
 # curl -sL https://www.toptal.com/developers/gitignore/api/vim,node,visualstudiocode,yarn | sed 's|\(!.yarn/cache\)|#\1|' > .gitignore
@@ -198,5 +210,11 @@ tags
 # End of https://www.toptal.com/developers/gitignore/api/vim,node,visualstudiocode,yarn
 
 # subgraph
-subgraph/generated/*
-subgraph/build/*
+veascan-subgraph-outbox/generated/*
+veascan-subgraph-outbox/build/*
+veascan-subgraph-inbox/generated/*
+veascan-subgraph-inbox/build/*
+validator-subgraph-inbox/generated/*
+validator-subgraph-inbox/build/*
+
+cache

@@ -1,0 +1,48 @@
+type _Schema_
+  @fulltext(
+    name: "snapshotQuery"
+    language: en
+    algorithm: rank
+    include: [{ entity: "Snapshot", fields: [{ name: "epochString" }, { name: "stateRootString" }] }]
+  )
+
+type Message @entity {
+  id: ID!
+  txHash: Bytes!
+  timestamp: BigInt!
+  from: Bytes!
+  to: Bytes!
+  snapshot: Snapshot!
+  data: Bytes!
+}
+
+type Snapshot @entity {
+  id: ID!
+  epoch: BigInt
+  epochString: String
+  caller: Bytes
+  txHash: Bytes
+  timestamp: BigInt
+  stateRoot: Bytes
+  stateRootString: String
+  messages: [Message!]! @derivedFrom(field: "snapshot")
+  numberMessages: BigInt!
+  taken: Boolean!
+  resolving: Boolean!
+  fallback: [Fallback!]! @derivedFrom(field: "snapshot")
+}
+
+type Fallback @entity {
+  id: ID!
+  snapshot: Snapshot!
+  executor: Bytes!
+  timestamp: BigInt
+  txHash: Bytes!
+  ticketId: Bytes!
+}
+
+type Ref @entity {
+  id: ID!
+  currentSnapshotIndex: BigInt!
+  nextMessageIndex: BigInt!
+}
