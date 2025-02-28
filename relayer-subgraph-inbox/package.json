@@ -11,10 +11,12 @@
   },
   "scripts": {
     "update:arbitrum-sepolia": "./scripts/update.sh arbitrumSepolia arbitrum-sepolia",
+    "update:arbitrum": "./scripts/update.sh arbitrum arbitrum-one",
     "clean": "graph clean; rm -f subgraph.yaml.bak.*",
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy:arbitrum-sepolia": "graph deploy vea-inbox-arb-sepolia -l v$npm_package_version",
+    "deploy:arbitrum": "graph deploy vea-inbox-arbitrum -l v$npm_package_version",
     "create-local": "graph create --node http://localhost:8020/ kleros/vea-validator-inbox",
     "remove-local": "graph remove --node http://localhost:8020/ kleros/vea-validator-inbox",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/vea-validator-inbox",
