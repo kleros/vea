@@ -24,7 +24,7 @@ const watch = async () => {
 
   // Flashbots provider requires passing in a standard provider
   const flashbotsProvider = await FlashbotsBundleProvider.create(
-    providerEth, // a normal ethers.js provider, to perform gas estimiations and nonce lookups
+    providerEth, // a normal ethers.js provider, to perform gas estimations and nonce lookups
     authSigner, // ethers.js signer wallet, only for signing request payloads, not transactions
     "https://relay-sepolia.flashbots.net/",
     "sepolia"
