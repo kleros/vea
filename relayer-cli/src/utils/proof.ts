@@ -7,14 +7,19 @@ import { getInboxSubgraph } from "../consts/bridgeRoutes";
  * @param nonce The nonce of the message
  * @returns The message id and data to relay
  */
-const getMessageDataToRelay = async (chainId: number, nonce: number, requestGraph: typeof request = request) => {
+const getMessageDataToRelay = async (
+  chainId: number,
+  inbox: string,
+  nonce: number,
+  requestGraph: typeof request = request
+) => {
   try {
     const subgraph = getInboxSubgraph(chainId);
 
     const result = await requestGraph(
       `https://api.studio.thegraph.com/query/${subgraph}`,
       `{
-                messageSents(first: 5, where: {nonce: ${nonce}}) {
+                messageSents(first: 5, where: {nonce: ${nonce}, inbox: "${inbox}"}) {
                 nonce
                 to {
                     id
