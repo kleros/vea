@@ -87,11 +87,11 @@ As long as there is one honest participant running a working implementation of t
 
 - Solidity v0.8
 - Hardhat
-- Ethers v5
+- Ethers v6
 - Chai + Mocha
-- Node v16
+- Node v18
 - Typescript
-- Yarn v3 without [PlugnPlay](https://yarnpkg.com/getting-started/migration/#switching-to-plugnplay)
+- Yarn Berry without [PlugnPlay](https://yarnpkg.com/getting-started/migration/#switching-to-plugnplay)
 
 ## Contributing
 
