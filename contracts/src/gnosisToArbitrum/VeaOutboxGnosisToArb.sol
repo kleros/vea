@@ -245,10 +245,11 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (_epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = _epoch;
             stateRoot = claims[_epoch].stateRoot;
-            emit Verified(_epoch);
         }
 
         claims[_epoch].honest = Party.Claimer;
+
+        emit Verified(_epoch);
     }
 
     /// Note: Access restricted to AMB.
@@ -265,7 +266,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (_epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {
             latestVerifiedEpoch = _epoch;
             stateRoot = _stateRoot;
-            emit Verified(_epoch);
         }
 
         bytes32 claimedStateRoot = claims[_epoch].stateRoot;
@@ -277,6 +277,8 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
                 claims[_epoch].honest = Party.Challenger;
             }
         }
+
+        emit Verified(_epoch);
     }
 
     /// @dev Verifies and relays the message. UNTRUSTED.

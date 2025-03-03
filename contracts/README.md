@@ -23,23 +23,23 @@ Refresh the list of deployed contracts by running `./scripts/populateReadme.sh`.
 
 ### Sepolia
 
-- [RouterArbToGnosisDevnet](https://sepolia.etherscan.io/address/0xA699e7246D7AF936752789408A071805CC8c99c3)
-- [RouterArbToGnosisTestnet](https://sepolia.etherscan.io/address/0x22d70804d4Ef5BB206C6B39e3267DFe8a0f97d27)
-- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0xb8BF3B6bd3E1a0Cc9E2dB77dd492503310514674)
+- [RouterArbToGnosisDevnet](https://sepolia.etherscan.io/address/0xbD6c557295cBDd57e0efC408b20096f3fe55C8a6)
+- [RouterArbToGnosisTestnet](https://sepolia.etherscan.io/address/0x66C85D0375b0CbD1bBeB4F7D5E73c181BAf8454e)
+- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0xb1f5125b52CE23D3763AC1C9ACEf0668825A66c0)
 - [VeaOutboxArbToEthTestnet](https://sepolia.etherscan.io/address/0x209BFdC6B7c66b63A8382196Ba3d06619d0F12c9)
 
 ### Arbitrum Sepolia
 
-- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0x0B5851fE2a931F619F73E739E5435C43976f1D68)
+- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0xF6C5640de593fEf76129F1F1A863F7ddc65776C9)
 - [VeaInboxArbToEthTestnet](https://sepolia.arbiscan.io/address/0xE12daFE59Bc3A996362d54b37DFd2BA9279cAd06)
-- [VeaInboxArbToGnosisDevnet](https://sepolia.arbiscan.io/address/0x496df82A2fE2f4aa6903C8bdcE759a94505E7D0c)
-- [VeaInboxArbToGnosisTestnet](https://sepolia.arbiscan.io/address/0x854374483572FFcD4d0225290346279d0718240b)
+- [VeaInboxArbToGnosisDevnet](https://sepolia.arbiscan.io/address/0xF6286b9C6c7F1B33Ea976FA43434027c7b8421A7)
+- [VeaInboxArbToGnosisTestnet](https://sepolia.arbiscan.io/address/0x62403e9Fbac618301175C89fb21920e4FF235A6a)
 
 ### Chiado
 
 - [VeaInboxGnosisToArbDevnet](https://blockscout.com/gnosis/chiado/address/0xc0804E4FcEEfD958050356A429DAaaA71aA39385)
-- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xAebcedf346f168E5CEaB7Cd367118d2176486ad7)
-- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0x2f1788F7B74e01c4C85578748290467A5f063B0b)
+- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xE24B2838962207F585F4fa5C5bE3e1AcA43a1a1B)
+- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0xb78afF106DcB5fD0768a348a804bbc4DCacB3233)
 
 ## Getting Started
 
