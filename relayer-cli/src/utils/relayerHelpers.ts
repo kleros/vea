@@ -1,8 +1,11 @@
 import * as fs from "fs";
+import * as path from "path";
 import { EventEmitter } from "events";
 import { claimLock, releaseLock } from "./lock";
 import ShutdownManager from "./shutdownManager";
 import { BotEvents } from "./botEvents";
+import { NetworkConfigNotSet } from "./errors";
+import { Networks } from "consts/bridgeRoutes";
 require("dotenv").config();
 
 /**
@@ -24,8 +27,9 @@ async function initialize(
   emitter.emit(BotEvents.LOCK_CLAIMED);
   // STATE_DIR is absolute path of the directory where the state files are stored
   // STATE_DIR must have trailing slash
-  const state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
-  if (!fileSystem.existsSync(state_file)) {
+  const stateDir = process.env.STATE_DIR || "";
+  const stateFile = path.join(stateDir, `${network}_${chainId}.json`);
+  if (!fileSystem.existsSync(stateFile)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
     await syncStateFile(chainId, tsnow, 0, network, emitter);
@@ -33,7 +37,7 @@ async function initialize(
   // print pwd for debugging
   emitter.emit(BotEvents.LOCK_DIRECTORY, process.cwd());
 
-  const chain_state_raw = fileSystem.readFileSync(state_file, { encoding: "utf8" });
+  const chain_state_raw = fileSystem.readFileSync(stateFile, { encoding: "utf8" });
   const chain_state = JSON.parse(chain_state_raw);
   let nonce = 0;
   if ("nonce" in chain_state) {
@@ -52,13 +56,14 @@ async function updateStateFile(
   fileSystem: typeof fs = fs,
   removeLock: typeof releaseLock = releaseLock
 ) {
-  console.log(process.env.STATE_DIR);
-  const chain_state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
-  const json = {
-    ts: createdTimestamp,
-    nonce: nonceFrom,
-  };
-  fileSystem.writeFileSync(chain_state_file, JSON.stringify(json), { encoding: "utf8" });
+  if (nonceFrom != null) {
+    const chain_state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
+    const json = {
+      ts: createdTimestamp,
+      nonce: nonceFrom,
+    };
+    fileSystem.writeFileSync(chain_state_file, JSON.stringify(json), { encoding: "utf8" });
+  }
 
   removeLock(network, chainId);
   emitter.emit(BotEvents.LOCK_RELEASED);
@@ -104,8 +109,50 @@ async function setupExitHandlers(
   });
 }
 
+type RelayerNetworkConfig = {
+  chainId: number;
+  network: Networks;
+  senders: string[];
+};
+
+function getNetworkConfig(): RelayerNetworkConfig[] {
+  const chainIds = process.env.VEAOUTBOX_CHAINS ? process.env.VEAOUTBOX_CHAINS.split(",") : [];
+  const devnetSenders = process.env.SENDER_ADDRESSES_DEVNET ? process.env.SENDER_ADDRESSES_DEVNET.split(",") : [];
+  const testnetSenders = process.env.SENDER_ADDRESSES_TESTNET ? process.env.SENDER_ADDRESSES_TESTNET.split(",") : [];
+  const toRelayDevnet = devnetSenders.length > 0;
+  const toRelayTestnet = testnetSenders.length > 0;
+
+  const relayerNetworkConfig: RelayerNetworkConfig[] = [];
+  for (const chainId of chainIds) {
+    if (toRelayDevnet) {
+      relayerNetworkConfig.push({
+        chainId: Number(chainId),
+        network: Networks.DEVNET,
+        senders: devnetSenders,
+      });
+    }
+    if (toRelayTestnet) {
+      relayerNetworkConfig.push({
+        chainId: Number(chainId),
+        network: Networks.TESTNET,
+        senders: testnetSenders,
+      });
+    }
+  }
+  if (relayerNetworkConfig.length === 0) throw new NetworkConfigNotSet();
+  return relayerNetworkConfig;
+}
+
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export { initialize, updateStateFile, setupExitHandlers, delay, ShutdownManager };
+export {
+  getNetworkConfig,
+  initialize,
+  updateStateFile,
+  setupExitHandlers,
+  delay,
+  ShutdownManager,
+  RelayerNetworkConfig,
+};
