@@ -3,6 +3,7 @@ import { relayBatch } from "./relay";
 describe("relay", () => {
   describe("relayBatch", () => {
     const veaOutboxAddress = "0x123";
+    const network = "testing" as any;
     const chainId = 1;
     const nonce = 0;
     const maxBatchSize = 10;
@@ -16,9 +17,17 @@ describe("relay", () => {
     const mockBatchedSend = jest.fn(async (txns) => Promise.resolve());
     beforeEach(() => {
       fetchBridgeConfig.mockReturnValue({
-        veaOutboxContract: {
-          abi: [],
+        chainId,
+        chain: "sepolia",
+        epochPeriod: 7200,
+        veaContracts: {
+          ["testing"]: {
+            veaInbox: { abi: [] },
+            veaOutbox: { abi: [] },
+          },
         },
+        batcher: veaOutboxAddress,
+        rpcOutbox: process.env.RPC_SEPOLIA || "https://rpc.example.com",
       });
       fetchCount.mockReturnValue(1);
       setBatchedSend.mockReturnValue(mockBatchedSend);
@@ -54,6 +63,7 @@ describe("relay", () => {
       });
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
         fetchBridgeConfig,
@@ -72,6 +82,7 @@ describe("relay", () => {
       fetchCount.mockReturnValue(1);
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
         fetchBridgeConfig,
@@ -97,6 +108,7 @@ describe("relay", () => {
       fetchCount.mockReturnValue(7);
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
         fetchBridgeConfig,
@@ -122,6 +134,7 @@ describe("relay", () => {
       fetchCount.mockReturnValue(15);
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
         fetchBridgeConfig,
@@ -157,6 +170,7 @@ describe("relay", () => {
       });
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
         fetchBridgeConfig,
@@ -201,6 +215,7 @@ describe("relay", () => {
       });
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
         fetchBridgeConfig,

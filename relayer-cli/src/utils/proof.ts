@@ -1,5 +1,4 @@
 import request from "graphql-request";
-import { getInboxSubgraph } from "../consts/bridgeRoutes";
 
 /**
  * Get the message data to relay from the subgraph
@@ -14,7 +13,7 @@ const getMessageDataToRelay = async (
   requestGraph: typeof request = request
 ) => {
   try {
-    const subgraph = getInboxSubgraph(chainId);
+    const subgraph = process.env.RELAYER_SUBRAPGH;
 
     const result = await requestGraph(
       `https://api.studio.thegraph.com/query/${subgraph}`,
@@ -47,8 +46,7 @@ const getProofAtCount = async (
   nonce: number,
   count: number,
   requestGraph: typeof request = request,
-  calculateProofIndices: typeof getProofIndices = getProofIndices,
-  fetchInboxSubgraph: typeof getInboxSubgraph = getInboxSubgraph
+  calculateProofIndices: typeof getProofIndices = getProofIndices
 ): Promise<string[]> => {
   const proofIndices = calculateProofIndices(nonce, count);
   if (proofIndices.length == 0) return [];
@@ -62,7 +60,7 @@ const getProofAtCount = async (
   query += "}";
 
   try {
-    const subgraph = fetchInboxSubgraph(chainId);
+    const subgraph = process.env.RELAYER_SUBRAPGH;
 
     const result = await requestGraph(`https://api.studio.thegraph.com/query/${subgraph}`, query);
 
