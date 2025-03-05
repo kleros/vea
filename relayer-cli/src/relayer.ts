@@ -49,9 +49,10 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
           network,
           nonce,
           maxBatchSize,
+          emitter,
         });
       } else {
-        nonce = await relayAllFrom(chainId, network, nonce, senders);
+        nonce = await relayAllFrom(chainId, network, nonce, senders, emitter);
       }
 
       await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, network, emitter);

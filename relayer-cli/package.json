@@ -10,8 +10,7 @@
   },
   "scripts": {
     "test": "jest --coverage",
-    "start-devnet-relayer": "npx ts-node ./src/devnetRelayExample.ts",
-    "start-testnet-relayer": "npx ts-node ./src/testnetRelayer.ts"
+    "start-relayer": "npx ts-node ./src/relayer.ts"
   },
   "dependencies": {
     "@kleros/vea-contracts": "workspace:^",
