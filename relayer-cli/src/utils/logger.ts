@@ -46,4 +46,13 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.LOCK_RELEASED, () => {
     console.log("Lock released");
   });
+
+  // Message relay logs
+  emitter.on(BotEvents.RELAY_BATCH, (nonce, tx) => {
+    console.log(`Relaying batch for with nonce ${nonce}: ${tx}`);
+  });
+
+  emitter.on(BotEvents.RELAY_ALL_FROM, (nonce, msgSenders, tx) => {
+    console.log(`Relaying all messages from ${msgSenders} with nonce ${nonce}: ${tx}`);
+  });
 };

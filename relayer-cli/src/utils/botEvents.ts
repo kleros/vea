@@ -1,5 +1,5 @@
 export enum BotEvents {
-  // Bridger state
+  // Relayer state
   STARTED = "started",
   WAITING = "waiting",
   EXIT = "exit",
@@ -12,4 +12,8 @@ export enum BotEvents {
   LOCK_CLAIMED = "lock_claimed",
   LOCK_DIRECTORY = "lock_directory",
   LOCK_RELEASED = "lock_released",
+
+  // Message relay
+  RELAY_BATCH = "relay_batch",
+  RELAY_ALL_FROM = "relay_all_from",
 }
