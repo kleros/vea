@@ -1,10 +1,8 @@
 require("dotenv").config();
-import Web3 from "web3";
-import initializeBatchedSend from "web3-batched-send";
 import request from "graphql-request";
 import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "@kleros/vea-contracts/typechain-types";
 import { getProofAtCount, getMessageDataToRelay } from "./proof";
-import { getVeaOutbox } from "./ethers";
+import { getVeaOutbox, getBatcher } from "./ethers";
 import { getBridgeConfig, Networks } from "../consts/bridgeRoutes";
 
 /**
@@ -59,11 +57,15 @@ interface RelayBatchDeps {
   maxBatchSize: number;
   fetchVeaOutbox?: typeof getVeaOutbox;
   fetchCount?: typeof getCount;
-  setBatchedSend?: typeof initializeBatchedSend;
   fetchBridgeConfig?: typeof getBridgeConfig;
   fetchProofAtCount?: typeof getProofAtCount;
   fetchMessageDataToRelay?: typeof getMessageDataToRelay;
-  web3?: typeof Web3;
+}
+
+interface BatchItem {
+  target: string;
+  value: number;
+  data: string;
 }
 
 /**
@@ -81,20 +83,14 @@ const relayBatch = async ({
   maxBatchSize,
   fetchBridgeConfig = getBridgeConfig,
   fetchCount = getCount,
-  setBatchedSend = initializeBatchedSend,
   fetchVeaOutbox = getVeaOutbox,
   fetchProofAtCount = getProofAtCount,
   fetchMessageDataToRelay = getMessageDataToRelay,
-  web3 = Web3,
 }: RelayBatchDeps) => {
-  const { batcher, veaContracts, rpcOutbox } = fetchBridgeConfig(chainId);
-  const web3Instance = new web3(rpcOutbox);
+  const { batcherAddress, veaContracts, rpcOutbox } = fetchBridgeConfig(chainId);
 
-  const batchedSend = setBatchedSend(web3Instance, batcher, process.env.PRIVATE_KEY, 0);
-  const veaOutboxInstance = new web3Instance.eth.Contract(
-    veaContracts[network].veaOutbox.abi,
-    veaContracts[network].veaOutbox.address
-  );
+  const batcher = getBatcher(batcherAddress, process.env.PRIVATE_KEY, rpcOutbox);
+
   const veaOutbox = fetchVeaOutbox(
     veaContracts[network].veaOutbox.address,
     process.env.PRIVATE_KEY,
@@ -105,7 +101,10 @@ const relayBatch = async ({
 
   while (nonce < count) {
     let batchMessages = 0;
-    let txns = [];
+    let targets: string[] = [];
+    let values: number[] = [];
+    let datas: string[] = [];
+
     while (batchMessages < maxBatchSize && nonce < count) {
       const isMsgRelayed = await veaOutbox.isMsgRelayed(nonce);
       if (isMsgRelayed) {
@@ -116,22 +115,19 @@ const relayBatch = async ({
         fetchProofAtCount(chainId, nonce, count),
         fetchMessageDataToRelay(chainId, veaContracts[network].veaInbox.address, nonce),
       ]);
-      try {
-        await veaOutboxInstance.methods.sendMessage(proof, nonce, to, data).call();
-      } catch {
-        nonce++;
-        continue;
-      }
-      txns.push({
-        args: [proof, nonce, to, data],
-        method: veaOutboxInstance.methods.sendMessage,
-        to: veaOutboxInstance.options.address,
-      });
+
+      const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, nonce, to, data]);
+      datas.push(callData);
+      targets.push(veaContracts[network].veaOutbox.address);
+      values.push(0);
       batchMessages += 1;
       nonce++;
     }
     if (batchMessages > 0) {
-      await batchedSend(txns);
+      const tx = await batcher.batchSend(targets, values, datas, { gasLimit: 500000 });
+      console.log("Batch transaction response:", tx);
+      const receipt = await tx.wait();
+      console.log("Batch transaction receipt:", receipt);
     }
   }
   return nonce;
@@ -150,23 +146,17 @@ const relayAllFrom = async (
   nonce: number,
   msgSenders: string[]
 ): Promise<number> => {
-  const { veaContracts, batcher, rpcOutbox } = getBridgeConfig(chainId);
+  const { veaContracts, batcherAddress, rpcOutbox } = getBridgeConfig(chainId);
 
-  const web3 = new Web3(rpcOutbox);
-  const batchedSend = initializeBatchedSend(
-    web3, // Your web3 object.
-    // The address of the transaction batcher contract you wish to use. The addresses for the different networks are listed below. If the one you need is missing, feel free to deploy it yourself and make a PR to save the address here for others to use.
-    batcher,
-    process.env.PRIVATE_KEY, // The private key of the account you want to send transactions from.
-    0 // The debounce timeout period in milliseconds in which transactions are batched.
-  );
+  const batcher = getBatcher(batcherAddress, process.env.PRIVATE_KEY, rpcOutbox);
 
-  const contract = new web3.eth.Contract(veaContracts[network].veaOutbox.abi, veaContracts[network].veaOutbox.address);
   const veaOutbox = getVeaOutbox(veaContracts[network].veaOutbox.address, process.env.PRIVATE_KEY, rpcOutbox, chainId);
   const count = await getCount(veaOutbox, chainId);
 
   if (!count) return null;
-  let txns = [];
+  let targets: string[] = [];
+  let values: number[] = [];
+  let datas: string[] = [];
   let lastNonce = null;
   for (const msgSender of msgSenders) {
     const nonces = await getNonceFrom(chainId, veaContracts[network].veaInbox.address, nonce, msgSender);
@@ -176,16 +166,20 @@ const relayAllFrom = async (
         getProofAtCount(chainId, x, count),
         getMessageDataToRelay(chainId, veaContracts[network].veaInbox.address, x),
       ]);
-      txns.push({
-        args: [proof, x, to, data],
-        method: contract.methods.sendMessage,
-        to: contract.options.address,
-      });
+      const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, nonce, to, data]);
+      datas.push(callData);
+      targets.push(veaContracts[network].veaOutbox.address);
+      values.push(0);
       lastNonce = x;
     }
   }
 
-  await batchedSend(txns);
+  if (lastNonce != null) {
+    const tx = await batcher.batchSend(targets, values, datas, { gasLimit: 500000 });
+    console.log("Batch transaction response:", tx);
+    const receipt = await tx.wait();
+    console.log("Batch transaction receipt:", receipt);
+  }
 
   return lastNonce;
 };

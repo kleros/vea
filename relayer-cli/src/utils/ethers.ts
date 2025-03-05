@@ -5,6 +5,7 @@ import {
   VeaInboxArbToEth__factory,
   VeaInboxArbToGnosis__factory,
   VeaOutboxArbToGnosis__factory,
+  TransactionBatcher__factory,
 } from "@kleros/vea-contracts/typechain-types";
 import { getBridgeConfig } from "../consts/bridgeRoutes";
 
@@ -81,6 +82,10 @@ function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string
   return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
 }
 
+function getBatcher(batcherAddress: string, privateKey: string, web3ProviderURL: string) {
+  return TransactionBatcher__factory.connect(batcherAddress, getWallet(privateKey, web3ProviderURL));
+}
+
 export {
   getWalletRPC,
   getVeaOutboxArbToEthDevnetProvider,
@@ -89,4 +94,5 @@ export {
   getVeaOutboxProvider,
   getVeaInboxProvider,
   getVeaOutboxArbToEthDevnet,
+  getBatcher,
 };

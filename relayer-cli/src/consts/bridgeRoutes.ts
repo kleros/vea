@@ -16,7 +16,7 @@ interface IBridge {
   chain: string;
   epochPeriod: number;
   veaContracts: { [key in Networks]: VeaContracts };
-  batcher: string;
+  batcherAddress: string;
   rpcOutbox: string;
 }
 
@@ -59,7 +59,7 @@ const bridges: { [chainId: number]: IBridge } = {
     chain: "sepolia",
     epochPeriod: 7200,
     veaContracts: arbToEthContracts,
-    batcher: process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_SEPOLIA,
+    batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_SEPOLIA,
     rpcOutbox: process.env.RPC_SEPOLIA,
   },
   10200: {
@@ -67,7 +67,7 @@ const bridges: { [chainId: number]: IBridge } = {
     chain: "chiado",
     epochPeriod: 3600,
     veaContracts: arbToGnosisContracts,
-    batcher: process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_CHIADO,
+    batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_CHIADO,
     rpcOutbox: process.env.RPC_CHIADO,
   },
 };
