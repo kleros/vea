@@ -1,9 +1,11 @@
 require("dotenv").config();
 import request from "graphql-request";
+import { EventEmitter } from "node:events";
 import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "@kleros/vea-contracts/typechain-types";
 import { getProofAtCount, getMessageDataToRelay } from "./proof";
 import { getVeaOutbox, getBatcher } from "./ethers";
 import { getBridgeConfig, Networks } from "../consts/bridgeRoutes";
+import { BotEvents } from "./botEvents";
 
 /**
  * Get the count of the veaOutbox
@@ -55,17 +57,13 @@ interface RelayBatchDeps {
   network: Networks;
   nonce: number;
   maxBatchSize: number;
+  emitter: EventEmitter;
   fetchVeaOutbox?: typeof getVeaOutbox;
   fetchCount?: typeof getCount;
   fetchBridgeConfig?: typeof getBridgeConfig;
   fetchProofAtCount?: typeof getProofAtCount;
   fetchMessageDataToRelay?: typeof getMessageDataToRelay;
-}
-
-interface BatchItem {
-  target: string;
-  value: number;
-  data: string;
+  fetchBatcher?: typeof getBatcher;
 }
 
 /**
@@ -81,15 +79,17 @@ const relayBatch = async ({
   network,
   nonce,
   maxBatchSize,
+  emitter,
   fetchBridgeConfig = getBridgeConfig,
   fetchCount = getCount,
   fetchVeaOutbox = getVeaOutbox,
   fetchProofAtCount = getProofAtCount,
   fetchMessageDataToRelay = getMessageDataToRelay,
+  fetchBatcher = getBatcher,
 }: RelayBatchDeps) => {
   const { batcherAddress, veaContracts, rpcOutbox } = fetchBridgeConfig(chainId);
 
-  const batcher = getBatcher(batcherAddress, process.env.PRIVATE_KEY, rpcOutbox);
+  const batcher = fetchBatcher(batcherAddress, process.env.PRIVATE_KEY, rpcOutbox);
 
   const veaOutbox = fetchVeaOutbox(
     veaContracts[network].veaOutbox.address,
@@ -124,10 +124,11 @@ const relayBatch = async ({
       nonce++;
     }
     if (batchMessages > 0) {
-      const tx = await batcher.batchSend(targets, values, datas, { gasLimit: 500000 });
-      console.log("Batch transaction response:", tx);
+      const estimatedGas = await batcher.batchSend.estimateGas(targets, values, datas);
+      const gasLimit = (Number(estimatedGas) * 120) / 100;
+      const tx = await batcher.batchSend(targets, values, datas, { gasLimit });
       const receipt = await tx.wait();
-      console.log("Batch transaction receipt:", receipt);
+      emitter.emit(BotEvents.RELAY_BATCH, nonce, receipt.hash);
     }
   }
   return nonce;
@@ -144,7 +145,8 @@ const relayAllFrom = async (
   chainId: number,
   network: Networks,
   nonce: number,
-  msgSenders: string[]
+  msgSenders: string[],
+  emitter: EventEmitter
 ): Promise<number> => {
   const { veaContracts, batcherAddress, rpcOutbox } = getBridgeConfig(chainId);
 
@@ -175,10 +177,11 @@ const relayAllFrom = async (
   }
 
   if (lastNonce != null) {
-    const tx = await batcher.batchSend(targets, values, datas, { gasLimit: 500000 });
-    console.log("Batch transaction response:", tx);
+    const estimatedGas = await batcher.batchSend.estimateGas(targets, values, datas);
+    const gasLimit = (Number(estimatedGas) * 120) / 100;
+    const tx = await batcher.batchSend(targets, values, datas, { gasLimit });
     const receipt = await tx.wait();
-    console.log("Batch transaction receipt:", receipt);
+    emitter.emit(BotEvents.RELAY_ALL_FROM, nonce, msgSenders, receipt.hash);
   }
 
   return lastNonce;
