@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import { BotEvents } from "./botEvents";
-import { BotPaths } from "./cli";
+import { BotPaths } from "./botConfig";
+import { Network } from "../consts/bridgeRoutes";
 
 /**
  * Listens to relevant events of an EventEmitter instance and issues log lines
@@ -19,14 +20,18 @@ export const initialize = (emitter: EventEmitter) => {
 
 export const configurableInitialize = (emitter: EventEmitter) => {
   // Bridger state logs
-  emitter.on(BotEvents.STARTED, (chainId: number, path: number) => {
-    let pathString = "challenger and claimer";
+  emitter.on(BotEvents.STARTED, (path: BotPaths, networks: Network[]) => {
+    let pathString = "claimer and challenger";
     if (path === BotPaths.CLAIMER) {
-      pathString = "bridger";
+      pathString = "claimer";
     } else if (path === BotPaths.CHALLENGER) {
       pathString = "challenger";
     }
-    console.log(`Bot started for chainId ${chainId} as ${pathString}`);
+    console.log(`Bot started for ${pathString} on ${networks}`);
+  });
+
+  emitter.on(BotEvents.WATCHING, (chainId: number, network: Network) => {
+    console.log(`Watching for chain ${chainId} on ${network}`);
   });
 
   emitter.on(BotEvents.CHECKING, (epoch: number) => {
@@ -90,6 +95,9 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   // challenge()
   emitter.on(BotEvents.CHALLENGING, (epoch: number) => {
     console.log(`Claim can be challenged, challenging for epoch ${epoch}`);
+  });
+  emitter.on(BotEvents.CLAIM_CHALLENGED, (epoch: number) => {
+    console.log(`Claim is challenged for epoch ${epoch}`);
   });
   // startVerification()
   emitter.on(BotEvents.SENDING_SNAPSHOT, (epoch: number) => {

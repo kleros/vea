@@ -36,7 +36,6 @@ const setEpochRange = (
   const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
     .fill(veaEpochOutboxWatchLowerBound)
     .map((el, i) => el + i);
-
   return veaEpochOutboxCheckClaimsRangeArray;
 };
 
@@ -64,7 +63,7 @@ const getLatestChallengeableEpoch = (
 const getBlockFromEpoch = async (epoch: number, epochPeriod: number, provider: JsonRpcProvider): Promise<number> => {
   const epochTimestamp = epoch * epochPeriod;
   const latestBlock = await provider.getBlock("latest");
-  const baseBlock = await provider.getBlock(latestBlock.number - 100);
+  const baseBlock = await provider.getBlock(latestBlock.number - 1000);
   const secPerBlock = (latestBlock.timestamp - baseBlock.timestamp) / (latestBlock.number - baseBlock.number);
   const blockFallBack = Math.floor((latestBlock.timestamp - epochTimestamp) / secPerBlock);
   return latestBlock.number - blockFallBack;

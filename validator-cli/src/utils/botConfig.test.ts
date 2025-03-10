@@ -1,4 +1,4 @@
-import { getBotPath, BotPaths } from "./cli";
+import { getBotPath, BotPaths } from "./botConfig";
 import { InvalidBotPathError } from "./errors";
 describe("cli", () => {
   describe("getBotPath", () => {
