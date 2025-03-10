@@ -5,7 +5,7 @@ import { messageExecutor } from "../utils/arbMsgExecutor";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimNotSetError } from "../utils/errors";
-import { getBridgeConfig } from "../consts/bridgeRoutes";
+import { getBridgeConfig, Network } from "../consts/bridgeRoutes";
 
 /**
  * @file This file contains the logic for handling transactions from Arbitrum to Ethereum.
@@ -21,6 +21,7 @@ import { getBridgeConfig } from "../consts/bridgeRoutes";
  */
 
 export interface TransactionHandlerConstructor {
+  network: Network;
   epoch: number;
   veaInbox: VeaInboxArbToEth;
   veaOutbox: VeaOutboxArbToEth;
@@ -65,7 +66,7 @@ const CHAIN_ID = 11155111;
 
 export class ArbToEthTransactionHandler {
   public claim: ClaimStruct | null = null;
-
+  public network: Network;
   public veaInbox: VeaInboxArbToEth;
   public veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToEthDevnet;
   public veaInboxProvider: JsonRpcProvider;
@@ -85,6 +86,7 @@ export class ArbToEthTransactionHandler {
   };
 
   constructor({
+    network,
     epoch,
     veaInbox,
     veaOutbox,
@@ -93,6 +95,7 @@ export class ArbToEthTransactionHandler {
     emitter,
     claim,
   }: TransactionHandlerConstructor) {
+    this.network = network;
     this.epoch = epoch;
     this.veaInbox = veaInbox;
     this.veaOutbox = veaOutbox;
@@ -197,7 +200,7 @@ export class ArbToEthTransactionHandler {
       currentTimestamp -
       Number(this.claim.timestampClaimed) -
       bridgeConfig.sequencerDelayLimit -
-      bridgeConfig.epochPeriod;
+      bridgeConfig.routeConfig[this.network].epochPeriod;
 
     if (timeOver < 0) {
       this.emitter.emit(BotEvents.VERIFICATION_CANT_START, this.epoch, -1 * timeOver);

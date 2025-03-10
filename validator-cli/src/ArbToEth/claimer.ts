@@ -46,6 +46,7 @@ export async function checkAndClaim({
   if (!transactionHandler) {
     const TransactionHandler = getTransactionHandler(chainId, network);
     transactionHandler = new TransactionHandler({
+      network,
       epoch,
       veaInbox,
       veaOutbox,
