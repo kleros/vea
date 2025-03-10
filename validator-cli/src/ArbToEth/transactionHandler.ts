@@ -1,4 +1,4 @@
-import { VeaInboxArbToEth, VeaOutboxArbToEth } from "@kleros/vea-contracts/typechain-types";
+import { VeaInboxArbToEth, VeaOutboxArbToEth, VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { messageExecutor } from "../utils/arbMsgExecutor";
@@ -20,12 +20,22 @@ import { getBridgeConfig } from "../consts/bridgeRoutes";
  *      executeSnapshot() - Execute a sent snapshot to resolve dispute in VeaOutbox (ETH).
  */
 
+export interface TransactionHandlerConstructor {
+  epoch: number;
+  veaInbox: VeaInboxArbToEth;
+  veaOutbox: VeaOutboxArbToEth;
+  veaInboxProvider: JsonRpcProvider;
+  veaOutboxProvider: JsonRpcProvider;
+  emitter: typeof defaultEmitter;
+  claim: ClaimStruct | null;
+}
+
 export type Transaction = {
   hash: string;
   broadcastedTimestamp: number;
 };
 
-type Transactions = {
+export type Transactions = {
   claimTxn: Transaction | null;
   withdrawClaimDepositTxn: Transaction | null;
   startVerificationTxn: Transaction | null;
@@ -36,7 +46,7 @@ type Transactions = {
   executeSnapshotTxn: Transaction | null;
 };
 
-enum TransactionStatus {
+export enum TransactionStatus {
   NOT_MADE = 0,
   PENDING = 1,
   NOT_FINAL = 2,
@@ -57,7 +67,7 @@ export class ArbToEthTransactionHandler {
   public claim: ClaimStruct | null = null;
 
   public veaInbox: VeaInboxArbToEth;
-  public veaOutbox: VeaOutboxArbToEth;
+  public veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToEthDevnet;
   public veaInboxProvider: JsonRpcProvider;
   public veaOutboxProvider: JsonRpcProvider;
   public epoch: number;
@@ -74,15 +84,15 @@ export class ArbToEthTransactionHandler {
     executeSnapshotTxn: null,
   };
 
-  constructor(
-    epoch: number,
-    veaInbox: VeaInboxArbToEth,
-    veaOutbox: VeaOutboxArbToEth,
-    veaInboxProvider: JsonRpcProvider,
-    veaOutboxProvider: JsonRpcProvider,
-    emitter: typeof defaultEmitter = defaultEmitter,
-    claim: ClaimStruct | null = null
-  ) {
+  constructor({
+    epoch,
+    veaInbox,
+    veaOutbox,
+    veaInboxProvider,
+    veaOutboxProvider,
+    emitter,
+    claim,
+  }: TransactionHandlerConstructor) {
     this.epoch = epoch;
     this.veaInbox = veaInbox;
     this.veaOutbox = veaOutbox;

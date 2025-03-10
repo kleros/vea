@@ -12,7 +12,9 @@ import {
 import { challengeAndResolveClaim as challengeAndResolveClaimArbToEth } from "../ArbToEth/validator";
 import { checkAndClaim } from "../ArbToEth/claimer";
 import { ArbToEthTransactionHandler } from "../ArbToEth/transactionHandler";
+import { ArbToEthDevnetTransactionHandler } from "../ArbToEth/transactionHandlerDevnet";
 import { TransactionHandlerNotDefinedError } from "./errors";
+import { Network } from "../consts/bridgeRoutes";
 
 function getWallet(privateKey: string, web3ProviderURL: string) {
   return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
@@ -59,22 +61,32 @@ function getAMB(ambAddress: string, privateKey: string, web3ProviderURL: string)
   return IAMB__factory.connect(ambAddress, getWallet(privateKey, web3ProviderURL));
 }
 
-const getClaimValidator = (chainId: number) => {
+const getClaimValidator = (chainId: number, network: Network) => {
   switch (chainId) {
     case 11155111:
       return challengeAndResolveClaimArbToEth;
   }
 };
-const getClaimer = (chainId: number) => {
+const getClaimer = (chainId: number, network: Network) => {
   switch (chainId) {
     case 11155111:
-      return checkAndClaim;
+      switch (network) {
+        case Network.DEVNET:
+
+        case Network.TESTNET:
+          return checkAndClaim;
+      }
   }
 };
-const getTransactionHandler = (chainId: number) => {
+const getTransactionHandler = (chainId: number, network: Network) => {
   switch (chainId) {
     case 11155111:
-      return ArbToEthTransactionHandler;
+      switch (network) {
+        case Network.DEVNET:
+          return ArbToEthDevnetTransactionHandler;
+        case Network.TESTNET:
+          return ArbToEthTransactionHandler;
+      }
     default:
       throw new TransactionHandlerNotDefinedError();
   }

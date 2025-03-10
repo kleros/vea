@@ -1,4 +1,5 @@
-import { BotPaths } from "./cli";
+import { BotPaths } from "./botConfig";
+import { Network } from "../consts/bridgeRoutes";
 class ClaimNotFoundError extends Error {
   constructor(epoch: number) {
     super();
@@ -31,4 +32,27 @@ class InvalidBotPathError extends Error {
   }
 }
 
-export { ClaimNotFoundError, ClaimNotSetError, TransactionHandlerNotDefinedError, InvalidBotPathError };
+class DevnetOwnerNotSetError extends Error {
+  constructor() {
+    super();
+    this.name = "DevnetOwnerNotSetError";
+    this.message = "Devnet owner address not set";
+  }
+}
+
+class InvalidNetworkError extends Error {
+  constructor(network: string) {
+    super();
+    this.name = "InvalidNetworkError";
+    this.message = `Invalid network: ${network}, use from: ${Object.values(Network).join(", ")}`;
+  }
+}
+
+export {
+  ClaimNotFoundError,
+  ClaimNotSetError,
+  TransactionHandlerNotDefinedError,
+  InvalidBotPathError,
+  DevnetOwnerNotSetError,
+  InvalidNetworkError,
+};

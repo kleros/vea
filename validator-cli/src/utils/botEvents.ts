@@ -1,6 +1,7 @@
 export enum BotEvents {
   // Bridger state
   STARTED = "started",
+  WATCHING = "watching",
   CHECKING = "checking",
   WAITING = "waiting",
   NO_CLAIM = "no_claim",
@@ -18,6 +19,7 @@ export enum BotEvents {
   VERIFYING_SNAPSHOT = "verifying_snapshot",
   CANT_VERIFY_SNAPSHOT = "cant_verify_snapshot",
   CHALLENGING = "challenging",
+  CLAIM_CHALLENGED = "claim_challenged",
   CHALLENGER_WON_CLAIM = "challenger_won_claim",
   SENDING_SNAPSHOT = "sending_snapshot",
   EXECUTING_SNAPSHOT = "executing_snapshot",
@@ -25,6 +27,9 @@ export enum BotEvents {
   WITHDRAWING_CHALLENGE_DEPOSIT = "withdrawing_challenge_deposit",
   WITHDRAWING_CLAIM_DEPOSIT = "withdrawing_claim_deposit",
   WAITING_ARB_TIMEOUT = "waiting_arb_timeout",
+
+  // Devnet state
+  ADV_DEVNET = "advance_devnet",
 
   // Transaction state
   TXN_MADE = "txn_made",

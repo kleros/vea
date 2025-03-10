@@ -1,5 +1,16 @@
 require("dotenv").config();
 
+import veaInboxArbToEthDevnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json";
+import veaOutboxArbToEthDevnet from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
+import veaInboxArbToEthTestnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthTestnet.json";
+import veaOutboxArbToEthTestnet from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthTestnet.json";
+
+import veaInboxArbToGnosisDevnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json";
+import veaOutboxArbToGnosisDevnet from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
+
+import veaInboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthTestnet.json";
+import veaOutboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisTestnet.json";
+import veaRouterArbToGnosisTestnet from "@kleros/vea-contracts/deployments/sepolia/RouterArbToGnosisTestnet.json";
 interface Bridge {
   chain: string;
   epochPeriod: number;
@@ -8,11 +19,43 @@ interface Bridge {
   sequencerDelayLimit: number;
   inboxRPC: string;
   outboxRPC: string;
-  inboxAddress: string;
-  outboxAddress: string;
-  routerAddress?: string;
-  routerProvider?: string;
+  routerRPC?: string;
+  veaContracts: { [key in Network]: VeaContracts };
 }
+
+type VeaContracts = {
+  veaInbox: any;
+  veaOutbox: any;
+  veaRouter?: any;
+};
+
+export enum Network {
+  DEVNET = "devnet",
+  TESTNET = "testnet",
+}
+
+const arbToEthContracts: { [key in Network]: VeaContracts } = {
+  [Network.DEVNET]: {
+    veaInbox: veaInboxArbToEthDevnet,
+    veaOutbox: veaOutboxArbToEthDevnet,
+  },
+  [Network.TESTNET]: {
+    veaInbox: veaInboxArbToEthTestnet,
+    veaOutbox: veaOutboxArbToEthTestnet,
+  },
+};
+
+const arbToGnosisContracts: { [key in Network]: VeaContracts } = {
+  [Network.DEVNET]: {
+    veaInbox: veaInboxArbToGnosisDevnet,
+    veaOutbox: veaOutboxArbToGnosisDevnet,
+  },
+  [Network.TESTNET]: {
+    veaInbox: veaInboxArbToGnosisTestnet,
+    veaOutbox: veaOutboxArbToGnosisTestnet,
+    veaRouter: veaRouterArbToGnosisTestnet,
+  },
+};
 
 const bridges: { [chainId: number]: Bridge } = {
   11155111: {
@@ -23,8 +66,7 @@ const bridges: { [chainId: number]: Bridge } = {
     sequencerDelayLimit: 86400,
     inboxRPC: process.env.RPC_ARB,
     outboxRPC: process.env.RPC_ETH,
-    inboxAddress: process.env.VEAINBOX_ARB_TO_ETH_ADDRESS,
-    outboxAddress: process.env.VEAOUTBOX_ARB_TO_ETH_ADDRESS,
+    veaContracts: arbToEthContracts,
   },
   10200: {
     chain: "chiado",
@@ -34,10 +76,8 @@ const bridges: { [chainId: number]: Bridge } = {
     sequencerDelayLimit: 86400,
     inboxRPC: process.env.RPC_ARB,
     outboxRPC: process.env.RPC_GNOSIS,
-    routerProvider: process.env.RPC_ETH,
-    inboxAddress: process.env.VEAINBOX_ARB_TO_GNOSIS_ADDRESS,
-    routerAddress: process.env.VEA_ROUTER_ARB_TO_GNOSIS_ADDRESS,
-    outboxAddress: process.env.VEAOUTBOX_ARB_TO_GNOSIS_ADDRESS,
+    routerRPC: process.env.RPC_ETH,
+    veaContracts: arbToGnosisContracts,
   },
 };
 
