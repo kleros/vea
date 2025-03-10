@@ -13,20 +13,20 @@ import veaOutboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/chiad
 import veaRouterArbToGnosisTestnet from "@kleros/vea-contracts/deployments/sepolia/RouterArbToGnosisTestnet.json";
 interface Bridge {
   chain: string;
-  epochPeriod: number;
   deposit: bigint;
   minChallengePeriod: number;
   sequencerDelayLimit: number;
   inboxRPC: string;
   outboxRPC: string;
   routerRPC?: string;
-  veaContracts: { [key in Network]: VeaContracts };
+  routeConfig: { [key in Network]: RouteConfigs };
 }
 
-type VeaContracts = {
+type RouteConfigs = {
   veaInbox: any;
   veaOutbox: any;
   veaRouter?: any;
+  epochPeriod: number;
 };
 
 export enum Network {
@@ -34,50 +34,52 @@ export enum Network {
   TESTNET = "testnet",
 }
 
-const arbToEthContracts: { [key in Network]: VeaContracts } = {
+const arbToEthConfigs: { [key in Network]: RouteConfigs } = {
   [Network.DEVNET]: {
     veaInbox: veaInboxArbToEthDevnet,
     veaOutbox: veaOutboxArbToEthDevnet,
+    epochPeriod: 3600,
   },
   [Network.TESTNET]: {
     veaInbox: veaInboxArbToEthTestnet,
     veaOutbox: veaOutboxArbToEthTestnet,
+    epochPeriod: 7200,
   },
 };
 
-const arbToGnosisContracts: { [key in Network]: VeaContracts } = {
+const arbToGnosisConfigs: { [key in Network]: RouteConfigs } = {
   [Network.DEVNET]: {
     veaInbox: veaInboxArbToGnosisDevnet,
     veaOutbox: veaOutboxArbToGnosisDevnet,
+    epochPeriod: 3600,
   },
   [Network.TESTNET]: {
     veaInbox: veaInboxArbToGnosisTestnet,
     veaOutbox: veaOutboxArbToGnosisTestnet,
     veaRouter: veaRouterArbToGnosisTestnet,
+    epochPeriod: 7200,
   },
 };
 
 const bridges: { [chainId: number]: Bridge } = {
   11155111: {
     chain: "sepolia",
-    epochPeriod: 7200,
     deposit: BigInt("1000000000000000000"),
     minChallengePeriod: 10800,
     sequencerDelayLimit: 86400,
     inboxRPC: process.env.RPC_ARB,
     outboxRPC: process.env.RPC_ETH,
-    veaContracts: arbToEthContracts,
+    routeConfig: arbToEthConfigs,
   },
   10200: {
     chain: "chiado",
-    epochPeriod: 3600,
     deposit: BigInt("1000000000000000000"),
     minChallengePeriod: 10800,
     sequencerDelayLimit: 86400,
     inboxRPC: process.env.RPC_ARB,
     outboxRPC: process.env.RPC_GNOSIS,
     routerRPC: process.env.RPC_ETH,
-    veaContracts: arbToGnosisContracts,
+    routeConfig: arbToGnosisConfigs,
   },
 };
 

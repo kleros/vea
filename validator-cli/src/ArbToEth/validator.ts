@@ -6,6 +6,7 @@ import { getClaim, getClaimResolveState } from "../utils/claim";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
+import { Network } from "../consts/bridgeRoutes";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 
 // https://github.com/prysmaticlabs/prysm/blob/493905ee9e33a64293b66823e69704f012b39627/config/params/mainnet_config.go#L103
@@ -60,15 +61,16 @@ export async function challengeAndResolveClaim({
   }
   const ethBlockTag = finalityIssueFlagEth ? "finalized" : "latest";
   if (!transactionHandler) {
-    transactionHandler = new ArbToEthTransactionHandler(
+    transactionHandler = new ArbToEthTransactionHandler({
+      network: Network.TESTNET, // Hardcoded as TESTNET & MAINNET have same contracts
       epoch,
       veaInbox,
       veaOutbox,
       veaInboxProvider,
       veaOutboxProvider,
-      defaultEmitter,
-      claim
-    );
+      emitter: defaultEmitter,
+      claim,
+    });
   } else {
     transactionHandler.claim = claim;
   }

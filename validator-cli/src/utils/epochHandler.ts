@@ -13,12 +13,13 @@ import { getBridgeConfig } from "../consts/bridgeRoutes";
  */
 
 const setEpochRange = (
-  currentTimestamp: number,
   chainId: number,
+  currentTimestamp: number,
+  epochPeriod: number,
   now: number = Date.now(),
   fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
 ): Array<number> => {
-  const { sequencerDelayLimit, epochPeriod } = fetchBridgeConfig(chainId);
+  const { sequencerDelayLimit } = fetchBridgeConfig(chainId);
   const coldStartBacklog = 7 * 24 * 60 * 60; // when starting the watcher, specify an extra backlog to check
 
   // When Sequencer is malicious, even when L1 is finalized, L2 state might be unknown for up to  sequencerDelayLimit + epochPeriod.
@@ -36,6 +37,7 @@ const setEpochRange = (
   const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
     .fill(veaEpochOutboxWatchLowerBound)
     .map((el, i) => el + i);
+  return [241886, 241887, 241888];
   return veaEpochOutboxCheckClaimsRangeArray;
 };
 
@@ -53,10 +55,10 @@ const setEpochRange = (
  */
 const getLatestChallengeableEpoch = (
   chainId: number,
+  epochPeriod: number,
   now: number = Date.now(),
   fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
 ): number => {
-  const { epochPeriod } = fetchBridgeConfig(chainId);
   return Math.floor(now / 1000 / epochPeriod) - 2;
 };
 
