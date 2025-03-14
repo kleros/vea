@@ -44,7 +44,7 @@ const relay = async (chainId: number, nonce: number) => {
 
   const [proof, [to, data]] = await Promise.all([
     getProofAtCount(chainId, nonce, count),
-    getMessageDataToRelay(chainId, nonce),
+    getMessageDataToRelay(chainId, routeParams.veaInboxAddress, nonce),
   ]);
 
   const txn = await veaOutbox.sendMessage(proof, nonce, to, data);
@@ -112,7 +112,7 @@ const relayBatch = async ({
       }
       const [proof, [to, data]] = await Promise.all([
         fetchProofAtCount(chainId, nonce, count),
-        fetchMessageDataToRelay(chainId, nonce),
+        fetchMessageDataToRelay(chainId, routeParams.veaInboxAddress, nonce),
       ]);
       try {
         await veaOutboxInstance.methods.sendMessage(proof, nonce, to, data).call();
@@ -162,12 +162,12 @@ const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): 
 
   let txns = [];
 
-  const nonces = await getNonceFrom(chainId, nonce, msgSender);
+  const nonces = await getNonceFrom(chainId, routeParams.veaInboxAddress, nonce, msgSender);
 
   for (const x of nonces) {
     const [proof, [to, data]] = await Promise.all([
       getProofAtCount(chainId, x, count),
-      getMessageDataToRelay(chainId, x),
+      getMessageDataToRelay(chainId, routeParams.veaInboxAddress, x),
     ]);
     txns.push({
       args: [proof, x, to, data],
@@ -188,7 +188,7 @@ const relayAllFrom = async (chainId: number, nonce: number, msgSender: string): 
  * @param msgSender The address of the sender
  * @returns The nonces of the messages sent by the sender
  */
-const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) => {
+const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSender: string) => {
   const subgraph = getInboxSubgraph(chainId);
 
   const result = await request(
@@ -197,6 +197,7 @@ const getNonceFrom = async (chainId: number, nonce: number, msgSender: string) =
         messageSents(
           first: 1000, 
           where: {
+            inbox: "${inbox}",
             nonce_gte: ${nonce}, 
             msgSender_: {id: "${msgSender}"}
           }, 

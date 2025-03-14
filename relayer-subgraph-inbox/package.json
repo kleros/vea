@@ -1,5 +1,6 @@
 {
   "name": "@kleros/vea-relayer-subgraph-inbox",
+  "version": "0.2.2",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
@@ -9,19 +10,23 @@
     "yarn": "4.6.0"
   },
   "scripts": {
+    "update:arbitrum-sepolia": "./scripts/update.sh arbitrumSepolia arbitrum-sepolia",
+    "update:arbitrum": "./scripts/update.sh arbitrum arbitrum-one",
+    "clean": "graph clean; rm -f subgraph.yaml.bak.*",
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --studio vea-inbox-arb-sepolia-devnet",
+    "deploy:arbitrum-sepolia": "graph deploy vea-inbox-arb-sepolia -l v$npm_package_version",
+    "deploy:arbitrum": "graph deploy vea-inbox-arbitrum -l v$npm_package_version",
     "create-local": "graph create --node http://localhost:8020/ kleros/vea-validator-inbox",
     "remove-local": "graph remove --node http://localhost:8020/ kleros/vea-validator-inbox",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 kleros/vea-validator-inbox",
     "test": "graph test"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "^0.35.1"
+    "@graphprotocol/graph-ts": "^0.38.0"
   },
   "devDependencies": {
-    "@graphprotocol/graph-cli": "^0.73.0",
+    "@graphprotocol/graph-cli": "^0.96.0",
     "concat-stream": "^2.0.0",
     "gluegun": "^5.1.2",
     "matchstick-as": "0.5.2"

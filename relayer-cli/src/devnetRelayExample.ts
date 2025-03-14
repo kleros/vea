@@ -10,7 +10,7 @@ export async function start(shutdownManager: ShutdownManager = new ShutdownManag
   await setupExitHandlers(chainId, shutdownManager, network, emitter);
   while (!shutdownManager.getIsShuttingDown()) {
     let nonce = await initialize(chainId, network, emitter);
-    // This is libghtbulb switch address in arbitrum sepolia
+    // This is lightbulb switch address in arbitrum sepolia
     const sender = process.env.DEVNET_SENDER;
     nonce = await relayAllFrom(chainId, nonce, sender);
     if (nonce != null) await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, network, emitter);

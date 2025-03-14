@@ -3,11 +3,11 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
-    name: VeaInbox
+    name: VeaInboxArbToEthDevnet
     network: arbitrum-sepolia
     source:
       address: "0x0B5851fE2a931F619F73E739E5435C43976f1D68"
-      abi: VeaInbox
+      abi: VeaInboxArbToEthDevnet
       startBlock: 69673433
     mapping:
       kind: ethereum/events
@@ -18,7 +18,7 @@ dataSources:
         - SnapshotSaved
         - StaterootSent
       abis:
-        - name: VeaInbox
+        - name: VeaInboxArbToEthDevnet
           file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json
       eventHandlers:
         - event: MessageSent(bytes)
@@ -27,4 +27,88 @@ dataSources:
           handler: handleSnapshotSaved
         - event: SnapshotSent(indexed uint256,bytes32)
           handler: handleSnapshotSent
-      file: ./src/vea-inbox-arb-to-eth.ts
+      file: ./src/vea-inbox.ts
+  - kind: ethereum
+    name: VeaInboxArbToEthTestnet
+    network: arbitrum-sepolia
+    source:
+      address: "0xE12daFE59Bc3A996362d54b37DFd2BA9279cAd06"
+      abi: VeaInboxArbToEthTestnet
+      startBlock: 77452741
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - MessageSent
+        - SnapshotSaved
+        - StaterootSent
+      abis:
+        - name: VeaInboxArbToEthTestnet
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthTestnet.json
+        - name: VeaInboxArbToEthDevnet # Indexing fails without this
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json
+      eventHandlers:
+        - event: MessageSent(bytes)
+          handler: handleMessageSent
+        - event: SnapshotSaved(bytes32,uint256,uint64)
+          handler: handleSnapshotSaved
+        - event: SnapshotSent(indexed uint256,bytes32)
+          handler: handleSnapshotSent
+      file: ./src/vea-inbox.ts
+  - kind: ethereum
+    name: VeaInboxArbToGnosisDevnet
+    network: arbitrum-sepolia
+    source:
+      address: "0x496df82A2fE2f4aa6903C8bdcE759a94505E7D0c"
+      abi: VeaInboxArbToGnosisDevnet
+      startBlock: 74272718
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - MessageSent
+        - SnapshotSaved
+        - StaterootSent
+      abis:
+        - name: VeaInboxArbToGnosisDevnet
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json
+        - name: VeaInboxArbToEthDevnet # Indexing fails without this
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json
+      eventHandlers:
+        - event: MessageSent(bytes)
+          handler: handleMessageSent
+        - event: SnapshotSaved(bytes32,uint256,uint64)
+          handler: handleSnapshotSaved
+        - event: SnapshotSent(indexed uint256,bytes32)
+          handler: handleSnapshotSent
+      file: ./src/vea-inbox.ts
+  - kind: ethereum
+    name: VeaInboxArbToGnosisTestnet
+    network: arbitrum-sepolia
+    source:
+      address: "0x854374483572FFcD4d0225290346279d0718240b"
+      abi: VeaInboxArbToGnosisTestnet
+      startBlock: 80843239
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - MessageSent
+        - SnapshotSaved
+        - StaterootSent
+      abis:
+        - name: VeaInboxArbToGnosisTestnet
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisTestnet.json
+        - name: VeaInboxArbToEthDevnet # Indexing fails without this
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json
+      eventHandlers:
+        - event: MessageSent(bytes)
+          handler: handleMessageSent
+        - event: SnapshotSaved(bytes32,uint256,uint64)
+          handler: handleSnapshotSaved
+        - event: SnapshotSent(indexed uint256,bytes32)
+          handler: handleSnapshotSent
+      file: ./src/vea-inbox.ts
