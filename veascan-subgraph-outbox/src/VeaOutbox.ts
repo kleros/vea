@@ -4,7 +4,7 @@ import {
   Claimed,
   MessageRelayed,
   Verified,
-} from "../generated/VeaOutbox/VeaOutbox";
+} from "../generated/VeaOutboxArbToEthDevnet/VeaOutboxArbToEthDevnet";
 import {
   Challenge,
   Claim,
