@@ -87,22 +87,22 @@ As long as there is one honest participant running a working implementation of t
 
 - Solidity v0.8
 - Hardhat
-- Ethers v5
+- Ethers v6
 - Chai + Mocha
-- Node v16
+- Node v22
 - Typescript
-- Yarn v3 without [PlugnPlay](https://yarnpkg.com/getting-started/migration/#switching-to-plugnplay)
+- Yarn Berry without [PlugnPlay](https://yarnpkg.com/getting-started/migration/#switching-to-plugnplay)
 
 ## Contributing
 
 ### Prerequisites
 
-- Install NodeJS 16:
-  - on Red Hat Linux: `sudo dnf module install nodejs:16`
+- Install NodeJS 22:
+  - on Red Hat Linux: `sudo dnf module install nodejs:22`
   - on Ubuntu Linux: `sudo snap install node --classic`
   - on MacOS via [brew](https://brew.sh/): `brew install node`
 - Install Yarn v1 (Classic): `npm install -g yarn`
-  - Then [upgrade](https://yarnpkg.com/getting-started/install#updating-to-the-latest-versions) Yarn to v3: `yarn set version berry`
+  - Then [upgrade](https://yarnpkg.com/getting-started/install#updating-to-the-latest-versions) Yarn to Yarn Berry v4.6.0: `yarn set version 4.6.0`
 - Install Volta.sh: `curl https://get.volta.sh | sh`
 - Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) to run the local graph node.
 - Shell utilities: [jq](https://stedolan.github.io/jq/), [yq](https://mikefarah.gitbook.io/yq/)

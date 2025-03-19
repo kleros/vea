@@ -2,7 +2,8 @@ import {
   MessageSent as MessageSentEvent,
   SnapshotSaved as SnapshotSavedEvent,
   SnapshotSent as SnapshotSentEvent,
-} from "../generated/VeaInbox/VeaInbox";
+  VeaInboxArbToEthDevnet,
+} from "../generated/VeaInboxArbToEthDevnet/VeaInboxArbToEthDevnet";
 import {
   MessageSent,
   SnapshotSaved,
@@ -10,19 +11,10 @@ import {
   Sender,
   Receiver,
   Node,
+  Inbox,
 } from "../generated/schema";
-import { VeaInbox } from "../generated/VeaInbox/VeaInbox";
 
-import {
-  log,
-  Bytes,
-  TypedMap,
-  ByteArray,
-  Address,
-  BigInt,
-  crypto,
-  ethereum,
-} from "@graphprotocol/graph-ts";
+import { log, Bytes, ByteArray, BigInt, crypto } from "@graphprotocol/graph-ts";
 
 export function handleMessageSent(event: MessageSentEvent): void {
   let entity = new MessageSent(
@@ -45,10 +37,18 @@ export function handleMessageSent(event: MessageSentEvent): void {
   let _msgSender = new ByteArray(20);
   for (let i = 0; i < 20; i++) _msgSender[i] = _data[i + 16];
 
+  entity.inbox = event.address;
   entity.nonce = BigInt.fromByteArray(_nonce.reverse() as ByteArray);
   entity.to = Bytes.fromByteArray(_to);
   entity.msgSender = Bytes.fromByteArray(_msgSender);
   entity.data = Bytes.fromByteArray(_data);
+
+  // Create Inbox entity if it doesn't exist
+  let inbox = Inbox.load(event.address);
+  if (!inbox) {
+    inbox = new Inbox(event.address);
+    inbox.save();
+  }
 
   let sender = Sender.load(entity.msgSender);
   if (!sender) {
@@ -62,19 +62,21 @@ export function handleMessageSent(event: MessageSentEvent): void {
     receiver.save();
   }
 
-  let node = new Node(entity.nonce.toString());
+  // Create a unique node ID by prefixing with the contract address
+  let nodeId = event.address.toHexString() + "-" + entity.nonce.toString();
+  let node = new Node(nodeId);
   let leafHash = Bytes.fromByteArray(
     crypto.keccak256(Bytes.fromByteArray(crypto.keccak256(msgData)))
   );
   node.hash = leafHash;
   node.save();
 
-  entity.node = entity.nonce.toString();
+  entity.node = nodeId;
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
-  let contract = VeaInbox.bind(event.address);
+  let contract = VeaInboxArbToEthDevnet.bind(event.address);
   entity.epoch = event.block.timestamp.div(contract.epochPeriod());
   entity.save();
 
@@ -90,11 +92,15 @@ export function handleMessageSent(event: MessageSentEvent): void {
     let index: string;
     if (height == 0) {
       index = BigInt.fromU64(oldCount - 1).toString();
-      sibling = Node.load(index);
+      sibling = Node.load(event.address.toHexString() + "-" + index);
     } else {
       index = BigInt.fromU64(oldCount + 1 - 2 ** (height + 1)).toString();
       sibling = Node.load(
-        index + "," + BigInt.fromU64(oldCount - 2 ** height).toString()
+        event.address.toHexString() +
+          "-" +
+          index +
+          "," +
+          BigInt.fromU64(oldCount - 2 ** height).toString()
       );
     }
 
@@ -106,8 +112,14 @@ export function handleMessageSent(event: MessageSentEvent): void {
     leafHash = Bytes.fromByteArray(
       crypto.keccak256(concatAndSortByteArrays(leafHash, sibling.hash))
     );
-    let node = new Node(index + "," + BigInt.fromU64(oldCount).toString());
-    log.error("saved {}", [index + "," + BigInt.fromU64(oldCount).toString()]);
+    let nodeId =
+      event.address.toHexString() +
+      "-" +
+      index +
+      "," +
+      BigInt.fromU64(oldCount).toString();
+    let node = new Node(nodeId);
+    log.error("saved {}", [nodeId]);
 
     node.hash = leafHash;
     node.save();
@@ -121,7 +133,15 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
   let entity = new SnapshotSaved(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
-  let contract = VeaInbox.bind(event.address);
+
+  // Create Inbox entity if it doesn't exist
+  let inbox = Inbox.load(event.address);
+  if (!inbox) {
+    inbox = new Inbox(event.address);
+    inbox.save();
+  }
+
+  let contract = VeaInboxArbToEthDevnet.bind(event.address);
   entity.epoch = event.block.timestamp.div(contract.epochPeriod());
   entity.stateRoot = contract.snapshots(entity.epoch);
   entity.count = event.params._count;
@@ -146,11 +166,15 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
         isFirstHash = false;
         if (height == 0) {
           index = oldCount;
-          node = Node.load(BigInt.fromU64(index).toString());
+          node = Node.load(
+            event.address.toHexString() + "-" + BigInt.fromU64(index).toString()
+          );
         } else {
           index = oldCount + 1 - 2 ** height;
           node = Node.load(
-            BigInt.fromU64(index).toString() +
+            event.address.toHexString() +
+              "-" +
+              BigInt.fromU64(index).toString() +
               "," +
               BigInt.fromU64(oldCount).toString()
           );
@@ -158,7 +182,9 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
 
         if (!node) {
           log.error("Node not found1 {}", [
-            BigInt.fromU64(index).toString() +
+            event.address.toHexString() +
+              "-" +
+              BigInt.fromU64(index).toString() +
               "," +
               BigInt.fromU64(oldCount).toString(),
           ]);
@@ -169,6 +195,8 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
         let upperIndex = index - 1;
         index = upperIndex + 1 - 2 ** height;
         const nodeId =
+          event.address.toHexString() +
+          "-" +
           BigInt.fromU64(index).toString() +
           "," +
           BigInt.fromU64(upperIndex).toString();
@@ -184,17 +212,17 @@ export function handleSnapshotSaved(event: SnapshotSavedEvent): void {
         nodeHash = Bytes.fromByteArray(
           crypto.keccak256(concatAndSortByteArrays(nodeHash!, sibling))
         );
-        node = Node.load(
+
+        const newNodeId =
+          event.address.toHexString() +
+          "-" +
           BigInt.fromU64(index).toString() +
-            "," +
-            BigInt.fromU64(oldCount).toString()
-        );
+          "," +
+          BigInt.fromU64(oldCount).toString();
+
+        node = Node.load(newNodeId);
         if (!node) {
-          node = new Node(
-            BigInt.fromU64(index).toString() +
-              "," +
-              BigInt.fromU64(oldCount).toString()
-          );
+          node = new Node(newNodeId);
           node.hash = nodeHash;
           node.save();
         }
@@ -220,6 +248,14 @@ export function handleSnapshotSent(event: SnapshotSentEvent): void {
   let entity = new SnapshotSent(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
+
+  // Create Inbox entity if it doesn't exist
+  let inbox = Inbox.load(event.address);
+  if (!inbox) {
+    inbox = new Inbox(event.address);
+    inbox.save();
+  }
+
   entity.epochSent = event.params._epochSent;
   entity.ticketId = event.params._ticketId;
 

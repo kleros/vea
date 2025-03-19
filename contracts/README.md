@@ -2,26 +2,44 @@
 
 Smart contracts for Vea.
 
+---
+
+- **[Deployed Addresses](#deployed-addresses)**
+  - **[Sepolia](#sepolia)**
+  - **[Arbitrum Sepolia](#arbitrum-sepolia)**
+  - **[Chiado](#chiado)**
+- **[Getting Started](#getting-started)**
+  - **[Install the Dependencies](#install-the-dependencies)**
+  - **[Run Tests](#run-tests)**
+  - **[Compile the Contracts](#compile-the-contracts)**
+  - **[Run Linter on Files](#run-linter-on-files)**
+  - **[Deployment](#deployment)**
+
+---
+
 ## Deployed Addresses
 
-Refresh the list of deployed contracts by running `./scripts/generateDeploymentsMarkdown.sh`.
+Refresh the list of deployed contracts by running `./scripts/populateReadme.sh`.
 
-### Current version
+### Sepolia
 
-#### Sepolia
+- [RouterArbToGnosisDevnet](https://sepolia.etherscan.io/address/0xbD6c557295cBDd57e0efC408b20096f3fe55C8a6)
+- [RouterArbToGnosisTestnet](https://sepolia.etherscan.io/address/0x66C85D0375b0CbD1bBeB4F7D5E73c181BAf8454e)
+- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0xb1f5125b52CE23D3763AC1C9ACEf0668825A66c0)
+- [VeaOutboxArbToEthTestnet](https://sepolia.etherscan.io/address/0x209BFdC6B7c66b63A8382196Ba3d06619d0F12c9)
 
-- [VeaOutboxArbToEthDevnet](https://sepolia.etherscan.io/address/0xb8BF3B6bd3E1a0Cc9E2dB77dd492503310514674)
+### Arbitrum Sepolia
 
-#### Arbitrum Sepolia
+- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0xF6C5640de593fEf76129F1F1A863F7ddc65776C9)
+- [VeaInboxArbToEthTestnet](https://sepolia.arbiscan.io/address/0xE12daFE59Bc3A996362d54b37DFd2BA9279cAd06)
+- [VeaInboxArbToGnosisDevnet](https://sepolia.arbiscan.io/address/0xF6286b9C6c7F1B33Ea976FA43434027c7b8421A7)
+- [VeaInboxArbToGnosisTestnet](https://sepolia.arbiscan.io/address/0x62403e9Fbac618301175C89fb21920e4FF235A6a)
 
-- [VeaInboxArbToEthDevnet](https://sepolia.arbiscan.io/address/0x0B5851fE2a931F619F73E739E5435C43976f1D68)
-
-#### Chiado
+### Chiado
 
 - [VeaInboxGnosisToArbDevnet](https://blockscout.com/gnosis/chiado/address/0xc0804E4FcEEfD958050356A429DAaaA71aA39385)
-- [VeaInboxGnosisToArbTestnet](https://blockscout.com/gnosis/chiado/address/0xC21c20a719fAc23c54c336FA0E16a0CFdC4baA00)
-- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0x9481b3A49ac67d03D9022E6200eFD81850BADDB4)
-- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0x931FA807020231bCE1340Be8E1e5054207BbAFEd)
+- [VeaOutboxArbToGnosisDevnet](https://blockscout.com/gnosis/chiado/address/0xE24B2838962207F585F4fa5C5bE3e1AcA43a1a1B)
+- [VeaOutboxArbToGnosisTestnet](https://blockscout.com/gnosis/chiado/address/0xb78afF106DcB5fD0768a348a804bbc4DCacB3233)
 
 ## Getting Started
 
@@ -74,7 +92,7 @@ The ones below are optional:
 
 #### 1. Update the Constructor Parameters (optional)
 
-If some of the constructor parameters (such as the Meta Evidence) needs to change, you need to update the files in the `deploy/` directory.
+If some of the constructor parameters needs to change, you need to update the files in the `deploy/` directory.
 
 #### 2. Deploy to a Local Network
 
@@ -111,13 +129,13 @@ yarn deploy --network arbitrum --tags ArbToGnosisInbox
 The deployed addresses should be output to the screen after the deployment is complete.
 If you miss that, you can always go to the `deployments/<network>` directory and look for the respective file.
 
-#### Running Test Fixtures
+#### 4. Running Test Fixtures
 
 ```bash
 yarn test
 ```
 
-#### 4. Verify the Source Code
+#### 5. Verify the Source Code
 
 This must be done for each network separately.
 

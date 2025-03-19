@@ -19,7 +19,7 @@ contract VeaInboxSaveSnapshot {
         veaInbox = _veaInbox;
     }
 
-    fallback() external {
+    fallback() external payable {
         veaInbox.saveSnapshot();
     }
 }

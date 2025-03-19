@@ -17,6 +17,10 @@
     "./typechain-types",
     "./deploy"
   ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
   "files": [
     "./hardhat.config.ts"
   ]

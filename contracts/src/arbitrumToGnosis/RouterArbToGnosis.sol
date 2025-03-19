@@ -47,15 +47,15 @@ contract RouterArbToGnosis is IRouterToGnosis {
 
     /// @dev This event indicates a cross-chain message was sent to inform the veaOutbox of the sequencer limit value
     /// @param _ticketID The ticketID from the AMB of the cross-chain message.
-    event sequencerDelayLimitSent(bytes32 _ticketID);
+    event SequencerDelayLimitSent(bytes32 _ticketID);
 
     /// @dev This event indicates the sequencer limit updated.
     /// @param _newSequencerDelayLimit The new sequencer delay limit.
-    event sequencerDelayLimitUpdated(uint256 _newSequencerDelayLimit);
+    event SequencerDelayLimitUpdated(uint256 _newSequencerDelayLimit);
 
     /// @dev This event indicates that a request to decrease the sequencer limit has been made.
     /// @param _requestedSequencerDelayLimit The new sequencer limit requested.
-    event sequencerDelayLimitDecreaseRequested(uint256 _requestedSequencerDelayLimit);
+    event SequencerDelayLimitDecreaseRequested(uint256 _requestedSequencerDelayLimit);
 
     /// @dev Constructor.
     /// @param _bridge The address of the arbitrum bridge contract on Ethereum.
@@ -75,26 +75,26 @@ contract RouterArbToGnosis is IRouterToGnosis {
     // ************************************* //
 
     /// @dev Update the sequencerDelayLimit. If decreasing, a delayed request is created for later execution.
-    function updatesequencerDelayLimit() public {
+    function updateSequencerDelayLimit() public {
         // the maximum asynchronous lag between the L2 and L1 clocks
-        (, , uint256 newsequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
+        (, , uint256 newSequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
 
-        if (newsequencerDelayLimit > sequencerDelayLimit) {
+        if (newSequencerDelayLimit > sequencerDelayLimit) {
             // For sequencerDelayLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
-            sequencerDelayLimit = newsequencerDelayLimit;
+            sequencerDelayLimit = newSequencerDelayLimit;
             sendSequencerDelayLimit();
-            emit sequencerDelayLimitUpdated(newsequencerDelayLimit);
-        } else if (newsequencerDelayLimit < sequencerDelayLimit) {
+            emit SequencerDelayLimitUpdated(newSequencerDelayLimit);
+        } else if (newSequencerDelayLimit < sequencerDelayLimit) {
             require(
                 sequencerDelayLimitDecreaseRequest.timestamp == 0,
                 "Sequencer limit decrease request already pending."
             );
 
             sequencerDelayLimitDecreaseRequest = SequencerLimitDecreaseRequest({
-                requestedSequencerLimit: newsequencerDelayLimit,
+                requestedSequencerLimit: newSequencerDelayLimit,
                 timestamp: block.timestamp
             });
-            emit sequencerDelayLimitDecreaseRequested(newsequencerDelayLimit);
+            emit SequencerDelayLimitDecreaseRequested(newSequencerDelayLimit);
         }
     }
 
@@ -111,11 +111,11 @@ contract RouterArbToGnosis is IRouterToGnosis {
 
         (, , uint256 currentSequencerDelayLimit, ) = ISequencerInbox(bridge.sequencerInbox()).maxTimeVariation();
 
-        // check the request is still consistent with the arbiturm bridge
+        // check the request is still consistent with the arbitrum bridge
         if (currentSequencerDelayLimit == requestedSequencerDelayLimit) {
             sequencerDelayLimit = requestedSequencerDelayLimit;
             sendSequencerDelayLimit();
-            emit sequencerDelayLimitUpdated(requestedSequencerDelayLimit);
+            emit SequencerDelayLimitUpdated(requestedSequencerDelayLimit);
         }
     }
 
@@ -127,7 +127,7 @@ contract RouterArbToGnosis is IRouterToGnosis {
         );
         // Note: using maxGasPerTx here means the relaying txn on Gnosis will need to pass that (large) amount of gas, though almost all will be unused and refunded. This is preferred over hardcoding a gas limit.
         bytes32 ticketID = amb.requireToPassMessage(veaOutboxArbToGnosis, data, amb.maxGasPerTx());
-        emit sequencerDelayLimitSent(ticketID);
+        emit SequencerDelayLimitSent(ticketID);
     }
 
     // ************************************* //
