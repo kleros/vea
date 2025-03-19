@@ -6,6 +6,11 @@ type _Schema_
     include: [{ entity: "Snapshot", fields: [{ name: "epochString" }, { name: "stateRootString" }] }]
   )
 
+type Inbox @entity(immutable: true) {
+  id: Bytes! # address
+  messages: [Snapshot!]! @derivedFrom(field: "inbox")
+}
+
 type Message @entity {
   id: ID!
   txHash: Bytes!
@@ -16,8 +21,10 @@ type Message @entity {
   data: Bytes!
 }
 
+
 type Snapshot @entity {
   id: ID!
+  inbox: Inbox! # address
   epoch: BigInt
   epochString: String
   caller: Bytes
@@ -43,6 +50,7 @@ type Fallback @entity {
 
 type Ref @entity {
   id: ID!
+  inbox: Inbox! # address
   currentSnapshotIndex: BigInt!
   nextMessageIndex: BigInt!
 }

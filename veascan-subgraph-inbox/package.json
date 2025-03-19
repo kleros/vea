@@ -10,6 +10,7 @@
     "yarn": "4.2.2"
   },
   "scripts": {
+    "update:arbitrum-sepolia": "./scripts/update.sh arbitrumSepolia arbitrum-sepolia",
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --studio veascan-inbox-arb-sep-devnet",
