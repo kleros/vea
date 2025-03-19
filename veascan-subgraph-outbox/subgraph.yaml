@@ -35,9 +35,9 @@ dataSources:
     name: VeaOutboxArbToEthDevnet
     network: sepolia
     source:
-      address: "0xb8BF3B6bd3E1a0Cc9E2dB77dd492503310514674"
+      address: "0xb1f5125b52CE23D3763AC1C9ACEf0668825A66c0"
       abi: VeaOutboxArbToEthDevnet
-      startBlock: 6458841
+      startBlock: 7825233
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

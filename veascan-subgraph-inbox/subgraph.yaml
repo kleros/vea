@@ -10,7 +10,7 @@ dataSources:
     source:
       address: "0xE12daFE59Bc3A996362d54b37DFd2BA9279cAd06"
       abi: VeaInboxArbToEthTestnet
-      startBlock: 77452741 
+      startBlock: 77452741
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -36,9 +36,9 @@ dataSources:
     name: VeaInboxArbToEthDevnet
     network: arbitrum-sepolia
     source:
-      address: "0x0B5851fE2a931F619F73E739E5435C43976f1D68"
+      address: "0xF6C5640de593fEf76129F1F1A863F7ddc65776C9"
       abi: VeaInboxArbToEthDevnet
-      startBlock: 69673433 
+      startBlock: 129093493
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

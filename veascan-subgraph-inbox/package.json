@@ -1,6 +1,6 @@
 {
   "name": "@kleros/veascan-subgraph-inbox",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
