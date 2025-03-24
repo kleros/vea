@@ -85,10 +85,11 @@ contract VeaOutboxGnosisToArbDevnet is VeaOutboxGnosisToArb {
         if (_epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = _epoch;
             stateRoot = claims[_epoch].stateRoot;
-            emit Verified(_epoch);
         }
 
         claims[_epoch].honest = Party.Claimer;
+
+        emit Verified(_epoch);
     }
 
     /// @dev Testnet operator utility function to claim, validate and withdraw.
