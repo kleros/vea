@@ -5,7 +5,7 @@ import { claimLock, releaseLock } from "./lock";
 import ShutdownManager from "./shutdownManager";
 import { BotEvents } from "./botEvents";
 import { NetworkConfigNotSet } from "./errors";
-import { Networks } from "consts/bridgeRoutes";
+import { Network } from "../consts/bridgeRoutes";
 require("dotenv").config();
 
 /**
@@ -14,6 +14,9 @@ require("dotenv").config();
  *
  * @param chainId Chain ID of the relayer
  * @param network Network name of the relayer (e.g. "testnet")
+ * @param emitter EventEmitter instance
+ *
+ * @returns The nonce read from the state file
  */
 async function initialize(
   chainId: number,
@@ -22,7 +25,7 @@ async function initialize(
   setLock: typeof claimLock = claimLock,
   syncStateFile: typeof updateStateFile = updateStateFile,
   fileSystem: typeof fs = fs
-): Promise<number> {
+): Promise<number | null> {
   setLock(network, chainId);
   emitter.emit(BotEvents.LOCK_CLAIMED);
   // STATE_DIR is absolute path of the directory where the state files are stored
@@ -47,6 +50,15 @@ async function initialize(
   return nonce;
 }
 
+/**
+ * Update the state file with the new nonce and release the lock.
+ * If nonceFrom is null, the state file will not be updated.
+ * @param chainId Chain ID of the relayer
+ * @param createdTimestamp Timestamp when the relayer was started
+ * @param nonceFrom New nonce to be written to the state file
+ * @param network Network name of the relayer (e.g. "testnet")
+ * @param emitter EventEmitter instance
+ */
 async function updateStateFile(
   chainId: number,
   createdTimestamp: number,
@@ -69,6 +81,13 @@ async function updateStateFile(
   emitter.emit(BotEvents.LOCK_RELEASED);
 }
 
+/**
+ * Setup exit handlers for the process to gracefully shutdown the relayer
+ * @param chainId Chain ID of the relayer
+ * @param shutdownManager ShutdownManager instance
+ * @param network Network name of the relayer (e.g. "testnet")
+ * @param emitter EventEmitter instance
+ */
 async function setupExitHandlers(
   chainId: number,
   shutdownManager: ShutdownManager,
@@ -111,10 +130,14 @@ async function setupExitHandlers(
 
 type RelayerNetworkConfig = {
   chainId: number;
-  network: Networks;
+  network: Network;
   senders: string[];
 };
 
+/**
+ * Get the network configurations from the environment variables
+ * @returns The network configurations
+ */
 function getNetworkConfig(): RelayerNetworkConfig[] {
   const chainIds = process.env.VEAOUTBOX_CHAINS ? process.env.VEAOUTBOX_CHAINS.split(",") : [];
   const devnetSenders = process.env.SENDER_ADDRESSES_DEVNET ? process.env.SENDER_ADDRESSES_DEVNET.split(",") : [];
@@ -127,14 +150,14 @@ function getNetworkConfig(): RelayerNetworkConfig[] {
     if (toRelayDevnet) {
       relayerNetworkConfig.push({
         chainId: Number(chainId),
-        network: Networks.DEVNET,
+        network: Network.DEVNET,
         senders: devnetSenders,
       });
     }
     if (toRelayTestnet) {
       relayerNetworkConfig.push({
         chainId: Number(chainId),
-        network: Networks.TESTNET,
+        network: Network.TESTNET,
         senders: testnetSenders,
       });
     }

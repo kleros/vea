@@ -53,6 +53,9 @@ describe("relay", () => {
             return `callData_${args[1]}`;
           }),
         },
+        sendMessage: {
+          staticCall: jest.fn().mockResolvedValue(true),
+        },
       };
 
       fetchVeaOutbox = jest.fn().mockReturnValue(veaOutboxMock);
@@ -63,7 +66,7 @@ describe("relay", () => {
       mockWait = jest.fn().mockResolvedValue("receipt");
       mockBatchSend = jest.fn().mockResolvedValue({ wait: mockWait });
 
-      mockBatchSend.estimateGas = jest.fn().mockResolvedValue(500000);
+      mockBatchSend.estimateGas = jest.fn().mockResolvedValue(600000);
 
       fetchBatcher = jest.fn().mockReturnValue({
         batchSend: mockBatchSend,
@@ -87,7 +90,7 @@ describe("relay", () => {
         fetchVeaOutbox,
         fetchProofAtCount,
         fetchMessageDataToRelay,
-        fetchBatcher, // Injecting our batcher mock
+        fetchBatcher,
       });
       expect(mockBatchSend).not.toHaveBeenCalled();
       expect(updatedNonce).toBe(0);

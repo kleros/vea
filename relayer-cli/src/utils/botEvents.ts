@@ -16,4 +16,5 @@ export enum BotEvents {
   // Message relay
   RELAY_BATCH = "relay_batch",
   RELAY_ALL_FROM = "relay_all_from",
+  MESSAGE_EXECUTION_FAILED = "message_execution_failed",
 }
