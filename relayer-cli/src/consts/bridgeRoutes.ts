@@ -15,7 +15,7 @@ interface IBridge {
   chainId: number;
   chain: string;
   epochPeriod: number;
-  veaContracts: { [key in Networks]: VeaContracts };
+  veaContracts: { [key in Network]: VeaContracts };
   batcherAddress: string;
   rpcOutbox: string;
 }
@@ -25,28 +25,28 @@ type VeaContracts = {
   veaOutbox: any;
 };
 
-enum Networks {
+enum Network {
   DEVNET = "devnet",
   TESTNET = "testnet",
 }
 
-const arbToEthContracts: { [key in Networks]: VeaContracts } = {
-  [Networks.DEVNET]: {
+const arbToEthContracts: { [key in Network]: VeaContracts } = {
+  [Network.DEVNET]: {
     veaInbox: veaInboxArbToEthDevnet,
     veaOutbox: veaOutboxArbToEthDevnet,
   },
-  [Networks.TESTNET]: {
+  [Network.TESTNET]: {
     veaInbox: veaInboxArbToEthTestnet,
     veaOutbox: veaOutboxArbToEthTestnet,
   },
 };
 
-const arbToGnosisContracts: { [key in Networks]: VeaContracts } = {
-  [Networks.DEVNET]: {
+const arbToGnosisContracts: { [key in Network]: VeaContracts } = {
+  [Network.DEVNET]: {
     veaInbox: veaInboxArbToGnosisDevnet,
     veaOutbox: veaOutboxArbToGnosisDevnet,
   },
-  [Networks.TESTNET]: {
+  [Network.TESTNET]: {
     veaInbox: veaInboxArbToGnosisTestnet,
     veaOutbox: veaOutboxArbToGnosisTestnet,
   },
@@ -59,26 +59,30 @@ const bridges: { [chainId: number]: IBridge } = {
     chain: "sepolia",
     epochPeriod: 7200,
     veaContracts: arbToEthContracts,
-    batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_SEPOLIA,
-    rpcOutbox: process.env.RPC_SEPOLIA,
+    batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_SEPOLIA!,
+    rpcOutbox: process.env.RPC_SEPOLIA!,
   },
   10200: {
     chainId: 10200,
     chain: "chiado",
     epochPeriod: 3600,
     veaContracts: arbToGnosisContracts,
-    batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_CHIADO,
-    rpcOutbox: process.env.RPC_CHIADO,
+    batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_CHIADO!,
+    rpcOutbox: process.env.RPC_CHIADO!,
   },
 };
 
 // Getters
-const getBridgeConfig = (chainId: number): IBridge | undefined => {
-  return bridges[chainId];
+const getBridgeConfig = (chainId: number): IBridge => {
+  const bridge = bridges[chainId];
+  if (!bridge) throw new Error(`Unsupported chainId: ${chainId}`);
+  return bridge;
 };
 
 const getEpochPeriod = (chainId: number): number => {
-  return bridges[chainId].epochPeriod;
+  const bridge = bridges[chainId];
+  if (!bridge.epochPeriod) throw new Error(`Unsupported chainId: ${chainId}`);
+  return bridge.epochPeriod;
 };
 
-export { getBridgeConfig, getEpochPeriod, Networks };
+export { getBridgeConfig, getEpochPeriod, Network };
