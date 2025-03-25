@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "baseUrl": "src",
+    "baseUrl": ".",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist"
   },
-  "ts-node": {
-    "require": [
-      "tsconfig-paths/register"
-    ]
-  }
+  "include": [
+    "src/**/*"
+  ]
 }
