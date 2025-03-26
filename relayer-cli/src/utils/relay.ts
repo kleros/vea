@@ -39,6 +39,7 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, cha
  * Relay a message from the veaOutbox
  * @param chainId The chain id of the veaOutbox chain
  * @param nonce The nonce of the message
+ * @param network The network to relay messages on
  * @returns The transaction receipt
  */
 const relay = async (chainId: number, nonce: number, network: Network) => {
@@ -47,12 +48,15 @@ const relay = async (chainId: number, nonce: number, network: Network) => {
   if (!bridgeConfig) throw new InvalidChainId(chainId);
   if (!privateKey) throw new MissingEnvironmentVariable("PRIVATE_KEY");
   const { veaContracts, rpcOutbox } = bridgeConfig;
-  const veaOutbox = getVeaOutbox(veaContracts[network].veaOutbox.address, privateKey, rpcOutbox, chainId, network);
+  const veaInboxAddress = veaContracts[network].veaInbox.address;
+  const veaOutboxAddress = veaContracts[network].veaOutbox.address;
+
+  const veaOutbox = getVeaOutbox(veaOutboxAddress, privateKey, rpcOutbox, chainId, network);
   const count = await getCount(veaOutbox, chainId);
 
   const [proof, messageData] = await Promise.all([
-    getProofAtCount(chainId, nonce, count, veaContracts[network].veaInbox.address),
-    getMessageDataToRelay(chainId, veaContracts[network].veaInbox.address, nonce),
+    getProofAtCount(chainId, nonce, count, veaInboxAddress),
+    getMessageDataToRelay(chainId, veaInboxAddress, nonce),
   ]);
   if (!messageData) throw new DataError("relay message data");
   const [to, data] = messageData;
@@ -78,6 +82,7 @@ interface RelayBatchDeps {
 /**
  * Relay a batch of messages from the veaOutbox
  * @param chainId The chain id of the veaOutbox chain
+ * @param network The network to relay messages on
  * @param nonce The nonce of the message
  * @param maxBatchSize The maximum number of messages to relay in a single batch
  *
@@ -104,9 +109,12 @@ const relayBatch = async ({
   if (!privateKey) {
     throw new MissingEnvironmentVariable("PRIVATE_KEY");
   }
-  const batcher = fetchBatcher(batcherAddress, privateKey, rpcOutbox);
 
-  const veaOutbox = fetchVeaOutbox(veaContracts[network].veaOutbox.address, privateKey, rpcOutbox, chainId, network);
+  const veaInboxAddress = veaContracts[network].veaInbox.address;
+  const veaOutboxAddress = veaContracts[network].veaOutbox.address;
+
+  const batcher = fetchBatcher(batcherAddress, privateKey, rpcOutbox);
+  const veaOutbox = fetchVeaOutbox(veaOutboxAddress, privateKey, rpcOutbox, chainId, network);
   const count = await fetchCount(veaOutbox, chainId);
 
   while (nonce < count) {
@@ -121,9 +129,10 @@ const relayBatch = async ({
         nonce++;
         continue;
       }
+
       const [proof, messageData] = await Promise.all([
-        fetchProofAtCount(chainId, nonce, count, veaContracts[network].veaInbox.address)!,
-        fetchMessageDataToRelay(chainId, veaContracts[network].veaInbox.address, nonce)!,
+        fetchProofAtCount(chainId, nonce, count, veaInboxAddress)!,
+        fetchMessageDataToRelay(chainId, veaInboxAddress, nonce)!,
       ]);
       if (!messageData) {
         throw new DataError("relayBatch message data");
@@ -134,7 +143,7 @@ const relayBatch = async ({
         await veaOutbox.sendMessage.staticCall(proof, nonce, to, data);
         const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, nonce, to, data]);
         datas.push(callData);
-        targets.push(veaContracts[network].veaOutbox.address);
+        targets.push(veaOutboxAddress);
         values.push(0);
         batchMessages += 1;
         nonce++;
@@ -177,9 +186,11 @@ const relayAllFrom = async (
   if (!privateKey) {
     throw new Error("PRIVATE_KEY is not defined in environment variables");
   }
-  const batcher = getBatcher(batcherAddress, privateKey, rpcOutbox);
+  const veaInboxAddress = veaContracts[network].veaInbox.address;
+  const veaOutboxAddress = veaContracts[network].veaOutbox.address;
 
-  const veaOutbox = getVeaOutbox(veaContracts[network].veaOutbox.address, privateKey, rpcOutbox, chainId, network);
+  const batcher = getBatcher(batcherAddress, privateKey, rpcOutbox);
+  const veaOutbox = getVeaOutbox(veaOutboxAddress, privateKey, rpcOutbox, chainId, network);
   const count = await getCount(veaOutbox, chainId);
 
   if (!count) return null;
@@ -188,16 +199,17 @@ const relayAllFrom = async (
   let datas: string[] = [];
   let lastNonce = null;
   for (const msgSender of msgSenders) {
-    const nonces = await getNonceFrom(chainId, veaContracts[network].veaInbox.address, nonce, msgSender);
+    const nonces = await getNonceFrom(chainId, veaInboxAddress, nonce, msgSender);
 
     for (const x of nonces) {
       const isMsgRelayed = await veaOutbox.isMsgRelayed(x);
       if (isMsgRelayed) {
         continue;
       }
+
       const [proof, messageData] = await Promise.all([
-        getProofAtCount(chainId, x, count, veaContracts[network].veaInbox.address),
-        getMessageDataToRelay(chainId, veaContracts[network].veaInbox.address, x),
+        getProofAtCount(chainId, x, count, veaInboxAddress),
+        getMessageDataToRelay(chainId, veaInboxAddress, x),
       ]);
       if (!messageData) {
         throw new DataError("relayAllFrom message data");
