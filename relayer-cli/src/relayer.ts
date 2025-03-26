@@ -32,40 +32,52 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
   let delayAmount = 7200 * 1000; // 2 hours in ms
   while (!shutdownManager.getIsShuttingDown()) {
     for (const networkConfig of networkConfigs) {
-      const { chainId, network, senders } = networkConfig;
-      emitter.emit(BotEvents.STARTED, chainId, network);
-      const maxBatchSize = 10; // 10 messages per batch
-
-      await setupExitHandlers(chainId, shutdownManager, network, emitter);
-
-      let nonce = await initializeNonce(chainId, network, emitter);
-      const toRelayAll = senders[0] == ethers.ZeroAddress;
-      if (nonce == null) continue;
-      if (toRelayAll) {
-        nonce = await relayBatch({
-          chainId,
-          network,
-          nonce,
-          maxBatchSize,
-          emitter,
-        });
-      } else {
-        nonce = await relayAllFrom(chainId, network, nonce, senders, emitter);
-      }
-      if (nonce == null) continue;
-      await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, network, emitter);
-      if (network == Network.DEVNET)
-        delayAmount = 1000 * 10; // 10 seconds because devnet is not dependent on epoch period
-      else {
-        const currentTS = Math.floor(Date.now() / 1000);
-        const epochPeriod = getEpochPeriod(chainId);
-        const timeLeft = (epochPeriod - (Math.floor(currentTS / 1000) % epochPeriod)) * 1000 + 100 * 1000;
-        delayAmount = Math.min(delayAmount, timeLeft);
-      }
+      delayAmount = await processNetworkConfig(networkConfig, shutdownManager, emitter, delayAmount);
     }
-
     emitter.emit(BotEvents.WAITING, delayAmount);
     await delay(delayAmount);
+  }
+}
+
+/**
+ * Process the network configuration
+ * @param networkConfig The network configuration
+ * @param shutdownManager The shutdown manager
+ * @param emitter The event emitter
+ * @param currentDelay The current delay
+ * @returns The new delay
+ */
+async function processNetworkConfig(
+  networkConfig: RelayerNetworkConfig,
+  shutdownManager: ShutdownManager,
+  emitter: EventEmitter,
+  currentDelay: number
+): Promise<number> {
+  const { chainId, network, senders } = networkConfig;
+  emitter.emit(BotEvents.STARTED, chainId, network);
+  const maxBatchSize = 10; // 10 messages per batch
+
+  await setupExitHandlers(chainId, shutdownManager, network, emitter);
+
+  let nonce = await initializeNonce(chainId, network, emitter);
+  if (nonce == null) return currentDelay;
+
+  const toRelayAll = senders[0] === ethers.ZeroAddress;
+  nonce = toRelayAll
+    ? await relayBatch({ chainId, network, nonce, maxBatchSize, emitter })
+    : await relayAllFrom(chainId, network, nonce, senders, emitter);
+
+  if (nonce == null) return currentDelay;
+
+  await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, network, emitter);
+
+  if (network === Network.DEVNET) {
+    return 1000 * 10; // 10 seconds for devnet
+  } else {
+    const currentTS = Math.floor(Date.now() / 1000);
+    const epochPeriod = getEpochPeriod(chainId);
+    const timeLeft = (epochPeriod - (Math.floor(currentTS / 1000) % epochPeriod)) * 1000 + 100 * 1000;
+    return Math.min(currentDelay, timeLeft);
   }
 }
 
