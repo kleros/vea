@@ -18,7 +18,7 @@ interface SnapshotResponse {
  * @returns The count of the veaOutbox
  */
 const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, chainId: number): Promise<number> => {
-  const subgraph = process.env.RELAYER_SUBRAPGH;
+  const subgraph = process.env.RELAYER_SUBGRAPH;
   const stateRoot = await veaOutbox.stateRoot();
 
   const result = (await request(
@@ -216,7 +216,7 @@ const relayAllFrom = async (
       }
       const [to, data] = messageData;
 
-      const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, nonce, to, data]);
+      const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, x, to, data]);
       datas.push(callData);
       targets.push(veaContracts[network].veaOutbox.address);
       values.push(0);
@@ -253,7 +253,7 @@ interface MessageSentsResponse {
  * @returns The nonces of the messages sent by the sender
  */
 const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSender: string) => {
-  const subgraph = process.env.RELAYER_SUBRAPGH;
+  const subgraph = process.env.RELAYER_SUBGRAPH;
 
   const result = (await request(
     `https://api.studio.thegraph.com/query/${subgraph}`,

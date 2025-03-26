@@ -24,7 +24,7 @@ const getMessageDataToRelay = async (
   requestGraph: typeof request = request
 ) => {
   try {
-    const subgraph = process.env.RELAYER_SUBRAPGH;
+    const subgraph = process.env.RELAYER_SUBGRAPH;
 
     const result = (await requestGraph(
       `https://api.studio.thegraph.com/query/${subgraph}`,
@@ -85,7 +85,7 @@ const getProofAtCount = async (
   query += "}";
 
   try {
-    const subgraph = process.env.RELAYER_SUBRAPGH;
+    const subgraph = process.env.RELAYER_SUBGRAPH;
     const result = (await requestGraph(
       `https://api.studio.thegraph.com/query/${subgraph}`,
       query
