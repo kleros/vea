@@ -102,14 +102,8 @@ const relayBatch = async ({
   fetchBatcher = getBatcher,
 }: RelayBatchDeps) => {
   const bridgeConfig = fetchBridgeConfig(chainId);
-  if (!bridgeConfig) throw new Error(`Unsupported chainId: ${chainId}`);
-  const { batcherAddress, veaContracts, rpcOutbox } = bridgeConfig;
-
   const privateKey = process.env.PRIVATE_KEY;
-  if (!privateKey) {
-    throw new MissingEnvironmentVariable("PRIVATE_KEY");
-  }
-
+  const { batcherAddress, veaContracts, rpcOutbox } = bridgeConfig;
   const veaInboxAddress = veaContracts[network].veaInbox.address;
   const veaOutboxAddress = veaContracts[network].veaOutbox.address;
 
@@ -129,15 +123,10 @@ const relayBatch = async ({
         nonce++;
         continue;
       }
-
       const [proof, messageData] = await Promise.all([
-        fetchProofAtCount(chainId, nonce, count, veaInboxAddress)!,
-        fetchMessageDataToRelay(chainId, veaInboxAddress, nonce)!,
+        fetchProofAtCount(chainId, nonce, count, veaInboxAddress),
+        fetchMessageDataToRelay(chainId, veaInboxAddress, nonce),
       ]);
-      if (!messageData) {
-        throw new DataError("relayBatch message data");
-      }
-
       const [to, data] = messageData;
       try {
         await veaOutbox.sendMessage.staticCall(proof, nonce, to, data);
@@ -156,9 +145,6 @@ const relayBatch = async ({
       const gasLimit = await batcher.batchSend.estimateGas(targets, values, datas);
       const tx = await batcher.batchSend(targets, values, datas, { gasLimit });
       const receipt = await tx.wait();
-      if (!receipt) {
-        throw new DataError("Transaction receipt is null");
-      }
       emitter.emit(BotEvents.RELAY_BATCH, nonce, receipt.hash);
     }
   }
@@ -180,20 +166,16 @@ const relayAllFrom = async (
   emitter: EventEmitter
 ): Promise<number | null> => {
   const bridgeConfig = getBridgeConfig(chainId);
-  if (!bridgeConfig) throw new Error(`Unsupported chainId: ${chainId}`);
   const { veaContracts, batcherAddress, rpcOutbox } = bridgeConfig;
   const privateKey = process.env.PRIVATE_KEY;
-  if (!privateKey) {
-    throw new Error("PRIVATE_KEY is not defined in environment variables");
-  }
   const veaInboxAddress = veaContracts[network].veaInbox.address;
   const veaOutboxAddress = veaContracts[network].veaOutbox.address;
 
   const batcher = getBatcher(batcherAddress, privateKey, rpcOutbox);
   const veaOutbox = getVeaOutbox(veaOutboxAddress, privateKey, rpcOutbox, chainId, network);
   const count = await getCount(veaOutbox, chainId);
-
   if (!count) return null;
+
   let targets: string[] = [];
   let values: number[] = [];
   let datas: string[] = [];
@@ -211,9 +193,6 @@ const relayAllFrom = async (
         getProofAtCount(chainId, x, count, veaInboxAddress),
         getMessageDataToRelay(chainId, veaInboxAddress, x),
       ]);
-      if (!messageData) {
-        throw new DataError("relayAllFrom message data");
-      }
       const [to, data] = messageData;
 
       const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, x, to, data]);
@@ -228,9 +207,6 @@ const relayAllFrom = async (
     const gasLimit = await batcher.batchSend.estimateGas(targets, values, datas);
     const tx = await batcher.batchSend(targets, values, datas, { gasLimit });
     const receipt = await tx.wait();
-    if (!receipt) {
-      throw new DataError("Transaction receipt");
-    }
     emitter.emit(BotEvents.RELAY_ALL_FROM, nonce, msgSenders, receipt.hash);
   }
 
