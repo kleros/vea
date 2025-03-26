@@ -52,20 +52,26 @@ function getVeaOutbox(
 ) {
   const bridge = getBridgeConfig(chainId);
   switch (bridge.chain) {
-    case "sepolia":
+    case "sepolia": {
       switch (network) {
         case Network.DEVNET:
           return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
         case Network.TESTNET:
           return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+        default:
+          throw new Error(`Unsupported network for sepolia: ${network}`);
       }
-    case "chiado":
+    }
+    case "chiado": {
       switch (network) {
         case Network.DEVNET:
           return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
         case Network.TESTNET:
           return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+        default:
+          throw new Error(`Unsupported network for chiado: ${network}`);
       }
+    }
     default:
       throw new Error(`Unsupported chainId: ${chainId}`);
   }
@@ -80,25 +86,30 @@ function getVeaOutboxProvider(
 ) {
   const bridges = getBridgeConfig(chainId);
   switch (bridges.chain) {
-    case "sepolia":
+    case "sepolia": {
       switch (network) {
         case Network.DEVNET:
           return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
         case Network.TESTNET:
           return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
+        default:
+          throw new Error(`Unsupported network for sepolia: ${network}`);
       }
-    case "chiado":
+    }
+    case "chiado": {
       switch (network) {
         case Network.DEVNET:
           return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
         case Network.TESTNET:
           return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWalletRPC(privateKey, rpc));
+        default:
+          throw new Error(`Unsupported network for chiado: ${network}`);
       }
+    }
     default:
       throw new Error(`Unsupported chainId: ${chainId}`);
   }
 }
-
 function getBatcher(batcherAddress: string, privateKey: string, web3ProviderURL: string) {
   return TransactionBatcher__factory.connect(batcherAddress, getWallet(privateKey, web3ProviderURL));
 }
