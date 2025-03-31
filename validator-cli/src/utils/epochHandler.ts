@@ -41,10 +41,11 @@ const setEpochRange = ({
 
   let veaEpochOutboxClaimableNow = Math.floor(timeLocal / epochPeriod) - 1;
   // only past epochs are claimable, hence shift by one here
-  const veaEpochOutboxRange = veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound;
-  const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
-    .fill(veaEpochOutboxWatchLowerBound)
-    .map((el, i) => el + i);
+  const length = veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound;
+  const veaEpochOutboxCheckClaimsRangeArray: number[] = Array.from(
+    { length },
+    (_, i) => veaEpochOutboxWatchLowerBound + i + 1
+  );
   return veaEpochOutboxCheckClaimsRangeArray;
 };
 

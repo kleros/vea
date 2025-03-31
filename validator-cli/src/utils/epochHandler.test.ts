@@ -11,7 +11,7 @@ describe("epochHandler", () => {
     const now = (currentTimestamp + mockedEpochPeriod + 1) * 1000; // In ms
     const startEpoch =
       Math.floor((currentTimestamp - (mockedSeqDelayLimit + mockedEpochPeriod + startCoolDown)) / mockedEpochPeriod) -
-      2;
+      1;
     it("should return the correct epoch range", () => {
       const mockedFetchBridgeConfig = jest.fn(() => ({
         epochPeriod: mockedEpochPeriod,
@@ -31,7 +31,7 @@ describe("epochHandler", () => {
         now,
         fetchBridgeConfig: mockedFetchBridgeConfig as any,
       });
-      expect(result[result.length - 1]).toEqual(currentEpoch - 1);
+      expect(result[result.length - 1]).toEqual(currentEpoch);
       expect(result[0]).toEqual(startEpoch);
     });
   });
