@@ -1,6 +1,14 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { getBridgeConfig } from "../consts/bridgeRoutes";
 
+interface EpochRangeParams {
+  chainId: number;
+  epochPeriod: number;
+  currentTimestamp: number;
+  now?: number;
+  fetchBridgeConfig?: typeof getBridgeConfig;
+}
+
 /**
  * Sets the epoch range to check for claims.
  *
@@ -12,13 +20,13 @@ import { getBridgeConfig } from "../consts/bridgeRoutes";
  * @returns The epoch range to check for claims
  */
 
-const setEpochRange = (
-  chainId: number,
-  currentTimestamp: number,
-  epochPeriod: number,
-  now: number = Date.now(),
-  fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
-): Array<number> => {
+const setEpochRange = ({
+  chainId,
+  currentTimestamp,
+  epochPeriod,
+  now = Date.now(),
+  fetchBridgeConfig = getBridgeConfig,
+}: EpochRangeParams): Array<number> => {
   const { sequencerDelayLimit } = fetchBridgeConfig(chainId);
   const coldStartBacklog = 7 * 24 * 60 * 60; // when starting the watcher, specify an extra backlog to check
 
@@ -37,7 +45,6 @@ const setEpochRange = (
   const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
     .fill(veaEpochOutboxWatchLowerBound)
     .map((el, i) => el + i);
-  return [241886, 241887, 241888];
   return veaEpochOutboxCheckClaimsRangeArray;
 };
 
@@ -53,12 +60,7 @@ const setEpochRange = (
  * @example
  * currentEpoch = checkForNewEpoch(currentEpoch, 7200);
  */
-const getLatestChallengeableEpoch = (
-  chainId: number,
-  epochPeriod: number,
-  now: number = Date.now(),
-  fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
-): number => {
+const getLatestChallengeableEpoch = (epochPeriod: number, now: number = Date.now()): number => {
   return Math.floor(now / 1000 / epochPeriod) - 2;
 };
 
@@ -71,4 +73,4 @@ const getBlockFromEpoch = async (epoch: number, epochPeriod: number, provider: J
   return latestBlock.number - blockFallBack;
 };
 
-export { setEpochRange, getLatestChallengeableEpoch, getBlockFromEpoch };
+export { setEpochRange, getLatestChallengeableEpoch, getBlockFromEpoch, EpochRangeParams };
