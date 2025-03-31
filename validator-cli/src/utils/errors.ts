@@ -16,11 +16,11 @@ class ClaimNotSetError extends Error {
   }
 }
 
-class TransactionHandlerNotDefinedError extends Error {
-  constructor() {
+class NotDefinedError extends Error {
+  constructor(param: string) {
     super();
     this.name = "TransactionHandlerNotDefinedError";
-    this.message = "TransactionHandler is not defined";
+    this.message = `${param} is not defined`;
   }
 }
 
@@ -48,11 +48,20 @@ class InvalidNetworkError extends Error {
   }
 }
 
+class MissingEnvError extends Error {
+  constructor(envVar: string) {
+    super();
+    this.name = "MissingEnvError";
+    this.message = `Missing environment variable: ${envVar}`;
+  }
+}
+
 export {
   ClaimNotFoundError,
   ClaimNotSetError,
-  TransactionHandlerNotDefinedError,
+  NotDefinedError,
   InvalidBotPathError,
   DevnetOwnerNotSetError,
   InvalidNetworkError,
+  MissingEnvError,
 };

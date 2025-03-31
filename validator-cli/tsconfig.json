@@ -3,7 +3,12 @@
     "src"
   ],
   "compilerOptions": {
+    "baseUrl": ".",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist"
   }
 }
