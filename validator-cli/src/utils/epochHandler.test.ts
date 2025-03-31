@@ -1,4 +1,4 @@
-import { setEpochRange, getLatestChallengeableEpoch } from "./epochHandler";
+import { setEpochRange, getLatestChallengeableEpoch, EpochRangeParams } from "./epochHandler";
 
 describe("epochHandler", () => {
   describe("setEpochRange", () => {
@@ -17,7 +17,20 @@ describe("epochHandler", () => {
         epochPeriod: mockedEpochPeriod,
         sequencerDelayLimit: mockedSeqDelayLimit,
       }));
-      const result = setEpochRange(currentEpoch * mockedEpochPeriod, 1, now, mockedFetchBridgeConfig as any);
+      const mockParams: EpochRangeParams = {
+        chainId: 1,
+        currentTimestamp,
+        epochPeriod: mockedEpochPeriod,
+        now,
+        fetchBridgeConfig: mockedFetchBridgeConfig as any,
+      };
+      const result = setEpochRange({
+        chainId: 1,
+        currentTimestamp,
+        epochPeriod: mockedEpochPeriod,
+        now,
+        fetchBridgeConfig: mockedFetchBridgeConfig as any,
+      });
       expect(result[result.length - 1]).toEqual(currentEpoch - 1);
       expect(result[0]).toEqual(startEpoch);
     });
@@ -25,12 +38,9 @@ describe("epochHandler", () => {
 
   describe("getLatestChallengeableEpoch", () => {
     it("should return the correct epoch number", () => {
-      const chainId = 1;
       const now = 1626325200000;
-      const fetchBridgeConfig = jest.fn(() => ({
-        epochPeriod: 600,
-      }));
-      const result = getLatestChallengeableEpoch(chainId, now, fetchBridgeConfig as any);
+      const result = getLatestChallengeableEpoch(600, now);
+
       expect(result).toEqual(now / (600 * 1000) - 2);
     });
   });
