@@ -42,6 +42,10 @@ export const configurableInitialize = (emitter: EventEmitter) => {
     console.log(`Waiting for next verifiable epoch after ${epoch}`);
   });
 
+  emitter.on(BotEvents.NO_CLAIM_REQUIRED, (epoch: number) => {
+    console.log(`No claim is required for epoch ${epoch}`);
+  });
+
   // Epoch state logs
   emitter.on(BotEvents.NO_SNAPSHOT, () => {
     console.log("No snapshot saved for epoch");

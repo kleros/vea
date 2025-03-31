@@ -6,6 +6,7 @@ export enum BotEvents {
   WAITING = "waiting",
   NO_CLAIM = "no_claim",
   VALID_CLAIM = "valid_claim",
+  NO_CLAIM_REQUIRED = "no_claim_required",
 
   // Epoch state
   NO_NEW_MESSAGES = "no_new_messages",
