@@ -108,7 +108,9 @@ export const watch = async (
           }
           i--;
         }
-        isWatched.push({ chainId, network });
+        if (!isWatched.find((watcher) => watcher.chainId == chainId && watcher.network == network)) {
+          isWatched.push({ chainId, network });
+        }
       }
     }
     await wait(1000 * 10);
