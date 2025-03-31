@@ -1,15 +1,15 @@
+import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import {
   ArbToEthTransactionHandler,
   ContractType,
   Transaction,
   MAX_PENDING_CONFIRMATIONS,
-  MAX_PENDING_TIME,
+  TransactionHandlerConstructor,
 } from "./transactionHandler";
 import { MockEmitter, defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimNotSetError } from "../utils/errors";
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { getBridgeConfig } from "../consts/bridgeRoutes";
+import { getBridgeConfig, Network } from "../consts/bridgeRoutes";
 
 describe("ArbToEthTransactionHandler", () => {
   const chainId = 11155111;
@@ -19,7 +19,8 @@ describe("ArbToEthTransactionHandler", () => {
   let veaInboxProvider: any;
   let veaOutboxProvider: any;
   let claim: ClaimStruct = null;
-
+  let transactionHandlerParams: TransactionHandlerConstructor;
+  const mockEmitter = new MockEmitter();
   beforeEach(() => {
     veaInboxProvider = {
       getTransactionReceipt: jest.fn(),
@@ -48,17 +49,21 @@ describe("ArbToEthTransactionHandler", () => {
       honest: 0,
       challenger: "0x1234",
     };
+    transactionHandlerParams = {
+      network: Network.TESTNET,
+      epoch,
+      veaInbox,
+      veaOutbox,
+      veaInboxProvider,
+      veaOutboxProvider,
+      emitter: mockEmitter,
+      claim: null,
+    };
   });
 
   describe("constructor", () => {
     it("should create a new TransactionHandler without claim", () => {
-      const transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider
-      );
+      const transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       expect(transactionHandler).toBeDefined();
       expect(transactionHandler.epoch).toEqual(epoch);
       expect(transactionHandler.veaOutbox).toEqual(veaOutbox);
@@ -66,15 +71,8 @@ describe("ArbToEthTransactionHandler", () => {
     });
 
     it("should create a new TransactionHandler with claim", () => {
-      const transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        defaultEmitter,
-        claim
-      );
+      transactionHandlerParams.claim = claim;
+      const transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       expect(transactionHandler).toBeDefined();
       expect(transactionHandler.epoch).toEqual(epoch);
       expect(transactionHandler.veaOutbox).toEqual(veaOutbox);
@@ -86,17 +84,9 @@ describe("ArbToEthTransactionHandler", () => {
   describe("checkTransactionStatus", () => {
     let transactionHandler: ArbToEthTransactionHandler;
     let finalityBlock: number = 100;
-    const mockEmitter = new MockEmitter();
     let mockBroadcastedTimestamp: number = 1000;
     beforeEach(() => {
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       veaInboxProvider.getBlock.mockResolvedValue({ number: finalityBlock });
     });
 
@@ -112,7 +102,7 @@ describe("ArbToEthTransactionHandler", () => {
         mockBroadcastedTimestamp + 1
       );
       expect(status).toEqual(2);
-      expect(mockEmitter.emit).toHaveBeenCalledWith(BotEvents.TXN_NOT_FINAL, trnx.hash, MAX_PENDING_CONFIRMATIONS - 1);
+      expect(mockEmitter.emit).toHaveBeenCalledWith(BotEvents.TXN_NOT_FINAL, trnx.hash, 1);
     });
 
     it("should return 1 if transaction is pending", async () => {
@@ -164,14 +154,8 @@ describe("ArbToEthTransactionHandler", () => {
       const mockClaim = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
       (mockClaim as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["claim(uint256,bytes32)"] = mockClaim;
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       veaOutbox.claim.mockResolvedValue({ hash: "0x1234" });
     });
 
@@ -203,7 +187,8 @@ describe("ArbToEthTransactionHandler", () => {
   describe("startVerification", () => {
     let transactionHandler: ArbToEthTransactionHandler;
     const mockEmitter = new MockEmitter();
-    const { epochPeriod, sequencerDelayLimit } = getBridgeConfig(chainId);
+    const { routeConfig, sequencerDelayLimit } = getBridgeConfig(chainId);
+    const epochPeriod = routeConfig[Network.TESTNET].epochPeriod;
     let startVerificationFlipTime: number;
     const mockStartVerification = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
     (mockStartVerification as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
@@ -212,14 +197,7 @@ describe("ArbToEthTransactionHandler", () => {
         mockStartVerification;
       veaOutbox.startVerification.mockResolvedValue({ hash: "0x1234" });
       startVerificationFlipTime = Number(claim.timestampClaimed) + epochPeriod + sequencerDelayLimit;
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       transactionHandler.claim = claim;
     });
 
@@ -269,14 +247,7 @@ describe("ArbToEthTransactionHandler", () => {
       (mockVerifySnapshot as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["verifySnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"] = mockVerifySnapshot;
       veaOutbox.verifySnapshot.mockResolvedValue({ hash: "0x1234" });
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       verificationFlipTime = Number(claim.timestampVerification) + getBridgeConfig(chainId).minChallengePeriod;
       transactionHandler.claim = claim;
     });
@@ -326,14 +297,7 @@ describe("ArbToEthTransactionHandler", () => {
       (mockWithdrawClaimDeposit as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["withdrawClaimDeposit(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"] =
         mockWithdrawClaimDeposit;
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       veaOutbox.withdrawClaimDeposit.mockResolvedValue("0x1234");
       transactionHandler.claim = claim;
     });
@@ -373,16 +337,8 @@ describe("ArbToEthTransactionHandler", () => {
   // Unhappy path (challenger)
   describe("challengeClaim", () => {
     let transactionHandler: ArbToEthTransactionHandler;
-    const mockEmitter = new MockEmitter();
     beforeEach(() => {
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       transactionHandler.claim = claim;
     });
 
@@ -429,16 +385,8 @@ describe("ArbToEthTransactionHandler", () => {
 
   describe("withdrawChallengeDeposit", () => {
     let transactionHandler: ArbToEthTransactionHandler;
-    const mockEmitter = new MockEmitter();
     beforeEach(() => {
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       veaOutbox.withdrawChallengeDeposit.mockResolvedValue("0x1234");
       transactionHandler.claim = claim;
     });
@@ -483,16 +431,8 @@ describe("ArbToEthTransactionHandler", () => {
 
   describe("sendSnapshot", () => {
     let transactionHandler: ArbToEthTransactionHandler;
-    const mockEmitter = new MockEmitter();
     beforeEach(() => {
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
       transactionHandler.claim = claim;
     });
 
@@ -537,14 +477,7 @@ describe("ArbToEthTransactionHandler", () => {
     const mockEmitter = new MockEmitter();
     beforeEach(() => {
       mockMessageExecutor = jest.fn();
-      transactionHandler = new ArbToEthTransactionHandler(
-        epoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        mockEmitter
-      );
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
     });
     it("should resolve challenged claim", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
