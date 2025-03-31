@@ -14,14 +14,14 @@ interface ClaimData {
  * @param epoch
  * @returns ClaimData
  * */
-const getClaimForEpoch = async (epoch: number): Promise<ClaimData | undefined> => {
+const getClaimForEpoch = async (epoch: number, outbox: string): Promise<ClaimData | undefined> => {
   try {
     const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
 
     const result = await request(
       `${subgraph}`,
       `{
-                        claims(where: {epoch: ${epoch}}) {
+                        claims(where: {epoch: ${epoch}, outbox: "${outbox}"}) {
                         id
                         bridger
                         stateroot
@@ -42,13 +42,13 @@ const getClaimForEpoch = async (epoch: number): Promise<ClaimData | undefined> =
  * Fetches the last claimed epoch (used for claimer - happy path)
  * @returns ClaimData
  */
-const getLastClaimedEpoch = async (): Promise<ClaimData> => {
+const getLastClaimedEpoch = async (outbox: string): Promise<ClaimData> => {
   const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
 
   const result = await request(
     `${subgraph}`,
     `{
-          claims(first:1, orderBy:timestamp, orderDirection:desc){
+          claims(first:1, orderBy:timestamp, orderDirection:desc, where: {outbox: "${outbox}"}) {
                         id
                         bridger
                         stateroot
