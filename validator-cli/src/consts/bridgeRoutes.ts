@@ -38,7 +38,7 @@ const arbToEthConfigs: { [key in Network]: RouteConfigs } = {
   [Network.DEVNET]: {
     veaInbox: veaInboxArbToEthDevnet,
     veaOutbox: veaOutboxArbToEthDevnet,
-    epochPeriod: 3600,
+    epochPeriod: 1800,
   },
   [Network.TESTNET]: {
     veaInbox: veaInboxArbToEthTestnet,
