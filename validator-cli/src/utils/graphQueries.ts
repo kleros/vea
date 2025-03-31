@@ -1,4 +1,5 @@
 import request from "graphql-request";
+import { ClaimNotFoundError } from "./errors";
 
 interface ClaimData {
   id: string;
@@ -33,8 +34,7 @@ const getClaimForEpoch = async (epoch: number, outbox: string): Promise<ClaimDat
     );
     return result[`claims`][0];
   } catch (e) {
-    console.log(e);
-    return undefined;
+    throw new ClaimNotFoundError(epoch);
   }
 };
 
