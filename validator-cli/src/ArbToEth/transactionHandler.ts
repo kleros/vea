@@ -45,6 +45,7 @@ export type Transactions = {
   withdrawChallengeDepositTxn: Transaction | null;
   sendSnapshotTxn: Transaction | null;
   executeSnapshotTxn: Transaction | null;
+  devnetAdvanceStateTxn?: Transaction | null;
 };
 
 export enum TransactionStatus {
@@ -141,7 +142,7 @@ export class ArbToEthTransactionHandler {
       this.emitter.emit(BotEvents.TXN_FINAL, trnx.hash, confirmations);
       return TransactionStatus.FINAL;
     }
-    this.emitter.emit(BotEvents.TXN_NOT_FINAL, trnx.hash, confirmations);
+    this.emitter.emit(BotEvents.TXN_NOT_FINAL, trnx.hash, MAX_PENDING_CONFIRMATIONS - confirmations);
     return TransactionStatus.NOT_FINAL;
   }
 

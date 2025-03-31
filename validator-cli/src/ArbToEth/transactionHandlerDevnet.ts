@@ -1,5 +1,4 @@
-import { JsonRpcProvider } from "@ethersproject/providers";
-import { VeaInboxArbToEth, VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
+import { VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
 import {
   ArbToEthTransactionHandler,
   ContractType,
@@ -8,12 +7,14 @@ import {
   Transaction,
   TransactionHandlerConstructor,
 } from "./transactionHandler";
-import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
+import { getBridgeConfig } from "../consts/bridgeRoutes";
 
 type DevnetTransactions = Transactions & {
   devnetAdvanceStateTxn: Transaction | null;
 };
+
+const CHAIN_ID = 11155111;
 
 export class ArbToEthDevnetTransactionHandler extends ArbToEthTransactionHandler {
   public veaOutboxDevnet: VeaOutboxArbToEthDevnet;
@@ -44,11 +45,10 @@ export class ArbToEthDevnetTransactionHandler extends ArbToEthTransactionHandler
       veaOutboxProvider,
       emitter,
     } as TransactionHandlerConstructor);
-    this.veaOutboxDevnet = this.veaOutbox as VeaOutboxArbToEthDevnet;
+    this.veaOutboxDevnet = veaOutbox as VeaOutboxArbToEthDevnet;
   }
   public async devnetAdvanceState(stateRoot: string): Promise<void> {
     this.emitter.emit(BotEvents.ADV_DEVNET, this.epoch);
-
     const currentTime = Date.now();
     const transactionStatus = await this.checkTransactionStatus(
       this.transactions.devnetAdvanceStateTxn,
@@ -58,9 +58,9 @@ export class ArbToEthDevnetTransactionHandler extends ArbToEthTransactionHandler
     if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
       return;
     }
-    const estimateGas = await this.veaOutbox["devnetAdvanceState(uint256,bytes32)"].estimateGas(this.epoch, this.claim);
+    const deposit = getBridgeConfig(CHAIN_ID).deposit;
     const startVerifTrx = await this.veaOutboxDevnet.devnetAdvanceState(this.epoch, stateRoot, {
-      gasLimit: estimateGas.mul(2),
+      value: deposit,
     });
     this.emitter.emit(BotEvents.TXN_MADE, startVerifTrx.hash, this.epoch, "Advance Devnet State");
     this.transactions.devnetAdvanceStateTxn = {

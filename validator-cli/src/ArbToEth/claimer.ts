@@ -9,7 +9,7 @@ import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth
 import { ArbToEthDevnetTransactionHandler } from "./transactionHandlerDevnet";
 import { getTransactionHandler } from "../utils/ethers";
 import { Network } from "../consts/bridgeRoutes";
-interface checkAndClaimParams {
+interface CheckAndClaimParams {
   chainId: number;
   network: Network;
   claim: ClaimStruct | null;
@@ -23,9 +23,11 @@ interface checkAndClaimParams {
   emitter: EventEmitter;
   fetchClaim?: typeof getClaim;
   fetchLatestClaimedEpoch?: typeof getLastClaimedEpoch;
+  fetchTransactionHandler?: typeof getTransactionHandler;
+  now?: number;
 }
 
-export async function checkAndClaim({
+async function checkAndClaim({
   chainId,
   network,
   claim,
@@ -38,13 +40,14 @@ export async function checkAndClaim({
   transactionHandler,
   emitter,
   fetchLatestClaimedEpoch = getLastClaimedEpoch,
-}: checkAndClaimParams) {
+  fetchTransactionHandler = getTransactionHandler,
+  now = Date.now(),
+}: CheckAndClaimParams) {
   let outboxStateRoot = await veaOutbox.stateRoot();
   const finalizedOutboxBlock = await veaOutboxProvider.getBlock("finalized");
-  const claimAbleEpoch = Math.floor(Date.now() / (1000 * epochPeriod)) - 1;
-
+  const claimAbleEpoch = Math.floor(now / (1000 * epochPeriod)) - 1;
   if (!transactionHandler) {
-    const TransactionHandler = getTransactionHandler(chainId, network);
+    const TransactionHandler = fetchTransactionHandler(chainId, network);
     transactionHandler = new TransactionHandler({
       network,
       epoch,
@@ -66,16 +69,22 @@ export async function checkAndClaim({
   if (network == Network.DEVNET) {
     const devnetTransactionHandler = transactionHandler as ArbToEthDevnetTransactionHandler;
     if (claim == null) {
-      [savedSnapshot, claimData] = await Promise.all([veaInbox.snapshots(epoch), fetchLatestClaimedEpoch()]);
+      [savedSnapshot, claimData] = await Promise.all([
+        veaInbox.snapshots(epoch),
+        fetchLatestClaimedEpoch(veaOutbox.target),
+      ]);
+
       newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
-      lastClaimChallenged = claimData.challenged && savedSnapshot == outboxStateRoot;
-      if ((newMessagesToBridge || lastClaimChallenged) && savedSnapshot != ethers.ZeroHash) {
-        await devnetTransactionHandler.devnetAdvanceState(outboxStateRoot);
+      if (newMessagesToBridge && savedSnapshot != ethers.ZeroHash) {
+        await devnetTransactionHandler.devnetAdvanceState(savedSnapshot);
         return devnetTransactionHandler;
       }
     }
   } else if (claim == null && epoch == claimAbleEpoch) {
-    [savedSnapshot, claimData] = await Promise.all([veaInbox.snapshots(epoch), fetchLatestClaimedEpoch()]);
+    [savedSnapshot, claimData] = await Promise.all([
+      veaInbox.snapshots(epoch),
+      fetchLatestClaimedEpoch(veaOutbox.target),
+    ]);
     newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
     lastClaimChallenged = claimData.challenged && savedSnapshot == outboxStateRoot;
     if ((newMessagesToBridge || lastClaimChallenged) && savedSnapshot != ethers.ZeroHash) {
@@ -103,3 +112,5 @@ export async function checkAndClaim({
   }
   return null;
 }
+
+export { checkAndClaim, CheckAndClaimParams };
