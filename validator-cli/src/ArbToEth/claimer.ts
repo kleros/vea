@@ -43,6 +43,7 @@ async function checkAndClaim({
   fetchTransactionHandler = getTransactionHandler,
   now = Date.now(),
 }: CheckAndClaimParams) {
+  console.log(epoch);
   let outboxStateRoot = await veaOutbox.stateRoot();
   const finalizedOutboxBlock = await veaOutboxProvider.getBlock("finalized");
   const claimAbleEpoch = Math.floor(now / (1000 * epochPeriod)) - 1;
@@ -91,6 +92,7 @@ async function checkAndClaim({
       await transactionHandler.makeClaim(savedSnapshot);
       return transactionHandler;
     }
+    emitter.emit(BotEvents.NO_CLAIM_REQUIRED, epoch);
   } else if (claim != null) {
     if (claim.honest == ClaimHonestState.CLAIMER) {
       await transactionHandler.withdrawClaimDeposit();
