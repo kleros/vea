@@ -36,4 +36,8 @@ contract VeaInboxArbToGnosisMock is VeaInboxArbToGnosis {
 
         emit SnapshotSent(_epoch, ticketID);
     }
+
+    function getCallData(uint256 _epoch, uint256 _gasLimit, Claim memory _claim) external view returns (bytes memory) {
+        return abi.encodeCall(IRouterToGnosis.route, (_epoch, snapshots[_epoch], _gasLimit, _claim));
+    }
 }

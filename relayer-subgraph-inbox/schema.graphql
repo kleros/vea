@@ -1,5 +1,6 @@
 type MessageSent @entity(immutable: true) {
   id: Bytes!
+  inbox: Inbox! # address
   nonce: BigInt! # uint64
   to: Receiver! # address
   msgSender: Sender! # address
@@ -16,13 +17,18 @@ type Node @entity(immutable: true) {
   hash: Bytes! # bytes32
 }
 
+type Inbox @entity(immutable: true) {
+  id: Bytes! # address
+  messages: [MessageSent!]! @derivedFrom(field: "inbox")
+}
+
 type Receiver @entity(immutable: true) {
-  id: Bytes!
+  id: Bytes! # address
   messages: [MessageSent!]! @derivedFrom(field: "to")
 }
 
 type Sender @entity(immutable: true) {
-  id: Bytes!
+  id: Bytes! # address
   messages: [MessageSent!]! @derivedFrom(field: "msgSender")
 }
 

@@ -12,15 +12,15 @@ function generate() { #deploymentDir #explorerUrl
     done
 }
 
-echo "#### Sepolia"
+echo "### Sepolia"
 echo
 generate "$SCRIPT_DIR/../deployments/sepolia" "https://sepolia.etherscan.io/address/"
 echo
-echo "#### Arbitrum Sepolia"
+echo "### Arbitrum Sepolia"
 echo
 generate "$SCRIPT_DIR/../deployments/arbitrumSepolia" "https://sepolia.arbiscan.io/address/"
 echo
-echo "#### Chiado"
+echo "### Chiado"
 echo
 generate "$SCRIPT_DIR/../deployments/chiado" "https://blockscout.com/gnosis/chiado/address/"
 echo

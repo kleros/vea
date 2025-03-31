@@ -54,27 +54,27 @@ contract RouterGnosisToArb is IRouterToArb {
 
     /// @dev This event indicates a cross-chain message was sent to inform the veaOutbox of the sequencer delay limit value
     /// @param _ticketID The ticketID from the delayed inbox of the cross-chain message.
-    event sequencerDelayLimitSent(uint256 _ticketID);
+    event SequencerDelayLimitSent(uint256 _ticketID);
 
     /// @dev This event indicates the sequencer delay limit updated.
     /// @param _newSequencerDelayLimit The new sequencer delay limit.
-    event sequencerDelayLimitUpdated(uint256 _newSequencerDelayLimit);
+    event SequencerDelayLimitUpdated(uint256 _newSequencerDelayLimit);
 
     /// @dev This event indicates that a request to decrease the sequencer delay limit has been made.
     /// @param _requestedSequencerDelayLimit The new sequencer limit requested.
-    event sequencerDelayLimitDecreaseRequested(uint256 _requestedSequencerDelayLimit);
+    event SequencerDelayLimitDecreaseRequested(uint256 _requestedSequencerDelayLimit);
 
     /// @dev This event indicates a cross-chain message was sent to inform the veaOutbox of the sequencer future limit value
     /// @param _ticketID The ticketID from the delayed inbox of the cross-chain message.
-    event sequencerFutureLimitSent(uint256 _ticketID);
+    event SequencerFutureLimitSent(uint256 _ticketID);
 
     /// @dev This event indicates the sequencer future limit updated.
     /// @param _newSequencerFutureLimit The new sequencer future limit.
-    event sequencerFutureLimitUpdated(uint256 _newSequencerFutureLimit);
+    event SequencerFutureLimitUpdated(uint256 _newSequencerFutureLimit);
 
     /// @dev This event indicates that a request to decrease the sequencer future limit has been made.
     /// @param _requestedSequencerFutureLimit The new sequencer limit requested.
-    event sequencerFutureLimitDecreaseRequested(uint256 _requestedSequencerFutureLimit);
+    event SequencerFutureLimitDecreaseRequested(uint256 _requestedSequencerFutureLimit);
 
     /// @dev Constructor.
     /// @param _bridge The address of the arbitrum bridge contract on Ethereum.
@@ -110,7 +110,7 @@ contract RouterGnosisToArb is IRouterToArb {
         if (newSequencerDelayLimit > sequencerDelayLimit) {
             // For sequencerDelayLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
             sequencerDelayLimit = newSequencerDelayLimit;
-            emit sequencerDelayLimitUpdated(newSequencerDelayLimit);
+            emit SequencerDelayLimitUpdated(newSequencerDelayLimit);
         } else if (newSequencerDelayLimit < sequencerDelayLimit) {
             require(
                 sequencerDelayLimitDecreaseRequest.timestamp == 0,
@@ -121,7 +121,7 @@ contract RouterGnosisToArb is IRouterToArb {
                 requestedSequencerLimit: newSequencerDelayLimit,
                 timestamp: block.timestamp
             });
-            emit sequencerDelayLimitDecreaseRequested(newSequencerDelayLimit);
+            emit SequencerDelayLimitDecreaseRequested(newSequencerDelayLimit);
         }
     }
 
@@ -133,7 +133,7 @@ contract RouterGnosisToArb is IRouterToArb {
         if (newSequencerFutureLimit > sequencerFutureLimit) {
             // For sequencerFutureLimit / epochPeriod > timeoutEpochs, claims cannot be verified by the timeout period and the bridge will shutdown.
             sequencerFutureLimit = newSequencerFutureLimit;
-            emit sequencerFutureLimitUpdated(newSequencerFutureLimit);
+            emit SequencerFutureLimitUpdated(newSequencerFutureLimit);
         } else if (newSequencerFutureLimit < sequencerFutureLimit) {
             require(
                 sequencerFutureLimitDecreaseRequest.timestamp == 0,
@@ -144,7 +144,7 @@ contract RouterGnosisToArb is IRouterToArb {
                 requestedSequencerLimit: newSequencerFutureLimit,
                 timestamp: block.timestamp
             });
-            emit sequencerFutureLimitDecreaseRequested(newSequencerFutureLimit);
+            emit SequencerFutureLimitDecreaseRequested(newSequencerFutureLimit);
         }
     }
 
@@ -164,7 +164,7 @@ contract RouterGnosisToArb is IRouterToArb {
         // check the request is still consistent with the arbiturm bridge
         if (currentSequencerDelayLimit == requestedSequencerDelayLimit) {
             sequencerDelayLimit = requestedSequencerDelayLimit;
-            emit sequencerDelayLimitUpdated(requestedSequencerDelayLimit);
+            emit SequencerDelayLimitUpdated(requestedSequencerDelayLimit);
         }
     }
 
@@ -184,7 +184,7 @@ contract RouterGnosisToArb is IRouterToArb {
         // check the request is still consistent with the arbiturm bridge
         if (currentSequencerFutureLimit == requestedSequencerFutureLimit) {
             sequencerFutureLimit = requestedSequencerFutureLimit;
-            emit sequencerFutureLimitUpdated(requestedSequencerFutureLimit);
+            emit SequencerFutureLimitUpdated(requestedSequencerFutureLimit);
         }
     }
 
@@ -219,7 +219,7 @@ contract RouterGnosisToArb is IRouterToArb {
             data
         );
 
-        emit sequencerFutureLimitSent(ticketID);
+        emit SequencerFutureLimitSent(ticketID);
     }
 
     /// @dev Send the sequencer delay limit through the delayed inbox.
@@ -253,7 +253,7 @@ contract RouterGnosisToArb is IRouterToArb {
             data
         );
 
-        emit sequencerDelayLimitSent(ticketID);
+        emit SequencerDelayLimitSent(ticketID);
     }
 
     // ************************************* //

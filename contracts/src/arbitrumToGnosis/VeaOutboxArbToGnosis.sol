@@ -82,7 +82,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     /// @dev This event indicates the sequencer limit updated.
     /// @param _newSequencerDelayLimit The new sequencer delay limit.
-    event sequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
+    event SequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -164,7 +164,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             // If _newSequencerDelayLimit > timeout * epochPeriod, then the bridge will shutdown.
             sequencerDelayLimit = _newSequencerDelayLimit;
             timestampDelayUpdated = _timestamp;
-            emit sequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
+            emit SequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
         }
     }
 
@@ -253,11 +253,12 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         if (_epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = _epoch;
             stateRoot = _claim.stateRoot;
-            emit Verified(_epoch);
         }
 
         _claim.honest = Party.Claimer;
         claimHashes[_epoch] = hashClaim(_claim);
+
+        emit Verified(_epoch);
     }
 
     /// Note: Access restricted to AMB.
@@ -280,7 +281,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         if (_epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {
             latestVerifiedEpoch = _epoch;
             stateRoot = _stateRoot;
-            emit Verified(_epoch);
         }
 
         if (claimHashes[_epoch] == hashClaim(_claim)) {
@@ -291,6 +291,8 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             }
             claimHashes[_epoch] = hashClaim(_claim);
         }
+
+        emit Verified(_epoch);
     }
 
     /// @dev Verifies and relays the message. UNTRUSTED.

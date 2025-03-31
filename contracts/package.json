@@ -1,6 +1,6 @@
 {
   "name": "@kleros/vea-contracts",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "Smart contracts for Vea",
   "repository": {
     "type": "git",
@@ -18,13 +18,12 @@
     "solidity",
     "smart contracts"
   ],
-  "packageManager": "yarn@4.2.2",
   "engines": {
     "node": ">=18.0.0"
   },
   "volta": {
-    "node": "18.20.3",
-    "yarn": "4.2.2"
+    "node": "22.14.0",
+    "yarn": "4.6.0"
   },
   "publishConfig": {
     "access": "public",
@@ -32,9 +31,10 @@
   },
   "scripts": {
     "build": "hardhat compile",
-    "clean": "hardhat clean",
+    "clean": "hardhat clean && rm -rf dist typechain-types",
     "check": "hardhat check",
     "test": "TS_NODE_TRANSPILE_ONLY=1 hardhat test",
+    "lint": "solhint --fix src/**/*.sol",
     "start": "hardhat node --tags nothing",
     "start-local": "hardhat node --tags ArbToEthOutbox,ArbToEthInbox --hostname 0.0.0.0",
     "deploy": "hardhat deploy",
@@ -62,44 +62,59 @@
     "size": "hardhat size-contracts --no-compile",
     "watch": "hardhat watch",
     "docgen": "hardhat docgen",
-    "release:patch": "scripts/publish.sh patch",
-    "release:minor": "scripts/publish.sh minor",
-    "release:major": "scripts/publish.sh major"
+    "release:patch": "yarn version patch && yarn clean && yarn build && yarn npm publish",
+    "release:minor": "yarn version minor && yarn clean && yarn build && yarn npm publish",
+    "release:major": "yarn version major && yarn clean && yarn build && yarn npm publish",
+    "prepublish": "./scripts/prepublish.sh"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomiclabs/hardhat-solhint": "^4.0.1",
-    "@openzeppelin/contracts": "^5.1.0",
+    "@openzeppelin/contracts": "^5.2.0",
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
     "@types/chai": "^4.3.5",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^16.18.25",
+    "@types/node": "^18.0.0",
     "@typescript-eslint/eslint-plugin": "^5.59.1",
     "@typescript-eslint/parser": "^5.59.1",
-    "chai": "^4.3.7",
+    "chai": "^4.5.0",
     "chai-ethers": "^0.0.1",
     "dotenv": "^16.4.5",
     "ethereumjs-util": "^7.1.5",
-    "ethers": "^6.13.4",
-    "hardhat": "2.22.15",
-    "hardhat-contract-sizer": "^2.8.0",
+    "ethers": "^6.13.5",
+    "hardhat": "2.22.19",
+    "hardhat-contract-sizer": "^2.10.0",
     "hardhat-deploy": "^0.14.0",
     "hardhat-deploy-ethers": "^0.4.2",
-    "hardhat-deploy-tenderly": "^0.2.0",
-    "hardhat-gas-reporter": "^2.2.1",
+    "hardhat-deploy-tenderly": "^0.2.1",
+    "hardhat-gas-reporter": "^2.2.2",
     "hardhat-tracer": "^3.1.0",
     "hardhat-watcher": "^2.5.0",
     "json-schema": "^0.4.0",
     "mocha": "^10.2.0",
     "node-fetch": "^3.3.2",
-    "shelljs": "^0.8.5",
-    "solhint": "^3.4.1",
-    "solidity-coverage": "^0.8.13",
+    "solhint": "^5.0.5",
+    "solidity-coverage": "^0.8.14",
     "ts-node": "^10.9.2",
-    "typechain": "^8.1.1",
+    "typechain": "^8.3.2",
     "typescript": "^4.9.5"
-  }
+  },
+  "files": [
+    "src",
+    "deployments",
+    "typechain-types",
+    "!hardhat.config.*",
+    "!src/test",
+    "!typechain-types/test",
+    "!typechain-types/factories/test",
+    "!test",
+    "!deploy",
+    "!deployments/localhost",
+    "!deployments/hardhat",
+    "!deployments/**/solcInputs",
+    "!README.md.template"
+  ]
 }

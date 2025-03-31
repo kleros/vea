@@ -99,11 +99,12 @@ contract VeaOutboxArbToEthDevnet is VeaOutboxArbToEth {
         if (_epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = _epoch;
             stateRoot = _claim.stateRoot;
-            emit Verified(_epoch);
         }
 
         _claim.honest = Party.Claimer;
         claimHashes[_epoch] = hashClaim(_claim);
+
+        emit Verified(_epoch);
     }
 
     /// @dev Testnet operator utility function to claim, validate and withdraw.

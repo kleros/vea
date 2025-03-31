@@ -80,11 +80,11 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
 
     /// @dev This event indicates the sequencer delay limit updated.
     /// @param _newSequencerDelayLimit The new max sequencer past timestamping power.
-    event sequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
+    event SequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
 
     /// @dev This event indicates the sequencer futue limit updated.
     /// @param _newSequencerFutureLimit The new max sequencer future timestamping power.
-    event sequencerFutureLimitUpdateReceived(uint256 _newSequencerFutureLimit);
+    event SequencerFutureLimitUpdateReceived(uint256 _newSequencerFutureLimit);
 
     // ************************************* //
     // *        Function Modifiers         * //
@@ -157,7 +157,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (sequencerFutureLimit != _newSequencerFutureLimit) {
             sequencerFutureLimit = _newSequencerFutureLimit;
             timestampFutureUpdated = _timestamp;
-            emit sequencerFutureLimitUpdateReceived(_newSequencerFutureLimit);
+            emit SequencerFutureLimitUpdateReceived(_newSequencerFutureLimit);
         }
     }
 
@@ -176,7 +176,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (sequencerDelayLimit != _newSequencerDelayLimit) {
             sequencerDelayLimit = _newSequencerDelayLimit;
             timestampDelayUpdated = _timestamp;
-            emit sequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
+            emit SequencerDelayLimitUpdateReceived(_newSequencerDelayLimit);
         }
     }
 
@@ -245,10 +245,11 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (_epoch > latestVerifiedEpoch) {
             latestVerifiedEpoch = _epoch;
             stateRoot = claims[_epoch].stateRoot;
-            emit Verified(_epoch);
         }
 
         claims[_epoch].honest = Party.Claimer;
+
+        emit Verified(_epoch);
     }
 
     /// Note: Access restricted to AMB.
@@ -265,7 +266,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         if (_epoch > latestVerifiedEpoch && _stateRoot != bytes32(0)) {
             latestVerifiedEpoch = _epoch;
             stateRoot = _stateRoot;
-            emit Verified(_epoch);
         }
 
         bytes32 claimedStateRoot = claims[_epoch].stateRoot;
@@ -277,6 +277,8 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
                 claims[_epoch].honest = Party.Challenger;
             }
         }
+
+        emit Verified(_epoch);
     }
 
     /// @dev Verifies and relays the message. UNTRUSTED.
