@@ -14,7 +14,7 @@ import { challengeAndResolveClaim as challengeAndResolveClaimArbToEth } from "..
 import { checkAndClaim } from "../ArbToEth/claimer";
 import { ArbToEthTransactionHandler } from "../ArbToEth/transactionHandler";
 import { ArbToEthDevnetTransactionHandler } from "../ArbToEth/transactionHandlerDevnet";
-import { TransactionHandlerNotDefinedError } from "./errors";
+import { NotDefinedError, InvalidNetworkError } from "./errors";
 import { Network } from "../consts/bridgeRoutes";
 
 function getWallet(privateKey: string, rpcUrl: string) {
@@ -77,9 +77,11 @@ const getClaimValidator = (chainId: number, network: Network) => {
   switch (chainId) {
     case 11155111:
       return challengeAndResolveClaimArbToEth;
+    default:
+      throw new NotDefinedError("Claim Validator");
   }
 };
-const getClaimer = (chainId: number, network: Network) => {
+const getClaimer = (chainId: number, network: Network): typeof checkAndClaim => {
   switch (chainId) {
     case 11155111:
       switch (network) {
@@ -87,7 +89,12 @@ const getClaimer = (chainId: number, network: Network) => {
 
         case Network.TESTNET:
           return checkAndClaim;
+
+        default:
+          throw new InvalidNetworkError(`${network}(claimer)`);
       }
+    default:
+      throw new NotDefinedError("Claimer");
   }
 };
 const getTransactionHandler = (chainId: number, network: Network) => {
@@ -100,7 +107,7 @@ const getTransactionHandler = (chainId: number, network: Network) => {
           return ArbToEthTransactionHandler;
       }
     default:
-      throw new TransactionHandlerNotDefinedError();
+      throw new NotDefinedError("Transaction Handler");
   }
 };
 export {

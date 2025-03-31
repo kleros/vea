@@ -83,7 +83,9 @@ const bridges: { [chainId: number]: Bridge } = {
   },
 };
 
-const getBridgeConfig = (chainId: number): Bridge | undefined => {
+const getBridgeConfig = (chainId: number): Bridge => {
+  const bridge = bridges[chainId];
+  if (!bridge) throw new Error(`Bridge not found for chain`);
   return bridges[chainId];
 };
 

@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { getBridgeConfig, Bridge, Network } from "./consts/bridgeRoutes";
-import { getVeaInbox, getVeaOutbox, getTransactionHandler } from "./utils/ethers";
+import { getBridgeConfig, Network } from "./consts/bridgeRoutes";
+import { getVeaInbox, getVeaOutbox } from "./utils/ethers";
 import { getBlockFromEpoch, setEpochRange } from "./utils/epochHandler";
 import { getClaimValidator, getClaimer } from "./utils/ethers";
 import { defaultEmitter } from "./utils/emitter";
@@ -9,6 +9,9 @@ import { initialize as initializeLogger } from "./utils/logger";
 import { ShutdownSignal } from "./utils/shutdown";
 import { getBotPath, BotPaths, getNetworkConfig } from "./utils/botConfig";
 import { getClaim } from "./utils/claim";
+import { MissingEnvError } from "./utils/errors";
+import { CheckAndClaimParams } from "./ArbToEth/claimer";
+import { ChallengeAndResolveClaimParams } from "./ArbToEth/validator";
 
 /**
  * @file This file contains the logic for watching a bridge and validating/resolving for claims.
@@ -23,6 +26,8 @@ export const watch = async (
   emitter: typeof defaultEmitter = defaultEmitter
 ) => {
   initializeLogger(emitter);
+  const privKey = process.env.PRIVATE_KEY;
+  if (!privKey) throw new MissingEnvError("PRIVATE_KEY");
   const cliCommand = process.argv;
   const path = getBotPath({ cliCommand });
   const networkConfigs = getNetworkConfig();
@@ -35,20 +40,8 @@ export const watch = async (
       const { routeConfig, inboxRPC, outboxRPC } = getBridgeConfig(chainId);
       for (const network of networks) {
         emitter.emit(BotEvents.WATCHING, chainId, network);
-        const veaInbox = getVeaInbox(
-          routeConfig[network].veaInbox.address,
-          process.env.PRIVATE_KEY,
-          inboxRPC,
-          chainId,
-          network
-        );
-        const veaOutbox = getVeaOutbox(
-          routeConfig[network].veaOutbox.address,
-          process.env.PRIVATE_KEY,
-          outboxRPC,
-          chainId,
-          network
-        );
+        const veaInbox = getVeaInbox(routeConfig[network].veaInbox.address, privKey, inboxRPC, chainId, network);
+        const veaOutbox = getVeaOutbox(routeConfig[network].veaOutbox.address, privKey, outboxRPC, chainId, network);
         const veaInboxProvider = new JsonRpcProvider(inboxRPC);
         const veaOutboxProvider = new JsonRpcProvider(outboxRPC);
         let veaOutboxLatestBlock = await veaOutboxProvider.getBlock("latest");
@@ -59,7 +52,6 @@ export const watch = async (
         });
 
         // If the watcher has already started, only check the latest epoch
-        console.log(isWatched);
         if (
           isWatched.find((watcher) => watcher.chainId == chainId && watcher.network == network) != null ||
           network == Network.DEVNET
@@ -76,28 +68,39 @@ export const watch = async (
           let latestEpoch = epochRange[epochRange.length - 1];
           const epochBlock = await getBlockFromEpoch(epoch, routeConfig[network].epochPeriod, veaOutboxProvider);
           const claim = await getClaim(veaOutbox, veaOutboxProvider, epoch, epochBlock, "latest");
-          const checkAndChallengeResolveDeps = {
-            network,
-            chainId,
-            claim,
-            epoch,
-            epochPeriod: routeConfig[network].epochPeriod,
-            veaInbox,
-            veaInboxProvider,
-            veaOutboxProvider,
-            veaOutbox,
-            transactionHandler: transactionHandlers[epoch],
-            emitter,
-          };
 
           const checkAndChallengeResolve = getClaimValidator(chainId, network);
           const checkAndClaim = getClaimer(chainId, network);
           let updatedTransactions;
           if (path > BotPaths.CLAIMER && claim != null) {
+            const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {
+              claim,
+              epoch,
+              epochPeriod: routeConfig[network].epochPeriod,
+              veaInbox,
+              veaInboxProvider,
+              veaOutboxProvider,
+              veaOutbox,
+              transactionHandler: transactionHandlers[epoch],
+              emitter,
+            };
             updatedTransactions = await checkAndChallengeResolve(checkAndChallengeResolveDeps);
           }
           if (path == BotPaths.CLAIMER || path == BotPaths.BOTH) {
-            updatedTransactions = await checkAndClaim(checkAndChallengeResolveDeps);
+            const checkAndClaimParams: CheckAndClaimParams = {
+              network,
+              chainId,
+              claim,
+              epoch,
+              epochPeriod: routeConfig[network].epochPeriod,
+              veaInbox,
+              veaInboxProvider,
+              veaOutboxProvider,
+              veaOutbox,
+              transactionHandler: transactionHandlers[epoch],
+              emitter,
+            };
+            updatedTransactions = await checkAndClaim(checkAndClaimParams);
           }
 
           if (updatedTransactions) {
@@ -117,7 +120,7 @@ export const watch = async (
   }
 };
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const wait = (ms: number): Promise<void> => new Promise((resolve: () => void) => setTimeout(resolve, ms));
 
 if (require.main === module) {
   const shutDownSignal = new ShutdownSignal(false);
