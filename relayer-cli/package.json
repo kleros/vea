@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "jest --coverage",
-    "start-relayer": "npx ts-node ./src/relayer.ts"
+    "start-relayer": "ts-node ./src/relayer.ts"
   },
   "dependencies": {
     "@kleros/vea-contracts": "workspace:^",
