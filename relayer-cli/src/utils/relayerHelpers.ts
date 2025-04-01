@@ -69,6 +69,10 @@ async function updateStateFile(
   removeLock: typeof releaseLock = releaseLock
 ) {
   if (nonceFrom != null) {
+    const stateDir = process.env.STATE_DIR || "";
+    if (!fileSystem.existsSync(stateDir)) {
+      fileSystem.mkdirSync(stateDir, { recursive: true });
+    }
     const chain_state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
     const json = {
       ts: createdTimestamp,
@@ -79,6 +83,32 @@ async function updateStateFile(
 
   removeLock(network, chainId);
   emitter.emit(BotEvents.LOCK_RELEASED);
+}
+
+/**
+ * Helper function to cleanup and delete the .pid lock file.
+ *
+ * @param chainId Chain ID of the relayer
+ * @param network Network name of the relayer (e.g. "testnet")
+ * @param emitter EventEmitter instance
+ * @param fileSystem File system module (default is fs)
+ */
+async function cleanupLockFile(
+  chainId: number,
+  network: string,
+  emitter: EventEmitter,
+  fileSystem: typeof fs = fs
+): Promise<void> {
+  const stateDir = process.env.STATE_DIR || "";
+  const pidFile = path.join(stateDir, `${network}_${chainId}.pid`);
+  try {
+    if (fileSystem.existsSync(pidFile)) {
+      await fileSystem.promises.unlink(pidFile);
+      emitter.emit(BotEvents.LOCK_RELEASED, `Lock file ${pidFile} deleted.`);
+    }
+  } catch (error) {
+    emitter.emit(BotEvents.EXCEPTION, new Error(`Failed to delete lock file ${pidFile}: ${error}`));
+  }
 }
 
 /**
@@ -94,16 +124,10 @@ async function setupExitHandlers(
   network: string,
   emitter: EventEmitter
 ) {
-  const cleanup = async () => {
-    emitter.emit(BotEvents.EXIT);
-    const lockFileName = process.env.STATE_DIR + network + "_" + chainId + ".pid";
-    if (fs.existsSync(lockFileName)) {
-      await fs.promises.unlink(lockFileName);
-    }
-  };
   const handleExit = async (exitCode: number = 0) => {
     shutdownManager.triggerShutdown();
-    await cleanup();
+    emitter.emit(BotEvents.EXIT);
+    await cleanupLockFile(chainId, network, emitter);
     process.exit(0);
   };
 
@@ -174,6 +198,7 @@ export {
   getNetworkConfig,
   initialize,
   updateStateFile,
+  cleanupLockFile,
   setupExitHandlers,
   delay,
   ShutdownManager,
