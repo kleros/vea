@@ -1,19 +1,31 @@
-import { BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
-import { Snapshot, Message, Ref, Fallback } from "../generated/schema";
+import {
+  Address,
+  BigInt,
+  ByteArray,
+  Bytes,
+  log,
+} from "@graphprotocol/graph-ts";
+import { Snapshot, Message, Ref, Fallback, Inbox } from "../generated/schema";
 import {
   MessageSent,
   SnapshotSaved,
   SnapshotSent,
-  VeaInbox,
-} from "../generated/VeaInbox/VeaInbox";
+  VeaInboxArbToEthDevnet,
+} from "../generated/VeaInboxArbToEthDevnet/VeaInboxArbToEthDevnet";
 
 export function handleMessageSent(event: MessageSent): void {
-  const snapshot = getCurrentSnapshot();
+  let inbox = Inbox.load(event.address);
+  if (!inbox) {
+    inbox = new Inbox(event.address);
+    inbox.save();
+  }
+  const snapshot = getCurrentSnapshot(event.address);
   snapshot.numberMessages = snapshot.numberMessages.plus(BigInt.fromI32(1));
   snapshot.save();
 
-  const messageIndex = useNextMessageIndex();
-  const message = new Message(messageIndex.toString());
+  const messageIndex = useNextMessageIndex(event.address);
+  const messageId = event.address.toHexString() + "-" + messageIndex.toString();
+  const message = new Message(messageId);
   message.snapshot = snapshot.id;
   message.txHash = event.transaction.hash;
   message.timestamp = event.block.timestamp;
@@ -34,27 +46,65 @@ export function handleMessageSent(event: MessageSent): void {
   message.save();
 }
 
-function getCurrentSnapshot(): Snapshot {
-  let ref = Ref.load("0");
+function getCurrentSnapshot(inboxAddress: Address): Snapshot {
+  let id = inboxAddress.toHexString();
+  let ref = Ref.load(id);
   if (!ref) {
-    ref = new Ref("0");
+    ref = new Ref(id);
+    ref.inbox = inboxAddress;
     ref.currentSnapshotIndex = BigInt.fromI32(0);
     ref.nextMessageIndex = BigInt.fromI32(0);
     ref.save();
-    const snapshot = new Snapshot("0");
+
+    // Use a composite ID for the initial snapshot.
+    const snapshotId = inboxAddress.toHexString() + "-0";
+    const snapshot = new Snapshot(snapshotId);
+    snapshot.inbox = inboxAddress;
     snapshot.numberMessages = BigInt.fromI32(0);
     snapshot.taken = false;
     snapshot.resolving = false;
+    snapshot.epoch = BigInt.fromI32(0);
+    snapshot.epochString = "0";
+    snapshot.stateRoot = Bytes.fromHexString(
+      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    );
+    snapshot.stateRootString =
+      "0x0000000000000000000000000000000000000000000000000000000000000000";
+    snapshot.timestamp = BigInt.fromI32(0);
     snapshot.save();
     return snapshot;
   }
-  return Snapshot.load(ref.currentSnapshotIndex.toString())!;
+  let snapshot = Snapshot.load(
+    inboxAddress.toHexString() + "-" + ref.currentSnapshotIndex.toString()
+  );
+  if (!snapshot) {
+    // If it doesn't exist, creating one with default values.
+    snapshot = new Snapshot(
+      inboxAddress.toHexString() + "-" + ref.currentSnapshotIndex.toString()
+    );
+    snapshot.inbox = inboxAddress;
+    snapshot.numberMessages = BigInt.fromI32(0);
+    snapshot.taken = false;
+    snapshot.resolving = false;
+    snapshot.epoch = BigInt.fromI32(0);
+    snapshot.epochString = "0";
+    snapshot.stateRoot = Bytes.fromHexString(
+      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    );
+    snapshot.stateRootString =
+      "0x0000000000000000000000000000000000000000000000000000000000000000";
+    snapshot.timestamp = BigInt.fromI32(0);
+    snapshot.save();
+  }
+  return snapshot;
 }
 
-function useNextMessageIndex(): BigInt {
-  let ref = Ref.load("0");
+function useNextMessageIndex(inboxAddress: Address): BigInt {
+  let id = inboxAddress.toHexString();
+  let ref = Ref.load(id);
   if (!ref) {
-    ref = new Ref("0");
+    ref = new Ref(id);
+    ref.inbox = inboxAddress;
     ref.currentSnapshotIndex = BigInt.fromI32(0);
     ref.nextMessageIndex = BigInt.fromI32(1);
     ref.save();
@@ -67,13 +117,16 @@ function useNextMessageIndex(): BigInt {
 }
 
 export function handleSnapshotSaved(event: SnapshotSaved): void {
-  const inbox = VeaInbox.bind(event.address);
-  // Get the epochPeriod from the public variable of the deployed contract
-  const epochPeriod = inbox.epochPeriod();
+  let inbox = Inbox.load(event.address);
+  if (!inbox) {
+    inbox = new Inbox(event.address);
+    inbox.save();
+  }
+  const contract = VeaInboxArbToEthDevnet.bind(event.address);
+  const epochPeriod = contract.epochPeriod();
   const epoch = event.block.timestamp.div(epochPeriod);
-  // Get stateRoot from contract
-  const stateRoot = inbox.snapshots(epoch);
-  const currentSnapshot = getCurrentSnapshot();
+  const stateRoot = contract.snapshots(epoch);
+  const currentSnapshot = getCurrentSnapshot(event.address);
   currentSnapshot.taken = true;
   currentSnapshot.caller = event.transaction.from;
   currentSnapshot.stateRoot = stateRoot;
@@ -84,11 +137,15 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
   currentSnapshot.epochString = epoch.toString();
   currentSnapshot.save();
 
-  // Create a new snapshot entity to be the current snapshot.
-  const ref = Ref.load("0")!;
-  const newSnapshot = new Snapshot(
-    ref.currentSnapshotIndex.plus(BigInt.fromI32(1)).toString()
-  );
+  // Creating a new snapshot entity to be the current snapshot.
+  const refId = event.address.toHexString();
+  const ref = Ref.load(refId)!;
+  const snapshotId =
+    ref.inbox.toHexString() +
+    "-" +
+    ref.currentSnapshotIndex.plus(BigInt.fromI32(1)).toString();
+  const newSnapshot = new Snapshot(snapshotId);
+  newSnapshot.inbox = event.address;
   newSnapshot.numberMessages = BigInt.fromI32(0);
   newSnapshot.taken = false;
   newSnapshot.resolving = false;
@@ -101,27 +158,89 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
 
 export function handleSnapshotSent(event: SnapshotSent): void {
   const epochSent = event.params._epochSent;
-  const fallback = new Fallback(
-    epochSent.plus(event.block.timestamp).toString()
-  );
-  let snapshot: Snapshot | null;
-  const ref = Ref.load("0")!;
+
+  // Create a unique fallback id based on epochSent and block.timestamp.
+  const fallbackId = epochSent.plus(event.block.timestamp).toString();
+  const fallback = new Fallback(fallbackId);
+
+  // Load or initialize Ref.
+  let id = event.address.toHexString(); // Unique ID per inbox contract
+  let ref = Ref.load(id);
+  if (!ref) {
+    ref = new Ref(id);
+    ref.inbox = event.address;
+    ref.currentSnapshotIndex = BigInt.fromI32(0);
+    ref.nextMessageIndex = BigInt.fromI32(0);
+    ref.save();
+  }
+
   fallback.timestamp = event.block.timestamp;
   fallback.txHash = event.transaction.hash;
   fallback.executor = event.transaction.from;
   fallback.ticketId = event.params._ticketId;
 
-  for (let i = ref.currentSnapshotIndex.toI32(); i >= 0; i--) {
-    const snapshotId = BigInt.fromI32(i).toString();
-    snapshot = Snapshot.load(snapshotId);
+  let snapshotFound = false;
+  let snapshot: Snapshot | null = null;
 
-    if (snapshot && snapshot.epoch === epochSent) {
-      // Snapshot found, update resolving field and save
-      snapshot.resolving = true;
-      snapshot.save();
-      fallback.snapshot = snapshotId;
-      break;
+  // Iterate from the current snapshot index downward to search for a snapshot with a matching epoch.
+  for (let i = ref.currentSnapshotIndex.toI32(); i >= 0; i--) {
+    const snapshotId =
+      event.address.toHexString() + "-" + BigInt.fromI32(i).toString();
+    snapshot = Snapshot.load(snapshotId);
+    if (snapshot && snapshot.epoch) {
+      if (BigInt.compare(snapshot.epoch as BigInt, epochSent) == 0) {
+        // Matching snapshot found: update and mark as resolving.
+        snapshot.resolving = true;
+        snapshot.save();
+        fallback.snapshot = snapshotId;
+        snapshotFound = true;
+        break;
+      }
     }
+  }
+
+  // If no snapshot was found, update the current snapshot and create a new one.
+  if (!snapshotFound) {
+    const inbox = VeaInboxArbToEthDevnet.bind(event.address);
+
+    let currentSnapshot = getCurrentSnapshot(event.address);
+    currentSnapshot.taken = false;
+    currentSnapshot.resolving = true;
+    currentSnapshot.timestamp = epochSent.times(inbox.epochPeriod());
+    currentSnapshot.stateRoot = Bytes.fromHexString(
+      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    );
+    currentSnapshot.stateRootString =
+      "0x0000000000000000000000000000000000000000000000000000000000000000";
+    currentSnapshot.epoch = epochSent;
+    currentSnapshot.epochString = epochSent.toString();
+    currentSnapshot.save();
+
+    fallback.snapshot = currentSnapshot.id;
+
+    // Create a new snapshot with an incremented index.
+    const newIndex = ref.currentSnapshotIndex.plus(BigInt.fromI32(1));
+    const newSnapshotId =
+      event.address.toHexString() + "-" + newIndex.toString();
+    const newSnapshot = new Snapshot(newSnapshotId);
+    newSnapshot.inbox = event.address;
+    newSnapshot.numberMessages = BigInt.fromI32(0);
+    newSnapshot.taken = false;
+    newSnapshot.resolving = false;
+    // Initialize new snapshot fields with defaults.
+    newSnapshot.epoch = BigInt.fromI32(0);
+    newSnapshot.epochString = "0";
+    newSnapshot.stateRoot = Bytes.fromHexString(
+      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    );
+    newSnapshot.stateRootString =
+      "0x0000000000000000000000000000000000000000000000000000000000000000";
+    newSnapshot.timestamp = BigInt.fromI32(0);
+    newSnapshot.save();
+
+    // Update Ref with the new snapshot index.
+    ref.currentSnapshotIndex = ref.currentSnapshotIndex.plus(BigInt.fromI32(1));
+    ref.save();
   }
   fallback.save();
 }
