@@ -13,6 +13,8 @@ import { MissingEnvError } from "./utils/errors";
 import { CheckAndClaimParams } from "./ArbToEth/claimer";
 import { ChallengeAndResolveClaimParams } from "./ArbToEth/validator";
 
+const RPC_BLOCK_LIMIT = 500; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
+
 /**
  * @file This file contains the logic for watching a bridge and validating/resolving for claims.
  *
@@ -33,41 +35,47 @@ export const watch = async (
   const networkConfigs = getNetworkConfig();
   emitter.emit(BotEvents.STARTED, path, networkConfigs[0].networks);
   const transactionHandlers: { [epoch: number]: any } = {};
-  const isWatched: { chainId: number; network: string }[] = [];
+  const toWatch: { [key: string]: number[] } = {};
   while (!shutDownSignal.getIsShutdownSignal()) {
     for (const networkConfig of networkConfigs) {
       const { chainId, networks } = networkConfig;
       const { routeConfig, inboxRPC, outboxRPC } = getBridgeConfig(chainId);
       for (const network of networks) {
         emitter.emit(BotEvents.WATCHING, chainId, network);
+        const networkKey = `${chainId}_${network}`;
+        if (!toWatch[networkKey]) {
+          toWatch[networkKey] = [];
+        }
         const veaInbox = getVeaInbox(routeConfig[network].veaInbox.address, privKey, inboxRPC, chainId, network);
         const veaOutbox = getVeaOutbox(routeConfig[network].veaOutbox.address, privKey, outboxRPC, chainId, network);
         const veaInboxProvider = new JsonRpcProvider(inboxRPC);
         const veaOutboxProvider = new JsonRpcProvider(outboxRPC);
         let veaOutboxLatestBlock = await veaOutboxProvider.getBlock("latest");
-        var epochRange = setEpochRange({
-          chainId,
-          currentTimestamp: veaOutboxLatestBlock.timestamp,
-          epochPeriod: routeConfig[network].epochPeriod,
-        });
 
         // If the watcher has already started, only check the latest epoch
-        if (
-          isWatched.find((watcher) => watcher.chainId == chainId && watcher.network == network) != null ||
-          network == Network.DEVNET
-        ) {
-          if (network == Network.DEVNET) {
-            epochRange = [Math.floor(veaOutboxLatestBlock.timestamp / routeConfig[network].epochPeriod)];
-          } else {
-            epochRange = [epochRange[epochRange.length - 1]];
-          }
+        if (network == Network.DEVNET) {
+          toWatch[networkKey] = [Math.floor(veaOutboxLatestBlock.timestamp / routeConfig[network].epochPeriod)];
+        } else if (toWatch[networkKey].length == 0) {
+          const epochRange = setEpochRange({
+            chainId,
+            currentTimestamp: veaOutboxLatestBlock.timestamp,
+            epochPeriod: routeConfig[network].epochPeriod,
+          });
+          toWatch[networkKey] = epochRange;
         }
-        let i = epochRange.length - 1;
+
+        let i = toWatch[networkKey].length - 1;
+        const latestEpoch = toWatch[networkKey][i];
         while (i >= 0) {
-          const epoch = epochRange[i];
-          let latestEpoch = epochRange[epochRange.length - 1];
+          const epoch = toWatch[networkKey][i];
           const epochBlock = await getBlockFromEpoch(epoch, routeConfig[network].epochPeriod, veaOutboxProvider);
-          const claim = await getClaim(veaOutbox, veaOutboxProvider, epoch, epochBlock, "latest");
+          const latestBlock = await veaOutboxProvider.getBlock("latest");
+          var toBlock: number | string = "latest";
+          if (latestBlock.number - epochBlock > RPC_BLOCK_LIMIT) {
+            toBlock = epochBlock + RPC_BLOCK_LIMIT;
+          }
+
+          const claim = await getClaim({ veaOutbox, veaOutboxProvider, epoch, fromBlock: epochBlock, toBlock });
 
           const checkAndChallengeResolve = getClaimValidator(chainId, network);
           const checkAndClaim = getClaimer(chainId, network);
@@ -107,12 +115,16 @@ export const watch = async (
             transactionHandlers[epoch] = updatedTransactions;
           } else if (epoch != latestEpoch) {
             delete transactionHandlers[epoch];
-            epochRange.splice(i, 1);
+            toWatch[networkKey].splice(i, 1);
           }
           i--;
         }
-        if (!isWatched.find((watcher) => watcher.chainId == chainId && watcher.network == network)) {
-          isWatched.push({ chainId, network });
+        const currentLatestBlock = await veaOutboxProvider.getBlock("latest");
+        const currentLatestEpoch = Math.floor(currentLatestBlock.timestamp / routeConfig[network].epochPeriod);
+        const toWatchEpochs = toWatch[networkKey];
+        const lastEpochInToWatch = toWatchEpochs[toWatchEpochs.length - 1];
+        if (currentLatestEpoch > lastEpochInToWatch) {
+          toWatch[networkKey].push(currentLatestEpoch);
         }
       }
     }

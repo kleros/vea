@@ -8,6 +8,12 @@ interface ClaimData {
   timestamp: number;
   challenged: boolean;
   txHash: string;
+  verification: {
+    timestamp: number;
+  };
+  challenge: {
+    challenger: string;
+  };
 }
 
 /**
@@ -34,6 +40,7 @@ const getClaimForEpoch = async (epoch: number, outbox: string): Promise<ClaimDat
     );
     return result[`claims`][0];
   } catch (e) {
+    console.log(e);
     throw new ClaimNotFoundError(epoch);
   }
 };
@@ -44,10 +51,10 @@ const getClaimForEpoch = async (epoch: number, outbox: string): Promise<ClaimDat
  */
 const getLastClaimedEpoch = async (outbox: string): Promise<ClaimData> => {
   const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
-
-  const result = await request(
-    `${subgraph}`,
-    `{
+  try {
+    const result = await request(
+      `${subgraph}`,
+      `{
           claims(first:1, orderBy:timestamp, orderDirection:desc, where: {outbox: "${outbox}"}) {
                         id
                         bridger
@@ -58,8 +65,81 @@ const getLastClaimedEpoch = async (outbox: string): Promise<ClaimData> => {
                         }
           
         }`
-  );
-  return result[`claims`][0];
+    );
+    return result[`claims`][0];
+  } catch (e) {
+    console.log(e);
+    throw new ClaimNotFoundError(-1);
+  }
 };
 
-export { getClaimForEpoch, getLastClaimedEpoch, ClaimData };
+type VerificationData = {
+  startTimestamp: number | null;
+  startTxHash: string | null;
+};
+
+const getVerificationForClaim = async (claimId: string): Promise<VerificationData | undefined> => {
+  try {
+    const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
+    const result = await request(
+      `${subgraph}`,
+      `{
+          verifications(where: {claim: "${claimId}"}) {
+            startTimestamp
+            startTxHash
+          }
+        }`
+    );
+    return result[`verifications`][0];
+  } catch (e) {
+    console.log(e);
+    return undefined;
+  }
+};
+
+const getChallengerForClaim = async (claimId: string): Promise<{ challenger: string } | undefined> => {
+  try {
+    const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
+    const result = await request(
+      `${subgraph}`,
+      `{
+          challenges(where: {claim: "${claimId}"}) {
+            challenger
+          }
+        }`
+    );
+    return result[`challenges`][0];
+  } catch (e) {
+    console.log(e);
+    return undefined;
+  }
+};
+
+const getSnapshotSentForEpoch = async (epoch: number, veaInbox: any): Promise<{ txHash: string }> => {
+  try {
+    const subgraph = process.env.VEAINBOX_SUBGRAPH;
+    const result = await request(
+      `${subgraph}`,
+      `{
+          snapshots(where: {epoch: "${epoch}", inbox: "${veaInbox}"}) {
+            fallback{
+              txHash
+            }
+          }
+        }`
+    );
+    return result[`fallback`][0];
+  } catch (e) {
+    console.log(e);
+    return undefined;
+  }
+};
+
+export {
+  getClaimForEpoch,
+  getLastClaimedEpoch,
+  getVerificationForClaim,
+  getChallengerForClaim,
+  getSnapshotSentForEpoch,
+  ClaimData,
+};

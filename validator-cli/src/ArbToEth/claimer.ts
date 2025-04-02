@@ -43,7 +43,6 @@ async function checkAndClaim({
   fetchTransactionHandler = getTransactionHandler,
   now = Date.now(),
 }: CheckAndClaimParams) {
-  console.log(epoch);
   let outboxStateRoot = await veaOutbox.stateRoot();
   const finalizedOutboxBlock = await veaOutboxProvider.getBlock("finalized");
   const claimAbleEpoch = Math.floor(now / (1000 * epochPeriod)) - 1;
