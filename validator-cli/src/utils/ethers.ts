@@ -31,6 +31,8 @@ function getVeaInbox(veaInboxAddress: string, privateKey: string, rpcUrl: string
       return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, rpcUrl));
     case 10200:
       return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, rpcUrl));
+    default:
+      throw new NotDefinedError("VeaInbox");
   }
 }
 
@@ -42,6 +44,8 @@ function getVeaOutbox(veaOutboxAddress: string, privateKey: string, rpcUrl: stri
           return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
         case Network.TESTNET:
           return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+        default:
+          throw new InvalidNetworkError(`${network}(veaOutbox)`);
       }
 
     case 10200:
@@ -50,7 +54,11 @@ function getVeaOutbox(veaOutboxAddress: string, privateKey: string, rpcUrl: stri
           return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
         case Network.TESTNET:
           return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+        default:
+          throw new InvalidNetworkError(`${network}(veaOutbox)`);
       }
+    default:
+      throw new NotDefinedError("VeaOutbox");
   }
 }
 
@@ -105,6 +113,8 @@ const getTransactionHandler = (chainId: number, network: Network) => {
           return ArbToEthDevnetTransactionHandler;
         case Network.TESTNET:
           return ArbToEthTransactionHandler;
+        default:
+          throw new InvalidNetworkError(`${network}(transactionHandler)`);
       }
     default:
       throw new NotDefinedError("Transaction Handler");
