@@ -86,7 +86,7 @@ async function checkAndClaim({
       fetchLatestClaimedEpoch(veaOutbox.target),
     ]);
     newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
-    lastClaimChallenged = claimData.challenged && savedSnapshot == outboxStateRoot;
+    lastClaimChallenged = claimData?.challenged && savedSnapshot == outboxStateRoot;
     if ((newMessagesToBridge || lastClaimChallenged) && savedSnapshot != ethers.ZeroHash) {
       await transactionHandler.makeClaim(savedSnapshot);
       return transactionHandler;
