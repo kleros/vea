@@ -115,20 +115,28 @@ const getChallengerForClaim = async (claimId: string): Promise<{ challenger: str
   }
 };
 
+type SenSnapshotResponse = {
+  snapshots: {
+    fallback: { txHash: string }[];
+  }[];
+};
+
 const getSnapshotSentForEpoch = async (epoch: number, veaInbox: any): Promise<{ txHash: string }> => {
   try {
     const subgraph = process.env.VEAINBOX_SUBGRAPH;
-    const result = await request(
+    const veaInboxAddress = veaInbox.toLowerCase();
+
+    const result: SenSnapshotResponse = await request(
       `${subgraph}`,
       `{
-          snapshots(where: {epoch: "${epoch}", inbox: "${veaInbox}"}) {
+          snapshots(where: {epoch: ${epoch}, inbox_: { id: "${veaInboxAddress}" }}) {
             fallback{
               txHash
             }
           }
         }`
     );
-    return result[`fallback`][0];
+    return result.snapshots[0].fallback[0];
   } catch (e) {
     console.log(e);
     return undefined;
