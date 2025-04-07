@@ -40,7 +40,6 @@ export function getBotPath({ cliCommand, defaultPath = BotPaths.BOTH }: BotPathP
 interface NetworkConfig {
   chainId: number;
   networks: Network[];
-  devnetOwner?: string;
 }
 
 /**
@@ -49,18 +48,14 @@ interface NetworkConfig {
  */
 export function getNetworkConfig(): NetworkConfig[] {
   const chainIds = process.env.VEAOUTBOX_CHAINS ? process.env.VEAOUTBOX_CHAINS.split(",") : [];
-  const devnetOwner = process.env.DEVNET_OWNER;
   const rawNetwork = process.env.NETWORKS ? process.env.NETWORKS.split(",") : [];
   const networks = validateNetworks(rawNetwork);
-  if (networks.includes(Network.DEVNET) && !devnetOwner) {
-    throw new DevnetOwnerNotSetError();
-  }
+
   const networkConfig: NetworkConfig[] = [];
   for (const chainId of chainIds) {
     networkConfig.push({
       chainId: Number(chainId),
       networks,
-      devnetOwner,
     });
   }
   return networkConfig;
