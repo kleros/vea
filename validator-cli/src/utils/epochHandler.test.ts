@@ -17,13 +17,7 @@ describe("epochHandler", () => {
         epochPeriod: mockedEpochPeriod,
         sequencerDelayLimit: mockedSeqDelayLimit,
       }));
-      const mockParams: EpochRangeParams = {
-        chainId: 1,
-        currentTimestamp,
-        epochPeriod: mockedEpochPeriod,
-        now,
-        fetchBridgeConfig: mockedFetchBridgeConfig as any,
-      };
+
       const result = setEpochRange({
         chainId: 1,
         currentTimestamp,

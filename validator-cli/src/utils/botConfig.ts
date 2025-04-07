@@ -37,7 +37,7 @@ export function getBotPath({ cliCommand, defaultPath = BotPaths.BOTH }: BotPathP
   return path ? pathMapping[path] : defaultPath;
 }
 
-interface NetworkConfig {
+export interface NetworkConfig {
   chainId: number;
   networks: Network[];
 }

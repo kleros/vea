@@ -152,7 +152,7 @@ describe("ArbToEthTransactionHandler", () => {
     const { deposit } = getBridgeConfig(chainId);
     beforeEach(() => {
       const mockClaim = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
-      (mockClaim as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
+      mockClaim.estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["claim(uint256,bytes32)"] = mockClaim;
 
       transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
@@ -186,12 +186,11 @@ describe("ArbToEthTransactionHandler", () => {
 
   describe("startVerification", () => {
     let transactionHandler: ArbToEthTransactionHandler;
-    const mockEmitter = new MockEmitter();
     const { routeConfig, sequencerDelayLimit } = getBridgeConfig(chainId);
     const epochPeriod = routeConfig[Network.TESTNET].epochPeriod;
     let startVerificationFlipTime: number;
     const mockStartVerification = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
-    (mockStartVerification as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
+    mockStartVerification.estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
     beforeEach(() => {
       veaOutbox["startVerification(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"] =
         mockStartVerification;
@@ -241,10 +240,9 @@ describe("ArbToEthTransactionHandler", () => {
   describe("verifySnapshot", () => {
     let verificationFlipTime: number;
     let transactionHandler: ArbToEthTransactionHandler;
-    const mockEmitter = new MockEmitter();
     beforeEach(() => {
       const mockVerifySnapshot = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
-      (mockVerifySnapshot as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
+      mockVerifySnapshot.estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["verifySnapshot(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"] = mockVerifySnapshot;
       veaOutbox.verifySnapshot.mockResolvedValue({ hash: "0x1234" });
       transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
@@ -291,10 +289,9 @@ describe("ArbToEthTransactionHandler", () => {
 
   describe("withdrawClaimDeposit", () => {
     let transactionHandler: ArbToEthTransactionHandler;
-    const mockEmitter = new MockEmitter();
     beforeEach(() => {
       const mockWithdrawClaimDeposit = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
-      (mockWithdrawClaimDeposit as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
+      mockWithdrawClaimDeposit.estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["withdrawClaimDeposit(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"] =
         mockWithdrawClaimDeposit;
       transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
@@ -474,7 +471,6 @@ describe("ArbToEthTransactionHandler", () => {
   describe("resolveChallengedClaim", () => {
     let mockMessageExecutor: any;
     let transactionHandler: ArbToEthTransactionHandler;
-    const mockEmitter = new MockEmitter();
     beforeEach(() => {
       mockMessageExecutor = jest.fn();
       transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);

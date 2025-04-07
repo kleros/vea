@@ -1,8 +1,7 @@
-import { ethers, getAddress } from "ethers";
+import { ethers } from "ethers";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { getClaim, hashClaim, getClaimResolveState } from "./claim";
 import { ClaimNotFoundError } from "./errors";
-import { mock } from "node:test";
 
 let mockClaim: ClaimStruct;
 // Pre calculated from the deployed contracts
@@ -15,7 +14,6 @@ describe("snapshotClaim", () => {
     let veaOutbox: any;
     let veaOutboxProvider: any;
     const epoch = 1;
-    let getClaimForEpoch = jest.fn();
     let getVerificationForClaim = jest.fn();
     let getChallengerForClaim = jest.fn();
     let mockClaimParams: any;

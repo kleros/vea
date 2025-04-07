@@ -69,7 +69,7 @@ const getClaim = async ({
       claim.timestampVerification = (await veaOutboxProvider.getBlock(verificationLogs[0].blockNumber)).timestamp;
     }
     if (challengeLogs.length > 0) claim.challenger = "0x" + challengeLogs[0].topics[2].substring(26);
-  } catch (error) {
+  } catch {
     const claimFromGraph = await fetchClaimForEpoch(epoch, await veaOutbox.getAddress());
     if (!claimFromGraph) throw new ClaimNotFoundError(epoch);
     const [verificationFromGraph, challengeFromGraph] = await Promise.all([
@@ -79,7 +79,7 @@ const getClaim = async ({
     claim.stateRoot = claimFromGraph.stateroot;
     claim.claimer = claimFromGraph.bridger;
     claim.timestampClaimed = claimFromGraph.timestamp;
-    if (verificationFromGraph && verificationFromGraph.startTimestamp) {
+    if (verificationFromGraph?.startTimestamp) {
       claim.timestampVerification = verificationFromGraph.startTimestamp;
       const startVerificationTxHash = verificationFromGraph.startTxHash;
       const txReceipt = await veaOutboxProvider.getTransactionReceipt(startVerificationTxHash);
@@ -132,7 +132,7 @@ const getClaimResolveState = async (
   toBlock: number | string,
   fetchMessageStatus: typeof getMessageStatus = getMessageStatus
 ): Promise<ClaimResolveState> => {
-  var claimResolveState: ClaimResolveState = {
+  let claimResolveState: ClaimResolveState = {
     sendSnapshot: {
       status: false,
       txHash: "",
@@ -151,7 +151,7 @@ const getClaimResolveState = async (
     } else {
       return claimResolveState;
     }
-  } catch (error) {
+  } catch {
     const sentSnapshotFromGraph = await getSnapshotSentForEpoch(epoch, await veaInbox.getAddress());
     if (sentSnapshotFromGraph) {
       claimResolveState.sendSnapshot.status = true;
