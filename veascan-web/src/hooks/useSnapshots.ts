@@ -33,13 +33,14 @@ export const useSnapshots = (
   lastTimestamp = "99999999999999",
   snapshotsPerPage = 5
 ) => {
+  const adjustedTimestamp = (BigInt(lastTimestamp) - BigInt(1)).toString();
   const { debouncedSearch, fromChain, toChain, queryInfo, statusFilter } =
     useFiltersContext();
   return useSWR(
     `${fromChain}${toChain}${lastTimestamp}${statusFilter}${debouncedSearch}`,
     async (): Promise<IUseSnapshots> => {
       const { sortedSnapshots } = await getSortedSnapshots(
-        lastTimestamp,
+        adjustedTimestamp,
         debouncedSearch,
         fromChain,
         toChain,
@@ -50,7 +51,7 @@ export const useSnapshots = (
         (snapshot) => !shownSnapshots.has(getSnapshotId(snapshot))
       );
       const pageSnapshots = filteredSnapshots.slice(0, snapshotsPerPage);
-      return {
+      const res = {
         snapshots: (await Promise.all(
           pageSnapshots.map((snapshot) =>
             getSecondaryData(snapshot, debouncedSearch, queryInfo.order)
@@ -58,6 +59,7 @@ export const useSnapshots = (
         )) as [InboxData, OutboxData][],
         isMorePages: filteredSnapshots.length > snapshotsPerPage,
       };
+      return res;
     }
   );
 };
@@ -114,10 +116,7 @@ const getEndpoint = (
   query: IQueries,
   bridge: IBridge,
   debouncedSearch: string
-) =>
-  isInboxQuery(query) || debouncedSearch
-    ? bridge.inboxEndpoint
-    : bridge.outboxEndpoint;
+) => (isInboxQuery(query) ? bridge.inboxEndpoint : bridge.outboxEndpoint);
 
 const getQueryDocument = (query: IQueries, debouncedSearch: string) =>
   debouncedSearch ? searchSnapshotsQuery : query;
@@ -128,10 +127,14 @@ const getSecondaryData = async (
   order: ORDER
 ) => {
   const isFirstInbox = order === ORDER.firstInbox;
-  const secondaryData = await request(
-    isFirstInbox || debouncedSearch !== ""
+  const endpoint =
+    debouncedSearch !== ""
+      ? getBridge(snapshot.bridgeId).inboxEndpoint
+      : isFirstInbox
       ? getBridge(snapshot.bridgeId).outboxEndpoint
-      : getBridge(snapshot.bridgeId).inboxEndpoint,
+      : getBridge(snapshot.bridgeId).inboxEndpoint;
+  const secondaryData = await request(
+    endpoint,
     isFirstInbox ? getClaimQuery : getSnapshotQuery,
     {
       epoch: snapshot.epoch.toString(),
@@ -141,9 +144,10 @@ const getSecondaryData = async (
       ? (result as unknown as GetClaimQuery).claims[0]
       : (result as GetSnapshotQuery).snapshots[0]
   );
-  return isFirstInbox
+  const filteredData = isFirstInbox
     ? [snapshot, secondaryData]
     : [{ ...secondaryData, bridgeId: snapshot.bridgeId }, snapshot];
+  return filteredData as [InboxData, OutboxData];
 };
 
 export const getSnapshotId = ({
