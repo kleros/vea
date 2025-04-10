@@ -1,8 +1,8 @@
 import { graphql } from "src/gql";
 
 export const getClaimQuery = graphql(`
-  query getClaim($epoch: BigInt!) {
-    claims(where: { epoch: $epoch }) {
+  query getClaim($epoch: BigInt!, outboxAddress: String!) {
+    claims(where: { epoch: $epoch, outbox: $outboxAddress }) {
       id
       epoch
       timestamp
@@ -28,7 +28,11 @@ export const getClaimQuery = graphql(`
 `);
 
 export const getClaimedSnapshotsQuery = graphql(`
-  query getClaimedSnapshots($snapshotsPerPage: Int, $lastTimestamp: BigInt!) {
+  query getClaimedSnapshots(
+    $snapshotsPerPage: Int
+    $lastTimestamp: BigInt!
+    $outboxAddress: String!
+  ) {
     claims(
       first: $snapshotsPerPage
       orderBy: timestamp
@@ -37,6 +41,7 @@ export const getClaimedSnapshotsQuery = graphql(`
         timestamp_lte: $lastTimestamp
         verified: false
         challenged: false
+        outbox: $outboxAddress
       }
     ) {
       id
@@ -67,6 +72,7 @@ export const getChallengedSnapshotsQuery = graphql(`
   query getChallengedSnapshots(
     $snapshotsPerPage: Int
     $lastTimestamp: BigInt!
+    $outboxAddress: String!
   ) {
     claims(
       first: $snapshotsPerPage
@@ -76,6 +82,7 @@ export const getChallengedSnapshotsQuery = graphql(`
         timestamp_lte: $lastTimestamp
         verified: false
         challenged: true
+        outbox: $outboxAddress
       }
     ) {
       id
@@ -103,7 +110,11 @@ export const getChallengedSnapshotsQuery = graphql(`
 `);
 
 export const getVerifiedSnapshotsQuery = graphql(`
-  query getVerifiedSnapshots($snapshotsPerPage: Int, $lastTimestamp: BigInt!) {
+  query getVerifiedSnapshots(
+    $snapshotsPerPage: Int
+    $lastTimestamp: BigInt!
+    $outboxAddress: String!
+  ) {
     claims(
       first: $snapshotsPerPage
       orderBy: timestamp
@@ -112,6 +123,7 @@ export const getVerifiedSnapshotsQuery = graphql(`
         timestamp_lte: $lastTimestamp
         verified: true
         challenged: false
+        outbox: $outboxAddress
       }
     ) {
       id
@@ -139,12 +151,21 @@ export const getVerifiedSnapshotsQuery = graphql(`
 `);
 
 export const getResolvedSnapshotsQuery = graphql(`
-  query getResolvedSnapshots($snapshotsPerPage: Int, $lastTimestamp: BigInt!) {
+  query getResolvedSnapshots(
+    $snapshotsPerPage: Int
+    $lastTimestamp: BigInt!
+    $outboxAddress: String!
+  ) {
     claims(
       first: $snapshotsPerPage
       orderBy: timestamp
       orderDirection: desc
-      where: { timestamp_lte: $lastTimestamp, verified: true, challenged: true }
+      where: {
+        timestamp_lte: $lastTimestamp
+        verified: true
+        challenged: true
+        outbox: $outboxAddress
+      }
     ) {
       id
       epoch
