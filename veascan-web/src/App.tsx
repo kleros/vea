@@ -11,7 +11,7 @@ import { useFiltersContext } from "./contexts/FiltersContext";
 
 const SNAPSHOTS_PER_PAGE = 5;
 
-const StyledPagination = styled(StandardPagination)`
+const StyledPagination = styled.div`
   margin-top: 32px;
   margin-left: auto;
 `;
@@ -69,12 +69,14 @@ const App = () => {
             key={currentPage}
             items={mapDataForAccordion(data.snapshots)}
           />
-          <StyledPagination
-            numPages={data.isMorePages ? currentPage + 1 : currentPage}
-            currentPage={currentPage}
-            callback={handlePageChange}
-            hideNumbers
-          />
+          <StyledPagination>
+            <StandardPagination
+              numPages={data.isMorePages ? currentPage + 1 : currentPage}
+              currentPage={currentPage}
+              callback={handlePageChange}
+              hideNumbers
+            />
+          </StyledPagination>
         </>
       ) : (
         <p>loading...</p>
