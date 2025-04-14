@@ -1,8 +1,8 @@
 import { graphql } from "src/gql";
 
 export const getClaimQuery = graphql(`
-  query getClaim($epoch: BigInt!, outboxAddress: String!) {
-    claims(where: { epoch: $epoch, outbox: $outboxAddress }) {
+  query getClaim($epoch: BigInt!, $contract: String!) {
+    claims(where: { epoch: $epoch, outbox: $contract }) {
       id
       epoch
       timestamp
@@ -31,7 +31,7 @@ export const getClaimedSnapshotsQuery = graphql(`
   query getClaimedSnapshots(
     $snapshotsPerPage: Int
     $lastTimestamp: BigInt!
-    $outboxAddress: String!
+    $contract: String!
   ) {
     claims(
       first: $snapshotsPerPage
@@ -41,7 +41,7 @@ export const getClaimedSnapshotsQuery = graphql(`
         timestamp_lte: $lastTimestamp
         verified: false
         challenged: false
-        outbox: $outboxAddress
+        outbox: $contract
       }
     ) {
       id
@@ -72,7 +72,7 @@ export const getChallengedSnapshotsQuery = graphql(`
   query getChallengedSnapshots(
     $snapshotsPerPage: Int
     $lastTimestamp: BigInt!
-    $outboxAddress: String!
+    $contract: String!
   ) {
     claims(
       first: $snapshotsPerPage
@@ -82,7 +82,7 @@ export const getChallengedSnapshotsQuery = graphql(`
         timestamp_lte: $lastTimestamp
         verified: false
         challenged: true
-        outbox: $outboxAddress
+        outbox: $contract
       }
     ) {
       id
@@ -113,7 +113,7 @@ export const getVerifiedSnapshotsQuery = graphql(`
   query getVerifiedSnapshots(
     $snapshotsPerPage: Int
     $lastTimestamp: BigInt!
-    $outboxAddress: String!
+    $contract: String!
   ) {
     claims(
       first: $snapshotsPerPage
@@ -123,7 +123,7 @@ export const getVerifiedSnapshotsQuery = graphql(`
         timestamp_lte: $lastTimestamp
         verified: true
         challenged: false
-        outbox: $outboxAddress
+        outbox: $contract
       }
     ) {
       id
@@ -154,7 +154,7 @@ export const getResolvedSnapshotsQuery = graphql(`
   query getResolvedSnapshots(
     $snapshotsPerPage: Int
     $lastTimestamp: BigInt!
-    $outboxAddress: String!
+    $contract: String!
   ) {
     claims(
       first: $snapshotsPerPage
@@ -164,7 +164,7 @@ export const getResolvedSnapshotsQuery = graphql(`
         timestamp_lte: $lastTimestamp
         verified: true
         challenged: true
-        outbox: $outboxAddress
+        outbox: $contract
       }
     ) {
       id
