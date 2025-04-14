@@ -1,5 +1,6 @@
 {
   "name": "@kleros/veascan-subgraph-inbox",
+  "version": "0.2.1",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
@@ -9,6 +10,7 @@
     "yarn": "4.6.0"
   },
   "scripts": {
+    "update:arbitrum-sepolia": "./scripts/update.sh arbitrumSepolia arbitrum-sepolia",
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --studio veascan-inbox-arb-sep-devnet",

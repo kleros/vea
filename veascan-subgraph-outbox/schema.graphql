@@ -1,8 +1,9 @@
 type Claim @entity {
   id: ID!
-  epoch: BigInt!
-  stateroot: Bytes!
-  bridger: Bytes!
+  outbox: Outbox! # address
+  epoch: BigInt! # uint64
+  stateroot: Bytes! # bytes32
+  bridger: Bytes! # address
   timestamp: BigInt!
   challenged: Boolean!
   challenge: Challenge @derivedFrom(field: "claim")
@@ -12,12 +13,17 @@ type Claim @entity {
   txHash: Bytes!
 }
 
+type Outbox @entity(immutable: true) {
+  id: Bytes! # address
+  claims: [Claim!]! @derivedFrom(field: "outbox")
+}
+
 type Challenge @entity {
   id: ID!
   claim: Claim!
   txHash: Bytes!
   timestamp: BigInt!
-  challenger: Bytes!
+  challenger: Bytes! # address
   honest: Boolean!
 }
 
@@ -25,20 +31,22 @@ type Verification @entity {
   id: ID!
   claim: Claim!
   timestamp: BigInt!
-  caller: Bytes!
+  caller: Bytes! # address
   txHash: Bytes!
 }
 
 type Message @entity {
   id: ID!
+  outbox: Outbox! # address
   timestamp: BigInt!
   txHash: Bytes!
-  relayer: Bytes!
+  relayer: Bytes! # address
   proof: Bytes!
 }
 
 type Ref @entity {
   id: ID!
+  outbox: Outbox! # address
   totalClaims: BigInt!
   totalMessages: BigInt!
   totalChallenges: BigInt!

@@ -1,23 +1,29 @@
-import { BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
   Challenged,
   Claimed,
   MessageRelayed,
   Verified,
-  VeaOutbox,
-} from "../generated/VeaOutbox/VeaOutbox";
+} from "../generated/VeaOutboxArbToEthDevnet/VeaOutboxArbToEthDevnet";
 import {
   Challenge,
   Claim,
   Message,
   Ref,
   Verification,
+  Outbox,
 } from "../generated/schema";
 
 export function handleClaimed(event: Claimed): void {
-  const claimIndex = useClaimIndex();
-  const claim = new Claim(claimIndex.toString());
-  const outbox = VeaOutbox.bind(event.address);
+  let outbox = Outbox.load(event.address);
+  if (!outbox) {
+    outbox = new Outbox(event.address);
+    outbox.save();
+  }
+  const claimIndex = useClaimIndex(event.address);
+  const claimId = event.address.toHexString() + "-" + claimIndex.toString();
+  const claim = new Claim(claimId);
+  claim.outbox = event.address;
   claim.epoch = event.params._epoch;
   claim.txHash = event.transaction.hash;
   claim.stateroot = event.params._stateRoot;
@@ -30,14 +36,15 @@ export function handleClaimed(event: Claimed): void {
 }
 
 export function handleChallenged(event: Challenged): void {
-  const ref = getRef();
+  const ref = getRef(event.address);
   let outterClaim: Claim | null = null;
   for (
     let i = ref.totalClaims.minus(BigInt.fromI32(1));
     i.ge(BigInt.fromI32(0));
-    i.minus(BigInt.fromI32(1))
+    i = i.minus(BigInt.fromI32(1))
   ) {
-    const claim = Claim.load(i.toString());
+    const claimId = event.address.toHexString() + "-" + i.toString();
+    const claim = Claim.load(claimId);
     if (!claim) continue;
     if (claim.epoch.equals(event.params._epoch)) {
       outterClaim = claim;
@@ -48,8 +55,10 @@ export function handleChallenged(event: Challenged): void {
   if (outterClaim) {
     outterClaim.challenged = true;
     outterClaim.save();
-    const challengeIndex = useChallengeIndex();
-    const challenge = new Challenge(challengeIndex.toString());
+    const challengeIndex = useChallengeIndex(event.address);
+    const challengeId =
+      event.address.toHexString() + "-" + challengeIndex.toString();
+    const challenge = new Challenge(challengeId);
     challenge.claim = outterClaim.id;
     challenge.txHash = event.transaction.hash;
     challenge.challenger = event.transaction.from;
@@ -60,16 +69,20 @@ export function handleChallenged(event: Challenged): void {
 }
 
 export function handleVerified(event: Verified): void {
-  const ref = getRef();
+  const ref = getRef(event.address);
   for (
     let i = ref.totalClaims.minus(BigInt.fromI32(1));
     i.ge(BigInt.fromI32(0));
-    i.minus(BigInt.fromI32(1))
+    i = i.minus(BigInt.fromI32(1))
   ) {
-    const claim = Claim.load(i.toString());
-    if (claim!.epoch.equals(event.params._epoch)) {
-      const verification = new Verification(claim!.id);
-      verification.claim = claim!.id;
+    const claimId = event.address.toHexString() + "-" + i.toString();
+    const claim = Claim.load(claimId);
+    if (claim && claim.epoch.equals(event.params._epoch)) {
+      claim.verified = true;
+      claim.save();
+
+      const verification = new Verification(claim.id);
+      verification.claim = claim.id;
       verification.timestamp = event.block.timestamp;
       verification.caller = event.transaction.from;
       verification.txHash = event.transaction.hash;
@@ -80,7 +93,10 @@ export function handleVerified(event: Verified): void {
 }
 
 export function handleMessageRelayed(event: MessageRelayed): void {
-  const message = new Message(event.params._msgId.toString());
+  const messageId =
+    event.address.toHexString() + "-" + event.params._msgId.toString();
+  const message = new Message(messageId);
+  message.outbox = event.address;
   message.timestamp = event.block.timestamp;
   message.txHash = event.transaction.hash;
   message.relayer = event.transaction.from;
@@ -88,27 +104,29 @@ export function handleMessageRelayed(event: MessageRelayed): void {
   message.save();
 }
 
-function useClaimIndex(): BigInt {
-  const ref = getRef();
+function useClaimIndex(eventAddress: Address): BigInt {
+  const ref = getRef(eventAddress);
   const claimIndex = ref.totalClaims;
   ref.totalClaims = ref.totalClaims.plus(BigInt.fromI32(1));
   ref.save();
   return claimIndex;
 }
 
-function useChallengeIndex(): BigInt {
-  const ref = getRef();
+function useChallengeIndex(eventAddress: Address): BigInt {
+  const ref = getRef(eventAddress);
   const challengeIndex = ref.totalChallenges;
   ref.totalChallenges = ref.totalChallenges.plus(BigInt.fromI32(1));
   ref.save();
   return challengeIndex;
 }
 
-function getRef(): Ref {
-  let ref = Ref.load("0");
+function getRef(outboxAddress: Address): Ref {
+  let id = outboxAddress.toHexString();
+  let ref = Ref.load(id);
   if (ref) return ref;
   else {
-    ref = new Ref("0");
+    ref = new Ref(id);
+    ref.outbox = outboxAddress;
     ref.totalClaims = BigInt.fromI32(0);
     ref.totalMessages = BigInt.fromI32(0);
     ref.totalChallenges = BigInt.fromI32(0);

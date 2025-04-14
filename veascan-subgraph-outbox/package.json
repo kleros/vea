@@ -1,5 +1,6 @@
 {
   "name": "@kleros/veascan-subgraph-outbox",
+  "version": "0.2.3",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
@@ -9,8 +10,8 @@
     "yarn": "4.6.0"
   },
   "scripts": {
-    "update:sepolia": "./scripts/update.sh sepolia sepolia ArbToEthDevnet",
-    "update:chiado": "./scripts/update.sh chiado chiado ArbToGnosisDevnet",
+    "update:sepolia": "./scripts/update.sh sepolia sepolia",
+    "update:chiado": "./scripts/update.sh chiado chiado",
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy:sepolia": "yarn build:sepolia && yarn graph deploy --studio veascan-outbox-arb-sep-devnet",
