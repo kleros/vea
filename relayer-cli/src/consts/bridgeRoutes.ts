@@ -1,18 +1,56 @@
 // File for handling contants and configurations
 require("dotenv").config();
-import veaOutboxArbToEthContract from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthTestnet.json";
-import veaOutboxArbToGnosisContract from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisTestnet.json";
+import veaInboxArbToEthDevnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json";
+import veaOutboxArbToEthDevnet from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
+import veaInboxArbToEthTestnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthTestnet.json";
+import veaOutboxArbToEthTestnet from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthTestnet.json";
+
+import veaInboxArbToGnosisDevnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json";
+import veaOutboxArbToGnosisDevnet from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
+
+import veaInboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisTestnet.json";
+import veaOutboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisTestnet.json";
 
 interface IBridge {
   chainId: number;
   chain: string;
   epochPeriod: number;
-  veaInboxAddress: string;
-  veaOutboxAddress: string;
-  batcher: string;
+  veaContracts: { [key in Network]: VeaContracts };
+  batcherAddress: string;
   rpcOutbox: string;
-  veaOutboxContract: any;
 }
+
+type VeaContracts = {
+  veaInbox: any;
+  veaOutbox: any;
+};
+
+enum Network {
+  DEVNET = "devnet",
+  TESTNET = "testnet",
+}
+
+const arbToEthContracts: { [key in Network]: VeaContracts } = {
+  [Network.DEVNET]: {
+    veaInbox: veaInboxArbToEthDevnet,
+    veaOutbox: veaOutboxArbToEthDevnet,
+  },
+  [Network.TESTNET]: {
+    veaInbox: veaInboxArbToEthTestnet,
+    veaOutbox: veaOutboxArbToEthTestnet,
+  },
+};
+
+const arbToGnosisContracts: { [key in Network]: VeaContracts } = {
+  [Network.DEVNET]: {
+    veaInbox: veaInboxArbToGnosisDevnet,
+    veaOutbox: veaOutboxArbToGnosisDevnet,
+  },
+  [Network.TESTNET]: {
+    veaInbox: veaInboxArbToGnosisTestnet,
+    veaOutbox: veaOutboxArbToGnosisTestnet,
+  },
+};
 
 // Using destination chainId to get the route configuration.
 const bridges: { [chainId: number]: IBridge } = {
@@ -20,42 +58,31 @@ const bridges: { [chainId: number]: IBridge } = {
     chainId: 11155111,
     chain: "sepolia",
     epochPeriod: 7200,
-    veaInboxAddress: process.env.VEAINBOX_ARBSEPOLIA_TO_SEPOLIA_ADDRESS,
-    veaOutboxAddress: process.env.VEAOUTBOX_ARBSEPOLIA_TO_SEPOLIA_ADDRESS,
-    batcher: process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_SEPOLIA,
-    rpcOutbox: process.env.RPC_SEPOLIA,
-    veaOutboxContract: veaOutboxArbToEthContract,
+    veaContracts: arbToEthContracts,
+    batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_SEPOLIA!,
+    rpcOutbox: process.env.RPC_SEPOLIA!,
   },
   10200: {
     chainId: 10200,
     chain: "chiado",
     epochPeriod: 3600,
-    veaInboxAddress: process.env.VEAINBOX_ARBSEPOLIA_TO_CHIADO_ADDRESS,
-    veaOutboxAddress: process.env.VEAOUTBOX_ARBSEPOLIA_TO_CHIADO_ADDRESS,
-    batcher: process.env.TRANSACTION_BATCHER_CONTRACT_ADDRESS_CHIADO,
-    rpcOutbox: process.env.RPC_CHIADO,
-    veaOutboxContract: veaOutboxArbToGnosisContract,
+    veaContracts: arbToGnosisContracts,
+    batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_CHIADO!,
+    rpcOutbox: process.env.RPC_CHIADO!,
   },
 };
 
 // Getters
-const getBridgeConfig = (chainId: number): IBridge | undefined => {
-  return bridges[chainId];
+const getBridgeConfig = (chainId: number): IBridge => {
+  const bridge = bridges[chainId];
+  if (!bridge) throw new Error(`Unsupported chainId: ${chainId}`);
+  return bridge;
 };
 
 const getEpochPeriod = (chainId: number): number => {
-  return bridges[chainId].epochPeriod;
+  const bridge = bridges[chainId];
+  if (!bridge.epochPeriod) throw new Error(`Unsupported chainId: ${chainId}`);
+  return bridge.epochPeriod;
 };
 
-const getInboxSubgraph = (chainId: number): string => {
-  switch (chainId) {
-    case 11155111:
-      return process.env.VEAINBOX_ARBSEPOLIA_TO_SEPOLIA_SUBGRAPH;
-    case 10200:
-      return process.env.VEAINBOX_ARBSEPOLIA_TO_CHIADO_SUBGRAPH;
-    default:
-      throw new Error("Invalid chainId");
-  }
-};
-
-export { getBridgeConfig, getInboxSubgraph, getEpochPeriod };
+export { getBridgeConfig, getEpochPeriod, Network };
