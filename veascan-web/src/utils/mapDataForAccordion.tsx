@@ -31,6 +31,18 @@ export interface IParsedData {
   transactions: ITxCard[];
 }
 
+/**
+ * Helper function to calculate the current claim status.
+ */
+const calculateCurrentStatus = (status: IStatus): ClaimStatus => {
+  if (status.resolved) return ClaimStatus.RESOLVED;
+  if (status.resolving) return ClaimStatus.RESOLVING;
+  if (status.challenged) return ClaimStatus.CHALLENGED;
+  if (status.verified) return ClaimStatus.VERIFIED;
+  if (status.claimed) return ClaimStatus.CLAIMED;
+  return ClaimStatus.UNKNOWN;
+};
+
 export const mapDataForAccordion = (
   snapshotsData: [InboxData, OutboxData][]
 ): IParsedData[] => {
@@ -116,24 +128,10 @@ export const mapDataForAccordion = (
       resolving: outboxData?.challenged && inboxData?.resolving,
       resolved: outboxData?.challenged && outboxData?.verified,
     };
-    let currentStatus: ClaimStatus;
-    if (status.resolved) {
-      currentStatus = ClaimStatus.RESOLVED;
-    } else if (status.resolving) {
-      currentStatus = ClaimStatus.RESOLVING;
-    } else if (status.challenged) {
-      currentStatus = ClaimStatus.CHALLENGED;
-    } else if (status.verified) {
-      currentStatus = ClaimStatus.VERIFIED;
-    } else if (status.claimed) {
-      currentStatus = ClaimStatus.CLAIMED;
-    } else {
-      currentStatus = ClaimStatus.UNKNOWN;
-    }
-
+    const currentStatus = calculateCurrentStatus(status);
     return {
       bridgeId: inboxData.bridgeId,
-      epoch: inboxData?.epoch || outboxData?.epoch,
+      epoch: inboxData?.epoch ?? outboxData?.epoch,
       snapshotId: inboxData.id,
       status: {
         claimed: typeof outboxData?.txHash !== "undefined",
