@@ -143,12 +143,11 @@ const getSecondaryData = async (
 ) => {
   const isFirstInbox = order === ORDER.firstInbox;
   const bridge = getBridge(snapshot.bridgeId);
+  const fallbackEndpoint = isFirstInbox
+    ? bridge.outboxEndpoint
+    : bridge.inboxEndpoint;
   const endpoint =
-    debouncedSearch !== ""
-      ? bridge.inboxEndpoint
-      : isFirstInbox
-      ? bridge.outboxEndpoint
-      : bridge.inboxEndpoint;
+    debouncedSearch !== "" ? bridge.inboxEndpoint : fallbackEndpoint;
   const secondaryData = await request(
     endpoint,
     isFirstInbox ? getClaimQuery : getSnapshotQuery,

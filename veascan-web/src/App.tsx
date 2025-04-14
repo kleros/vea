@@ -45,6 +45,7 @@ const App = () => {
     if (hostname.startsWith("testnet.")) {
       setNetwork(Network.TESTNET);
     }
+    setNetwork(Network.TESTNET);
   }, []);
   useEffect(() => {
     if (currentPage !== 1) {
