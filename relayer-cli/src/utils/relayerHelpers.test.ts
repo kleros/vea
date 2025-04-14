@@ -1,5 +1,5 @@
 import EventEmitter from "events";
-import { initialize, updateStateFile } from "./relayerHelpers";
+import { initialize, updateStateFile, cleanupLockFile, setupExitHandlers, ShutdownManager } from "./relayerHelpers";
 
 describe("relayerHelpers", () => {
   const emitter = new EventEmitter();
@@ -66,13 +66,75 @@ describe("relayerHelpers", () => {
     });
   });
 
+  describe("cleanupLockFile", () => {
+    it("should delete the .pid file if it exists", async () => {
+      const stateDir = process.env.STATE_DIR || "";
+      const pidFile = stateDir + network + "_" + chainId + ".pid";
+      // Simulate that the .pid file exists.
+      fileSystem.existsSync.mockReturnValue(true);
+      await cleanupLockFile(chainId, network, emitter, fileSystem as any);
+      expect(fileSystem.promises.unlink).toHaveBeenCalledWith(pidFile);
+    });
+    it("should not attempt to delete the .pid file if it does not exist", async () => {
+      fileSystem.existsSync.mockReturnValue(false);
+      await cleanupLockFile(chainId, network, emitter, fileSystem as any);
+      expect(fileSystem.promises.unlink).not.toHaveBeenCalled();
+    });
+  });
+
   describe("setupExitHandlers", () => {
-    it.todo("should register signal handlers for SIGINT, SIGTERM, and SIGQUIT");
+    let shutdownManager: ShutdownManager;
+    let exitSpy: jest.SpyInstance;
+    let capturedExitCode: number | undefined;
 
-    it.todo("should trigger shutdown and cleanup on SIGINT signal");
+    beforeEach(() => {
+      shutdownManager = new ShutdownManager();
+      capturedExitCode = undefined;
 
-    it.todo("should trigger shutdown and cleanup on SIGTERM signal");
+      exitSpy = jest.spyOn(process, "exit").mockImplementation((code?: number) => {
+        capturedExitCode = code;
+        return undefined as never;
+      });
 
-    it.todo("should trigger shutdown and cleanup on SIGQUIT signal");
+      setupExitHandlers(chainId, shutdownManager, network, emitter);
+    });
+
+    afterEach(() => {
+      exitSpy.mockRestore();
+      process.removeAllListeners("SIGINT");
+      process.removeAllListeners("SIGTERM");
+      process.removeAllListeners("SIGQUIT");
+      process.removeAllListeners("exit");
+      process.removeAllListeners("uncaughtException");
+      process.removeAllListeners("unhandledRejection");
+      emitter.removeAllListeners("EXIT");
+    });
+
+    it("should register signal handlers for SIGINT, SIGTERM, and SIGQUIT", () => {
+      expect(process.listenerCount("SIGINT")).toBeGreaterThan(0);
+      expect(process.listenerCount("SIGTERM")).toBeGreaterThan(0);
+      expect(process.listenerCount("SIGQUIT")).toBeGreaterThan(0);
+    });
+
+    it("should trigger shutdown and cleanup on SIGINT signal", async () => {
+      process.emit("SIGINT");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(shutdownManager.getIsShuttingDown()).toBe(true);
+      expect(capturedExitCode).toBe(0);
+    });
+
+    it("should trigger shutdown and cleanup on SIGTERM signal", async () => {
+      process.emit("SIGTERM");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(shutdownManager.getIsShuttingDown()).toBe(true);
+      expect(capturedExitCode).toBe(0);
+    });
+
+    it("should trigger shutdown and cleanup on SIGQUIT signal", async () => {
+      process.emit("SIGQUIT");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(shutdownManager.getIsShuttingDown()).toBe(true);
+      expect(capturedExitCode).toBe(0);
+    });
   });
 });

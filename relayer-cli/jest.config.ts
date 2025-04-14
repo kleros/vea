@@ -5,6 +5,9 @@ const config: Config = {
   testEnvironment: "node",
   collectCoverage: true,
   collectCoverageFrom: ["**/*.ts"],
+  moduleNameMapper: {
+    "^consts/(.*)$": "<rootDir>/src/consts/$1",
+  },
 };
 
 export default config;

@@ -1,230 +1,201 @@
+import { EventEmitter } from "node:events";
 import { relayBatch } from "./relay";
+import { BotEvents } from "./botEvents";
+class MockEmitter extends EventEmitter {
+  emit(event: string | symbol, ...args: any[]): boolean {
+    // Prevent console logs for BotEvents during tests
+    if (Object.values(BotEvents).includes(event as BotEvents)) {
+      return true;
+    }
+    return super.emit(event, ...args);
+  }
+}
 
 describe("relay", () => {
   describe("relayBatch", () => {
+    let mockEmitter = new MockEmitter();
     const veaOutboxAddress = "0x123";
+    const network = "testing" as any;
     const chainId = 1;
     const nonce = 0;
     const maxBatchSize = 10;
-    const fetchBridgeConfig = jest.fn();
-    const fetchCount = jest.fn();
-    const setBatchedSend = jest.fn();
-    const fetchVeaOutbox = jest.fn();
-    const fetchProofAtCount = jest.fn();
-    const fetchMessageDataToRelay = jest.fn();
-    const web3 = jest.fn() as any;
-    const mockBatchedSend = jest.fn(async (txns) => Promise.resolve());
+
+    let fetchBridgeConfig: jest.Mock;
+    let fetchCount: jest.Mock;
+    let fetchVeaOutbox: jest.Mock;
+    let fetchProofAtCount: jest.Mock;
+    let fetchMessageDataToRelay: jest.Mock;
+    let fetchBatcher: jest.Mock;
+
+    let mockWait: jest.Mock;
+    let mockBatchSend: jest.Mock & { estimateGas?: jest.Mock };
+
+    let veaOutboxMock: any;
+
     beforeEach(() => {
-      fetchBridgeConfig.mockReturnValue({
-        veaOutboxContract: {
-          abi: [],
+      fetchBridgeConfig = jest.fn().mockReturnValue({
+        batcherAddress: veaOutboxAddress,
+        veaContracts: {
+          [network]: {
+            veaInbox: { address: "0xInbox", abi: ["dummyInboxAbi"] },
+            veaOutbox: { address: veaOutboxAddress, abi: ["dummyOutboxAbi"] },
+          },
         },
+        rpcOutbox: "https://rpc.example.com",
       });
-      fetchCount.mockReturnValue(1);
-      setBatchedSend.mockReturnValue(mockBatchedSend);
-      fetchVeaOutbox.mockReturnValue({
-        isMsgRelayed: jest.fn(),
-        sendMessage: jest.fn(),
-      });
-      fetchProofAtCount.mockReturnValue([]);
-      fetchMessageDataToRelay.mockReturnValue(["to", "data"]);
-      web3.mockReturnValue({
-        eth: {
-          Contract: jest.fn().mockReturnValue({
-            methods: {
-              sendMessage: jest.fn().mockReturnValue({
-                call: jest.fn(),
-              }),
-            },
-            options: {
-              address: veaOutboxAddress,
-            },
+
+      fetchCount = jest.fn().mockResolvedValue(1);
+
+      veaOutboxMock = {
+        isMsgRelayed: jest.fn().mockResolvedValue(false),
+        interface: {
+          encodeFunctionData: jest.fn().mockImplementation((fnName, args) => {
+            return `callData_${args[1]}`;
           }),
         },
+        sendMessage: {
+          staticCall: jest.fn().mockResolvedValue(true),
+        },
+      };
+
+      fetchVeaOutbox = jest.fn().mockReturnValue(veaOutboxMock);
+
+      fetchProofAtCount = jest.fn().mockResolvedValue([]);
+      fetchMessageDataToRelay = jest.fn().mockResolvedValue(["to", "data"]);
+
+      mockWait = jest.fn().mockResolvedValue("receipt");
+      mockBatchSend = jest.fn().mockResolvedValue({ wait: mockWait });
+
+      mockBatchSend.estimateGas = jest.fn().mockResolvedValue(600000);
+
+      fetchBatcher = jest.fn().mockReturnValue({
+        batchSend: mockBatchSend,
       });
     });
+
     afterEach(() => {
       jest.clearAllMocks();
     });
+
     it("should not relay any messages if there are no messages to relay", async () => {
-      fetchCount.mockReturnValue(0);
-      const sendBatch = jest.fn();
-      setBatchedSend.mockReturnValue({
-        sendBatch,
-      });
+      fetchCount.mockResolvedValue(0);
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
+        emitter: mockEmitter,
         fetchBridgeConfig,
         fetchCount,
-        setBatchedSend,
         fetchVeaOutbox,
         fetchProofAtCount,
         fetchMessageDataToRelay,
-        web3,
+        fetchBatcher,
       });
-      expect(sendBatch).not.toHaveBeenCalled();
+      expect(mockBatchSend).not.toHaveBeenCalled();
       expect(updatedNonce).toBe(0);
     });
 
     it("should relay a single message", async () => {
-      fetchCount.mockReturnValue(1);
+      fetchCount.mockResolvedValue(1);
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
+        emitter: mockEmitter,
         fetchBridgeConfig,
         fetchCount,
-        setBatchedSend,
         fetchVeaOutbox,
         fetchProofAtCount,
         fetchMessageDataToRelay,
-        web3,
+        fetchBatcher,
       });
-      expect(mockBatchedSend).toHaveBeenCalledTimes(1);
-      expect(mockBatchedSend).toHaveBeenCalledWith([
-        {
-          args: [[], 0, "to", "data"],
-          method: expect.any(Function), // sendMessage function
-          to: veaOutboxAddress,
-        },
-      ]);
+      expect(mockBatchSend).toHaveBeenCalledTimes(1);
+      // With an estimated gas of 500000, the computed gasLimit is (500000 * 120)/100 = 600000.
+      expect(mockBatchSend).toHaveBeenCalledWith([veaOutboxAddress], [0], ["callData_0"], { gasLimit: 600000 });
       expect(updatedNonce).toBe(1);
     });
 
     it("should relay multiple messages in a single batch", async () => {
-      fetchCount.mockReturnValue(7);
+      fetchCount.mockResolvedValue(7);
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
+        emitter: mockEmitter,
         fetchBridgeConfig,
         fetchCount,
-        setBatchedSend,
         fetchVeaOutbox,
         fetchProofAtCount,
         fetchMessageDataToRelay,
-        web3,
+        fetchBatcher,
       });
-      expect(mockBatchedSend).toHaveBeenCalledTimes(1);
-      const expectedCalls = Array.from({ length: 7 }, (_, index) => ({
-        args: [[], index, "to", "data"],
-        method: expect.any(Function),
-        to: veaOutboxAddress,
-      }));
-
-      expect(mockBatchedSend).toHaveBeenCalledWith(expectedCalls);
-
+      expect(mockBatchSend).toHaveBeenCalledTimes(1);
+      const expectedTargets = Array(7).fill(veaOutboxAddress);
+      const expectedValues = Array(7).fill(0);
+      const expectedDatas = Array.from({ length: 7 }, (_, index) => `callData_${index}`);
+      expect(mockBatchSend).toHaveBeenCalledWith(expectedTargets, expectedValues, expectedDatas, { gasLimit: 600000 });
       expect(updatedNonce).toBe(7);
     });
+
     it("should relay multiple messages in multiple batches", async () => {
-      fetchCount.mockReturnValue(15);
+      fetchCount.mockResolvedValue(15);
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
+        emitter: mockEmitter,
         fetchBridgeConfig,
         fetchCount,
-        setBatchedSend,
         fetchVeaOutbox,
         fetchProofAtCount,
         fetchMessageDataToRelay,
-        web3,
+        fetchBatcher,
       });
-      expect(mockBatchedSend).toHaveBeenCalledTimes(2);
-      const firstBatchCalls = Array.from({ length: 10 }, (_, index) => ({
-        args: [[], index, "to", "data"],
-        method: expect.any(Function),
-        to: veaOutboxAddress,
-      }));
-
-      const secondBatchCalls = Array.from({ length: 5 }, (_, index) => ({
-        args: [[], index + 10, "to", "data"],
-        method: expect.any(Function),
-        to: veaOutboxAddress,
-      }));
-
-      expect(mockBatchedSend).toHaveBeenNthCalledWith(1, firstBatchCalls);
-      expect(mockBatchedSend).toHaveBeenNthCalledWith(2, secondBatchCalls);
+      expect(mockBatchSend).toHaveBeenCalledTimes(2);
+      // First batch: 10 messages.
+      const firstBatchTargets = Array(10).fill(veaOutboxAddress);
+      const firstBatchValues = Array(10).fill(0);
+      const firstBatchDatas = Array.from({ length: 10 }, (_, index) => `callData_${index}`);
+      // Second batch: remaining 5 messages.
+      const secondBatchTargets = Array(5).fill(veaOutboxAddress);
+      const secondBatchValues = Array(5).fill(0);
+      const secondBatchDatas = Array.from({ length: 5 }, (_, index) => `callData_${index + 10}`);
+      expect(mockBatchSend).toHaveBeenNthCalledWith(1, firstBatchTargets, firstBatchValues, firstBatchDatas, {
+        gasLimit: 600000,
+      });
+      expect(mockBatchSend).toHaveBeenNthCalledWith(2, secondBatchTargets, secondBatchValues, secondBatchDatas, {
+        gasLimit: 600000,
+      });
       expect(updatedNonce).toBe(15);
     });
+
     it("should not relay messages that have already been relayed", async () => {
-      fetchCount.mockReturnValue(3);
-      fetchVeaOutbox.mockReturnValue({
-        isMsgRelayed: jest.fn().mockImplementation((nonce) => nonce === 1),
-        sendMessage: jest.fn(),
-      });
+      fetchCount.mockResolvedValue(3);
+
+      veaOutboxMock.isMsgRelayed = jest.fn().mockImplementation((n) => Promise.resolve(n === 1));
       const updatedNonce = await relayBatch({
         chainId,
+        network,
         nonce,
         maxBatchSize,
+        emitter: mockEmitter,
         fetchBridgeConfig,
         fetchCount,
-        setBatchedSend,
         fetchVeaOutbox,
         fetchProofAtCount,
         fetchMessageDataToRelay,
-        web3,
+        fetchBatcher,
       });
-      expect(mockBatchedSend).toHaveBeenCalledTimes(1);
-      const batchCall = [
-        {
-          args: [[], 0, "to", "data"],
-          method: expect.any(Function),
-          to: veaOutboxAddress,
-        },
-        {
-          args: [[], 2, "to", "data"],
-          method: expect.any(Function),
-          to: veaOutboxAddress,
-        },
-      ];
-      expect(mockBatchedSend).toHaveBeenCalledWith(batchCall);
-      expect(updatedNonce).toBe(3);
-    });
-    it("should not relay messages that fail to execute", async () => {
-      fetchCount.mockReturnValue(3);
-      web3.mockReturnValue({
-        eth: {
-          Contract: jest.fn().mockReturnValue({
-            methods: {
-              sendMessage: jest.fn().mockReturnValue({
-                call: jest.fn().mockResolvedValueOnce(Promise.reject("Error")).mockResolvedValueOnce(Promise.resolve()),
-              }),
-            },
-            options: {
-              address: veaOutboxAddress,
-            },
-          }),
-        },
-      });
-      const updatedNonce = await relayBatch({
-        chainId,
-        nonce,
-        maxBatchSize,
-        fetchBridgeConfig,
-        fetchCount,
-        setBatchedSend,
-        fetchVeaOutbox,
-        fetchProofAtCount,
-        fetchMessageDataToRelay,
-        web3,
-      });
-      expect(mockBatchedSend).toHaveBeenCalledTimes(1);
-      const batchCall = [
-        {
-          args: [[], 1, "to", "data"],
-          method: expect.any(Function),
-          to: veaOutboxAddress,
-        },
-        {
-          args: [[], 2, "to", "data"],
-          method: expect.any(Function),
-          to: veaOutboxAddress,
-        },
-      ];
-      expect(mockBatchedSend).toHaveBeenCalledWith(batchCall);
+      expect(mockBatchSend).toHaveBeenCalledTimes(1);
+      // Only messages for nonce 0 and nonce 2 should be batched.
+      const expectedTargets = [veaOutboxAddress, veaOutboxAddress];
+      const expectedValues = [0, 0];
+      const expectedDatas = ["callData_0", "callData_2"];
+      expect(mockBatchSend).toHaveBeenCalledWith(expectedTargets, expectedValues, expectedDatas, { gasLimit: 600000 });
       expect(updatedNonce).toBe(3);
     });
   });

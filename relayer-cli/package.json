@@ -10,17 +10,14 @@
   },
   "scripts": {
     "test": "jest --coverage",
-    "start-devnet-relayer": "npx ts-node ./src/devnetRelayExample.ts",
-    "start-testnet-relayer": "npx ts-node ./src/testnetRelayer.ts"
+    "start-relayer": "ts-node ./src/relayer.ts"
   },
   "dependencies": {
     "@kleros/vea-contracts": "workspace:^",
-    "@typechain/ethers-v5": "^11.1.2",
+    "@typechain/ethers-v6": "^0.5.1",
     "dotenv": "^16.4.5",
-    "pm2": "^5.2.2",
-    "typescript": "^4.9.5",
-    "web3": "^1.10.4",
-    "web3-batched-send": "^1.0.3"
+    "pm2": "^6.0.5",
+    "typescript": "^4.9.5"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
