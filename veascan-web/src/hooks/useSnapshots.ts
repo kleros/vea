@@ -54,6 +54,7 @@ export const useSnapshots = (
         snapshotsPerPage,
         queryInfo.query
       );
+      console.log(sortedSnapshots);
       const filteredSnapshots = sortedSnapshots.filter(
         (snapshot) => !shownSnapshots.has(getSnapshotId(snapshot))
       );
@@ -71,6 +72,7 @@ export const useSnapshots = (
         )) as [InboxData, OutboxData][],
         isMorePages: filteredSnapshots.length > snapshotsPerPage,
       };
+      console.log(res);
       return res;
     }
   );
@@ -147,7 +149,7 @@ const getSecondaryData = async (
     ? bridge.outboxEndpoint
     : bridge.inboxEndpoint;
   const endpoint =
-    debouncedSearch !== "" ? bridge.inboxEndpoint : fallbackEndpoint;
+    debouncedSearch !== "" ? bridge.outboxEndpoint : fallbackEndpoint;
   const secondaryData = await request(
     endpoint,
     isFirstInbox ? getClaimQuery : getSnapshotQuery,
