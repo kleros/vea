@@ -54,7 +54,6 @@ export const useSnapshots = (
         snapshotsPerPage,
         queryInfo.query
       );
-      console.log(sortedSnapshots);
       const filteredSnapshots = sortedSnapshots.filter(
         (snapshot) => !shownSnapshots.has(getSnapshotId(snapshot))
       );
@@ -72,7 +71,6 @@ export const useSnapshots = (
         )) as [InboxData, OutboxData][],
         isMorePages: filteredSnapshots.length > snapshotsPerPage,
       };
-      console.log(res);
       return res;
     }
   );
@@ -100,7 +98,7 @@ const getSortedSnapshots = async (
         lastTimestamp,
         snapshotsPerPage: snapshotsPerPage + 1,
         value: debouncedSearch,
-        contract: bridge.contracts[network].veaInbox,
+        contract: getQueryContract(query, debouncedSearch, bridge, network),
       }
     ).then((queryResult) => {
       const getSnapshots = () => {
@@ -132,10 +130,29 @@ const getEndpoint = (
   query: IQueries,
   bridge: IBridge,
   debouncedSearch: string
-) => (isInboxQuery(query) ? bridge.inboxEndpoint : bridge.outboxEndpoint);
+) => {
+  return debouncedSearch
+    ? bridge.inboxEndpoint
+    : isInboxQuery(query)
+    ? bridge.inboxEndpoint
+    : bridge.outboxEndpoint;
+};
 
 const getQueryDocument = (query: IQueries, debouncedSearch: string) =>
   debouncedSearch ? searchSnapshotsQuery : query;
+
+const getQueryContract = (
+  query: IQueries,
+  debouncedSearch: string,
+  bridge: IBridge,
+  network: Network
+) => {
+  return debouncedSearch
+    ? bridge.contracts[network].veaInbox
+    : isInboxQuery(query)
+    ? bridge.contracts[network].veaInbox
+    : bridge.contracts[network].veaOutbox;
+};
 
 const getSecondaryData = async (
   network: Network,
