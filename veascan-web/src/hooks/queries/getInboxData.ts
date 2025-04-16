@@ -1,8 +1,8 @@
 import { graphql } from "src/gql";
 
 export const getSnapshotQuery = graphql(`
-  query getSnapshot($epoch: BigInt!) {
-    snapshots(where: { epoch: $epoch }) {
+  query getSnapshot($epoch: BigInt!, $contract: String!) {
+    snapshots(where: { epoch: $epoch, inbox: $contract }) {
       id
       epoch
       caller
@@ -23,12 +23,16 @@ export const getSnapshotQuery = graphql(`
 `);
 
 export const getSnapshotsQuery = graphql(`
-  query getSnapshots($snapshotsPerPage: Int, $lastTimestamp: BigInt!) {
+  query getSnapshots(
+    $snapshotsPerPage: Int
+    $lastTimestamp: BigInt!
+    $contract: String!
+  ) {
     snapshots(
       first: $snapshotsPerPage
       orderBy: timestamp
       orderDirection: desc
-      where: { timestamp_lte: $lastTimestamp }
+      where: { timestamp_lte: $lastTimestamp, inbox: $contract }
     ) {
       id
       epoch
@@ -56,13 +60,18 @@ export const getResolvingSnapshotsQuery = graphql(`
   query getResolvingSnapshots(
     $snapshotsPerPage: Int
     $lastTimestamp: BigInt!
-    $resolving: Boolean
+    $resolving: Boolean = true
+    $contract: String!
   ) {
     snapshots(
       first: $snapshotsPerPage
       orderBy: timestamp
       orderDirection: desc
-      where: { timestamp_lte: $lastTimestamp, resolving: $resolving }
+      where: {
+        timestamp_lte: $lastTimestamp
+        resolving: $resolving
+        inbox: $contract
+      }
     ) {
       id
       epoch
@@ -87,8 +96,16 @@ export const getResolvingSnapshotsQuery = graphql(`
 `);
 
 export const searchSnapshotsQuery = graphql(`
-  query searchSnapshots($snapshotsPerPage: Int, $value: String!) {
-    snapshotQuery(text: $value, first: $snapshotsPerPage) {
+  query searchSnapshots(
+    $snapshotsPerPage: Int
+    $value: String!
+    $contract: String!
+  ) {
+    snapshotQuery(
+      text: $value
+      first: $snapshotsPerPage
+      where: { inbox: $contract }
+    ) {
       id
       epoch
       caller

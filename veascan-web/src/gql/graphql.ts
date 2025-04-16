@@ -21,7 +21,22 @@ export type Scalars = {
   BigDecimal: any;
   BigInt: any;
   Bytes: any;
+  /**
+   * 8 bytes signed integer
+   *
+   */
+  Int8: any;
+  /**
+   * A string representation of microseconds UNIX timestamp (16 digits)
+   *
+   */
+  Timestamp: any;
 };
+
+export enum Aggregation_Interval {
+  Day = "day",
+  Hour = "hour",
+}
 
 export type BlockChangedFilter = {
   number_gte: Scalars["Int"];
@@ -137,6 +152,7 @@ export type Claim = {
   epoch: Scalars["BigInt"];
   honest: Scalars["Boolean"];
   id: Scalars["ID"];
+  outbox: Outbox;
   stateroot: Scalars["Bytes"];
   timestamp: Scalars["BigInt"];
   txHash: Scalars["Bytes"];
@@ -184,6 +200,27 @@ export type Claim_Filter = {
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
   or?: InputMaybe<Array<InputMaybe<Claim_Filter>>>;
+  outbox?: InputMaybe<Scalars["String"]>;
+  outbox_?: InputMaybe<Outbox_Filter>;
+  outbox_contains?: InputMaybe<Scalars["String"]>;
+  outbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_gt?: InputMaybe<Scalars["String"]>;
+  outbox_gte?: InputMaybe<Scalars["String"]>;
+  outbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_lt?: InputMaybe<Scalars["String"]>;
+  outbox_lte?: InputMaybe<Scalars["String"]>;
+  outbox_not?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   stateroot?: InputMaybe<Scalars["Bytes"]>;
   stateroot_contains?: InputMaybe<Scalars["Bytes"]>;
   stateroot_gt?: InputMaybe<Scalars["Bytes"]>;
@@ -231,6 +268,8 @@ export enum Claim_OrderBy {
   Epoch = "epoch",
   Honest = "honest",
   Id = "id",
+  Outbox = "outbox",
+  OutboxId = "outbox__id",
   Stateroot = "stateroot",
   Timestamp = "timestamp",
   TxHash = "txHash",
@@ -346,11 +385,49 @@ export enum Fallback_OrderBy {
   TxHash = "txHash",
 }
 
+export type Inbox = {
+  __typename?: "Inbox";
+  id: Scalars["Bytes"];
+  messages: Array<Snapshot>;
+};
+
+export type InboxMessagesArgs = {
+  first?: InputMaybe<Scalars["Int"]>;
+  orderBy?: InputMaybe<Snapshot_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  where?: InputMaybe<Snapshot_Filter>;
+};
+
+export type Inbox_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  and?: InputMaybe<Array<InputMaybe<Inbox_Filter>>>;
+  id?: InputMaybe<Scalars["Bytes"]>;
+  id_contains?: InputMaybe<Scalars["Bytes"]>;
+  id_gt?: InputMaybe<Scalars["Bytes"]>;
+  id_gte?: InputMaybe<Scalars["Bytes"]>;
+  id_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  id_lt?: InputMaybe<Scalars["Bytes"]>;
+  id_lte?: InputMaybe<Scalars["Bytes"]>;
+  id_not?: InputMaybe<Scalars["Bytes"]>;
+  id_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  id_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  messages_?: InputMaybe<Snapshot_Filter>;
+  or?: InputMaybe<Array<InputMaybe<Inbox_Filter>>>;
+};
+
+export enum Inbox_OrderBy {
+  Id = "id",
+  Messages = "messages",
+}
+
 export type Message = {
   __typename?: "Message";
   data: Scalars["Bytes"];
   from: Scalars["Bytes"];
   id: Scalars["ID"];
+  outbox: Outbox;
   proof: Scalars["Bytes"];
   relayer: Scalars["Bytes"];
   snapshot: Snapshot;
@@ -392,6 +469,27 @@ export type Message_Filter = {
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
   or?: InputMaybe<Array<InputMaybe<Message_Filter>>>;
+  outbox?: InputMaybe<Scalars["String"]>;
+  outbox_?: InputMaybe<Outbox_Filter>;
+  outbox_contains?: InputMaybe<Scalars["String"]>;
+  outbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_gt?: InputMaybe<Scalars["String"]>;
+  outbox_gte?: InputMaybe<Scalars["String"]>;
+  outbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_lt?: InputMaybe<Scalars["String"]>;
+  outbox_lte?: InputMaybe<Scalars["String"]>;
+  outbox_not?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   proof?: InputMaybe<Scalars["Bytes"]>;
   proof_contains?: InputMaybe<Scalars["Bytes"]>;
   proof_gt?: InputMaybe<Scalars["Bytes"]>;
@@ -467,6 +565,8 @@ export enum Message_OrderBy {
   Data = "data",
   From = "from",
   Id = "id",
+  Outbox = "outbox",
+  OutboxId = "outbox__id",
   Proof = "proof",
   Relayer = "relayer",
   Snapshot = "snapshot",
@@ -492,6 +592,43 @@ export enum OrderDirection {
   Desc = "desc",
 }
 
+export type Outbox = {
+  __typename?: "Outbox";
+  claims: Array<Claim>;
+  id: Scalars["Bytes"];
+};
+
+export type OutboxClaimsArgs = {
+  first?: InputMaybe<Scalars["Int"]>;
+  orderBy?: InputMaybe<Claim_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  where?: InputMaybe<Claim_Filter>;
+};
+
+export type Outbox_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  and?: InputMaybe<Array<InputMaybe<Outbox_Filter>>>;
+  claims_?: InputMaybe<Claim_Filter>;
+  id?: InputMaybe<Scalars["Bytes"]>;
+  id_contains?: InputMaybe<Scalars["Bytes"]>;
+  id_gt?: InputMaybe<Scalars["Bytes"]>;
+  id_gte?: InputMaybe<Scalars["Bytes"]>;
+  id_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  id_lt?: InputMaybe<Scalars["Bytes"]>;
+  id_lte?: InputMaybe<Scalars["Bytes"]>;
+  id_not?: InputMaybe<Scalars["Bytes"]>;
+  id_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  id_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  or?: InputMaybe<Array<InputMaybe<Outbox_Filter>>>;
+};
+
+export enum Outbox_OrderBy {
+  Claims = "claims",
+  Id = "id",
+}
+
 export type Query = {
   __typename?: "Query";
   /** Access to subgraph metadata */
@@ -502,8 +639,12 @@ export type Query = {
   claims: Array<Claim>;
   fallback?: Maybe<Fallback>;
   fallbacks: Array<Fallback>;
+  inbox?: Maybe<Inbox>;
+  inboxes: Array<Inbox>;
   message?: Maybe<Message>;
   messages: Array<Message>;
+  outbox?: Maybe<Outbox>;
+  outboxes: Array<Outbox>;
   ref?: Maybe<Ref>;
   refs: Array<Ref>;
   snapshot?: Maybe<Snapshot>;
@@ -565,6 +706,22 @@ export type QueryFallbacksArgs = {
   where?: InputMaybe<Fallback_Filter>;
 };
 
+export type QueryInboxArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars["ID"];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+export type QueryInboxesArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars["Int"]>;
+  orderBy?: InputMaybe<Inbox_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<Inbox_Filter>;
+};
+
 export type QueryMessageArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars["ID"];
@@ -579,6 +736,22 @@ export type QueryMessagesArgs = {
   skip?: InputMaybe<Scalars["Int"]>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<Message_Filter>;
+};
+
+export type QueryOutboxArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars["ID"];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+export type QueryOutboxesArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars["Int"]>;
+  orderBy?: InputMaybe<Outbox_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<Outbox_Filter>;
 };
 
 export type QueryRefArgs = {
@@ -642,7 +815,9 @@ export type Ref = {
   __typename?: "Ref";
   currentSnapshotIndex: Scalars["BigInt"];
   id: Scalars["ID"];
+  inbox: Inbox;
   nextMessageIndex: Scalars["BigInt"];
+  outbox: Outbox;
   totalChallenges: Scalars["BigInt"];
   totalClaims: Scalars["BigInt"];
   totalMessages: Scalars["BigInt"];
@@ -668,6 +843,27 @@ export type Ref_Filter = {
   id_lte?: InputMaybe<Scalars["ID"]>;
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
+  inbox?: InputMaybe<Scalars["String"]>;
+  inbox_?: InputMaybe<Inbox_Filter>;
+  inbox_contains?: InputMaybe<Scalars["String"]>;
+  inbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_ends_with?: InputMaybe<Scalars["String"]>;
+  inbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_gt?: InputMaybe<Scalars["String"]>;
+  inbox_gte?: InputMaybe<Scalars["String"]>;
+  inbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  inbox_lt?: InputMaybe<Scalars["String"]>;
+  inbox_lte?: InputMaybe<Scalars["String"]>;
+  inbox_not?: InputMaybe<Scalars["String"]>;
+  inbox_not_contains?: InputMaybe<Scalars["String"]>;
+  inbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  inbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  inbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  inbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_starts_with?: InputMaybe<Scalars["String"]>;
+  inbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   nextMessageIndex?: InputMaybe<Scalars["BigInt"]>;
   nextMessageIndex_gt?: InputMaybe<Scalars["BigInt"]>;
   nextMessageIndex_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -677,6 +873,27 @@ export type Ref_Filter = {
   nextMessageIndex_not?: InputMaybe<Scalars["BigInt"]>;
   nextMessageIndex_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
   or?: InputMaybe<Array<InputMaybe<Ref_Filter>>>;
+  outbox?: InputMaybe<Scalars["String"]>;
+  outbox_?: InputMaybe<Outbox_Filter>;
+  outbox_contains?: InputMaybe<Scalars["String"]>;
+  outbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_gt?: InputMaybe<Scalars["String"]>;
+  outbox_gte?: InputMaybe<Scalars["String"]>;
+  outbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_lt?: InputMaybe<Scalars["String"]>;
+  outbox_lte?: InputMaybe<Scalars["String"]>;
+  outbox_not?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   totalChallenges?: InputMaybe<Scalars["BigInt"]>;
   totalChallenges_gt?: InputMaybe<Scalars["BigInt"]>;
   totalChallenges_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -706,7 +923,11 @@ export type Ref_Filter = {
 export enum Ref_OrderBy {
   CurrentSnapshotIndex = "currentSnapshotIndex",
   Id = "id",
+  Inbox = "inbox",
+  InboxId = "inbox__id",
   NextMessageIndex = "nextMessageIndex",
+  Outbox = "outbox",
+  OutboxId = "outbox__id",
   TotalChallenges = "totalChallenges",
   TotalClaims = "totalClaims",
   TotalMessages = "totalMessages",
@@ -719,6 +940,7 @@ export type Snapshot = {
   epochString?: Maybe<Scalars["String"]>;
   fallback: Array<Fallback>;
   id: Scalars["ID"];
+  inbox: Inbox;
   messages: Array<Message>;
   numberMessages: Scalars["BigInt"];
   resolving: Scalars["Boolean"];
@@ -796,6 +1018,27 @@ export type Snapshot_Filter = {
   id_lte?: InputMaybe<Scalars["ID"]>;
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
+  inbox?: InputMaybe<Scalars["String"]>;
+  inbox_?: InputMaybe<Inbox_Filter>;
+  inbox_contains?: InputMaybe<Scalars["String"]>;
+  inbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_ends_with?: InputMaybe<Scalars["String"]>;
+  inbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_gt?: InputMaybe<Scalars["String"]>;
+  inbox_gte?: InputMaybe<Scalars["String"]>;
+  inbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  inbox_lt?: InputMaybe<Scalars["String"]>;
+  inbox_lte?: InputMaybe<Scalars["String"]>;
+  inbox_not?: InputMaybe<Scalars["String"]>;
+  inbox_not_contains?: InputMaybe<Scalars["String"]>;
+  inbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  inbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  inbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  inbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_starts_with?: InputMaybe<Scalars["String"]>;
+  inbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   messages_?: InputMaybe<Message_Filter>;
   numberMessages?: InputMaybe<Scalars["BigInt"]>;
   numberMessages_gt?: InputMaybe<Scalars["BigInt"]>;
@@ -870,6 +1113,8 @@ export enum Snapshot_OrderBy {
   EpochString = "epochString",
   Fallback = "fallback",
   Id = "id",
+  Inbox = "inbox",
+  InboxId = "inbox__id",
   Messages = "messages",
   NumberMessages = "numberMessages",
   Resolving = "resolving",
@@ -879,142 +1124,6 @@ export enum Snapshot_OrderBy {
   Timestamp = "timestamp",
   TxHash = "txHash",
 }
-
-export type Subscription = {
-  __typename?: "Subscription";
-  /** Access to subgraph metadata */
-  _meta?: Maybe<_Meta_>;
-  challenge?: Maybe<Challenge>;
-  challenges: Array<Challenge>;
-  claim?: Maybe<Claim>;
-  claims: Array<Claim>;
-  fallback?: Maybe<Fallback>;
-  fallbacks: Array<Fallback>;
-  message?: Maybe<Message>;
-  messages: Array<Message>;
-  ref?: Maybe<Ref>;
-  refs: Array<Ref>;
-  snapshot?: Maybe<Snapshot>;
-  snapshots: Array<Snapshot>;
-  verification?: Maybe<Verification>;
-  verifications: Array<Verification>;
-};
-
-export type Subscription_MetaArgs = {
-  block?: InputMaybe<Block_Height>;
-};
-
-export type SubscriptionChallengeArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionChallengesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Challenge_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Challenge_Filter>;
-};
-
-export type SubscriptionClaimArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionClaimsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Claim_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Claim_Filter>;
-};
-
-export type SubscriptionFallbackArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionFallbacksArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Fallback_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Fallback_Filter>;
-};
-
-export type SubscriptionMessageArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionMessagesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Message_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Message_Filter>;
-};
-
-export type SubscriptionRefArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionRefsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Ref_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Ref_Filter>;
-};
-
-export type SubscriptionSnapshotArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionSnapshotsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Snapshot_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Snapshot_Filter>;
-};
-
-export type SubscriptionVerificationArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionVerificationsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Verification_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Verification_Filter>;
-};
 
 export type Verification = {
   __typename?: "Verification";
@@ -1112,6 +1221,8 @@ export type _Block_ = {
   hash?: Maybe<Scalars["Bytes"]>;
   /** The block number */
   number: Scalars["Int"];
+  /** The hash of the parent block */
+  parentHash?: Maybe<Scalars["Bytes"]>;
   /** Integer representation of the timestamp stored in blocks for the chain */
   timestamp?: Maybe<Scalars["Int"]>;
 };
@@ -1142,6 +1253,7 @@ export enum _SubgraphErrorPolicy_ {
 
 export type GetSnapshotQueryVariables = Exact<{
   epoch: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetSnapshotQuery = {
@@ -1170,6 +1282,7 @@ export type GetSnapshotQuery = {
 export type GetSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetSnapshotsQuery = {
@@ -1200,6 +1313,7 @@ export type GetResolvingSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
   resolving?: InputMaybe<Scalars["Boolean"]>;
+  contract: Scalars["String"];
 }>;
 
 export type GetResolvingSnapshotsQuery = {
@@ -1229,6 +1343,7 @@ export type GetResolvingSnapshotsQuery = {
 export type SearchSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   value: Scalars["String"];
+  contract: Scalars["String"];
 }>;
 
 export type SearchSnapshotsQuery = {
@@ -1276,6 +1391,7 @@ export type GetMessagesQuery = {
 
 export type GetClaimQueryVariables = Exact<{
   epoch: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetClaimQuery = {
@@ -1310,6 +1426,7 @@ export type GetClaimQuery = {
 export type GetClaimedSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetClaimedSnapshotsQuery = {
@@ -1344,6 +1461,7 @@ export type GetClaimedSnapshotsQuery = {
 export type GetChallengedSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetChallengedSnapshotsQuery = {
@@ -1378,6 +1496,7 @@ export type GetChallengedSnapshotsQuery = {
 export type GetVerifiedSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetVerifiedSnapshotsQuery = {
@@ -1412,6 +1531,7 @@ export type GetVerifiedSnapshotsQuery = {
 export type GetResolvedSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetResolvedSnapshotsQuery = {
@@ -1480,6 +1600,20 @@ export const GetSnapshotDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -1500,6 +1634,14 @@ export const GetSnapshotDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "epoch" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "inbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
                       },
                     },
                   ],
@@ -1601,6 +1743,20 @@ export const GetSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -1639,6 +1795,14 @@ export const GetSnapshotsDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "lastTimestamp" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "inbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
                       },
                     },
                   ],
@@ -1767,6 +1931,21 @@ export const GetResolvingSnapshotsDocument = {
             name: { kind: "Name", value: "resolving" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "Boolean" } },
+          defaultValue: { kind: "BooleanValue", value: true },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
         },
       ],
       selectionSet: {
@@ -1814,6 +1993,14 @@ export const GetResolvingSnapshotsDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "resolving" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "inbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
                       },
                     },
                   ],
@@ -1938,6 +2125,20 @@ export const SearchSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -1960,6 +2161,23 @@ export const SearchSnapshotsDocument = {
                 value: {
                   kind: "Variable",
                   name: { kind: "Name", value: "snapshotsPerPage" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "inbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
+                  ],
                 },
               },
             ],
@@ -2183,6 +2401,20 @@ export const GetClaimDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2203,6 +2435,14 @@ export const GetClaimDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "epoch" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
                       },
                     },
                   ],
@@ -2305,6 +2545,20 @@ export const GetClaimedSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2354,6 +2608,14 @@ export const GetClaimedSnapshotsDocument = {
                       kind: "ObjectField",
                       name: { kind: "Name", value: "challenged" },
                       value: { kind: "BooleanValue", value: false },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
                     },
                   ],
                 },
@@ -2458,6 +2720,20 @@ export const GetChallengedSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2507,6 +2783,14 @@ export const GetChallengedSnapshotsDocument = {
                       kind: "ObjectField",
                       name: { kind: "Name", value: "challenged" },
                       value: { kind: "BooleanValue", value: true },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
                     },
                   ],
                 },
@@ -2611,6 +2895,20 @@ export const GetVerifiedSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2660,6 +2958,14 @@ export const GetVerifiedSnapshotsDocument = {
                       kind: "ObjectField",
                       name: { kind: "Name", value: "challenged" },
                       value: { kind: "BooleanValue", value: false },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
                     },
                   ],
                 },
@@ -2764,6 +3070,20 @@ export const GetResolvedSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2813,6 +3133,14 @@ export const GetResolvedSnapshotsDocument = {
                       kind: "ObjectField",
                       name: { kind: "Name", value: "challenged" },
                       value: { kind: "BooleanValue", value: true },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
                     },
                   ],
                 },

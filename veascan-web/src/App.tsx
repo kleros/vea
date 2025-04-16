@@ -8,10 +8,11 @@ import TxFilterHeader from "components/TxFilterHeader";
 import { getSnapshotId, useSnapshots } from "hooks/useSnapshots";
 import { mapDataForAccordion } from "utils/mapDataForAccordion";
 import { useFiltersContext } from "./contexts/FiltersContext";
+import { Network } from "./consts/bridges";
 
 const SNAPSHOTS_PER_PAGE = 5;
 
-const StyledPagination = styled(StandardPagination)`
+const StyledPagination = styled.div`
   margin-top: 32px;
   margin-left: auto;
 `;
@@ -37,8 +38,15 @@ const App = () => {
     SNAPSHOTS_PER_PAGE
   );
 
-  const { fromChain, toChain, statusFilter } = useFiltersContext();
+  const { fromChain, toChain, statusFilter, setNetwork } = useFiltersContext();
 
+  useEffect(() => {
+    const hostname = window.location.hostname.toLowerCase();
+    if (hostname.startsWith("testnet.")) {
+      setNetwork(Network.TESTNET);
+    }
+    setNetwork(Network.TESTNET);
+  }, []);
   useEffect(() => {
     if (currentPage !== 1) {
       clearPageTracking();
@@ -69,12 +77,14 @@ const App = () => {
             key={currentPage}
             items={mapDataForAccordion(data.snapshots)}
           />
-          <StyledPagination
-            numPages={data.isMorePages ? currentPage + 1 : currentPage}
-            currentPage={currentPage}
-            callback={handlePageChange}
-            hideNumbers
-          />
+          <StyledPagination>
+            <StandardPagination
+              numPages={data.isMorePages ? currentPage + 1 : currentPage}
+              currentPage={currentPage}
+              callback={handlePageChange}
+              hideNumbers
+            />
+          </StyledPagination>
         </>
       ) : (
         <p>loading...</p>
