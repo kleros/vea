@@ -148,7 +148,6 @@ describe("ArbToEthTransactionHandler", () => {
   // Happy path (claimer)
   describe("makeClaim", () => {
     let transactionHandler: ArbToEthTransactionHandler;
-    const mockEmitter = new MockEmitter();
     const { deposit } = getBridgeConfig(chainId);
     beforeEach(() => {
       const mockClaim = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;

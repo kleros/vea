@@ -106,18 +106,16 @@ const getClaimer = (chainId: number, network: Network): typeof checkAndClaim => 
   }
 };
 const getTransactionHandler = (chainId: number, network: Network) => {
-  switch (chainId) {
-    case 11155111:
-      switch (network) {
-        case Network.DEVNET:
-          return ArbToEthDevnetTransactionHandler;
-        case Network.TESTNET:
-          return ArbToEthTransactionHandler;
-        default:
-          throw new InvalidNetworkError(`${network}(transactionHandler)`);
-      }
-    default:
-      throw new NotDefinedError("Transaction Handler");
+  if (chainId === 11155111) {
+    if (network === Network.DEVNET) {
+      return ArbToEthDevnetTransactionHandler;
+    } else if (network === Network.TESTNET) {
+      return ArbToEthTransactionHandler;
+    } else {
+      throw new InvalidNetworkError(`${network}(transactionHandler)`);
+    }
+  } else {
+    throw new NotDefinedError("Transaction Handler");
   }
 };
 export {

@@ -1,4 +1,4 @@
-import { InvalidBotPathError, DevnetOwnerNotSetError, InvalidNetworkError } from "./errors";
+import { InvalidBotPathError, InvalidNetworkError } from "./errors";
 import { Network } from "../consts/bridgeRoutes";
 require("dotenv").config();
 

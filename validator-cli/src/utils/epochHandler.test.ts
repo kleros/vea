@@ -1,4 +1,4 @@
-import { setEpochRange, getLatestChallengeableEpoch, EpochRangeParams } from "./epochHandler";
+import { setEpochRange, getLatestChallengeableEpoch } from "./epochHandler";
 
 describe("epochHandler", () => {
   describe("setEpochRange", () => {
