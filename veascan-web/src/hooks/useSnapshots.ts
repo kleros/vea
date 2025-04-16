@@ -131,11 +131,11 @@ const getEndpoint = (
   bridge: IBridge,
   debouncedSearch: string
 ) => {
-  return debouncedSearch
-    ? bridge.inboxEndpoint
-    : isInboxQuery(query)
-    ? bridge.inboxEndpoint
-    : bridge.outboxEndpoint;
+  if (debouncedSearch || isInboxQuery(query)) {
+    return bridge.inboxEndpoint;
+  }
+
+  return bridge.outboxEndpoint;
 };
 
 const getQueryDocument = (query: IQueries, debouncedSearch: string) =>
@@ -147,11 +147,11 @@ const getQueryContract = (
   bridge: IBridge,
   network: Network
 ) => {
-  return debouncedSearch
-    ? bridge.contracts[network].veaInbox
-    : isInboxQuery(query)
-    ? bridge.contracts[network].veaInbox
-    : bridge.contracts[network].veaOutbox;
+  if (debouncedSearch || isInboxQuery(query)) {
+    return bridge.contracts[network].veaInbox;
+  }
+
+  return bridge.contracts[network].veaOutbox;
 };
 
 const getSecondaryData = async (
