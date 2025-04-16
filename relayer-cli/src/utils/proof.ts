@@ -1,6 +1,16 @@
 import request from "graphql-request";
-import { getInboxSubgraph } from "../consts/bridgeRoutes";
 
+interface MessageSentData {
+  nonce: number;
+  to: {
+    id: string;
+  };
+  data: string;
+}
+
+interface MessageSentsDataResponse {
+  messageSents: MessageSentData[];
+}
 /**
  * Get the message data to relay from the subgraph
  * @param chainId The chain id of the veaOutbox chain
@@ -14,9 +24,9 @@ const getMessageDataToRelay = async (
   requestGraph: typeof request = request
 ) => {
   try {
-    const subgraph = getInboxSubgraph(chainId);
+    const subgraph = process.env.RELAYER_SUBGRAPH;
 
-    const result = await requestGraph(
+    const result = (await requestGraph(
       `https://api.studio.thegraph.com/query/${subgraph}`,
       `{
                 messageSents(first: 5, where: {nonce: ${nonce}, inbox: "${inbox}"}) {
@@ -27,14 +37,22 @@ const getMessageDataToRelay = async (
                 data
                 }
             }`
-    );
+    )) as MessageSentsDataResponse;
 
     return [result[`messageSents`][0].to.id, result[`messageSents`][0].data];
   } catch (e) {
     console.log(e);
+    return undefined;
   }
 };
 
+interface LayerResponse {
+  hash: string;
+}
+
+interface ProofAtCountResponse {
+  [key: string]: LayerResponse[];
+}
 /**
  * Get the proof of the message at a given count
  * @param chainId The chain id of the veaOutbox chain
@@ -46,27 +64,33 @@ const getProofAtCount = async (
   chainId: number,
   nonce: number,
   count: number,
+  inboxAddress: string, // New parameter for inbox filtering
   requestGraph: typeof request = request,
-  calculateProofIndices: typeof getProofIndices = getProofIndices,
-  fetchInboxSubgraph: typeof getInboxSubgraph = getInboxSubgraph
+  calculateProofIndices: typeof getProofIndices = getProofIndices
 ): Promise<string[]> => {
   const proofIndices = calculateProofIndices(nonce, count);
-  if (proofIndices.length == 0) return [];
-
+  if (proofIndices.length === 0) return [];
+  // Build a query that filters each node by both its id and the inbox address.
   let query = "{";
   for (let i = 0; i < proofIndices.length; i++) {
-    query += `layer${i}: nodes(first: 1, where: {id: "${proofIndices[i]}"}) {
-              hash
-            }`;
+    const layerId = inboxAddress.toLocaleLowerCase() + "-" + proofIndices[i];
+    query += `
+      layer${i}: nodes(first: 1, where: {
+        id: "${layerId}"
+      }) {
+        hash
+      }
+    `;
   }
   query += "}";
 
   try {
-    const subgraph = fetchInboxSubgraph(chainId);
-
-    const result = await requestGraph(`https://api.studio.thegraph.com/query/${subgraph}`, query);
-
-    const proof = [];
+    const subgraph = process.env.RELAYER_SUBGRAPH;
+    const result = (await requestGraph(
+      `https://api.studio.thegraph.com/query/${subgraph}`,
+      query
+    )) as ProofAtCountResponse;
+    const proof: string[] = [];
     for (let i = 0; i < proofIndices.length; i++) {
       proof.push(result[`layer${i}`][0].hash);
     }
@@ -84,7 +108,7 @@ const getProofAtCount = async (
  * @returns The proof indices of the message
  */
 const getProofIndices = (nonce: number, count: number) => {
-  let proof = [];
+  let proof: string[] = [];
   if (nonce >= count) return proof;
 
   const treeDepth = Math.ceil(Math.log2(count));
