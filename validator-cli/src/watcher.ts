@@ -75,7 +75,7 @@ async function processNetwork(
       toWatch[networkKey] = epochRange;
     }
 
-    await processEpochsForNetwork(
+    await processEpochsForNetwork({
       chainId,
       path,
       networkKey,
@@ -85,8 +85,8 @@ async function processNetwork(
       outboxRPC,
       toWatch,
       transactionHandlers,
-      emitter
-    );
+      emitter,
+    });
     const currentLatestBlock = await veaOutboxProvider.getBlock("latest");
     const currentLatestEpoch = Math.floor(currentLatestBlock.timestamp / routeConfig[network].epochPeriod);
     const toWatchEpochs = toWatch[networkKey];
@@ -97,18 +97,30 @@ async function processNetwork(
   }
 }
 
-async function processEpochsForNetwork(
-  chainId: number,
-  path: number,
-  networkKey: string,
-  network: Network,
-  routeConfig: any,
-  inboxRPC: string,
-  outboxRPC: string,
-  toWatch: { [key: string]: number[] },
-  transactionHandlers: { [epoch: number]: any },
-  emitter: typeof defaultEmitter
-) {
+interface ProcessEpochParams {
+  chainId: number;
+  path: number;
+  networkKey: string;
+  network: Network;
+  routeConfig: any;
+  inboxRPC: string;
+  outboxRPC: string;
+  toWatch: { [key: string]: number[] };
+  transactionHandlers: { [epoch: number]: any };
+  emitter: typeof defaultEmitter;
+}
+async function processEpochsForNetwork({
+  chainId,
+  path,
+  networkKey,
+  network,
+  routeConfig,
+  inboxRPC,
+  outboxRPC,
+  toWatch,
+  transactionHandlers,
+  emitter,
+}: ProcessEpochParams) {
   const privKey = process.env.PRIVATE_KEY;
   const veaInbox = getVeaInbox(routeConfig[network].veaInbox.address, privKey, inboxRPC, chainId, network);
   const veaOutbox = getVeaOutbox(routeConfig[network].veaOutbox.address, privKey, outboxRPC, chainId, network);
