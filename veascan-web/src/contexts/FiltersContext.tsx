@@ -1,4 +1,10 @@
-import React, { useState, createContext, useContext, useMemo } from "react";
+import React, {
+  useState,
+  createContext,
+  useContext,
+  useMemo,
+  useEffect,
+} from "react";
 import { theme } from "styles/themes";
 import { useDebounce } from "react-use";
 import {
@@ -152,6 +158,11 @@ export const FiltersContext: React.FC<{ children?: React.ReactNode }> = ({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [network, setNetwork] = useState<Network>(Network.DEVNET);
   useDebounce(() => setDebouncedSearch(search), 500, [search]);
+  useEffect(() => {
+    if (debouncedSearch !== "") {
+      setStatusFilter(0);
+    }
+  }, [debouncedSearch]);
   const value = useMemo(
     () => ({
       search,
