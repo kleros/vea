@@ -274,10 +274,13 @@ export enum Claim_OrderBy {
   Timestamp = "timestamp",
   TxHash = "txHash",
   Verification = "verification",
-  VerificationCaller = "verification__caller",
   VerificationId = "verification__id",
-  VerificationTimestamp = "verification__timestamp",
-  VerificationTxHash = "verification__txHash",
+  VerificationStartCaller = "verification__startCaller",
+  VerificationStartTimestamp = "verification__startTimestamp",
+  VerificationStartTxHash = "verification__startTxHash",
+  VerificationVerifiedCaller = "verification__verifiedCaller",
+  VerificationVerifiedTimestamp = "verification__verifiedTimestamp",
+  VerificationVerifiedTxHash = "verification__verifiedTxHash",
   Verified = "verified",
 }
 
@@ -375,9 +378,9 @@ export enum Fallback_OrderBy {
   SnapshotId = "snapshot__id",
   SnapshotNumberMessages = "snapshot__numberMessages",
   SnapshotResolving = "snapshot__resolving",
+  SnapshotSaved = "snapshot__saved",
   SnapshotStateRoot = "snapshot__stateRoot",
   SnapshotStateRootString = "snapshot__stateRootString",
-  SnapshotTaken = "snapshot__taken",
   SnapshotTimestamp = "snapshot__timestamp",
   SnapshotTxHash = "snapshot__txHash",
   TicketId = "ticketId",
@@ -576,9 +579,9 @@ export enum Message_OrderBy {
   SnapshotId = "snapshot__id",
   SnapshotNumberMessages = "snapshot__numberMessages",
   SnapshotResolving = "snapshot__resolving",
+  SnapshotSaved = "snapshot__saved",
   SnapshotStateRoot = "snapshot__stateRoot",
   SnapshotStateRootString = "snapshot__stateRootString",
-  SnapshotTaken = "snapshot__taken",
   SnapshotTimestamp = "snapshot__timestamp",
   SnapshotTxHash = "snapshot__txHash",
   Timestamp = "timestamp",
@@ -944,9 +947,9 @@ export type Snapshot = {
   messages: Array<Message>;
   numberMessages: Scalars["BigInt"];
   resolving: Scalars["Boolean"];
+  saved: Scalars["Boolean"];
   stateRoot?: Maybe<Scalars["Bytes"]>;
   stateRootString?: Maybe<Scalars["String"]>;
-  taken: Scalars["Boolean"];
   timestamp?: Maybe<Scalars["BigInt"]>;
   txHash?: Maybe<Scalars["Bytes"]>;
 };
@@ -1053,6 +1056,10 @@ export type Snapshot_Filter = {
   resolving_in?: InputMaybe<Array<Scalars["Boolean"]>>;
   resolving_not?: InputMaybe<Scalars["Boolean"]>;
   resolving_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
+  saved?: InputMaybe<Scalars["Boolean"]>;
+  saved_in?: InputMaybe<Array<Scalars["Boolean"]>>;
+  saved_not?: InputMaybe<Scalars["Boolean"]>;
+  saved_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
   stateRoot?: InputMaybe<Scalars["Bytes"]>;
   stateRootString?: InputMaybe<Scalars["String"]>;
   stateRootString_contains?: InputMaybe<Scalars["String"]>;
@@ -1083,10 +1090,6 @@ export type Snapshot_Filter = {
   stateRoot_not?: InputMaybe<Scalars["Bytes"]>;
   stateRoot_not_contains?: InputMaybe<Scalars["Bytes"]>;
   stateRoot_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
-  taken?: InputMaybe<Scalars["Boolean"]>;
-  taken_in?: InputMaybe<Array<Scalars["Boolean"]>>;
-  taken_not?: InputMaybe<Scalars["Boolean"]>;
-  taken_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
   timestamp?: InputMaybe<Scalars["BigInt"]>;
   timestamp_gt?: InputMaybe<Scalars["BigInt"]>;
   timestamp_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -1118,36 +1121,29 @@ export enum Snapshot_OrderBy {
   Messages = "messages",
   NumberMessages = "numberMessages",
   Resolving = "resolving",
+  Saved = "saved",
   StateRoot = "stateRoot",
   StateRootString = "stateRootString",
-  Taken = "taken",
   Timestamp = "timestamp",
   TxHash = "txHash",
 }
 
 export type Verification = {
   __typename?: "Verification";
-  caller: Scalars["Bytes"];
   claim: Claim;
   id: Scalars["ID"];
-  timestamp: Scalars["BigInt"];
-  txHash: Scalars["Bytes"];
+  startCaller?: Maybe<Scalars["Bytes"]>;
+  startTimestamp?: Maybe<Scalars["BigInt"]>;
+  startTxHash?: Maybe<Scalars["Bytes"]>;
+  verifiedCaller?: Maybe<Scalars["Bytes"]>;
+  verifiedTimestamp?: Maybe<Scalars["BigInt"]>;
+  verifiedTxHash?: Maybe<Scalars["Bytes"]>;
 };
 
 export type Verification_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
   and?: InputMaybe<Array<InputMaybe<Verification_Filter>>>;
-  caller?: InputMaybe<Scalars["Bytes"]>;
-  caller_contains?: InputMaybe<Scalars["Bytes"]>;
-  caller_gt?: InputMaybe<Scalars["Bytes"]>;
-  caller_gte?: InputMaybe<Scalars["Bytes"]>;
-  caller_in?: InputMaybe<Array<Scalars["Bytes"]>>;
-  caller_lt?: InputMaybe<Scalars["Bytes"]>;
-  caller_lte?: InputMaybe<Scalars["Bytes"]>;
-  caller_not?: InputMaybe<Scalars["Bytes"]>;
-  caller_not_contains?: InputMaybe<Scalars["Bytes"]>;
-  caller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
   claim?: InputMaybe<Scalars["String"]>;
   claim_?: InputMaybe<Claim_Filter>;
   claim_contains?: InputMaybe<Scalars["String"]>;
@@ -1178,28 +1174,65 @@ export type Verification_Filter = {
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
   or?: InputMaybe<Array<InputMaybe<Verification_Filter>>>;
-  timestamp?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_gt?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_gte?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_in?: InputMaybe<Array<Scalars["BigInt"]>>;
-  timestamp_lt?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_lte?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_not?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
-  txHash?: InputMaybe<Scalars["Bytes"]>;
-  txHash_contains?: InputMaybe<Scalars["Bytes"]>;
-  txHash_gt?: InputMaybe<Scalars["Bytes"]>;
-  txHash_gte?: InputMaybe<Scalars["Bytes"]>;
-  txHash_in?: InputMaybe<Array<Scalars["Bytes"]>>;
-  txHash_lt?: InputMaybe<Scalars["Bytes"]>;
-  txHash_lte?: InputMaybe<Scalars["Bytes"]>;
-  txHash_not?: InputMaybe<Scalars["Bytes"]>;
-  txHash_not_contains?: InputMaybe<Scalars["Bytes"]>;
-  txHash_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  startCaller?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_contains?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_gt?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_gte?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  startCaller_lt?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_lte?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_not?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  startTimestamp?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_gt?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_gte?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  startTimestamp_lt?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_lte?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_not?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  startTxHash?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_contains?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_gt?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_gte?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  startTxHash_lt?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_lte?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_not?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  verifiedCaller?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_contains?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_gt?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_gte?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  verifiedCaller_lt?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_lte?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_not?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  verifiedTimestamp?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_gt?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_gte?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  verifiedTimestamp_lt?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_lte?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_not?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  verifiedTxHash?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_contains?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_gt?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_gte?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  verifiedTxHash_lt?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_lte?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_not?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
 };
 
 export enum Verification_OrderBy {
-  Caller = "caller",
   Claim = "claim",
   ClaimBridger = "claim__bridger",
   ClaimChallenged = "claim__challenged",
@@ -1211,8 +1244,12 @@ export enum Verification_OrderBy {
   ClaimTxHash = "claim__txHash",
   ClaimVerified = "claim__verified",
   Id = "id",
-  Timestamp = "timestamp",
-  TxHash = "txHash",
+  StartCaller = "startCaller",
+  StartTimestamp = "startTimestamp",
+  StartTxHash = "startTxHash",
+  VerifiedCaller = "verifiedCaller",
+  VerifiedTimestamp = "verifiedTimestamp",
+  VerifiedTxHash = "verifiedTxHash",
 }
 
 export type _Block_ = {
@@ -1267,7 +1304,7 @@ export type GetSnapshotQuery = {
     timestamp?: any | null;
     stateRoot?: any | null;
     numberMessages: any;
-    taken: boolean;
+    saved: boolean;
     resolving: boolean;
     fallback: Array<{
       __typename?: "Fallback";
@@ -1296,7 +1333,7 @@ export type GetSnapshotsQuery = {
     timestamp?: any | null;
     stateRoot?: any | null;
     numberMessages: any;
-    taken: boolean;
+    saved: boolean;
     resolving: boolean;
     fallback: Array<{
       __typename?: "Fallback";
@@ -1327,7 +1364,7 @@ export type GetResolvingSnapshotsQuery = {
     timestamp?: any | null;
     stateRoot?: any | null;
     numberMessages: any;
-    taken: boolean;
+    saved: boolean;
     resolving: boolean;
     fallback: Array<{
       __typename?: "Fallback";
@@ -1357,7 +1394,7 @@ export type SearchSnapshotsQuery = {
     timestamp?: any | null;
     stateRoot?: any | null;
     numberMessages: any;
-    taken: boolean;
+    saved: boolean;
     resolving: boolean;
     fallback: Array<{
       __typename?: "Fallback";
@@ -1416,9 +1453,9 @@ export type GetClaimQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1451,9 +1488,9 @@ export type GetClaimedSnapshotsQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1486,9 +1523,9 @@ export type GetChallengedSnapshotsQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1521,9 +1558,9 @@ export type GetVerifiedSnapshotsQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1556,9 +1593,9 @@ export type GetResolvedSnapshotsQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1661,7 +1698,7 @@ export const GetSnapshotDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "saved" } },
                 { kind: "Field", name: { kind: "Name", value: "resolving" } },
                 {
                   kind: "Field",
@@ -1822,7 +1859,7 @@ export const GetSnapshotsDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "saved" } },
                 { kind: "Field", name: { kind: "Name", value: "resolving" } },
                 {
                   kind: "Field",
@@ -2020,7 +2057,7 @@ export const GetResolvingSnapshotsDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "saved" } },
                 { kind: "Field", name: { kind: "Name", value: "resolving" } },
                 {
                   kind: "Field",
@@ -2194,7 +2231,7 @@ export const SearchSnapshotsDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "saved" } },
                 { kind: "Field", name: { kind: "Name", value: "resolving" } },
                 {
                   kind: "Field",
@@ -2494,15 +2531,15 @@ export const GetClaimDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
@@ -2666,15 +2703,15 @@ export const GetClaimedSnapshotsDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
@@ -2841,15 +2878,15 @@ export const GetChallengedSnapshotsDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
@@ -3016,15 +3053,15 @@ export const GetVerifiedSnapshotsDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
@@ -3191,15 +3228,15 @@ export const GetResolvedSnapshotsDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
