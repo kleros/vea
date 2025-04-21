@@ -10,7 +10,7 @@ export const getSnapshotQuery = graphql(`
       timestamp
       stateRoot
       numberMessages
-      taken
+      saved
       resolving
       fallback(first: 1, orderBy: timestamp, orderDirection: desc) {
         executor
@@ -41,7 +41,7 @@ export const getSnapshotsQuery = graphql(`
       timestamp
       stateRoot
       numberMessages
-      taken
+      saved
       resolving
       fallback(first: 1, orderBy: timestamp, orderDirection: desc) {
         executor
@@ -80,7 +80,7 @@ export const getResolvingSnapshotsQuery = graphql(`
       timestamp
       stateRoot
       numberMessages
-      taken
+      saved
       resolving
       fallback(first: 1, orderBy: timestamp, orderDirection: desc) {
         executor
@@ -113,7 +113,7 @@ export const searchSnapshotsQuery = graphql(`
       timestamp
       stateRoot
       numberMessages
-      taken
+      saved
       resolving
       fallback(first: 1, orderBy: timestamp, orderDirection: desc) {
         executor

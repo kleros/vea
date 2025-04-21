@@ -75,7 +75,7 @@ const App = () => {
         <>
           <SnapshotAccordion
             key={currentPage}
-            items={mapDataForAccordion(data.snapshots)}
+            items={mapDataForAccordion(data.snapshots, statusFilter)}
           />
           <StyledPagination>
             <StandardPagination
