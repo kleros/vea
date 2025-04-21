@@ -2,7 +2,6 @@ import { ITxCard } from "components/SnapshotAccordion/AccordionBody/TxCard";
 import { bridges } from "consts/bridges";
 import { formatTimestampToHumanReadable } from "./formatTimestampToHumanReadable";
 import { InboxData, OutboxData } from "hooks/useSnapshots";
-import { useFiltersContext } from "contexts/FiltersContext";
 
 export interface IStatus {
   claimed: boolean;
