@@ -34,7 +34,7 @@ type Snapshot @entity {
   stateRootString: String
   messages: [Message!]! @derivedFrom(field: "snapshot")
   numberMessages: BigInt!
-  taken: Boolean!
+  saved: Boolean!
   resolving: Boolean!
   fallback: [Fallback!]! @derivedFrom(field: "snapshot")
 }
