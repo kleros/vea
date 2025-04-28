@@ -2,7 +2,6 @@ import { ITxCard } from "components/SnapshotAccordion/AccordionBody/TxCard";
 import { bridges } from "consts/bridges";
 import { formatTimestampToHumanReadable } from "./formatTimestampToHumanReadable";
 import { InboxData, OutboxData } from "hooks/useSnapshots";
-import { useFiltersContext } from "contexts/FiltersContext";
 
 export interface IStatus {
   claimed: boolean;
@@ -44,9 +43,9 @@ const calculateCurrentStatus = (status: IStatus): ClaimStatus => {
 };
 
 export const mapDataForAccordion = (
-  snapshotsData: [InboxData, OutboxData][]
+  snapshotsData: [InboxData, OutboxData][],
+  statusFilter: number
 ): IParsedData[] => {
-  const { statusFilter } = useFiltersContext();
   const data = snapshotsData.map(([inboxData, outboxData]): IParsedData => {
     const bridgeInfo = bridges[inboxData?.bridgeId];
     const transactions: ITxCard[] = [
@@ -107,17 +106,17 @@ export const mapDataForAccordion = (
             caller: inboxData.fallback[0].executor,
           }
         : null,
-      outboxData?.verification?.txHash
+      outboxData?.verification?.verifiedTxHash
         ? {
             title: outboxData?.challenge?.txHash
               ? "Fallback Executor"
               : "Verifier",
             chain: bridgeInfo?.to,
-            txHash: outboxData.verification.txHash,
+            txHash: outboxData.verification.verifiedTxHash,
             timestamp: formatTimestampToHumanReadable(
-              outboxData.verification.timestamp
+              outboxData.verification.verifiedTimestamp
             ),
-            caller: outboxData.verification.caller,
+            caller: outboxData.verification.verifiedCaller,
           }
         : null,
     ].filter(Boolean) as ITxCard[];

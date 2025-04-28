@@ -68,12 +68,17 @@ const EpochAndTimeTag = styled.div`
 `;
 
 const TxFilterHeader: React.FC = () => {
-  const { statusItems, statusFilter, setStatusFilter, debouncedSearch } =
-    useFiltersContext();
+  const {
+    statusItems,
+    statusFilter,
+    setStatusFilter,
+    debouncedSearch,
+    network,
+  } = useFiltersContext();
   const isSearchEmpty = debouncedSearch === "";
   return (
     <SnapshotHeader>
-      <HeaderText>Latest Snapshots</HeaderText>
+      <HeaderText>Latest {network} Snapshots</HeaderText>
       <FilterHeader>
         <EpochAndTimeTag>
           <small>Epoch ID</small>

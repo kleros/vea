@@ -19,9 +19,9 @@ export const getClaimQuery = graphql(`
         txHash
       }
       verification {
-        timestamp
-        caller
-        txHash
+        verifiedTimestamp
+        verifiedCaller
+        verifiedTxHash
       }
     }
   }
@@ -60,9 +60,9 @@ export const getClaimedSnapshotsQuery = graphql(`
         txHash
       }
       verification {
-        timestamp
-        caller
-        txHash
+        verifiedTimestamp
+        verifiedCaller
+        verifiedTxHash
       }
     }
   }
@@ -101,9 +101,9 @@ export const getChallengedSnapshotsQuery = graphql(`
         txHash
       }
       verification {
-        timestamp
-        caller
-        txHash
+        verifiedTimestamp
+        verifiedCaller
+        verifiedTxHash
       }
     }
   }
@@ -142,9 +142,9 @@ export const getVerifiedSnapshotsQuery = graphql(`
         txHash
       }
       verification {
-        timestamp
-        caller
-        txHash
+        verifiedTimestamp
+        verifiedCaller
+        verifiedTxHash
       }
     }
   }
@@ -183,9 +183,9 @@ export const getResolvedSnapshotsQuery = graphql(`
         txHash
       }
       verification {
-        timestamp
-        caller
-        txHash
+        verifiedTimestamp
+        verifiedCaller
+        verifiedTxHash
       }
     }
   }

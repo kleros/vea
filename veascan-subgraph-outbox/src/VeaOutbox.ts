@@ -4,6 +4,7 @@ import {
   Claimed,
   MessageRelayed,
   Verified,
+  VerificationStarted,
 } from "../generated/VeaOutboxArbToEthDevnet/VeaOutboxArbToEthDevnet";
 import {
   Challenge,
@@ -68,6 +69,27 @@ export function handleChallenged(event: Challenged): void {
   }
 }
 
+export function handleVerificationStarted(event: VerificationStarted): void {
+  const ref = getRef(event.address);
+  for (
+    let i = ref.totalClaims.minus(BigInt.fromI32(1));
+    i.ge(BigInt.fromI32(0));
+    i = i.minus(BigInt.fromI32(1))
+  ) {
+    const claimId = event.address.toHexString() + "-" + i.toString();
+    const claim = Claim.load(claimId);
+    if (claim?.epoch.equals(event.params._epoch)) {
+      const verification = new Verification(claim.id);
+      verification.claim = claim.id;
+      verification.startTimestamp = event.block.timestamp;
+      verification.startCaller = event.transaction.from;
+      verification.startTxHash = event.transaction.hash;
+      verification.save();
+      break;
+    }
+  }
+}
+
 export function handleVerified(event: Verified): void {
   const ref = getRef(event.address);
   for (
@@ -77,15 +99,18 @@ export function handleVerified(event: Verified): void {
   ) {
     const claimId = event.address.toHexString() + "-" + i.toString();
     const claim = Claim.load(claimId);
-    if (claim && claim.epoch.equals(event.params._epoch)) {
+    if (claim?.epoch.equals(event.params._epoch)) {
       claim.verified = true;
       claim.save();
 
-      const verification = new Verification(claim.id);
-      verification.claim = claim.id;
-      verification.timestamp = event.block.timestamp;
-      verification.caller = event.transaction.from;
-      verification.txHash = event.transaction.hash;
+      let verification = Verification.load(claim.id);
+      if (!verification) {
+        verification = new Verification(claim.id);
+        verification.claim = claim.id;
+      }
+      verification.verifiedTimestamp = event.block.timestamp;
+      verification.verifiedCaller = event.transaction.from;
+      verification.verifiedTxHash = event.transaction.hash;
       verification.save();
       break;
     }

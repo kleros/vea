@@ -59,7 +59,7 @@ export interface SnapshotInboxDataType {
   numberMessages: string;
   resolving: boolean;
   stateRoot: string;
-  taken: boolean;
+  saved: boolean;
   timestamp: string;
   txHash: string;
 }
@@ -130,7 +130,7 @@ const parseStatus = ({
   if (challenged) return "Challenged";
   if (verified) return "Verified";
   if (claimed) return "Claimed";
-  return "Taken";
+  return "Saved";
 };
 
 export default SnapshotAccordionTitle;

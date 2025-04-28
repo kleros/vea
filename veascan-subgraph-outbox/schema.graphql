@@ -30,9 +30,12 @@ type Challenge @entity {
 type Verification @entity {
   id: ID!
   claim: Claim!
-  timestamp: BigInt!
-  caller: Bytes! # address
-  txHash: Bytes!
+  startTimestamp: BigInt
+  startCaller: Bytes # address
+  startTxHash: Bytes
+  verifiedTimestamp: BigInt
+  verifiedCaller: Bytes # address 
+  verifiedTxHash: Bytes
 }
 
 type Message @entity {

@@ -61,7 +61,7 @@ function getCurrentSnapshot(inboxAddress: Address): Snapshot {
     const snapshot = new Snapshot(snapshotId);
     snapshot.inbox = inboxAddress;
     snapshot.numberMessages = BigInt.fromI32(0);
-    snapshot.taken = false;
+    snapshot.saved = false;
     snapshot.resolving = false;
     snapshot.epoch = BigInt.fromI32(0);
     snapshot.epochString = "0";
@@ -84,7 +84,7 @@ function getCurrentSnapshot(inboxAddress: Address): Snapshot {
     );
     snapshot.inbox = inboxAddress;
     snapshot.numberMessages = BigInt.fromI32(0);
-    snapshot.taken = false;
+    snapshot.saved = false;
     snapshot.resolving = false;
     snapshot.epoch = BigInt.fromI32(0);
     snapshot.epochString = "0";
@@ -127,7 +127,7 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
   const epoch = event.block.timestamp.div(epochPeriod);
   const stateRoot = contract.snapshots(epoch);
   const currentSnapshot = getCurrentSnapshot(event.address);
-  currentSnapshot.taken = true;
+  currentSnapshot.saved = true;
   currentSnapshot.caller = event.transaction.from;
   currentSnapshot.stateRoot = stateRoot;
   currentSnapshot.stateRootString = stateRoot.toHexString();
@@ -147,7 +147,7 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
   const newSnapshot = new Snapshot(snapshotId);
   newSnapshot.inbox = event.address;
   newSnapshot.numberMessages = BigInt.fromI32(0);
-  newSnapshot.taken = false;
+  newSnapshot.saved = false;
   newSnapshot.resolving = false;
   newSnapshot.save();
 
@@ -204,7 +204,7 @@ export function handleSnapshotSent(event: SnapshotSent): void {
     const inbox = VeaInboxArbToEthDevnet.bind(event.address);
 
     let currentSnapshot = getCurrentSnapshot(event.address);
-    currentSnapshot.taken = false;
+    currentSnapshot.saved = false;
     currentSnapshot.resolving = true;
     currentSnapshot.timestamp = epochSent.times(inbox.epochPeriod());
     currentSnapshot.stateRoot = Bytes.fromHexString(
@@ -225,7 +225,7 @@ export function handleSnapshotSent(event: SnapshotSent): void {
     const newSnapshot = new Snapshot(newSnapshotId);
     newSnapshot.inbox = event.address;
     newSnapshot.numberMessages = BigInt.fromI32(0);
-    newSnapshot.taken = false;
+    newSnapshot.saved = false;
     newSnapshot.resolving = false;
     // Initialize new snapshot fields with defaults.
     newSnapshot.epoch = BigInt.fromI32(0);

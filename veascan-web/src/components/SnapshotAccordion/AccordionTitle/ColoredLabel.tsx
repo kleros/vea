@@ -9,7 +9,7 @@ interface IColoredLabel {
 
 export const variantColors = {
   Invalid: "lightRed",
-  Taken: "lightYellow",
+  Saved: "lightYellow",
   Claimed: "turquoise",
   Challenged: "lightPurple",
   Verified: "darkBlue",
