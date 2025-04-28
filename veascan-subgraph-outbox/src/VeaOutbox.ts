@@ -78,7 +78,7 @@ export function handleVerificationStarted(event: VerificationStarted): void {
   ) {
     const claimId = event.address.toHexString() + "-" + i.toString();
     const claim = Claim.load(claimId);
-    if (claim && claim.epoch.equals(event.params._epoch)) {
+    if (claim?.epoch.equals(event.params._epoch)) {
       const verification = new Verification(claim.id);
       verification.claim = claim.id;
       verification.startTimestamp = event.block.timestamp;
@@ -99,7 +99,7 @@ export function handleVerified(event: Verified): void {
   ) {
     const claimId = event.address.toHexString() + "-" + i.toString();
     const claim = Claim.load(claimId);
-    if (claim && claim.epoch.equals(event.params._epoch)) {
+    if (claim?.epoch.equals(event.params._epoch)) {
       claim.verified = true;
       claim.save();
 
