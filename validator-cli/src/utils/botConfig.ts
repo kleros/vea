@@ -18,7 +18,10 @@ interface BotPathParams {
  * @param defaultPath - default path to use if not specified in the command line arguments
  * @returns BotPaths - the bot path (BotPaths)
  */
-export function getBotPath({ cliCommand, defaultPath = BotPaths.BOTH }: BotPathParams): number {
+export function getBotPath({ cliCommand, defaultPath = BotPaths.BOTH }: BotPathParams): {
+  path: number;
+  toSaveSnapshot: boolean;
+} {
   const args = cliCommand.slice(2);
   const pathFlag = args.find((arg) => arg.startsWith("--path="));
 
@@ -33,8 +36,9 @@ export function getBotPath({ cliCommand, defaultPath = BotPaths.BOTH }: BotPathP
   if (path && !(path in pathMapping)) {
     throw new InvalidBotPathError();
   }
-
-  return path ? pathMapping[path] : defaultPath;
+  const saveSnapshotFlag = args.find((a) => a.startsWith("--saveSnapshot"));
+  const toSaveSnapshot = saveSnapshotFlag ? true : false;
+  return path ? { path: pathMapping[path], toSaveSnapshot } : { path: defaultPath, toSaveSnapshot };
 }
 
 export interface NetworkConfig {
