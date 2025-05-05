@@ -1,0 +1,89 @@
+import { Network } from "../consts/bridgeRoutes";
+import { BotEvents } from "./botEvents";
+import { getLastMessageSaved } from "./graphQueries";
+import { defaultEmitter } from "./emitter";
+
+interface SnapshotCheckParams {
+  veaInbox: any;
+  count: number;
+  fetchLastSavedMessage?: typeof getLastMessageSaved;
+}
+
+export interface SaveSnapshotParams {
+  veaInbox: any;
+  network: Network;
+  epochPeriod: number;
+  count: number;
+  transactionHandler: any;
+  emitter?: typeof defaultEmitter;
+  toSaveSnapshot?: typeof isSnapshotNeeded;
+  now: number;
+}
+
+export const saveSnapshot = async ({
+  veaInbox,
+  network,
+  epochPeriod,
+  count,
+  transactionHandler,
+  emitter = defaultEmitter,
+  toSaveSnapshot = isSnapshotNeeded,
+  now = Date.now(),
+}: SaveSnapshotParams): Promise<any> => {
+  if (network != Network.DEVNET) {
+    const timeElapsed = now % epochPeriod;
+    const timeLeftForEpoch = epochPeriod - timeElapsed;
+    // Saving snapshots in last 10 minutes of the epoch on testnet
+    if (timeLeftForEpoch > 600) {
+      emitter.emit(BotEvents.SNAPSHOT_WAITING, timeLeftForEpoch);
+      return { transactionHandler, latestCount: count };
+    }
+  }
+  const { snapshotNeeded, latestCount } = await toSaveSnapshot({
+    veaInbox,
+    count,
+  });
+  if (!snapshotNeeded) return { transactionHandler, latestCount };
+  await transactionHandler.saveSnapshot();
+  return { transactionHandler, latestCount };
+};
+
+export const isSnapshotNeeded = async ({
+  veaInbox,
+  count,
+  fetchLastSavedMessage = getLastMessageSaved,
+}: SnapshotCheckParams): Promise<{ snapshotNeeded: boolean; latestCount: number }> => {
+  const currentCount = Number(await veaInbox.count());
+  if (count == currentCount) {
+    return { snapshotNeeded: false, latestCount: currentCount };
+  }
+  let lastSavedCount: number;
+  try {
+    const saveSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSaved());
+    lastSavedCount = Number(saveSnapshotLogs[saveSnapshotLogs.length - 1].args[2]);
+  } catch {
+    const veaInboxAddress = await veaInbox.getAddress();
+    const lastSavedMessageId = await fetchLastSavedMessage(veaInboxAddress);
+    const messageIndex = extractMessageIndex(lastSavedMessageId);
+    // adding 1 to the message index to get the last saved count
+    lastSavedCount = messageIndex + 1;
+  }
+  if (currentCount > lastSavedCount) {
+    return { snapshotNeeded: true, latestCount: currentCount };
+  }
+  return { snapshotNeeded: false, latestCount: currentCount };
+};
+
+function extractMessageIndex(id: string): number {
+  const parts = id.split("-");
+  if (parts.length < 2) {
+    throw new Error(`Invalid message-id format: ${id}`);
+  }
+  // everything after the first dash is the index
+  const idxStr = parts.slice(1).join("-");
+  const idx = parseInt(idxStr, 10);
+  if (Number.isNaN(idx)) {
+    throw new Error(`Cannot parse index from "${idxStr}"`);
+  }
+  return idx;
+}
