@@ -21,7 +21,22 @@ export type Scalars = {
   BigDecimal: any;
   BigInt: any;
   Bytes: any;
+  /**
+   * 8 bytes signed integer
+   *
+   */
+  Int8: any;
+  /**
+   * A string representation of microseconds UNIX timestamp (16 digits)
+   *
+   */
+  Timestamp: any;
 };
+
+export enum Aggregation_Interval {
+  Day = "day",
+  Hour = "hour",
+}
 
 export type BlockChangedFilter = {
   number_gte: Scalars["Int"];
@@ -137,6 +152,7 @@ export type Claim = {
   epoch: Scalars["BigInt"];
   honest: Scalars["Boolean"];
   id: Scalars["ID"];
+  outbox: Outbox;
   stateroot: Scalars["Bytes"];
   timestamp: Scalars["BigInt"];
   txHash: Scalars["Bytes"];
@@ -184,6 +200,27 @@ export type Claim_Filter = {
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
   or?: InputMaybe<Array<InputMaybe<Claim_Filter>>>;
+  outbox?: InputMaybe<Scalars["String"]>;
+  outbox_?: InputMaybe<Outbox_Filter>;
+  outbox_contains?: InputMaybe<Scalars["String"]>;
+  outbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_gt?: InputMaybe<Scalars["String"]>;
+  outbox_gte?: InputMaybe<Scalars["String"]>;
+  outbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_lt?: InputMaybe<Scalars["String"]>;
+  outbox_lte?: InputMaybe<Scalars["String"]>;
+  outbox_not?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   stateroot?: InputMaybe<Scalars["Bytes"]>;
   stateroot_contains?: InputMaybe<Scalars["Bytes"]>;
   stateroot_gt?: InputMaybe<Scalars["Bytes"]>;
@@ -231,14 +268,19 @@ export enum Claim_OrderBy {
   Epoch = "epoch",
   Honest = "honest",
   Id = "id",
+  Outbox = "outbox",
+  OutboxId = "outbox__id",
   Stateroot = "stateroot",
   Timestamp = "timestamp",
   TxHash = "txHash",
   Verification = "verification",
-  VerificationCaller = "verification__caller",
   VerificationId = "verification__id",
-  VerificationTimestamp = "verification__timestamp",
-  VerificationTxHash = "verification__txHash",
+  VerificationStartCaller = "verification__startCaller",
+  VerificationStartTimestamp = "verification__startTimestamp",
+  VerificationStartTxHash = "verification__startTxHash",
+  VerificationVerifiedCaller = "verification__verifiedCaller",
+  VerificationVerifiedTimestamp = "verification__verifiedTimestamp",
+  VerificationVerifiedTxHash = "verification__verifiedTxHash",
   Verified = "verified",
 }
 
@@ -336,9 +378,9 @@ export enum Fallback_OrderBy {
   SnapshotId = "snapshot__id",
   SnapshotNumberMessages = "snapshot__numberMessages",
   SnapshotResolving = "snapshot__resolving",
+  SnapshotSaved = "snapshot__saved",
   SnapshotStateRoot = "snapshot__stateRoot",
   SnapshotStateRootString = "snapshot__stateRootString",
-  SnapshotTaken = "snapshot__taken",
   SnapshotTimestamp = "snapshot__timestamp",
   SnapshotTxHash = "snapshot__txHash",
   TicketId = "ticketId",
@@ -346,11 +388,49 @@ export enum Fallback_OrderBy {
   TxHash = "txHash",
 }
 
+export type Inbox = {
+  __typename?: "Inbox";
+  id: Scalars["Bytes"];
+  messages: Array<Snapshot>;
+};
+
+export type InboxMessagesArgs = {
+  first?: InputMaybe<Scalars["Int"]>;
+  orderBy?: InputMaybe<Snapshot_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  where?: InputMaybe<Snapshot_Filter>;
+};
+
+export type Inbox_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  and?: InputMaybe<Array<InputMaybe<Inbox_Filter>>>;
+  id?: InputMaybe<Scalars["Bytes"]>;
+  id_contains?: InputMaybe<Scalars["Bytes"]>;
+  id_gt?: InputMaybe<Scalars["Bytes"]>;
+  id_gte?: InputMaybe<Scalars["Bytes"]>;
+  id_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  id_lt?: InputMaybe<Scalars["Bytes"]>;
+  id_lte?: InputMaybe<Scalars["Bytes"]>;
+  id_not?: InputMaybe<Scalars["Bytes"]>;
+  id_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  id_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  messages_?: InputMaybe<Snapshot_Filter>;
+  or?: InputMaybe<Array<InputMaybe<Inbox_Filter>>>;
+};
+
+export enum Inbox_OrderBy {
+  Id = "id",
+  Messages = "messages",
+}
+
 export type Message = {
   __typename?: "Message";
   data: Scalars["Bytes"];
   from: Scalars["Bytes"];
   id: Scalars["ID"];
+  outbox: Outbox;
   proof: Scalars["Bytes"];
   relayer: Scalars["Bytes"];
   snapshot: Snapshot;
@@ -392,6 +472,27 @@ export type Message_Filter = {
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
   or?: InputMaybe<Array<InputMaybe<Message_Filter>>>;
+  outbox?: InputMaybe<Scalars["String"]>;
+  outbox_?: InputMaybe<Outbox_Filter>;
+  outbox_contains?: InputMaybe<Scalars["String"]>;
+  outbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_gt?: InputMaybe<Scalars["String"]>;
+  outbox_gte?: InputMaybe<Scalars["String"]>;
+  outbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_lt?: InputMaybe<Scalars["String"]>;
+  outbox_lte?: InputMaybe<Scalars["String"]>;
+  outbox_not?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   proof?: InputMaybe<Scalars["Bytes"]>;
   proof_contains?: InputMaybe<Scalars["Bytes"]>;
   proof_gt?: InputMaybe<Scalars["Bytes"]>;
@@ -467,6 +568,8 @@ export enum Message_OrderBy {
   Data = "data",
   From = "from",
   Id = "id",
+  Outbox = "outbox",
+  OutboxId = "outbox__id",
   Proof = "proof",
   Relayer = "relayer",
   Snapshot = "snapshot",
@@ -476,9 +579,9 @@ export enum Message_OrderBy {
   SnapshotId = "snapshot__id",
   SnapshotNumberMessages = "snapshot__numberMessages",
   SnapshotResolving = "snapshot__resolving",
+  SnapshotSaved = "snapshot__saved",
   SnapshotStateRoot = "snapshot__stateRoot",
   SnapshotStateRootString = "snapshot__stateRootString",
-  SnapshotTaken = "snapshot__taken",
   SnapshotTimestamp = "snapshot__timestamp",
   SnapshotTxHash = "snapshot__txHash",
   Timestamp = "timestamp",
@@ -492,6 +595,43 @@ export enum OrderDirection {
   Desc = "desc",
 }
 
+export type Outbox = {
+  __typename?: "Outbox";
+  claims: Array<Claim>;
+  id: Scalars["Bytes"];
+};
+
+export type OutboxClaimsArgs = {
+  first?: InputMaybe<Scalars["Int"]>;
+  orderBy?: InputMaybe<Claim_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  where?: InputMaybe<Claim_Filter>;
+};
+
+export type Outbox_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  and?: InputMaybe<Array<InputMaybe<Outbox_Filter>>>;
+  claims_?: InputMaybe<Claim_Filter>;
+  id?: InputMaybe<Scalars["Bytes"]>;
+  id_contains?: InputMaybe<Scalars["Bytes"]>;
+  id_gt?: InputMaybe<Scalars["Bytes"]>;
+  id_gte?: InputMaybe<Scalars["Bytes"]>;
+  id_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  id_lt?: InputMaybe<Scalars["Bytes"]>;
+  id_lte?: InputMaybe<Scalars["Bytes"]>;
+  id_not?: InputMaybe<Scalars["Bytes"]>;
+  id_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  id_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  or?: InputMaybe<Array<InputMaybe<Outbox_Filter>>>;
+};
+
+export enum Outbox_OrderBy {
+  Claims = "claims",
+  Id = "id",
+}
+
 export type Query = {
   __typename?: "Query";
   /** Access to subgraph metadata */
@@ -502,8 +642,12 @@ export type Query = {
   claims: Array<Claim>;
   fallback?: Maybe<Fallback>;
   fallbacks: Array<Fallback>;
+  inbox?: Maybe<Inbox>;
+  inboxes: Array<Inbox>;
   message?: Maybe<Message>;
   messages: Array<Message>;
+  outbox?: Maybe<Outbox>;
+  outboxes: Array<Outbox>;
   ref?: Maybe<Ref>;
   refs: Array<Ref>;
   snapshot?: Maybe<Snapshot>;
@@ -565,6 +709,22 @@ export type QueryFallbacksArgs = {
   where?: InputMaybe<Fallback_Filter>;
 };
 
+export type QueryInboxArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars["ID"];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+export type QueryInboxesArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars["Int"]>;
+  orderBy?: InputMaybe<Inbox_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<Inbox_Filter>;
+};
+
 export type QueryMessageArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars["ID"];
@@ -579,6 +739,22 @@ export type QueryMessagesArgs = {
   skip?: InputMaybe<Scalars["Int"]>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<Message_Filter>;
+};
+
+export type QueryOutboxArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars["ID"];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+export type QueryOutboxesArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars["Int"]>;
+  orderBy?: InputMaybe<Outbox_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars["Int"]>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<Outbox_Filter>;
 };
 
 export type QueryRefArgs = {
@@ -642,7 +818,9 @@ export type Ref = {
   __typename?: "Ref";
   currentSnapshotIndex: Scalars["BigInt"];
   id: Scalars["ID"];
+  inbox: Inbox;
   nextMessageIndex: Scalars["BigInt"];
+  outbox: Outbox;
   totalChallenges: Scalars["BigInt"];
   totalClaims: Scalars["BigInt"];
   totalMessages: Scalars["BigInt"];
@@ -668,6 +846,27 @@ export type Ref_Filter = {
   id_lte?: InputMaybe<Scalars["ID"]>;
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
+  inbox?: InputMaybe<Scalars["String"]>;
+  inbox_?: InputMaybe<Inbox_Filter>;
+  inbox_contains?: InputMaybe<Scalars["String"]>;
+  inbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_ends_with?: InputMaybe<Scalars["String"]>;
+  inbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_gt?: InputMaybe<Scalars["String"]>;
+  inbox_gte?: InputMaybe<Scalars["String"]>;
+  inbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  inbox_lt?: InputMaybe<Scalars["String"]>;
+  inbox_lte?: InputMaybe<Scalars["String"]>;
+  inbox_not?: InputMaybe<Scalars["String"]>;
+  inbox_not_contains?: InputMaybe<Scalars["String"]>;
+  inbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  inbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  inbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  inbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_starts_with?: InputMaybe<Scalars["String"]>;
+  inbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   nextMessageIndex?: InputMaybe<Scalars["BigInt"]>;
   nextMessageIndex_gt?: InputMaybe<Scalars["BigInt"]>;
   nextMessageIndex_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -677,6 +876,27 @@ export type Ref_Filter = {
   nextMessageIndex_not?: InputMaybe<Scalars["BigInt"]>;
   nextMessageIndex_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
   or?: InputMaybe<Array<InputMaybe<Ref_Filter>>>;
+  outbox?: InputMaybe<Scalars["String"]>;
+  outbox_?: InputMaybe<Outbox_Filter>;
+  outbox_contains?: InputMaybe<Scalars["String"]>;
+  outbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_gt?: InputMaybe<Scalars["String"]>;
+  outbox_gte?: InputMaybe<Scalars["String"]>;
+  outbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_lt?: InputMaybe<Scalars["String"]>;
+  outbox_lte?: InputMaybe<Scalars["String"]>;
+  outbox_not?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains?: InputMaybe<Scalars["String"]>;
+  outbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  outbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with?: InputMaybe<Scalars["String"]>;
+  outbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   totalChallenges?: InputMaybe<Scalars["BigInt"]>;
   totalChallenges_gt?: InputMaybe<Scalars["BigInt"]>;
   totalChallenges_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -706,7 +926,11 @@ export type Ref_Filter = {
 export enum Ref_OrderBy {
   CurrentSnapshotIndex = "currentSnapshotIndex",
   Id = "id",
+  Inbox = "inbox",
+  InboxId = "inbox__id",
   NextMessageIndex = "nextMessageIndex",
+  Outbox = "outbox",
+  OutboxId = "outbox__id",
   TotalChallenges = "totalChallenges",
   TotalClaims = "totalClaims",
   TotalMessages = "totalMessages",
@@ -719,12 +943,13 @@ export type Snapshot = {
   epochString?: Maybe<Scalars["String"]>;
   fallback: Array<Fallback>;
   id: Scalars["ID"];
+  inbox: Inbox;
   messages: Array<Message>;
   numberMessages: Scalars["BigInt"];
   resolving: Scalars["Boolean"];
+  saved: Scalars["Boolean"];
   stateRoot?: Maybe<Scalars["Bytes"]>;
   stateRootString?: Maybe<Scalars["String"]>;
-  taken: Scalars["Boolean"];
   timestamp?: Maybe<Scalars["BigInt"]>;
   txHash?: Maybe<Scalars["Bytes"]>;
 };
@@ -796,6 +1021,27 @@ export type Snapshot_Filter = {
   id_lte?: InputMaybe<Scalars["ID"]>;
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
+  inbox?: InputMaybe<Scalars["String"]>;
+  inbox_?: InputMaybe<Inbox_Filter>;
+  inbox_contains?: InputMaybe<Scalars["String"]>;
+  inbox_contains_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_ends_with?: InputMaybe<Scalars["String"]>;
+  inbox_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_gt?: InputMaybe<Scalars["String"]>;
+  inbox_gte?: InputMaybe<Scalars["String"]>;
+  inbox_in?: InputMaybe<Array<Scalars["String"]>>;
+  inbox_lt?: InputMaybe<Scalars["String"]>;
+  inbox_lte?: InputMaybe<Scalars["String"]>;
+  inbox_not?: InputMaybe<Scalars["String"]>;
+  inbox_not_contains?: InputMaybe<Scalars["String"]>;
+  inbox_not_contains_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_not_ends_with?: InputMaybe<Scalars["String"]>;
+  inbox_not_ends_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_not_in?: InputMaybe<Array<Scalars["String"]>>;
+  inbox_not_starts_with?: InputMaybe<Scalars["String"]>;
+  inbox_not_starts_with_nocase?: InputMaybe<Scalars["String"]>;
+  inbox_starts_with?: InputMaybe<Scalars["String"]>;
+  inbox_starts_with_nocase?: InputMaybe<Scalars["String"]>;
   messages_?: InputMaybe<Message_Filter>;
   numberMessages?: InputMaybe<Scalars["BigInt"]>;
   numberMessages_gt?: InputMaybe<Scalars["BigInt"]>;
@@ -810,6 +1056,10 @@ export type Snapshot_Filter = {
   resolving_in?: InputMaybe<Array<Scalars["Boolean"]>>;
   resolving_not?: InputMaybe<Scalars["Boolean"]>;
   resolving_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
+  saved?: InputMaybe<Scalars["Boolean"]>;
+  saved_in?: InputMaybe<Array<Scalars["Boolean"]>>;
+  saved_not?: InputMaybe<Scalars["Boolean"]>;
+  saved_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
   stateRoot?: InputMaybe<Scalars["Bytes"]>;
   stateRootString?: InputMaybe<Scalars["String"]>;
   stateRootString_contains?: InputMaybe<Scalars["String"]>;
@@ -840,10 +1090,6 @@ export type Snapshot_Filter = {
   stateRoot_not?: InputMaybe<Scalars["Bytes"]>;
   stateRoot_not_contains?: InputMaybe<Scalars["Bytes"]>;
   stateRoot_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
-  taken?: InputMaybe<Scalars["Boolean"]>;
-  taken_in?: InputMaybe<Array<Scalars["Boolean"]>>;
-  taken_not?: InputMaybe<Scalars["Boolean"]>;
-  taken_not_in?: InputMaybe<Array<Scalars["Boolean"]>>;
   timestamp?: InputMaybe<Scalars["BigInt"]>;
   timestamp_gt?: InputMaybe<Scalars["BigInt"]>;
   timestamp_gte?: InputMaybe<Scalars["BigInt"]>;
@@ -870,175 +1116,34 @@ export enum Snapshot_OrderBy {
   EpochString = "epochString",
   Fallback = "fallback",
   Id = "id",
+  Inbox = "inbox",
+  InboxId = "inbox__id",
   Messages = "messages",
   NumberMessages = "numberMessages",
   Resolving = "resolving",
+  Saved = "saved",
   StateRoot = "stateRoot",
   StateRootString = "stateRootString",
-  Taken = "taken",
   Timestamp = "timestamp",
   TxHash = "txHash",
 }
 
-export type Subscription = {
-  __typename?: "Subscription";
-  /** Access to subgraph metadata */
-  _meta?: Maybe<_Meta_>;
-  challenge?: Maybe<Challenge>;
-  challenges: Array<Challenge>;
-  claim?: Maybe<Claim>;
-  claims: Array<Claim>;
-  fallback?: Maybe<Fallback>;
-  fallbacks: Array<Fallback>;
-  message?: Maybe<Message>;
-  messages: Array<Message>;
-  ref?: Maybe<Ref>;
-  refs: Array<Ref>;
-  snapshot?: Maybe<Snapshot>;
-  snapshots: Array<Snapshot>;
-  verification?: Maybe<Verification>;
-  verifications: Array<Verification>;
-};
-
-export type Subscription_MetaArgs = {
-  block?: InputMaybe<Block_Height>;
-};
-
-export type SubscriptionChallengeArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionChallengesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Challenge_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Challenge_Filter>;
-};
-
-export type SubscriptionClaimArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionClaimsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Claim_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Claim_Filter>;
-};
-
-export type SubscriptionFallbackArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionFallbacksArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Fallback_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Fallback_Filter>;
-};
-
-export type SubscriptionMessageArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionMessagesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Message_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Message_Filter>;
-};
-
-export type SubscriptionRefArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionRefsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Ref_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Ref_Filter>;
-};
-
-export type SubscriptionSnapshotArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionSnapshotsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Snapshot_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Snapshot_Filter>;
-};
-
-export type SubscriptionVerificationArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars["ID"];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-export type SubscriptionVerificationsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars["Int"]>;
-  orderBy?: InputMaybe<Verification_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars["Int"]>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Verification_Filter>;
-};
-
 export type Verification = {
   __typename?: "Verification";
-  caller: Scalars["Bytes"];
   claim: Claim;
   id: Scalars["ID"];
-  timestamp: Scalars["BigInt"];
-  txHash: Scalars["Bytes"];
+  startCaller?: Maybe<Scalars["Bytes"]>;
+  startTimestamp?: Maybe<Scalars["BigInt"]>;
+  startTxHash?: Maybe<Scalars["Bytes"]>;
+  verifiedCaller?: Maybe<Scalars["Bytes"]>;
+  verifiedTimestamp?: Maybe<Scalars["BigInt"]>;
+  verifiedTxHash?: Maybe<Scalars["Bytes"]>;
 };
 
 export type Verification_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
   and?: InputMaybe<Array<InputMaybe<Verification_Filter>>>;
-  caller?: InputMaybe<Scalars["Bytes"]>;
-  caller_contains?: InputMaybe<Scalars["Bytes"]>;
-  caller_gt?: InputMaybe<Scalars["Bytes"]>;
-  caller_gte?: InputMaybe<Scalars["Bytes"]>;
-  caller_in?: InputMaybe<Array<Scalars["Bytes"]>>;
-  caller_lt?: InputMaybe<Scalars["Bytes"]>;
-  caller_lte?: InputMaybe<Scalars["Bytes"]>;
-  caller_not?: InputMaybe<Scalars["Bytes"]>;
-  caller_not_contains?: InputMaybe<Scalars["Bytes"]>;
-  caller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
   claim?: InputMaybe<Scalars["String"]>;
   claim_?: InputMaybe<Claim_Filter>;
   claim_contains?: InputMaybe<Scalars["String"]>;
@@ -1069,28 +1174,65 @@ export type Verification_Filter = {
   id_not?: InputMaybe<Scalars["ID"]>;
   id_not_in?: InputMaybe<Array<Scalars["ID"]>>;
   or?: InputMaybe<Array<InputMaybe<Verification_Filter>>>;
-  timestamp?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_gt?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_gte?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_in?: InputMaybe<Array<Scalars["BigInt"]>>;
-  timestamp_lt?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_lte?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_not?: InputMaybe<Scalars["BigInt"]>;
-  timestamp_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
-  txHash?: InputMaybe<Scalars["Bytes"]>;
-  txHash_contains?: InputMaybe<Scalars["Bytes"]>;
-  txHash_gt?: InputMaybe<Scalars["Bytes"]>;
-  txHash_gte?: InputMaybe<Scalars["Bytes"]>;
-  txHash_in?: InputMaybe<Array<Scalars["Bytes"]>>;
-  txHash_lt?: InputMaybe<Scalars["Bytes"]>;
-  txHash_lte?: InputMaybe<Scalars["Bytes"]>;
-  txHash_not?: InputMaybe<Scalars["Bytes"]>;
-  txHash_not_contains?: InputMaybe<Scalars["Bytes"]>;
-  txHash_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  startCaller?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_contains?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_gt?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_gte?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  startCaller_lt?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_lte?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_not?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  startCaller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  startTimestamp?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_gt?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_gte?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  startTimestamp_lt?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_lte?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_not?: InputMaybe<Scalars["BigInt"]>;
+  startTimestamp_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  startTxHash?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_contains?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_gt?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_gte?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  startTxHash_lt?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_lte?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_not?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  startTxHash_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  verifiedCaller?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_contains?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_gt?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_gte?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  verifiedCaller_lt?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_lte?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_not?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  verifiedCaller_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  verifiedTimestamp?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_gt?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_gte?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  verifiedTimestamp_lt?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_lte?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_not?: InputMaybe<Scalars["BigInt"]>;
+  verifiedTimestamp_not_in?: InputMaybe<Array<Scalars["BigInt"]>>;
+  verifiedTxHash?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_contains?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_gt?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_gte?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_in?: InputMaybe<Array<Scalars["Bytes"]>>;
+  verifiedTxHash_lt?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_lte?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_not?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_not_contains?: InputMaybe<Scalars["Bytes"]>;
+  verifiedTxHash_not_in?: InputMaybe<Array<Scalars["Bytes"]>>;
 };
 
 export enum Verification_OrderBy {
-  Caller = "caller",
   Claim = "claim",
   ClaimBridger = "claim__bridger",
   ClaimChallenged = "claim__challenged",
@@ -1102,8 +1244,12 @@ export enum Verification_OrderBy {
   ClaimTxHash = "claim__txHash",
   ClaimVerified = "claim__verified",
   Id = "id",
-  Timestamp = "timestamp",
-  TxHash = "txHash",
+  StartCaller = "startCaller",
+  StartTimestamp = "startTimestamp",
+  StartTxHash = "startTxHash",
+  VerifiedCaller = "verifiedCaller",
+  VerifiedTimestamp = "verifiedTimestamp",
+  VerifiedTxHash = "verifiedTxHash",
 }
 
 export type _Block_ = {
@@ -1112,6 +1258,8 @@ export type _Block_ = {
   hash?: Maybe<Scalars["Bytes"]>;
   /** The block number */
   number: Scalars["Int"];
+  /** The hash of the parent block */
+  parentHash?: Maybe<Scalars["Bytes"]>;
   /** Integer representation of the timestamp stored in blocks for the chain */
   timestamp?: Maybe<Scalars["Int"]>;
 };
@@ -1142,6 +1290,7 @@ export enum _SubgraphErrorPolicy_ {
 
 export type GetSnapshotQueryVariables = Exact<{
   epoch: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetSnapshotQuery = {
@@ -1155,7 +1304,7 @@ export type GetSnapshotQuery = {
     timestamp?: any | null;
     stateRoot?: any | null;
     numberMessages: any;
-    taken: boolean;
+    saved: boolean;
     resolving: boolean;
     fallback: Array<{
       __typename?: "Fallback";
@@ -1170,6 +1319,7 @@ export type GetSnapshotQuery = {
 export type GetSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetSnapshotsQuery = {
@@ -1183,7 +1333,7 @@ export type GetSnapshotsQuery = {
     timestamp?: any | null;
     stateRoot?: any | null;
     numberMessages: any;
-    taken: boolean;
+    saved: boolean;
     resolving: boolean;
     fallback: Array<{
       __typename?: "Fallback";
@@ -1200,6 +1350,7 @@ export type GetResolvingSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
   resolving?: InputMaybe<Scalars["Boolean"]>;
+  contract: Scalars["String"];
 }>;
 
 export type GetResolvingSnapshotsQuery = {
@@ -1213,7 +1364,7 @@ export type GetResolvingSnapshotsQuery = {
     timestamp?: any | null;
     stateRoot?: any | null;
     numberMessages: any;
-    taken: boolean;
+    saved: boolean;
     resolving: boolean;
     fallback: Array<{
       __typename?: "Fallback";
@@ -1229,6 +1380,7 @@ export type GetResolvingSnapshotsQuery = {
 export type SearchSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   value: Scalars["String"];
+  contract: Scalars["String"];
 }>;
 
 export type SearchSnapshotsQuery = {
@@ -1242,7 +1394,7 @@ export type SearchSnapshotsQuery = {
     timestamp?: any | null;
     stateRoot?: any | null;
     numberMessages: any;
-    taken: boolean;
+    saved: boolean;
     resolving: boolean;
     fallback: Array<{
       __typename?: "Fallback";
@@ -1276,6 +1428,7 @@ export type GetMessagesQuery = {
 
 export type GetClaimQueryVariables = Exact<{
   epoch: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetClaimQuery = {
@@ -1300,9 +1453,9 @@ export type GetClaimQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1310,6 +1463,7 @@ export type GetClaimQuery = {
 export type GetClaimedSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetClaimedSnapshotsQuery = {
@@ -1334,9 +1488,9 @@ export type GetClaimedSnapshotsQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1344,6 +1498,7 @@ export type GetClaimedSnapshotsQuery = {
 export type GetChallengedSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetChallengedSnapshotsQuery = {
@@ -1368,9 +1523,9 @@ export type GetChallengedSnapshotsQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1378,6 +1533,7 @@ export type GetChallengedSnapshotsQuery = {
 export type GetVerifiedSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetVerifiedSnapshotsQuery = {
@@ -1402,9 +1558,9 @@ export type GetVerifiedSnapshotsQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1412,6 +1568,7 @@ export type GetVerifiedSnapshotsQuery = {
 export type GetResolvedSnapshotsQueryVariables = Exact<{
   snapshotsPerPage?: InputMaybe<Scalars["Int"]>;
   lastTimestamp: Scalars["BigInt"];
+  contract: Scalars["String"];
 }>;
 
 export type GetResolvedSnapshotsQuery = {
@@ -1436,9 +1593,9 @@ export type GetResolvedSnapshotsQuery = {
     } | null;
     verification?: {
       __typename?: "Verification";
-      timestamp: any;
-      caller: any;
-      txHash: any;
+      verifiedTimestamp?: any | null;
+      verifiedCaller?: any | null;
+      verifiedTxHash?: any | null;
     } | null;
   }>;
 };
@@ -1480,6 +1637,20 @@ export const GetSnapshotDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -1502,6 +1673,14 @@ export const GetSnapshotDocument = {
                         name: { kind: "Name", value: "epoch" },
                       },
                     },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "inbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
                   ],
                 },
               },
@@ -1519,7 +1698,7 @@ export const GetSnapshotDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "saved" } },
                 { kind: "Field", name: { kind: "Name", value: "resolving" } },
                 {
                   kind: "Field",
@@ -1601,6 +1780,20 @@ export const GetSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -1641,6 +1834,14 @@ export const GetSnapshotsDocument = {
                         name: { kind: "Name", value: "lastTimestamp" },
                       },
                     },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "inbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
                   ],
                 },
               },
@@ -1658,7 +1859,7 @@ export const GetSnapshotsDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "saved" } },
                 { kind: "Field", name: { kind: "Name", value: "resolving" } },
                 {
                   kind: "Field",
@@ -1767,6 +1968,21 @@ export const GetResolvingSnapshotsDocument = {
             name: { kind: "Name", value: "resolving" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "Boolean" } },
+          defaultValue: { kind: "BooleanValue", value: true },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
         },
       ],
       selectionSet: {
@@ -1816,6 +2032,14 @@ export const GetResolvingSnapshotsDocument = {
                         name: { kind: "Name", value: "resolving" },
                       },
                     },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "inbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
                   ],
                 },
               },
@@ -1833,7 +2057,7 @@ export const GetResolvingSnapshotsDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "saved" } },
                 { kind: "Field", name: { kind: "Name", value: "resolving" } },
                 {
                   kind: "Field",
@@ -1938,6 +2162,20 @@ export const SearchSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -1962,6 +2200,23 @@ export const SearchSnapshotsDocument = {
                   name: { kind: "Name", value: "snapshotsPerPage" },
                 },
               },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "where" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "inbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
+                  ],
+                },
+              },
             ],
             selectionSet: {
               kind: "SelectionSet",
@@ -1976,7 +2231,7 @@ export const SearchSnapshotsDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "numberMessages" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "taken" } },
+                { kind: "Field", name: { kind: "Name", value: "saved" } },
                 { kind: "Field", name: { kind: "Name", value: "resolving" } },
                 {
                   kind: "Field",
@@ -2183,6 +2438,20 @@ export const GetClaimDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2203,6 +2472,14 @@ export const GetClaimDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "epoch" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
                       },
                     },
                   ],
@@ -2254,15 +2531,15 @@ export const GetClaimDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
@@ -2302,6 +2579,20 @@ export const GetClaimedSnapshotsDocument = {
             type: {
               kind: "NamedType",
               name: { kind: "Name", value: "BigInt" },
+            },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
             },
           },
         },
@@ -2355,6 +2646,14 @@ export const GetClaimedSnapshotsDocument = {
                       name: { kind: "Name", value: "challenged" },
                       value: { kind: "BooleanValue", value: false },
                     },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
                   ],
                 },
               },
@@ -2404,15 +2703,15 @@ export const GetClaimedSnapshotsDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
@@ -2458,6 +2757,20 @@ export const GetChallengedSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2508,6 +2821,14 @@ export const GetChallengedSnapshotsDocument = {
                       name: { kind: "Name", value: "challenged" },
                       value: { kind: "BooleanValue", value: true },
                     },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
                   ],
                 },
               },
@@ -2557,15 +2878,15 @@ export const GetChallengedSnapshotsDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
@@ -2611,6 +2932,20 @@ export const GetVerifiedSnapshotsDocument = {
             },
           },
         },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -2661,6 +2996,14 @@ export const GetVerifiedSnapshotsDocument = {
                       name: { kind: "Name", value: "challenged" },
                       value: { kind: "BooleanValue", value: false },
                     },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
                   ],
                 },
               },
@@ -2710,15 +3053,15 @@ export const GetVerifiedSnapshotsDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },
@@ -2761,6 +3104,20 @@ export const GetResolvedSnapshotsDocument = {
             type: {
               kind: "NamedType",
               name: { kind: "Name", value: "BigInt" },
+            },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "contract" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
             },
           },
         },
@@ -2814,6 +3171,14 @@ export const GetResolvedSnapshotsDocument = {
                       name: { kind: "Name", value: "challenged" },
                       value: { kind: "BooleanValue", value: true },
                     },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "outbox" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "contract" },
+                      },
+                    },
                   ],
                 },
               },
@@ -2863,15 +3228,15 @@ export const GetResolvedSnapshotsDocument = {
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "timestamp" },
+                        name: { kind: "Name", value: "verifiedTimestamp" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "caller" },
+                        name: { kind: "Name", value: "verifiedCaller" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "txHash" },
+                        name: { kind: "Name", value: "verifiedTxHash" },
                       },
                     ],
                   },

@@ -1,4 +1,10 @@
-import React, { useState, createContext, useContext, useMemo } from "react";
+import React, {
+  useState,
+  createContext,
+  useContext,
+  useMemo,
+  useEffect,
+} from "react";
 import { theme } from "styles/themes";
 import { useDebounce } from "react-use";
 import {
@@ -12,6 +18,7 @@ import {
   getChallengedSnapshotsQuery,
 } from "queries/getOutboxData";
 import { RequestDocument } from "graphql-request";
+import { Network } from "~src/consts/bridges";
 
 const InboxQueries: RequestDocument[] = [
   getSnapshotsQuery,
@@ -107,6 +114,8 @@ interface IFilters {
   toChain: number;
   statusFilter: number;
   statusItems: IItem[];
+  network: Network;
+  setNetwork: (arg0: Network) => void;
   setFromChain: (arg0: number) => void;
   setToChain: (arg0: number) => void;
   setStatusFilter: (arg0: number) => void;
@@ -122,6 +131,10 @@ const Context = createContext<IFilters>({
   fromChain: 0,
   toChain: 0,
   statusFilter: 0,
+  network: Network.DEVNET,
+  setNetwork: () => {
+    //
+  },
   setFromChain: () => {
     //
   },
@@ -143,7 +156,13 @@ export const FiltersContext: React.FC<{ children?: React.ReactNode }> = ({
   const [statusFilter, setStatusFilter] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [network, setNetwork] = useState<Network>(Network.DEVNET);
   useDebounce(() => setDebouncedSearch(search), 500, [search]);
+  useEffect(() => {
+    if (debouncedSearch !== "") {
+      setStatusFilter(0);
+    }
+  }, [debouncedSearch]);
   const value = useMemo(
     () => ({
       search,
@@ -151,6 +170,8 @@ export const FiltersContext: React.FC<{ children?: React.ReactNode }> = ({
       debouncedSearch,
       fromChain,
       toChain,
+      network,
+      setNetwork,
       setFromChain,
       setToChain,
       statusItems: STATUS_FILTERS.map((filter) => filter.item),
@@ -160,7 +181,7 @@ export const FiltersContext: React.FC<{ children?: React.ReactNode }> = ({
         (filter) => filter.item.value === statusFilter
       )!.queryInfo,
     }),
-    [search, debouncedSearch, fromChain, toChain, statusFilter]
+    [search, debouncedSearch, fromChain, toChain, statusFilter, network]
   );
   return <Context.Provider {...{ value }}> {children} </Context.Provider>;
 };

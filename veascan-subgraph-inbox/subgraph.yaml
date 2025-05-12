@@ -8,9 +8,9 @@ dataSources:
     name: VeaInboxArbToEthTestnet
     network: arbitrum-sepolia
     source:
-      address: "0xE12daFE59Bc3A996362d54b37DFd2BA9279cAd06"
+      address: "0xAA4F00c86bf956C0Fae603D030CBc2dA7f8B7C5B"
       abi: VeaInboxArbToEthTestnet
-      startBlock: 77452741
+      startBlock: 139057282
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
