@@ -2,6 +2,7 @@ import { Wallet, JsonRpcProvider } from "ethers";
 import {
   VeaOutboxArbToEth__factory,
   VeaOutboxArbToGnosis__factory,
+  VeaOutboxArbToGnosisDevnet__factory,
   VeaOutboxArbToEthDevnet__factory,
   VeaInboxArbToEth__factory,
   VeaInboxArbToGnosis__factory,
@@ -10,67 +11,111 @@ import {
   IAMB__factory,
 } from "@kleros/vea-contracts/typechain-types";
 import { challengeAndResolveClaim as challengeAndResolveClaimArbToEth } from "../ArbToEth/validator";
+import { checkAndClaim } from "../ArbToEth/claimer";
 import { ArbToEthTransactionHandler } from "../ArbToEth/transactionHandler";
-import { TransactionHandlerNotDefinedError } from "./errors";
+import { ArbToEthDevnetTransactionHandler } from "../ArbToEth/transactionHandlerDevnet";
+import { NotDefinedError, InvalidNetworkError } from "./errors";
+import { Network } from "../consts/bridgeRoutes";
 
-function getWallet(privateKey: string, web3ProviderURL: string) {
-  return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
+function getWallet(privateKey: string, rpcUrl: string) {
+  return new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
 }
 
 function getWalletRPC(privateKey: string, rpc: JsonRpcProvider) {
   return new Wallet(privateKey, rpc);
 }
 
-function getVeaInbox(veaInboxAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
+function getVeaInbox(veaInboxAddress: string, privateKey: string, rpcUrl: string, chainId: number, network) {
   switch (chainId) {
     case 11155111:
-      return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+      return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, rpcUrl));
     case 10200:
-      return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+      return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, rpcUrl));
+    default:
+      throw new NotDefinedError("VeaInbox");
   }
 }
 
-function getVeaOutbox(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
+function getVeaOutbox(veaOutboxAddress: string, privateKey: string, rpcUrl: string, chainId: number, network: Network) {
   switch (chainId) {
     case 11155111:
-      return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+      switch (network) {
+        case Network.DEVNET:
+          return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+        case Network.TESTNET:
+          return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+        default:
+          throw new InvalidNetworkError(`${network}(veaOutbox)`);
+      }
+
     case 10200:
-      return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+      switch (network) {
+        case Network.DEVNET:
+          return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+        case Network.TESTNET:
+          return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+        default:
+          throw new InvalidNetworkError(`${network}(veaOutbox)`);
+      }
+    default:
+      throw new NotDefinedError("VeaOutbox");
   }
 }
 
-function getVeaRouter(veaRouterAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
+function getVeaRouter(veaRouterAddress: string, privateKey: string, rpcUrl: string, chainId: number) {
   switch (chainId) {
     case 10200:
-      return RouterArbToGnosis__factory.connect(veaRouterAddress, getWallet(privateKey, web3ProviderURL));
+      return RouterArbToGnosis__factory.connect(veaRouterAddress, getWallet(privateKey, rpcUrl));
   }
 }
 
-function getWETH(WETH: string, privateKey: string, web3ProviderURL: string) {
-  return IWETH__factory.connect(WETH, getWallet(privateKey, web3ProviderURL));
+function getWETH(WETH: string, privateKey: string, rpcUrl: string) {
+  return IWETH__factory.connect(WETH, getWallet(privateKey, rpcUrl));
 }
 
-function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, web3ProviderURL: string) {
-  return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, rpcUrl: string) {
+  return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
 }
 
-function getAMB(ambAddress: string, privateKey: string, web3ProviderURL: string) {
-  return IAMB__factory.connect(ambAddress, getWallet(privateKey, web3ProviderURL));
+function getAMB(ambAddress: string, privateKey: string, rpcUrl: string) {
+  return IAMB__factory.connect(ambAddress, getWallet(privateKey, rpcUrl));
 }
 
-const getClaimValidator = (chainId: number) => {
+const getClaimValidator = (chainId: number, network: Network) => {
   switch (chainId) {
     case 11155111:
       return challengeAndResolveClaimArbToEth;
+    default:
+      throw new NotDefinedError("Claim Validator");
   }
 };
-
-const getTransactionHandler = (chainId: number) => {
+const getClaimer = (chainId: number, network: Network): typeof checkAndClaim => {
   switch (chainId) {
     case 11155111:
-      return ArbToEthTransactionHandler;
+      switch (network) {
+        case Network.DEVNET:
+
+        case Network.TESTNET:
+          return checkAndClaim;
+
+        default:
+          throw new InvalidNetworkError(`${network}(claimer)`);
+      }
     default:
-      throw new TransactionHandlerNotDefinedError();
+      throw new NotDefinedError("Claimer");
+  }
+};
+const getTransactionHandler = (chainId: number, network: Network) => {
+  if (chainId === 11155111) {
+    if (network === Network.DEVNET) {
+      return ArbToEthDevnetTransactionHandler;
+    } else if (network === Network.TESTNET) {
+      return ArbToEthTransactionHandler;
+    } else {
+      throw new InvalidNetworkError(`${network}(transactionHandler)`);
+    }
+  } else {
+    throw new NotDefinedError("Transaction Handler");
   }
 };
 export {
@@ -82,6 +127,7 @@ export {
   getWETH,
   getAMB,
   getClaimValidator,
+  getClaimer,
   getTransactionHandler,
   getVeaRouter,
 };

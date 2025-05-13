@@ -1,27 +1,16 @@
 module.exports = {
   apps: [
     {
-      name: "chiado-devnet",
-      script: "yarn",
-      args: "start-chiado-devnet",
-      interpreter: "/bin/bash",
+      name: "validator-cli",
+      script: "./src/watcher.ts",
+      interpreter: "../node_modules/.bin/ts-node",
+      interpreter_args: "--project tsconfig.json -r tsconfig-paths/register",
       log_date_format: "YYYY-MM-DD HH:mm Z",
-      watch: false,
-      autorestart: false,
+      watch: true,
+      autorestart: true,
       env: {
         NODE_ENV: "development",
-      },
-    },
-    {
-      name: "start-sepolia-devnet",
-      script: "yarn",
-      args: "start-sepolia-devnet",
-      interpreter: "/bin/bash",
-      log_date_format: "YYYY-MM-DD HH:mm Z",
-      watch: false,
-      autorestart: false,
-      env: {
-        NODE_ENV: "development",
+        TS_NODE_PROJECT: "./tsconfig.json",
       },
     },
   ],

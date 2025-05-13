@@ -1,4 +1,13 @@
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { getBridgeConfig } from "../consts/bridgeRoutes";
+
+interface EpochRangeParams {
+  chainId: number;
+  epochPeriod: number;
+  currentTimestamp: number;
+  now?: number;
+  fetchBridgeConfig?: typeof getBridgeConfig;
+}
 
 /**
  * Sets the epoch range to check for claims.
@@ -11,13 +20,14 @@ import { getBridgeConfig } from "../consts/bridgeRoutes";
  * @returns The epoch range to check for claims
  */
 
-const setEpochRange = (
-  currentTimestamp: number,
-  chainId: number,
-  now: number = Date.now(),
-  fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
-): Array<number> => {
-  const { sequencerDelayLimit, epochPeriod } = fetchBridgeConfig(chainId);
+const setEpochRange = ({
+  chainId,
+  currentTimestamp,
+  epochPeriod,
+  now = Date.now(),
+  fetchBridgeConfig = getBridgeConfig,
+}: EpochRangeParams): Array<number> => {
+  const { sequencerDelayLimit } = fetchBridgeConfig(chainId);
   const coldStartBacklog = 7 * 24 * 60 * 60; // when starting the watcher, specify an extra backlog to check
 
   // When Sequencer is malicious, even when L1 is finalized, L2 state might be unknown for up to  sequencerDelayLimit + epochPeriod.
@@ -30,13 +40,12 @@ const setEpochRange = (
   const timeLocal = Math.floor(now / 1000);
 
   let veaEpochOutboxClaimableNow = Math.floor(timeLocal / epochPeriod) - 1;
-
   // only past epochs are claimable, hence shift by one here
-  const veaEpochOutboxRange = veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound;
-  const veaEpochOutboxCheckClaimsRangeArray: number[] = new Array(veaEpochOutboxRange)
-    .fill(veaEpochOutboxWatchLowerBound)
-    .map((el, i) => el + i);
-
+  const length = veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound;
+  const veaEpochOutboxCheckClaimsRangeArray: number[] = Array.from(
+    { length },
+    (_, i) => veaEpochOutboxWatchLowerBound + i + 1
+  );
   return veaEpochOutboxCheckClaimsRangeArray;
 };
 
@@ -52,13 +61,17 @@ const setEpochRange = (
  * @example
  * currentEpoch = checkForNewEpoch(currentEpoch, 7200);
  */
-const getLatestChallengeableEpoch = (
-  chainId: number,
-  now: number = Date.now(),
-  fetchBridgeConfig: typeof getBridgeConfig = getBridgeConfig
-): number => {
-  const { epochPeriod } = fetchBridgeConfig(chainId);
+const getLatestChallengeableEpoch = (epochPeriod: number, now: number = Date.now()): number => {
   return Math.floor(now / 1000 / epochPeriod) - 2;
 };
 
-export { setEpochRange, getLatestChallengeableEpoch };
+const getBlockFromEpoch = async (epoch: number, epochPeriod: number, provider: JsonRpcProvider): Promise<number> => {
+  const epochTimestamp = epoch * epochPeriod;
+  const latestBlock = await provider.getBlock("latest");
+  const baseBlock = await provider.getBlock(latestBlock.number - 1000);
+  const secPerBlock = (latestBlock.timestamp - baseBlock.timestamp) / (latestBlock.number - baseBlock.number);
+  const blockFallBack = Math.floor((latestBlock.timestamp - epochTimestamp) / secPerBlock);
+  return latestBlock.number - blockFallBack;
+};
+
+export { setEpochRange, getLatestChallengeableEpoch, getBlockFromEpoch, EpochRangeParams };

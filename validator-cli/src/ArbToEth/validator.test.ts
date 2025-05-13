@@ -8,7 +8,6 @@ describe("validator", () => {
   let veaInboxProvider: any;
   let veaOutboxProvider: any;
   let emitter: any;
-  let mockGetClaim: any;
   let mockClaim: any;
   let mockGetClaimState: any;
   let mockGetBlockFinality: any;
@@ -39,9 +38,9 @@ describe("validator", () => {
       honest: 0,
       challenger: ethers.ZeroAddress,
     };
-    mockGetClaim = jest.fn();
     mockGetBlockFinality = jest.fn().mockResolvedValue([{ number: 0 }, { number: 0, timestamp: 100 }, false]);
     mockDeps = {
+      claim: mockClaim,
       epoch: 0,
       epochPeriod: 10,
       veaInbox,
@@ -50,15 +49,16 @@ describe("validator", () => {
       veaOutbox,
       transactionHandler: null,
       emitter,
-      fetchClaim: mockGetClaim,
       fetchClaimResolveState: mockGetClaimState,
       fetchBlocksAndCheckFinality: mockGetBlockFinality,
     };
   });
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
   describe("challengeAndResolveClaim", () => {
     it("should return null if no claim is made", async () => {
-      mockGetClaim = jest.fn().mockReturnValue(null);
-      mockDeps.fetchClaim = mockGetClaim;
+      mockDeps.claim = null;
       const result = await challengeAndResolveClaim(mockDeps);
 
       expect(result).toBeNull();
@@ -77,27 +77,20 @@ describe("validator", () => {
         },
       };
       veaInbox.snapshots = jest.fn().mockReturnValue("0x321");
-      mockGetClaim = jest.fn().mockReturnValue(mockClaim);
-
       mockDeps.transactionHandler = mockTransactionHandler;
-      mockDeps.fetchClaim = mockGetClaim;
       const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.challengeTxn).toBe(challengeTxn);
       expect(mockTransactionHandler.challengeClaim).toHaveBeenCalled();
     });
 
     it("should not challenge if claim is valid", async () => {
-      mockClaim.challenger = mockClaim.claimer;
-      mockGetClaim = jest.fn().mockReturnValue(mockClaim);
       veaInbox.snapshots = jest.fn().mockReturnValue(mockClaim.stateRoot);
-      mockDeps.fetchClaim = mockGetClaim;
       const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler).toBeNull();
     });
 
     it("send snapshot if snapshot not sent", async () => {
       mockClaim.challenger = mockClaim.claimer;
-      mockGetClaim = jest.fn().mockReturnValue(mockClaim);
       mockGetClaimState = jest
         .fn()
         .mockReturnValue({ sendSnapshot: { status: false, txnHash: "" }, execution: { status: 0, txnHash: "" } });
@@ -113,7 +106,6 @@ describe("validator", () => {
       };
       mockDeps.transactionHandler = mockTransactionHandler;
       mockDeps.fetchClaimResolveState = mockGetClaimState;
-      mockDeps.fetchClaim = mockGetClaim;
       const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.sendSnapshotTxn).toEqual("0x123");
       expect(mockTransactionHandler.sendSnapshot).toHaveBeenCalled();
@@ -122,7 +114,6 @@ describe("validator", () => {
 
     it("resolve challenged claim if snapshot sent but not executed", async () => {
       mockClaim.challenger = mockClaim.claimer;
-      mockGetClaim = jest.fn().mockReturnValue(mockClaim);
       mockGetClaimState = jest
         .fn()
         .mockReturnValue({ sendSnapshot: { status: true, txnHash: "0x123" }, execution: { status: 1, txnHash: "" } });
@@ -138,7 +129,6 @@ describe("validator", () => {
       };
       mockDeps.transactionHandler = mockTransactionHandler;
       mockDeps.fetchClaimResolveState = mockGetClaimState;
-      mockDeps.fetchClaim = mockGetClaim;
       const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.executeSnapshotTxn).toEqual("0x123");
       expect(mockTransactionHandler.resolveChallengedClaim).toHaveBeenCalled();
@@ -147,7 +137,6 @@ describe("validator", () => {
 
     it("withdraw challenge deposit if snapshot sent and executed", async () => {
       mockClaim.challenger = mockClaim.claimer;
-      mockGetClaim = jest.fn().mockReturnValue(mockClaim);
       mockGetClaimState = jest.fn().mockReturnValue({
         sendSnapshot: { status: true, txnHash: "0x123" },
         execution: { status: 2, txnHash: "0x321" },
@@ -164,7 +153,6 @@ describe("validator", () => {
       };
       mockDeps.transactionHandler = mockTransactionHandler;
       mockDeps.fetchClaimResolveState = mockGetClaimState;
-      mockDeps.fetchClaim = mockGetClaim;
       const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.withdrawChallengeDepositTxn).toEqual("0x1234");
       expect(mockTransactionHandler.withdrawChallengeDeposit).toHaveBeenCalled();

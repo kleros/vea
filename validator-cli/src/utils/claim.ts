@@ -3,6 +3,29 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
 import { ClaimNotFoundError } from "./errors";
 import { getMessageStatus } from "./arbMsgExecutor";
+import {
+  getClaimForEpoch,
+  getChallengerForClaim,
+  getVerificationForClaim,
+  getSnapshotSentForEpoch,
+} from "./graphQueries";
+
+enum ClaimHonestState {
+  NONE = 0,
+  CLAIMER = 1,
+  CHALLENGER = 2,
+}
+
+interface ClaimParams {
+  veaOutbox: any;
+  veaOutboxProvider: JsonRpcProvider;
+  epoch: number;
+  fromBlock: number;
+  toBlock: number | string;
+  fetchClaimForEpoch?: typeof getClaimForEpoch;
+  fetchVerificationForClaim?: typeof getVerificationForClaim;
+  fetchChallengerForClaim?: typeof getChallengerForClaim;
+}
 
 /**
  *
@@ -10,19 +33,16 @@ import { getMessageStatus } from "./arbMsgExecutor";
  * @param epoch epoch number of the claim to be fetched
  * @returns claim type of ClaimStruct
  */
-
-enum ClaimHonestState {
-  NONE = 0,
-  CLAIMER = 1,
-  CHALLENGER = 2,
-}
-const getClaim = async (
-  veaOutbox: any,
-  veaOutboxProvider: JsonRpcProvider,
-  epoch: number,
-  fromBlock: number,
-  toBlock: number | string
-): Promise<ClaimStruct | null> => {
+const getClaim = async ({
+  veaOutbox,
+  veaOutboxProvider,
+  epoch,
+  fromBlock,
+  toBlock,
+  fetchChallengerForClaim = getChallengerForClaim,
+  fetchClaimForEpoch = getClaimForEpoch,
+  fetchVerificationForClaim = getVerificationForClaim,
+}: ClaimParams): Promise<ClaimStruct | null> => {
   let claim: ClaimStruct = {
     stateRoot: ethers.ZeroHash,
     claimer: ethers.ZeroAddress,
@@ -35,26 +55,38 @@ const getClaim = async (
   const claimHash = await veaOutbox.claimHashes(epoch);
   if (claimHash === ethers.ZeroHash) return null;
 
-  const [claimLogs, challengeLogs, verificationLogs] = await Promise.all([
-    veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null), fromBlock, toBlock),
-    veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null), fromBlock, toBlock),
-    veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch), fromBlock, toBlock),
-  ]);
-
-  if (claimLogs.length === 0) throw new ClaimNotFoundError(epoch);
-
-  claim.stateRoot = claimLogs[0].data;
-  claim.claimer = `0x${claimLogs[0].topics[1].slice(26)}`;
-  claim.timestampClaimed = (await veaOutboxProvider.getBlock(claimLogs[0].blockNumber)).timestamp;
-
-  if (verificationLogs.length > 0) {
-    claim.timestampVerification = (await veaOutboxProvider.getBlock(verificationLogs[0].blockNumber)).timestamp;
-    claim.blocknumberVerification = verificationLogs[0].blockNumber;
+  try {
+    const [claimLogs, challengeLogs, verificationLogs] = await Promise.all([
+      veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null), fromBlock, toBlock),
+      veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null), fromBlock, toBlock),
+      veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch), fromBlock, toBlock),
+    ]);
+    claim.stateRoot = claimLogs[0].data;
+    claim.claimer = `0x${claimLogs[0].topics[1].slice(26)}`;
+    claim.timestampClaimed = (await veaOutboxProvider.getBlock(claimLogs[0].blockNumber)).timestamp;
+    if (verificationLogs.length > 0) {
+      claim.blocknumberVerification = verificationLogs[0].blockNumber;
+      claim.timestampVerification = (await veaOutboxProvider.getBlock(verificationLogs[0].blockNumber)).timestamp;
+    }
+    if (challengeLogs.length > 0) claim.challenger = "0x" + challengeLogs[0].topics[2].substring(26);
+  } catch {
+    const claimFromGraph = await fetchClaimForEpoch(epoch, await veaOutbox.getAddress());
+    if (!claimFromGraph) throw new ClaimNotFoundError(epoch);
+    const [verificationFromGraph, challengeFromGraph] = await Promise.all([
+      fetchVerificationForClaim(claimFromGraph.id),
+      fetchChallengerForClaim(claimFromGraph.id),
+    ]);
+    claim.stateRoot = claimFromGraph.stateroot;
+    claim.claimer = claimFromGraph.bridger;
+    claim.timestampClaimed = claimFromGraph.timestamp;
+    if (verificationFromGraph?.startTimestamp) {
+      claim.timestampVerification = verificationFromGraph.startTimestamp;
+      const startVerificationTxHash = verificationFromGraph.startTxHash;
+      const txReceipt = await veaOutboxProvider.getTransactionReceipt(startVerificationTxHash);
+      claim.blocknumberVerification = txReceipt.blockNumber;
+    }
+    if (challengeFromGraph) claim.challenger = challengeFromGraph.challenger;
   }
-  if (challengeLogs.length > 0) {
-    claim.challenger = "0x" + challengeLogs[0].topics[2].substring(26);
-  }
-
   if (hashClaim(claim) == claimHash) {
     return claim;
   }
@@ -80,6 +112,17 @@ type ClaimResolveState = {
   };
 };
 
+/**
+ * Fetches the claim resolve state.
+ * @param veaInbox VeaInbox contract instance
+ * @param veaInboxProvider VeaInbox provider
+ * @param veaOutboxProvider VeaOutbox provider
+ * @param epoch epoch number of the claim to be fetched
+ * @param fromBlock from block number
+ * @param toBlock to block number
+ * @param fetchMessageStatus function to fetch message status
+ * @returns ClaimResolveState
+ **/
 const getClaimResolveState = async (
   veaInbox: any,
   veaInboxProvider: JsonRpcProvider,
@@ -89,19 +132,36 @@ const getClaimResolveState = async (
   toBlock: number | string,
   fetchMessageStatus: typeof getMessageStatus = getMessageStatus
 ): Promise<ClaimResolveState> => {
-  const sentSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSent(epoch, null), fromBlock, toBlock);
-
-  const claimResolveState: ClaimResolveState = {
-    sendSnapshot: { status: false, txHash: "" },
-    execution: { status: 0, txHash: "" },
+  let claimResolveState: ClaimResolveState = {
+    sendSnapshot: {
+      status: false,
+      txHash: "",
+    },
+    execution: {
+      status: 0,
+      txHash: "",
+    },
   };
 
-  if (sentSnapshotLogs.length === 0) return claimResolveState;
+  try {
+    const sentSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSent(epoch, null), fromBlock, toBlock);
+    if (sentSnapshotLogs.length > 0) {
+      claimResolveState.sendSnapshot.status = true;
+      claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
+    } else {
+      return claimResolveState;
+    }
+  } catch {
+    const sentSnapshotFromGraph = await getSnapshotSentForEpoch(epoch, await veaInbox.getAddress());
+    if (sentSnapshotFromGraph) {
+      claimResolveState.sendSnapshot.status = true;
+      claimResolveState.sendSnapshot.txHash = sentSnapshotFromGraph.txHash;
+    } else {
+      return claimResolveState;
+    }
+  }
 
-  claimResolveState.sendSnapshot.status = true;
-  claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
-
-  const status = await fetchMessageStatus(sentSnapshotLogs[0].transactionHash, veaInboxProvider, veaOutboxProvider);
+  const status = await fetchMessageStatus(claimResolveState.sendSnapshot.txHash, veaInboxProvider, veaOutboxProvider);
   claimResolveState.execution.status = status;
 
   return claimResolveState;
@@ -130,4 +190,4 @@ const hashClaim = (claim: ClaimStruct) => {
   );
 };
 
-export { getClaim, hashClaim, getClaimResolveState };
+export { getClaim, hashClaim, getClaimResolveState, ClaimHonestState };

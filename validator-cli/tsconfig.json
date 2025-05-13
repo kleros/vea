@@ -1,5 +1,14 @@
 {
   "include": [
     "src"
-  ]
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist"
+  }
 }

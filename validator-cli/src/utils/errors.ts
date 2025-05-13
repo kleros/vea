@@ -1,3 +1,5 @@
+import { BotPaths } from "./botConfig";
+import { Network } from "../consts/bridgeRoutes";
 class ClaimNotFoundError extends Error {
   constructor(epoch: number) {
     super();
@@ -14,12 +16,52 @@ class ClaimNotSetError extends Error {
   }
 }
 
-class TransactionHandlerNotDefinedError extends Error {
-  constructor() {
+class NotDefinedError extends Error {
+  constructor(param: string) {
     super();
     this.name = "TransactionHandlerNotDefinedError";
-    this.message = "TransactionHandler is not defined";
+    this.message = `${param} is not defined`;
   }
 }
 
-export { ClaimNotFoundError, ClaimNotSetError, TransactionHandlerNotDefinedError };
+class InvalidBotPathError extends Error {
+  constructor() {
+    super();
+    this.name = "InvalidBotPath";
+    this.message = `Invalid path provided, Use one of: ${Object.keys(BotPaths).join("), ")}`;
+  }
+}
+
+class DevnetOwnerNotSetError extends Error {
+  constructor() {
+    super();
+    this.name = "DevnetOwnerNotSetError";
+    this.message = "Devnet owner address not set";
+  }
+}
+
+class InvalidNetworkError extends Error {
+  constructor(network: string) {
+    super();
+    this.name = "InvalidNetworkError";
+    this.message = `Invalid network: ${network}, use from: ${Object.values(Network).join(", ")}`;
+  }
+}
+
+class MissingEnvError extends Error {
+  constructor(envVar: string) {
+    super();
+    this.name = "MissingEnvError";
+    this.message = `Missing environment variable: ${envVar}`;
+  }
+}
+
+export {
+  ClaimNotFoundError,
+  ClaimNotSetError,
+  NotDefinedError,
+  InvalidBotPathError,
+  DevnetOwnerNotSetError,
+  InvalidNetworkError,
+  MissingEnvError,
+};
