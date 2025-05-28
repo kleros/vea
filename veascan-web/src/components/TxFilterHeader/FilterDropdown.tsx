@@ -16,9 +16,16 @@ interface IFilterDropdown {
   itemData: Item[];
   value: number;
   callback: (arg0: number) => void;
+  disabled?: boolean;
 }
 
 const FilterItem = styled(DropdownSelect)`
+  ${(props) =>
+    props.disabled &&
+    css`
+      pointer-events: none;
+      opacity: 0.5;
+    `}
   .item-icon {
     margin-right: 8px;
     width: 16px;
@@ -58,6 +65,7 @@ export const FilterDropdown: React.FC<IFilterDropdown> = ({
   itemData,
   value,
   callback,
+  disabled,
 }) => {
   return (
     <FilterItem
@@ -66,6 +74,7 @@ export const FilterDropdown: React.FC<IFilterDropdown> = ({
       simpleButton={isSimpleButton}
       alignRight={isAlignRight}
       callback={callback}
+      disabled={disabled}
     />
   );
 };

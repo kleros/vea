@@ -11,6 +11,7 @@ import "hardhat-deploy-ethers";
 import "hardhat-watcher";
 import "hardhat-contract-sizer";
 import "hardhat-tracer";
+import "@nomicfoundation/hardhat-chai-matchers";
 
 dotenv.config();
 
