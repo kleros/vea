@@ -25,6 +25,7 @@ export class ArbToEthDevnetTransactionHandler extends ArbToEthTransactionHandler
     verifySnapshotTxn: null,
     challengeTxn: null,
     withdrawChallengeDepositTxn: null,
+    saveSnapshotTxn: null,
     sendSnapshotTxn: null,
     executeSnapshotTxn: null,
     devnetAdvanceStateTxn: null,

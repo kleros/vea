@@ -49,26 +49,23 @@ const setEpochRange = ({
   return veaEpochOutboxCheckClaimsRangeArray;
 };
 
-/**
- * Checks if a new epoch has started.
- *
- * @param currentVerifiableEpoch - The current verifiable epoch number
- * @param epochPeriod - The epoch period in seconds
- * @param now - The current time in milliseconds (optional, defaults to Date.now())
- *
- * @returns The updated epoch number
- *
- * @example
- * currentEpoch = checkForNewEpoch(currentEpoch, 7200);
- */
 const getLatestChallengeableEpoch = (epochPeriod: number, now: number = Date.now()): number => {
   return Math.floor(now / 1000 / epochPeriod) - 2;
 };
 
+/**
+ * Get the block number corresponding to a given epoch.
+ *
+ * @param epoch - The epoch number
+ * @param epochPeriod - The epoch period in seconds
+ * @param provider - The JSON-RPC provider
+ *
+ * @returns The block number corresponding to the given epoch
+ */
 const getBlockFromEpoch = async (epoch: number, epochPeriod: number, provider: JsonRpcProvider): Promise<number> => {
   const epochTimestamp = epoch * epochPeriod;
   const latestBlock = await provider.getBlock("latest");
-  const baseBlock = await provider.getBlock(latestBlock.number - 1000);
+  const baseBlock = await provider.getBlock(latestBlock.number - 500);
   const secPerBlock = (latestBlock.timestamp - baseBlock.timestamp) / (latestBlock.number - baseBlock.number);
   const blockFallBack = Math.floor((latestBlock.timestamp - epochTimestamp) / secPerBlock);
   return latestBlock.number - blockFallBack;

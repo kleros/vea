@@ -43,6 +43,7 @@ export type Transactions = {
   verifySnapshotTxn: Transaction | null;
   challengeTxn: Transaction | null;
   withdrawChallengeDepositTxn: Transaction | null;
+  saveSnapshotTxn: Transaction | null;
   sendSnapshotTxn: Transaction | null;
   executeSnapshotTxn: Transaction | null;
   devnetAdvanceStateTxn?: Transaction | null;
@@ -82,6 +83,7 @@ export class ArbToEthTransactionHandler {
     verifySnapshotTxn: null,
     challengeTxn: null,
     withdrawChallengeDepositTxn: null,
+    saveSnapshotTxn: null,
     sendSnapshotTxn: null,
     executeSnapshotTxn: null,
   };
@@ -257,7 +259,7 @@ export class ArbToEthTransactionHandler {
   }
 
   /**
-   * Withdraw the claim deposit.
+   * Withdraw the claim deposit from VeaOutbox(ETH).
    *
    */
   public async withdrawClaimDeposit() {
@@ -335,7 +337,7 @@ export class ArbToEthTransactionHandler {
   }
 
   /**
-   * Withdraw the challenge deposit.
+   * Withdraw the challenge deposit from VeaOutbox(ETH).
    *
    */
   public async withdrawChallengeDeposit() {
@@ -356,6 +358,28 @@ export class ArbToEthTransactionHandler {
     this.emitter.emit(BotEvents.TXN_MADE, withdrawDepositTxn.hash, this.epoch, "Withdraw");
     this.transactions.withdrawChallengeDepositTxn = {
       hash: withdrawDepositTxn.hash,
+      broadcastedTimestamp: currentTime,
+    };
+  }
+
+  /**
+   * Save a snapshot on VeaInbox(Arb).
+   */
+  public async saveSnapshot() {
+    this.emitter.emit(BotEvents.SAVING_SNAPSHOT, this.epoch);
+    const currentTime = Date.now();
+    const transactionStatus = await this.checkTransactionStatus(
+      this.transactions.saveSnapshotTxn,
+      ContractType.INBOX,
+      currentTime
+    );
+    if (transactionStatus != TransactionStatus.NOT_MADE && transactionStatus != TransactionStatus.EXPIRED) {
+      return;
+    }
+    const saveSnapshotTxn = await this.veaInbox.saveSnapshot();
+    this.emitter.emit(BotEvents.TXN_MADE, saveSnapshotTxn.hash, this.epoch, "Save Snapshot");
+    this.transactions.saveSnapshotTxn = {
+      hash: saveSnapshotTxn.hash,
       broadcastedTimestamp: currentTime,
     };
   }

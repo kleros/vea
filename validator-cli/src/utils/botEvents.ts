@@ -13,6 +13,10 @@ export enum BotEvents {
   NO_SNAPSHOT = "no_snapshot",
   CLAIM_EPOCH_PASSED = "claim_epoch_passed",
 
+  // Snapshot state
+  SAVING_SNAPSHOT = "saving_snapshot",
+  SNAPSHOT_WAITING = "snapshot_saving",
+
   // Claim state
   CLAIMING = "claiming",
   STARTING_VERIFICATION = "starting_verification",

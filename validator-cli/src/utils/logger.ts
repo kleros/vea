@@ -77,6 +77,14 @@ export const configurableInitialize = (emitter: EventEmitter) => {
     console.log(`Transaction(${transaction}) is expired`);
   });
 
+  // Snapshot state logs
+  emitter.on(BotEvents.SAVING_SNAPSHOT, (epoch: number) => {
+    console.log(`Saving snapshot for epoch ${epoch}`);
+  });
+  emitter.on(BotEvents.SNAPSHOT_WAITING, (time: number) => {
+    console.log(`Waiting for saving snapshot, time left: ${time}`);
+  });
+
   // Claim state logs
   // claim()
   emitter.on(BotEvents.CLAIMING, (epoch: number) => {

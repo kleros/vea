@@ -78,6 +78,11 @@ type VerificationData = {
   startTxHash: string | null;
 };
 
+/**
+ * Fetches the verification data for a given claim (used for claimer - happy path)
+ * @param claimId
+ * @returns VerificationData
+ */
 const getVerificationForClaim = async (claimId: string): Promise<VerificationData | undefined> => {
   try {
     const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
@@ -97,6 +102,11 @@ const getVerificationForClaim = async (claimId: string): Promise<VerificationDat
   }
 };
 
+/**
+ * Fetches the challenger data for a given claim (used for validator - unhappy path)
+ * @param claimId
+ * @returns challenger address
+ * */
 const getChallengerForClaim = async (claimId: string): Promise<{ challenger: string } | undefined> => {
   try {
     const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
@@ -121,6 +131,11 @@ type SenSnapshotResponse = {
   }[];
 };
 
+/**
+ * Fetches the snapshot data for a given epoch (used for validator - happy path)
+ * @param epoch
+ * @returns snapshot data
+ */
 const getSnapshotSentForEpoch = async (epoch: number, veaInbox: any): Promise<{ txHash: string }> => {
   try {
     const subgraph = process.env.VEAINBOX_SUBGRAPH;
@@ -143,11 +158,40 @@ const getSnapshotSentForEpoch = async (epoch: number, veaInbox: any): Promise<{ 
   }
 };
 
+type SnapshotSavedResponse = {
+  snapshots: {
+    messages: {
+      id: string;
+    }[];
+  }[];
+};
+
+/**
+ * Fetches the last message saved for a given inbox (used for validator - happy path)
+ * @param veaInbox
+ * @returns message id
+ */
+const getLastMessageSaved = async (veaInbox: string): Promise<string> => {
+  const subgraph = process.env.VEAINBOX_SUBGRAPH;
+  const result: SnapshotSavedResponse = await request(
+    `${subgraph}`,
+    `{
+      snapshots(first:2, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox}"}) {
+        messages(first: 1,orderBy:timestamp,orderDirection:desc){
+          id 
+        }
+      }
+    }`
+  );
+  return result.snapshots[1].messages[0].id;
+};
+
 export {
   getClaimForEpoch,
   getLastClaimedEpoch,
   getVerificationForClaim,
   getChallengerForClaim,
   getSnapshotSentForEpoch,
+  getLastMessageSaved,
   ClaimData,
 };

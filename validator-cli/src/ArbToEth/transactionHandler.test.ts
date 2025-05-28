@@ -10,6 +10,7 @@ import { MockEmitter, defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimNotSetError } from "../utils/errors";
 import { getBridgeConfig, Network } from "../consts/bridgeRoutes";
+import { saveSnapshot } from "src/utils/snapshot";
 
 describe("ArbToEthTransactionHandler", () => {
   const chainId = 11155111;
@@ -39,6 +40,7 @@ describe("ArbToEthTransactionHandler", () => {
     };
     veaInbox = {
       sendSnapshot: jest.fn(),
+      saveSnapshot: jest.fn(),
     };
     claim = {
       stateRoot: "0x1234",
@@ -142,6 +144,35 @@ describe("ArbToEthTransactionHandler", () => {
         mockBroadcastedTimestamp
       );
       expect(status).toEqual(0);
+    });
+  });
+
+  describe("saveSnapshot", () => {
+    let transactionHandler: ArbToEthTransactionHandler;
+    beforeEach(() => {
+      transactionHandler = new ArbToEthTransactionHandler(transactionHandlerParams);
+    });
+
+    it("should save snapshot and set pending saveSnapshotTxn", async () => {
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
+      veaInbox.saveSnapshot.mockResolvedValue({ hash: "0x1234" });
+      await transactionHandler.saveSnapshot();
+      expect(veaInbox.saveSnapshot).toHaveBeenCalled();
+      expect(transactionHandler.transactions.saveSnapshotTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: expect.any(Number),
+      });
+    });
+
+    it("should not save snapshot if a saveSnapshot transaction is pending", async () => {
+      jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
+      transactionHandler.transactions.saveSnapshotTxn = { hash: "0x1234", broadcastedTimestamp: 1000 };
+      await transactionHandler.saveSnapshot();
+      expect(veaInbox.saveSnapshot).not.toHaveBeenCalled();
+      expect(transactionHandler.transactions.saveSnapshotTxn).toEqual({
+        hash: "0x1234",
+        broadcastedTimestamp: 1000,
+      });
     });
   });
 
