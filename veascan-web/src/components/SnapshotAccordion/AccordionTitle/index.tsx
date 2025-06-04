@@ -7,6 +7,7 @@ import Timestamp from "./Timestamp";
 import RightArrowLogo from "tsx:svgs/icons/right-arrow.svg";
 import { getBridge, getChain } from "consts/bridges";
 import { IStatus } from "utils/mapDataForAccordion";
+import { useFiltersContext } from "~src/contexts/FiltersContext";
 
 const StyledSnapshotAccordionTitle = styled.div`
   display: flex;
@@ -58,7 +59,7 @@ export interface SnapshotInboxDataType {
   numberMessages: string;
   resolving: boolean;
   stateRoot: string;
-  taken: boolean;
+  saved: boolean;
   timestamp: string;
   txHash: string;
 }
@@ -76,14 +77,15 @@ const SnapshotAccordionTitle: React.FC<IAccordionTitle> = ({
   timestamp,
   status,
 }) => {
+  const { network } = useFiltersContext();
   const bridgeInfo = getBridge(bridgeId);
   const titleParams = {
     epoch: epoch,
     timestamp: timestamp,
     fromChain: bridgeInfo.from,
-    fromAddress: bridgeInfo.inboxAddress,
+    fromAddress: bridgeInfo.contracts[network].veaInbox,
     toChain: bridgeInfo.to,
-    toAddress: bridgeInfo.outboxAddress,
+    toAddress: bridgeInfo.contracts[network].veaOutbox,
   };
   const fromChainObject = getChain(titleParams.fromChain);
   const toChainObject = getChain(titleParams.toChain);
@@ -128,7 +130,7 @@ const parseStatus = ({
   if (challenged) return "Challenged";
   if (verified) return "Verified";
   if (claimed) return "Claimed";
-  return "Taken";
+  return "Saved";
 };
 
 export default SnapshotAccordionTitle;
