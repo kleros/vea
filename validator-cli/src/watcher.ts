@@ -53,7 +53,7 @@ async function processNetwork(
   emitter: typeof defaultEmitter
 ): Promise<void> {
   const { chainId, networks } = networkConfig;
-  const { routeConfig, inboxRPC, outboxRPC } = getBridgeConfig(chainId);
+  const { routeConfig, inboxRPC, outboxRPC, routerRPC } = getBridgeConfig(chainId);
   for (const network of networks) {
     emitter.emit(BotEvents.WATCHING, chainId, network);
     const networkKey = `${chainId}_${network}`;
@@ -84,6 +84,7 @@ async function processNetwork(
       routeConfig,
       inboxRPC,
       outboxRPC,
+      routerRPC,
       toWatch,
       transactionHandlers,
       emitter,
@@ -108,6 +109,7 @@ interface ProcessEpochParams {
   routeConfig: any;
   inboxRPC: string;
   outboxRPC: string;
+  routerRPC: string | undefined;
   toWatch: { [key: string]: { count: number; epochs: number[] } };
   transactionHandlers: { [epoch: number]: any };
   emitter: typeof defaultEmitter;
@@ -121,6 +123,7 @@ async function processEpochsForNetwork({
   routeConfig,
   inboxRPC,
   outboxRPC,
+  routerRPC,
   toWatch,
   transactionHandlers,
   emitter,
@@ -130,6 +133,7 @@ async function processEpochsForNetwork({
   const veaOutbox = getVeaOutbox(routeConfig[network].veaOutbox.address, privKey, outboxRPC, chainId, network);
   const veaInboxProvider = new JsonRpcProvider(inboxRPC);
   const veaOutboxProvider = new JsonRpcProvider(outboxRPC);
+  const veaRouterProvider = routerRPC ? new JsonRpcProvider(routerRPC) : undefined;
   let i = toWatch[networkKey].epochs.length - 1;
   const latestEpoch = toWatch[networkKey].epochs[i];
   const currentEpoch = Math.floor(Date.now() / (1000 * routeConfig[network].epochPeriod));
@@ -145,6 +149,7 @@ async function processEpochsForNetwork({
         veaOutbox,
         veaInboxProvider,
         veaOutboxProvider,
+        veaRouterProvider,
         emitter,
       });
     const { updatedTransactionHandler, latestCount } = await saveSnapshot({
@@ -174,7 +179,6 @@ async function processEpochsForNetwork({
     const claim = await getClaim({ chainId, veaOutbox, veaOutboxProvider, epoch, fromBlock: epochBlock, toBlock });
 
     let updatedTransactions;
-
     if (path > BotPaths.CLAIMER && claim != null) {
       const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {
         chainId,
@@ -184,6 +188,7 @@ async function processEpochsForNetwork({
         veaInbox,
         veaInboxProvider,
         veaOutboxProvider,
+        veaRouterProvider,
         veaOutbox,
         transactionHandler: transactionHandlers[epoch],
         emitter,

@@ -3,6 +3,7 @@ import {
   VeaOutboxArbToGnosis,
   VeaOutboxArbToGnosisDevnet,
 } from "@kleros/vea-contracts/typechain-types";
+import { JsonRpcProvider } from "@ethersproject/providers";
 import {
   BaseTransactionHandler,
   BaseTransactionHandlerConstructor,
@@ -97,10 +98,9 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
     if (!this.claim) throw new ClaimNotSetError();
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn!, ContractType.OUTBOX, now);
+    const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn!, ContractType.ROUTER, now);
     if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) return;
-
-    const msgExecuteTrnx = await messageExecutor(sendSnapshotTxn, this.veaInboxProvider, this.veaOutboxProvider);
+    const msgExecuteTrnx = await messageExecutor(sendSnapshotTxn, this.veaInboxProvider, this.veaRouterProvider);
     this.emitter.emit(BotEvents.TXN_MADE, msgExecuteTrnx.hash, this.epoch, "Execute Snapshot");
     this.transactions.executeSnapshotTxn = {
       hash: msgExecuteTrnx.hash,

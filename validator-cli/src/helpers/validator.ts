@@ -20,6 +20,7 @@ export interface ChallengeAndResolveClaimParams {
   veaInbox: any;
   veaInboxProvider: JsonRpcProvider;
   veaOutboxProvider: JsonRpcProvider;
+  veaRouterProvider?: JsonRpcProvider;
   veaOutbox: any;
   transactionHandler: ITransactionHandler | null;
   emitter?: typeof defaultEmitter;
@@ -40,6 +41,7 @@ export async function challengeAndResolveClaim({
   veaOutbox,
   transactionHandler,
   emitter = defaultEmitter,
+  veaRouterProvider,
   fetchClaimResolveState = getClaimResolveState,
   fetchBlocksAndCheckFinality = getBlocksAndCheckFinality,
   fetchTransactionHandler = getTransactionHandler,
@@ -48,10 +50,9 @@ export async function challengeAndResolveClaim({
     emitter.emit(BotEvents.NO_CLAIM, epoch);
     return null;
   }
-  const ethRpc = process.env.RPC_ETH;
-  const ethJsonProvider = new JsonRpcProvider(ethRpc);
+  const queryRpc = veaRouterProvider ? veaRouterProvider : veaOutboxProvider;
   const [arbitrumBlock, ethFinalizedBlock, finalityIssueFlagEth] = await fetchBlocksAndCheckFinality(
-    ethJsonProvider,
+    queryRpc,
     veaInboxProvider,
     epoch,
     epochPeriod
@@ -76,6 +77,7 @@ export async function challengeAndResolveClaim({
       veaOutbox,
       veaInboxProvider,
       veaOutboxProvider,
+      veaRouterProvider,
       emitter: defaultEmitter,
       claim,
     });
@@ -87,7 +89,7 @@ export async function challengeAndResolveClaim({
   if (claimSnapshot != claim.stateRoot && claim.challenger == ethers.ZeroAddress) {
     await transactionHandler.challengeClaim();
   } else {
-    if (claimSnapshot == claim.stateRoot) {
+    if (claimSnapshot == claim.stateRoot && claim.challenger == ethers.ZeroAddress) {
       emitter.emit(BotEvents.VALID_CLAIM, epoch);
       return null;
     } else {
@@ -95,12 +97,11 @@ export async function challengeAndResolveClaim({
         chainId,
         veaInbox,
         veaInboxProvider,
-        veaOutboxProvider,
+        queryRpc,
         epoch,
         blockNumberOutboxLowerBound,
         ethBlockTag
       );
-
       if (!claimResolveState.sendSnapshot.status) {
         await transactionHandler.sendSnapshot();
       } else if (claimResolveState.execution.status == 1) {

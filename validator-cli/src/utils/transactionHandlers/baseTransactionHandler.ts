@@ -15,6 +15,7 @@ export interface ITransactionHandler {
   veaOutbox: any;
   veaInboxProvider: JsonRpcProvider;
   veaOutboxProvider: JsonRpcProvider;
+  veaRouterProvider?: JsonRpcProvider;
   emitter: typeof defaultEmitter;
   claim: ClaimStruct | null;
   transactions: Transactions;
@@ -40,6 +41,7 @@ export interface ITransactionHandler {
 export enum ContractType {
   INBOX = "inbox",
   OUTBOX = "outbox",
+  ROUTER = "router",
 }
 
 export enum TransactionStatus {
@@ -79,6 +81,7 @@ export interface BaseTransactionHandlerConstructor {
   veaOutbox: any;
   veaInboxProvider: JsonRpcProvider;
   veaOutboxProvider: JsonRpcProvider;
+  veaRouterProvider?: JsonRpcProvider;
   emitter: typeof defaultEmitter;
   claim: ClaimStruct | null;
 }
@@ -107,6 +110,7 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
   public veaOutbox: Outbox;
   public veaInboxProvider: JsonRpcProvider;
   public veaOutboxProvider: JsonRpcProvider;
+  public veaRouterProvider?: JsonRpcProvider;
   public emitter: typeof defaultEmitter;
   public claim: ClaimStruct | null;
   public transactions: Transactions = {
@@ -131,6 +135,7 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     veaOutboxProvider,
     emitter,
     claim,
+    veaRouterProvider,
   }: BaseTransactionHandlerConstructor) {
     this.chainId = chainId;
     this.network = network;
@@ -139,6 +144,7 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     this.veaOutbox = veaOutbox;
     this.veaInboxProvider = veaInboxProvider;
     this.veaOutboxProvider = veaOutboxProvider;
+    this.veaRouterProvider = veaRouterProvider;
     this.emitter = emitter;
     this.claim = claim;
   }
@@ -148,7 +154,18 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     contract: ContractType,
     currentTime: number
   ): Promise<TransactionStatus> {
-    const provider = contract === ContractType.INBOX ? this.veaInboxProvider : this.veaOutboxProvider;
+    let provider: JsonRpcProvider;
+    switch (contract) {
+      case ContractType.INBOX:
+        provider = this.veaInboxProvider;
+        break;
+      case ContractType.OUTBOX:
+        provider = this.veaOutboxProvider;
+        break;
+      case ContractType.ROUTER:
+        provider = this.veaRouterProvider;
+        break;
+    }
 
     if (!trnx) return TransactionStatus.NOT_MADE;
 
