@@ -10,10 +10,14 @@ import {
   RouterArbToGnosis__factory,
   IAMB__factory,
 } from "@kleros/vea-contracts/typechain-types";
-import { challengeAndResolveClaim as challengeAndResolveClaimArbToEth } from "../ArbToEth/validator";
-import { checkAndClaim } from "../ArbToEth/claimer";
-import { ArbToEthTransactionHandler } from "../ArbToEth/transactionHandler";
-import { ArbToEthDevnetTransactionHandler } from "../ArbToEth/transactionHandlerDevnet";
+import { challengeAndResolveClaim as challengeAndResolveClaimArbToEth } from "../helpers/validator";
+import { checkAndClaim } from "../helpers/claimer";
+import {
+  ArbToEthTransactionHandler,
+  ArbToEthDevnetTransactionHandler,
+  ArbToGnosisDevnetTransactionHandler,
+  ArbToGnosisTransactionHandler,
+} from "../utils/transactionHandlers";
 import { NotDefinedError, InvalidNetworkError } from "./errors";
 import { Network } from "../consts/bridgeRoutes";
 
@@ -81,36 +85,20 @@ function getAMB(ambAddress: string, privateKey: string, rpcUrl: string) {
   return IAMB__factory.connect(ambAddress, getWallet(privateKey, rpcUrl));
 }
 
-const getClaimValidator = (chainId: number, network: Network) => {
-  switch (chainId) {
-    case 11155111:
-      return challengeAndResolveClaimArbToEth;
-    default:
-      throw new NotDefinedError("Claim Validator");
-  }
-};
-const getClaimer = (chainId: number, network: Network): typeof checkAndClaim => {
-  switch (chainId) {
-    case 11155111:
-      switch (network) {
-        case Network.DEVNET:
-
-        case Network.TESTNET:
-          return checkAndClaim;
-
-        default:
-          throw new InvalidNetworkError(`${network}(claimer)`);
-      }
-    default:
-      throw new NotDefinedError("Claimer");
-  }
-};
 const getTransactionHandler = (chainId: number, network: Network) => {
   if (chainId === 11155111) {
     if (network === Network.DEVNET) {
       return ArbToEthDevnetTransactionHandler;
     } else if (network === Network.TESTNET) {
       return ArbToEthTransactionHandler;
+    } else {
+      throw new InvalidNetworkError(`${network}(transactionHandler)`);
+    }
+  } else if (chainId === 10200) {
+    if (network === Network.DEVNET) {
+      return ArbToGnosisDevnetTransactionHandler;
+    } else if (network === Network.TESTNET) {
+      return ArbToGnosisTransactionHandler;
     } else {
       throw new InvalidNetworkError(`${network}(transactionHandler)`);
     }
@@ -126,8 +114,6 @@ export {
   getVeaOutboxArbToEthDevnet,
   getWETH,
   getAMB,
-  getClaimValidator,
-  getClaimer,
   getTransactionHandler,
   getVeaRouter,
 };

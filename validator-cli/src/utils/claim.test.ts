@@ -258,6 +258,7 @@ describe("snapshotClaim", () => {
     it("should return pending state for both", async () => {
       veaInbox.queryFilter.mockResolvedValueOnce([]);
       const claimResolveState = await getClaimResolveState(
+        11155111,
         veaInbox,
         veaInboxProvider,
         veaOutboxProvider,
@@ -274,6 +275,7 @@ describe("snapshotClaim", () => {
       veaInbox.queryFilter.mockResolvedValueOnce([{ transactionHash: "0x1234" }]);
       const mockGetMessageStatus = jest.fn().mockResolvedValueOnce(0);
       const claimResolveState = await getClaimResolveState(
+        11155111,
         veaInbox,
         veaInboxProvider,
         veaOutboxProvider,
