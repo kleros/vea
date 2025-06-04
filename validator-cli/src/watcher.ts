@@ -2,7 +2,6 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { getBridgeConfig, Network } from "./consts/bridgeRoutes";
 import { getTransactionHandler, getVeaInbox, getVeaOutbox } from "./utils/ethers";
 import { getBlockFromEpoch, setEpochRange } from "./utils/epochHandler";
-import { getClaimValidator, getClaimer } from "./utils/ethers";
 import { defaultEmitter } from "./utils/emitter";
 import { BotEvents } from "./utils/botEvents";
 import { initialize as initializeLogger } from "./utils/logger";
@@ -10,9 +9,9 @@ import { ShutdownSignal } from "./utils/shutdown";
 import { getBotPath, BotPaths, getNetworkConfig, NetworkConfig } from "./utils/botConfig";
 import { getClaim } from "./utils/claim";
 import { MissingEnvError } from "./utils/errors";
-import { CheckAndClaimParams } from "./ArbToEth/claimer";
-import { ChallengeAndResolveClaimParams } from "./ArbToEth/validator";
-import { saveSnapshot, SaveSnapshotParams } from "./utils/snapshot";
+import { CheckAndClaimParams, checkAndClaim } from "./helpers/claimer";
+import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./helpers/validator";
+import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 
 const RPC_BLOCK_LIMIT = 500; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
 
@@ -149,6 +148,7 @@ async function processEpochsForNetwork({
         emitter,
       });
     const { updatedTransactionHandler, latestCount } = await saveSnapshot({
+      chainId,
       veaInbox,
       network,
       epochPeriod: routeConfig[network].epochPeriod,
@@ -171,14 +171,13 @@ async function processEpochsForNetwork({
       toBlock = epochBlock + RPC_BLOCK_LIMIT;
     }
 
-    const claim = await getClaim({ veaOutbox, veaOutboxProvider, epoch, fromBlock: epochBlock, toBlock });
+    const claim = await getClaim({ chainId, veaOutbox, veaOutboxProvider, epoch, fromBlock: epochBlock, toBlock });
 
-    const checkAndChallengeResolve = getClaimValidator(chainId, network);
-    const checkAndClaim = getClaimer(chainId, network);
     let updatedTransactions;
 
     if (path > BotPaths.CLAIMER && claim != null) {
       const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {
+        chainId,
         claim,
         epoch,
         epochPeriod: routeConfig[network].epochPeriod,
@@ -189,7 +188,7 @@ async function processEpochsForNetwork({
         transactionHandler: transactionHandlers[epoch],
         emitter,
       };
-      updatedTransactions = await checkAndChallengeResolve(checkAndChallengeResolveDeps);
+      updatedTransactions = await challengeAndResolveClaim(checkAndChallengeResolveDeps);
     }
     if (path == BotPaths.CLAIMER || path == BotPaths.BOTH) {
       const checkAndClaimParams: CheckAndClaimParams = {
