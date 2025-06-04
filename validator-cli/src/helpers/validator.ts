@@ -106,7 +106,7 @@ export async function challengeAndResolveClaim({
         await transactionHandler.sendSnapshot();
       } else if (claimResolveState.execution.status == 1) {
         await transactionHandler.resolveChallengedClaim(claimResolveState.sendSnapshot.txHash);
-      } else if (claimResolveState.execution.status == 2) {
+      } else if (claimResolveState.execution.status == 2 && claim.honest == 2) {
         await transactionHandler.withdrawChallengeDeposit();
       } else {
         emitter.emit(BotEvents.WAITING_ARB_TIMEOUT, epoch);
