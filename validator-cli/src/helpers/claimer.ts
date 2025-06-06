@@ -5,8 +5,7 @@ import { getClaim, ClaimHonestState } from "../utils/claim";
 import { getLastClaimedEpoch } from "../utils/graphQueries";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { ITransactionHandler, IDevnetTransactionHandler } from "../utils/transactionHandlers";
-import { getTransactionHandler } from "../utils/ethers";
+import { ITransactionHandler, IDevnetTransactionHandler, getTransactionHandler } from "../utils/transactionHandlers";
 import { Network } from "../consts/bridgeRoutes";
 interface CheckAndClaimParams {
   chainId: number;

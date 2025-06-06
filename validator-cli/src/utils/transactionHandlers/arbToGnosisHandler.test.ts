@@ -3,9 +3,9 @@ import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
 import { getWallet, getWETH } from "../ethers";
 import { messageExecutor } from "../arbMsgExecutor";
 import { ClaimNotSetError } from "../errors";
-import { TransactionStatus } from "./baseTransactionHandler";
+import { TransactionStatus, BaseTransactionHandlerConstructor } from "./baseTransactionHandler";
 import { MockEmitter } from "../emitter";
-import { BaseTransactionHandlerConstructor } from "./baseTransactionHandler";
+
 jest.mock("../../consts/bridgeRoutes", () => ({
   getBridgeConfig: jest.fn(),
   Network: { TESTNET: "testnet" },
@@ -32,6 +32,7 @@ describe("ArbToGnosisTransactionHandler", () => {
 
   let inboxProvider: any;
   let outboxProvider: any;
+  let routerProvider: any;
   let veaInbox: any;
   let veaOutbox: any;
   let transactionHandler: ArbToGnosisTransactionHandler;
@@ -52,6 +53,7 @@ describe("ArbToGnosisTransactionHandler", () => {
     // Providers
     inboxProvider = { getTransactionReceipt: jest.fn(), getBlock: jest.fn() };
     outboxProvider = { getTransactionReceipt: jest.fn(), getBlock: jest.fn() };
+    routerProvider = { getTransactionReceipt: jest.fn(), getBlock: jest.fn() };
 
     // Stub veaInbox/veaOutbox contract methods
     veaInbox = {
@@ -87,6 +89,7 @@ describe("ArbToGnosisTransactionHandler", () => {
       veaOutbox: veaOutbox,
       veaInboxProvider: inboxProvider,
       veaOutboxProvider: outboxProvider,
+      veaRouterProvider: routerProvider,
       emitter: mockEmitter,
       claim: null,
     };
@@ -149,7 +152,7 @@ describe("ArbToGnosisTransactionHandler", () => {
     });
 
     it("throws if claim not set", async () => {
-      const h = new ArbToGnosisTransactionHandler({ ...transactionHandler, claim: null });
+      const h = new ArbToGnosisTransactionHandler({ ...transactionHandlerParams, claim: null });
       await expect(h.challengeClaim()).rejects.toThrow(ClaimNotSetError);
     });
 
@@ -204,9 +207,9 @@ describe("ArbToGnosisTransactionHandler", () => {
     });
 
     it("executes and records transaction", async () => {
-      transactionHandler = new ArbToGnosisTransactionHandler({ ...transactionHandler, claim });
+      transactionHandler = new ArbToGnosisTransactionHandler({ ...transactionHandlerParams, claim });
       await transactionHandler.resolveChallengedClaim("0xtx");
-      expect(messageExecutor).toHaveBeenCalledWith("0xtx", inboxProvider, outboxProvider);
+      expect(messageExecutor).toHaveBeenCalledWith("0xtx", inboxProvider, routerProvider);
       expect(transactionHandler.transactions.executeSnapshotTxn).toHaveProperty("hash", "0xexec");
     });
   });

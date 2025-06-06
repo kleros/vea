@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { getBridgeConfig, Network } from "./consts/bridgeRoutes";
-import { getTransactionHandler, getVeaInbox, getVeaOutbox } from "./utils/ethers";
+import { getVeaInbox, getVeaOutbox } from "./utils/ethers";
 import { getBlockFromEpoch, setEpochRange } from "./utils/epochHandler";
 import { defaultEmitter } from "./utils/emitter";
 import { BotEvents } from "./utils/botEvents";
@@ -12,6 +12,7 @@ import { MissingEnvError } from "./utils/errors";
 import { CheckAndClaimParams, checkAndClaim } from "./helpers/claimer";
 import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./helpers/validator";
 import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
+import { getTransactionHandler } from "./utils/transactionHandlers";
 
 const RPC_BLOCK_LIMIT = 500; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
 

@@ -14,10 +14,18 @@ import { MockEmitter } from "../emitter";
 
 // Concrete subclass to enable testing of BaseTransactionHandler
 class DummyHandler extends BaseTransactionHandler<any, any> {
-  public async makeClaim(_stateRoot: string): Promise<void> {}
-  public async challengeClaim(): Promise<void> {}
-  public async sendSnapshot(): Promise<void> {}
-  public async resolveChallengedClaim(_sendSnapshotTxnHash: string): Promise<void> {}
+  public async makeClaim(_stateRoot: string): Promise<void> {
+    return;
+  }
+  public async challengeClaim(): Promise<void> {
+    return;
+  }
+  public async sendSnapshot(): Promise<void> {
+    return;
+  }
+  public async resolveChallengedClaim(_sendSnapshotTxnHash: string): Promise<void> {
+    return;
+  }
 }
 
 describe("BaseTransactionHandler", () => {
@@ -201,7 +209,7 @@ describe("BaseTransactionHandler", () => {
     const flipTime = Number(claim.timestampVerification) + cfg.minChallengePeriod;
 
     it("throws if claim not set", async () => {
-      const h = new DummyHandler({ ...transactionHandler, claim: null });
+      const h = new DummyHandler({ ...transactionHandlerParams, claim: null });
       await expect(h.verifySnapshot(flipTime)).rejects.toThrow(ClaimNotSetError);
     });
 
@@ -244,7 +252,7 @@ describe("BaseTransactionHandler", () => {
 
   describe("withdrawChallengeDeposit()", () => {
     it("throws if claim not set", async () => {
-      const h = new DummyHandler({ ...transactionHandler, claim: null });
+      const h = new DummyHandler({ ...transactionHandlerParams, claim: null });
       await expect(h.withdrawChallengeDeposit()).rejects.toThrow(ClaimNotSetError);
     });
 

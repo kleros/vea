@@ -60,7 +60,7 @@ describe("ArbToEthTransactionHandler", () => {
   describe("makeClaim", () => {
     let transactionHandler: ArbToEthTransactionHandler;
     const { routeConfig } = getBridgeConfig(chainId);
-    const deposit = routeConfig[Network.DEVNET].deposit;
+    const deposit = routeConfig[Network.TESTNET].deposit;
     beforeEach(() => {
       const mockClaim = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
       mockClaim.estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
@@ -124,7 +124,7 @@ describe("ArbToEthTransactionHandler", () => {
     it("should challenge claim", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(0);
       const mockChallenge = jest.fn().mockResolvedValue({ hash: "0x1234" }) as any;
-      (mockChallenge as any).estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
+      mockChallenge.estimateGas = jest.fn().mockResolvedValue(BigInt(100000));
       veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"] = mockChallenge;
       await transactionHandler.challengeClaim();
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
@@ -207,7 +207,7 @@ describe("ArbToEthTransactionHandler", () => {
     it("should not resolve challenged claim if txn is pending", async () => {
       jest.spyOn(transactionHandler, "checkTransactionStatus").mockResolvedValue(1);
       transactionHandler.transactions.executeSnapshotTxn = { hash: "0x1234", broadcastedTimestamp: 1000 };
-      await transactionHandler.resolveChallengedClaim(mockMessageExecutor);
+      await transactionHandler.resolveChallengedClaim("0x1234", mockMessageExecutor);
       expect(transactionHandler.checkTransactionStatus).toHaveBeenCalledWith(
         transactionHandler.transactions.executeSnapshotTxn,
         ContractType.OUTBOX,

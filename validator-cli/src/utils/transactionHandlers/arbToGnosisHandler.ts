@@ -3,7 +3,7 @@ import {
   VeaOutboxArbToGnosis,
   VeaOutboxArbToGnosisDevnet,
 } from "@kleros/vea-contracts/typechain-types";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { toBigInt } from "ethers";
 import {
   BaseTransactionHandler,
   BaseTransactionHandlerConstructor,
@@ -32,7 +32,7 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     const weth = getWETH(depositToken, privateKey, outboxRPC);
     const currentAllowance: bigint = await weth.allowance(signer.address, veaOutbox.address);
     if (currentAllowance < deposit) {
-      const approvalAmount = deposit * BigInt(1); // Approving for 10 claims
+      const approvalAmount = deposit * BigInt(10); // Approving for 10 claims
       const approveTx = await weth.approve(routeConfig[Network.TESTNET].veaOutbox.address, deposit * approvalAmount);
       await approveTx.wait();
     }
@@ -60,12 +60,12 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     const status = await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX, now);
     if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) return;
 
-    const gasEstimate: bigint = await this.veaOutbox[
+    const gasEstimate = await this.veaOutbox[
       "challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
     ].estimateGas(this.epoch, this.claim);
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[this.network];
-    const maxFeePerGasProfitable = deposit / (gasEstimate * BigInt(6));
+    const maxFeePerGasProfitable = deposit / (toBigInt(gasEstimate) * BigInt(6));
     // Set a reasonable maxPriorityFeePerGas but ensure it's lower than maxFeePerGas
     let maxPriorityFeePerGasMEV = BigInt(6667000000000); // 6667 gwei
     // Ensure maxPriorityFeePerGas <= maxFeePerGas
@@ -98,7 +98,7 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
     if (!this.claim) throw new ClaimNotSetError();
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn!, ContractType.ROUTER, now);
+    const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn, ContractType.ROUTER, now);
     if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) return;
     const msgExecuteTrnx = await messageExecutor(sendSnapshotTxn, this.veaInboxProvider, this.veaRouterProvider);
     this.emitter.emit(BotEvents.TXN_MADE, msgExecuteTrnx.hash, this.epoch, "Execute Snapshot");

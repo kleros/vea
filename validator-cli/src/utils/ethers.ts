@@ -10,14 +10,6 @@ import {
   RouterArbToGnosis__factory,
   IAMB__factory,
 } from "@kleros/vea-contracts/typechain-types";
-import { challengeAndResolveClaim as challengeAndResolveClaimArbToEth } from "../helpers/validator";
-import { checkAndClaim } from "../helpers/claimer";
-import {
-  ArbToEthTransactionHandler,
-  ArbToEthDevnetTransactionHandler,
-  ArbToGnosisDevnetTransactionHandler,
-  ArbToGnosisTransactionHandler,
-} from "../utils/transactionHandlers";
 import { NotDefinedError, InvalidNetworkError } from "./errors";
 import { Network } from "../consts/bridgeRoutes";
 
@@ -85,27 +77,6 @@ function getAMB(ambAddress: string, privateKey: string, rpcUrl: string) {
   return IAMB__factory.connect(ambAddress, getWallet(privateKey, rpcUrl));
 }
 
-const getTransactionHandler = (chainId: number, network: Network) => {
-  if (chainId === 11155111) {
-    if (network === Network.DEVNET) {
-      return ArbToEthDevnetTransactionHandler;
-    } else if (network === Network.TESTNET) {
-      return ArbToEthTransactionHandler;
-    } else {
-      throw new InvalidNetworkError(`${network}(transactionHandler)`);
-    }
-  } else if (chainId === 10200) {
-    if (network === Network.DEVNET) {
-      return ArbToGnosisDevnetTransactionHandler;
-    } else if (network === Network.TESTNET) {
-      return ArbToGnosisTransactionHandler;
-    } else {
-      throw new InvalidNetworkError(`${network}(transactionHandler)`);
-    }
-  } else {
-    throw new NotDefinedError("Transaction Handler");
-  }
-};
 export {
   getWalletRPC,
   getWallet,
@@ -114,6 +85,5 @@ export {
   getVeaOutboxArbToEthDevnet,
   getWETH,
   getAMB,
-  getTransactionHandler,
   getVeaRouter,
 };

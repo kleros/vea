@@ -1,4 +1,5 @@
 import { VeaInboxArbToEth, VeaOutboxArbToEth, VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
+import { toBigInt } from "ethers";
 import {
   BaseTransactionHandler,
   BaseTransactionHandlerConstructor,
@@ -62,7 +63,7 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     ].estimateGas(this.epoch, this.claim, { value: deposit });
 
     // Profit-driven fee calculation
-    const maxFeePerGas = deposit / (gasEstimate * BigInt(6));
+    const maxFeePerGas = deposit / (toBigInt(gasEstimate) * BigInt(6));
     let maxPriorityFeePerGas = BigInt(6_667_000_000_000);
     if (maxPriorityFeePerGas > maxFeePerGas) {
       maxPriorityFeePerGas = maxFeePerGas;
@@ -107,7 +108,7 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
   public async resolveChallengedClaim(sendSnapshotHash: string, execFn = messageExecutor): Promise<void> {
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn!, ContractType.OUTBOX, now);
+    const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn, ContractType.OUTBOX, now);
     if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
       return;
     }

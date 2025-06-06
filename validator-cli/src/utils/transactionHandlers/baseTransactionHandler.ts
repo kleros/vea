@@ -1,5 +1,4 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { BigNumberish } from "ethers";
 import { BotEvents } from "../botEvents";
 import { ClaimNotSetError } from "../errors";
 import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";

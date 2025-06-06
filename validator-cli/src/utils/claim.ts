@@ -114,6 +114,17 @@ type ClaimResolveState = {
   };
 };
 
+export interface ClaimResolveStateParams {
+  chainId: number;
+  veaInbox: any;
+  veaInboxProvider: JsonRpcProvider;
+  veaOutboxProvider: JsonRpcProvider;
+  epoch: number;
+  fromBlock: number;
+  toBlock: number | string;
+  fetchMessageStatus?: typeof getMessageStatus;
+}
+
 /**
  * Fetches the claim resolve state.
  * @param veaInbox VeaInbox contract instance
@@ -125,16 +136,16 @@ type ClaimResolveState = {
  * @param fetchMessageStatus function to fetch message status
  * @returns ClaimResolveState
  **/
-const getClaimResolveState = async (
-  chainId: number,
-  veaInbox: any,
-  veaInboxProvider: JsonRpcProvider,
-  veaOutboxProvider: JsonRpcProvider,
-  epoch: number,
-  fromBlock: number,
-  toBlock: number | string,
-  fetchMessageStatus: typeof getMessageStatus = getMessageStatus
-): Promise<ClaimResolveState> => {
+const getClaimResolveState = async ({
+  chainId,
+  veaInbox,
+  veaInboxProvider,
+  veaOutboxProvider,
+  epoch,
+  fromBlock,
+  toBlock,
+  fetchMessageStatus,
+}: ClaimResolveStateParams): Promise<ClaimResolveState> => {
   let claimResolveState: ClaimResolveState = {
     sendSnapshot: {
       status: false,
