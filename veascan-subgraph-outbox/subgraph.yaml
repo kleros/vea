@@ -3,12 +3,12 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
-    name: VeaOutboxArbToEthTestnet
-    network: sepolia
+    name: VeaOutboxArbToGnosisDevnet
+    network: gnosis-chiado
     source:
-      address: "0xC0574e973059e727E5E4bEB2e04F1D69F627faab"
-      abi: VeaOutboxArbToEthTestnet
-      startBlock: 8047848
+      address: "0xE24B2838962207F585F4fa5C5bE3e1AcA43a1a1B"
+      abi: VeaOutboxArbToGnosisDevnet
+      startBlock: 14598540
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -18,10 +18,9 @@ dataSources:
         - Claimed
         - MessageRelayed
         - Verified
-        - VerificationStarted
       abis:
-        - name: VeaOutboxArbToEthTestnet
-          file: ../contracts/deployments/sepolia/VeaOutboxArbToEthTestnet.json
+        - name: VeaOutboxArbToGnosisDevnet
+          file: ../contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json
       eventHandlers:
         - event: Challenged(indexed uint256,indexed address)
           handler: handleChallenged
@@ -35,12 +34,12 @@ dataSources:
           handler: handleVerificationStarted
       file: ./src/VeaOutbox.ts
   - kind: ethereum
-    name: VeaOutboxArbToEthDevnet
-    network: sepolia
+    name: VeaOutboxArbToGnosisTestnet
+    network: gnosis-chiado
     source:
-      address: "0xb1f5125b52CE23D3763AC1C9ACEf0668825A66c0"
-      abi: VeaOutboxArbToEthDevnet
-      startBlock: 7825233
+      address: "0x1c35dF16AAde8Fcf1D56Bca00B3c8Ef451113DfC"
+      abi: VeaOutboxArbToGnosisTestnet
+      startBlock: 15109734
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -50,10 +49,9 @@ dataSources:
         - Claimed
         - MessageRelayed
         - Verified
-        - VerificationStarted
       abis:
-        - name: VeaOutboxArbToEthDevnet
-          file: ../contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json
+        - name: VeaOutboxArbToGnosisTestnet
+          file: ../contracts/deployments/chiado/VeaOutboxArbToGnosisTestnet.json
       eventHandlers:
         - event: Challenged(indexed uint256,indexed address)
           handler: handleChallenged
