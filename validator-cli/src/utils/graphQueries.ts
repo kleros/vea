@@ -16,14 +16,28 @@ interface ClaimData {
   };
 }
 
+const getOutboxSubgraphUrl = (chainId: number): string => {
+  if (chainId === 11155111) {
+    return process.env.VEAOUTBOX_SUBGRAPH_SEPOLIA || "";
+  } else if (chainId === 10200) {
+    return process.env.VEAOUTBOX_SUBGRAPH_CHIADO || "";
+  }
+};
+const getInboxSubgraphUrl = (chainId: number): string => {
+  // using destination chainId's for inbox
+  if (chainId === 11155111 || chainId === 10200) {
+    return process.env.VEAINBOX_SUBGRAPH_ARBSEPOLIA || "";
+  }
+};
+
 /**
  * Fetches the claim data for a given epoch (used for claimer - happy path)
  * @param epoch
  * @returns ClaimData
  * */
-const getClaimForEpoch = async (epoch: number, outbox: string): Promise<ClaimData | undefined> => {
+const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number): Promise<ClaimData | undefined> => {
   try {
-    const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
+    const subgraph = getOutboxSubgraphUrl(chainId);
 
     const result = await request(
       `${subgraph}`,
@@ -49,8 +63,8 @@ const getClaimForEpoch = async (epoch: number, outbox: string): Promise<ClaimDat
  * Fetches the last claimed epoch (used for claimer - happy path)
  * @returns ClaimData
  */
-const getLastClaimedEpoch = async (outbox: string): Promise<ClaimData> => {
-  const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
+const getLastClaimedEpoch = async (outbox: string, chainId: number): Promise<ClaimData> => {
+  const subgraph = getOutboxSubgraphUrl(chainId);
   try {
     const result = await request(
       `${subgraph}`,
@@ -83,9 +97,9 @@ type VerificationData = {
  * @param claimId
  * @returns VerificationData
  */
-const getVerificationForClaim = async (claimId: string): Promise<VerificationData | undefined> => {
+const getVerificationForClaim = async (claimId: string, chainId: number): Promise<VerificationData | undefined> => {
   try {
-    const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
+    const subgraph = getOutboxSubgraphUrl(chainId);
     const result = await request(
       `${subgraph}`,
       `{
@@ -107,9 +121,9 @@ const getVerificationForClaim = async (claimId: string): Promise<VerificationDat
  * @param claimId
  * @returns challenger address
  * */
-const getChallengerForClaim = async (claimId: string): Promise<{ challenger: string } | undefined> => {
+const getChallengerForClaim = async (claimId: string, chainId: number): Promise<{ challenger: string } | undefined> => {
   try {
-    const subgraph = process.env.VEAOUTBOX_SUBGRAPH;
+    const subgraph = getOutboxSubgraphUrl(chainId);
     const result = await request(
       `${subgraph}`,
       `{
@@ -136,15 +150,18 @@ type SenSnapshotResponse = {
  * @param epoch
  * @returns snapshot data
  */
-const getSnapshotSentForEpoch = async (epoch: number, veaInbox: any): Promise<{ txHash: string }> => {
+const getSnapshotSentForEpoch = async (
+  epoch: number,
+  veaInbox: string,
+  chainId: number
+): Promise<{ txHash: string }> => {
   try {
-    const subgraph = process.env.VEAINBOX_SUBGRAPH;
-    const veaInboxAddress = veaInbox.toLowerCase();
+    const subgraph = getInboxSubgraphUrl(chainId);
 
     const result: SenSnapshotResponse = await request(
       `${subgraph}`,
       `{
-          snapshots(where: {epoch: ${epoch}, inbox_: { id: "${veaInboxAddress}" }}) {
+          snapshots(where: {epoch: ${epoch}, inbox_: { id: "${veaInbox}" }}) {
             fallback{
               txHash
             }
@@ -171,8 +188,8 @@ type SnapshotSavedResponse = {
  * @param veaInbox
  * @returns message id
  */
-const getLastMessageSaved = async (veaInbox: string): Promise<string> => {
-  const subgraph = process.env.VEAINBOX_SUBGRAPH;
+const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<string> => {
+  const subgraph = getInboxSubgraphUrl(chainId);
   const result: SnapshotSavedResponse = await request(
     `${subgraph}`,
     `{
@@ -183,6 +200,7 @@ const getLastMessageSaved = async (veaInbox: string): Promise<string> => {
       }
     }`
   );
+  if (result.snapshots.length < 2 || result.snapshots[1].messages.length === 0) return;
   return result.snapshots[1].messages[0].id;
 };
 

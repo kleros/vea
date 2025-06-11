@@ -13,13 +13,13 @@ import veaOutboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/chiad
 import veaRouterArbToGnosisTestnet from "@kleros/vea-contracts/deployments/sepolia/RouterArbToGnosisTestnet.json";
 interface Bridge {
   chain: string;
-  deposit: bigint;
   minChallengePeriod: number;
   sequencerDelayLimit: number;
   inboxRPC: string;
   outboxRPC: string;
   routerRPC?: string;
   routeConfig: { [key in Network]: RouteConfigs };
+  depositToken?: string;
 }
 
 type RouteConfigs = {
@@ -27,6 +27,7 @@ type RouteConfigs = {
   veaOutbox: any;
   veaRouter?: any;
   epochPeriod: number;
+  deposit: bigint;
 };
 
 export enum Network {
@@ -39,11 +40,13 @@ const arbToEthConfigs: { [key in Network]: RouteConfigs } = {
     veaInbox: veaInboxArbToEthDevnet,
     veaOutbox: veaOutboxArbToEthDevnet,
     epochPeriod: 1800,
+    deposit: BigInt("1000000000000000000"),
   },
   [Network.TESTNET]: {
     veaInbox: veaInboxArbToEthTestnet,
     veaOutbox: veaOutboxArbToEthTestnet,
     epochPeriod: 7200,
+    deposit: BigInt("1000000000000000000"),
   },
 };
 
@@ -51,20 +54,21 @@ const arbToGnosisConfigs: { [key in Network]: RouteConfigs } = {
   [Network.DEVNET]: {
     veaInbox: veaInboxArbToGnosisDevnet,
     veaOutbox: veaOutboxArbToGnosisDevnet,
-    epochPeriod: 3600,
+    epochPeriod: 1800,
+    deposit: BigInt("100000000000000000"),
   },
   [Network.TESTNET]: {
     veaInbox: veaInboxArbToGnosisTestnet,
     veaOutbox: veaOutboxArbToGnosisTestnet,
     veaRouter: veaRouterArbToGnosisTestnet,
-    epochPeriod: 7200,
+    epochPeriod: 3600,
+    deposit: BigInt("200000000000000000"),
   },
 };
 
 const bridges: { [chainId: number]: Bridge } = {
   11155111: {
     chain: "sepolia",
-    deposit: BigInt("1000000000000000000"),
     minChallengePeriod: 10800,
     sequencerDelayLimit: 86400,
     inboxRPC: process.env.RPC_ARB,
@@ -73,13 +77,13 @@ const bridges: { [chainId: number]: Bridge } = {
   },
   10200: {
     chain: "chiado",
-    deposit: BigInt("1000000000000000000"),
     minChallengePeriod: 10800,
     sequencerDelayLimit: 86400,
     inboxRPC: process.env.RPC_ARB,
     outboxRPC: process.env.RPC_GNOSIS,
     routerRPC: process.env.RPC_ETH,
     routeConfig: arbToGnosisConfigs,
+    depositToken: process.env.GNOSIS_WETH,
   },
 };
 

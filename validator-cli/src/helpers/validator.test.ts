@@ -11,6 +11,7 @@ describe("validator", () => {
   let mockClaim: any;
   let mockGetClaimState: any;
   let mockGetBlockFinality: any;
+  let mockGetBlockFromEpoch: any;
   let mockDeps: any;
   beforeEach(() => {
     veaInbox = {
@@ -38,8 +39,10 @@ describe("validator", () => {
       honest: 0,
       challenger: ethers.ZeroAddress,
     };
+    mockGetBlockFromEpoch = jest.fn().mockResolvedValue({ number: 0, timestamp: 100 });
     mockGetBlockFinality = jest.fn().mockResolvedValue([{ number: 0 }, { number: 0, timestamp: 100 }, false]);
     mockDeps = {
+      chainId: 11155111,
       claim: mockClaim,
       epoch: 0,
       epochPeriod: 10,
@@ -51,6 +54,7 @@ describe("validator", () => {
       emitter,
       fetchClaimResolveState: mockGetClaimState,
       fetchBlocksAndCheckFinality: mockGetBlockFinality,
+      fetchBlockFromEpoch: mockGetBlockFromEpoch,
     };
   });
   afterEach(() => {
@@ -135,7 +139,7 @@ describe("validator", () => {
       expect(updatedTransactionHandler.claim).toEqual(mockClaim);
     });
 
-    it("withdraw challenge deposit if snapshot sent and executed", async () => {
+    it("withdraw challenge deposit if snapshot sent and challenger won", async () => {
       mockClaim.challenger = mockClaim.claimer;
       mockGetClaimState = jest.fn().mockReturnValue({
         sendSnapshot: { status: true, txnHash: "0x123" },
@@ -153,6 +157,7 @@ describe("validator", () => {
       };
       mockDeps.transactionHandler = mockTransactionHandler;
       mockDeps.fetchClaimResolveState = mockGetClaimState;
+      mockDeps.claim.honest = 2; // Set honest to 1 to indicate the challenger is honest
       const updatedTransactionHandler = await challengeAndResolveClaim(mockDeps);
       expect(updatedTransactionHandler.transactions.withdrawChallengeDepositTxn).toEqual("0x1234");
       expect(mockTransactionHandler.withdrawChallengeDeposit).toHaveBeenCalled();

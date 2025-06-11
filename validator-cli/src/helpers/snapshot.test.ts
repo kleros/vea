@@ -1,10 +1,11 @@
 import { Network } from "../consts/bridgeRoutes";
 import { isSnapshotNeeded, saveSnapshot } from "./snapshot";
-import { MockEmitter } from "./emitter";
+import { MockEmitter } from "../utils/emitter";
 
 describe("snapshot", () => {
   let veaInbox: any;
   let count: number = 1;
+  const chainId = 11155111;
   let fetchLastSavedMessage: jest.Mock;
   beforeEach(() => {
     veaInbox = {
@@ -24,6 +25,7 @@ describe("snapshot", () => {
       fetchLastSavedMessage = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", currentCount] }]);
       const params = {
+        chainId,
         veaInbox,
         count,
         fetchLastSavedMessage,
@@ -41,6 +43,7 @@ describe("snapshot", () => {
       fetchLastSavedMessage = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", currentCount] }]);
       const params = {
+        chainId,
         veaInbox,
         count,
         fetchLastSavedMessage,
@@ -57,6 +60,7 @@ describe("snapshot", () => {
       fetchLastSavedMessage = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", currentCount] }]);
       const params = {
+        chainId,
         veaInbox,
         count,
         fetchLastSavedMessage,
@@ -73,6 +77,7 @@ describe("snapshot", () => {
       fetchLastSavedMessage = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", 1] }]);
       const params = {
+        chainId,
         veaInbox,
         count,
         fetchLastSavedMessage,
@@ -89,6 +94,7 @@ describe("snapshot", () => {
       fetchLastSavedMessage = jest.fn().mockResolvedValue("message-0");
       veaInbox.queryFilter.mockRejectedValue(new Error("queryFilter failed"));
       const params = {
+        chainId,
         veaInbox,
         count,
         fetchLastSavedMessage,
@@ -111,6 +117,7 @@ describe("snapshot", () => {
         saveSnapshot: jest.fn(),
       };
       const res = await saveSnapshot({
+        chainId,
         veaInbox,
         network,
         epochPeriod,
@@ -137,6 +144,7 @@ describe("snapshot", () => {
         saveSnapshot: jest.fn(),
       };
       const res = await saveSnapshot({
+        chainId,
         veaInbox,
         network,
         epochPeriod,
@@ -162,6 +170,7 @@ describe("snapshot", () => {
         saveSnapshot: jest.fn(),
       };
       const res = await saveSnapshot({
+        chainId,
         veaInbox,
         network,
         epochPeriod,
@@ -188,6 +197,7 @@ describe("snapshot", () => {
         saveSnapshot: jest.fn(),
       };
       const res = await saveSnapshot({
+        chainId,
         veaInbox,
         network: Network.DEVNET,
         epochPeriod,
