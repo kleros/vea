@@ -3,6 +3,11 @@ import VeaOutboxSepoliaDevnet from "@kleros/vea-contracts/deployments/sepolia/Ve
 import VeaInboxArbitrumSepoliaTestnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthTestnet.json";
 import VeaOutboxArbitrumSepoliaTestnet from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthTestnet.json";
 
+import VeaInboxArbitrumSepoliaDevnetGnosis from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json";
+import VeaOutboxSepoliaDevnetGnosis from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
+import VeaInboxArbitrumSepoliaTestnetGnosis from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisTestnet.json";
+import VeaOutboxArbitrumSepoliaTestnetGnosis from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisTestnet.json";
+
 import {
   Chain,
   arbitrumSepolia,
@@ -34,6 +39,17 @@ const arbToEthContracts: { [key in Network]: VeaContracts } = {
   },
 };
 
+const arbToGnosisContracts: { [key in Network]: VeaContracts } = {
+  [Network.DEVNET]: {
+    veaInbox: VeaInboxArbitrumSepoliaDevnetGnosis.address as `0x${string}`,
+    veaOutbox: VeaOutboxSepoliaDevnetGnosis.address as `0x${string}`,
+  },
+  [Network.TESTNET]: {
+    veaInbox: VeaInboxArbitrumSepoliaTestnetGnosis.address as `0x${string}`,
+    veaOutbox: VeaOutboxArbitrumSepoliaTestnetGnosis.address as `0x${string}`,
+  },
+};
+
 export interface IChain extends Chain {
   logo: React.FC<React.SVGAttributes<SVGElement>>;
 }
@@ -62,8 +78,16 @@ export const bridges: IBridge[] = [
     from: arbitrumSepolia.id,
     to: sepolia.id,
     contracts: arbToEthContracts,
-    inboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_INBOX_SUBGRAPH}`,
-    outboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_OUTBOX_SUBGRAPH}`,
+    inboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_INBOX_SUBGRAPH_ARBSEPOLIA}`,
+    outboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_OUTBOX_SUBGRAPH_SEPOLIA}`,
+  },
+  {
+    id: 1,
+    from: arbitrumSepolia.id,
+    to: gnosisChiado.id,
+    contracts: arbToGnosisContracts,
+    inboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_INBOX_SUBGRAPH_ARBSEPOLIA}`,
+    outboxEndpoint: `https://api.studio.thegraph.com/query/${process.env.VEASCAN_OUTBOX_SUBGRAPH_CHIADO}`,
   },
 ];
 
