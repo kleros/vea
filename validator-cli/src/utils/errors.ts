@@ -32,6 +32,14 @@ class InvalidBotPathError extends Error {
   }
 }
 
+class InvalidChainIdError extends Error {
+  constructor(chainId: string) {
+    super();
+    this.name = "InvalidChainIdError";
+    this.message = `Invalid chainId: ${chainId}, use from: 11155111, 10200`;
+  }
+}
+
 class DevnetOwnerNotSetError extends Error {
   constructor() {
     super();
@@ -64,4 +72,5 @@ export {
   DevnetOwnerNotSetError,
   InvalidNetworkError,
   MissingEnvError,
+  InvalidChainIdError,
 };
