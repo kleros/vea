@@ -14,7 +14,7 @@ import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./help
 import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
 
-const RPC_BLOCK_LIMIT = 500; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
+const RPC_BLOCK_LIMIT = 1000; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
 
 /**
  * @file This file contains the logic for watching bridge and validating/resolving for claims.
@@ -35,7 +35,7 @@ export const watch = async (
   const { path, toSaveSnapshot } = getBotPath({ cliCommand });
   const networkConfigs = getNetworkConfig();
   emitter.emit(BotEvents.STARTED, path, networkConfigs[0].networks);
-  const transactionHandlers: { [epoch: number]: any } = {};
+  const transactionHandlers: { [key: string]: any } = {};
   const toWatch: { [key: string]: { count: number; epochs: number[] } } = {};
   while (!shutDownSignal.getIsShutdownSignal()) {
     for (const networkConfig of networkConfigs) {
@@ -49,7 +49,7 @@ async function processNetwork(
   path: number,
   toSaveSnapshot: boolean,
   networkConfig: NetworkConfig,
-  transactionHandlers: { [epoch: number]: any },
+  transactionHandlers: { [key: string]: any },
   toWatch: { [key: string]: { count: number; epochs: number[] } },
   emitter: typeof defaultEmitter
 ): Promise<void> {
@@ -112,7 +112,7 @@ interface ProcessEpochParams {
   outboxRPC: string;
   routerRPC: string | undefined;
   toWatch: { [key: string]: { count: number; epochs: number[] } };
-  transactionHandlers: { [epoch: number]: any };
+  transactionHandlers: { [key: string]: any };
   emitter: typeof defaultEmitter;
 }
 async function processEpochsForNetwork({
@@ -141,6 +141,7 @@ async function processEpochsForNetwork({
   // Checks and saves the snapshot if needed
   if (toSaveSnapshot) {
     const TransactionHandler = getTransactionHandler(chainId, network) as any;
+    const txnHandlerKey = `${routeConfig[network].veaInbox.address}_${currentEpoch}`;
     const transactionHandler =
       transactionHandlers[currentEpoch] ||
       new TransactionHandler({
@@ -163,7 +164,7 @@ async function processEpochsForNetwork({
     } as SaveSnapshotParams);
     const count = toWatch[networkKey].count;
     if (count == -1 || count != latestCount) {
-      transactionHandlers[currentEpoch] = updatedTransactionHandler;
+      transactionHandlers[txnHandlerKey] = updatedTransactionHandler;
       toWatch[networkKey].count = latestCount;
     }
   }
@@ -176,7 +177,6 @@ async function processEpochsForNetwork({
     if (latestBlock.number - epochBlock > RPC_BLOCK_LIMIT) {
       toBlock = epochBlock + RPC_BLOCK_LIMIT;
     }
-
     const claim = await getClaim({ chainId, veaOutbox, veaOutboxProvider, epoch, fromBlock: epochBlock, toBlock });
 
     let updatedTransactions;

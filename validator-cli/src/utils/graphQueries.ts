@@ -154,7 +154,7 @@ const getSnapshotSentForEpoch = async (
   epoch: number,
   veaInbox: string,
   chainId: number
-): Promise<{ txHash: string }> => {
+): Promise<{ txHash: string } | undefined> => {
   try {
     const subgraph = getInboxSubgraphUrl(chainId);
 

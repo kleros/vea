@@ -66,7 +66,7 @@ const arbToGnosisConfigs: { [key in Network]: RouteConfigs } = {
   },
 };
 
-const bridges: { [chainId: number]: Bridge } = {
+export const bridges: { [chainId: number]: Bridge } = {
   11155111: {
     chain: "sepolia",
     minChallengePeriod: 10800,
