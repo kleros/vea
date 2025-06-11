@@ -33,7 +33,7 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     const currentAllowance: bigint = await weth.allowance(signer.address, veaOutbox.address);
     if (currentAllowance < deposit) {
       const approvalAmount = deposit * BigInt(10); // Approving for 10 claims
-      const approveTx = await weth.approve(routeConfig[Network.TESTNET].veaOutbox.address, deposit * approvalAmount);
+      const approveTx = await weth.approve(routeConfig[Network.TESTNET].veaOutbox.address, approvalAmount);
       await approveTx.wait();
     }
   }
