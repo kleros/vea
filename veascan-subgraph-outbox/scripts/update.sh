@@ -36,11 +36,11 @@ for i in $(seq 0 $((count - 1))); do
     fi
 
     # Patch VeaOutbox.ts: swap Gnosis imports to Eth imports when targeting sepolia
-    sed -i "" \
+    sed -i.bak \
       -e 's|from "../generated/VeaOutboxArbToGnosisDevnet/VeaOutboxArbToGnosisDevnet";|from "../generated/VeaOutboxArbToEthDevnet/VeaOutboxArbToEthDevnet";|' \
       -e 's|from "../generated/VeaOutboxArbToGnosisTestnet/VeaOutboxArbToGnosisTestnet";|from "../generated/VeaOutboxArbToEthTestnet/VeaOutboxArbToEthTestnet";|' \
       "$VEAOUTBOX_TS"
-
+    rm -f "$VEAOUTBOX_TS.bak"
 
   elif [[ "$hardhatNetwork" == "chiado" ]]; then
     if [[ "$origName" == *"ArbToEthDevnet"* ]]; then
@@ -51,10 +51,11 @@ for i in $(seq 0 $((count - 1))); do
   
 
     # Patch VeaOutbox.ts: swap Eth imports to Gnosis imports when targeting chiado
-    sed -i "" \
+    sed -i.bak \
       -e 's|from "../generated/VeaOutboxArbToEthDevnet/VeaOutboxArbToEthDevnet";|from "../generated/VeaOutboxArbToGnosisDevnet/VeaOutboxArbToGnosisDevnet";|' \
       -e 's|from "../generated/VeaOutboxArbToEthTestnet/VeaOutboxArbToEthTestnet";|from "../generated/VeaOutboxArbToGnosisTestnet/VeaOutboxArbToGnosisTestnet";|' \
       "$VEAOUTBOX_TS"
+    rm -f "$VEAOUTBOX_TS.bak"
     fi
   artifact="$SCRIPT_DIR/../../contracts/deployments/$hardhatNetwork/${newName}${contractFileSuffix}.json"
 
