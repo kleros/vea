@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { getClaim, hashClaim, getClaimResolveState } from "./claim";
+import { getClaim, hashClaim, getClaimResolveState, ClaimResolveStateParams } from "./claim";
 import { ClaimNotFoundError } from "./errors";
 
 let mockClaim: ClaimStruct;
@@ -237,6 +237,7 @@ describe("snapshotClaim", () => {
     const epoch = 1;
     const blockNumberOutboxLowerBound = 1234;
     const toBlock = "latest";
+    let mockClaimResolveStateParams: any;
     beforeEach(() => {
       mockClaim = {
         stateRoot: "0xeac817ed5c5b3d1c2c548f231b7cf9a0dfd174059f450ec6f0805acf6a16a551",
@@ -253,18 +254,25 @@ describe("snapshotClaim", () => {
           SnapshotSent: jest.fn(),
         },
       };
+      mockClaimResolveStateParams = {
+        chainId: 11155111,
+        veaInbox,
+        veaInboxProvider: {
+          getBlock: jest.fn().mockResolvedValueOnce({ timestamp: mockClaim.timestampClaimed, number: 1234 }),
+        } as any,
+        veaOutboxProvider: {
+          getBlock: jest.fn().mockResolvedValueOnce({ timestamp: mockClaim.timestampClaimed, number: 1234 }),
+        } as any,
+        epoch,
+        fromBlock: blockNumberOutboxLowerBound,
+        toBlock,
+        fetchMessageStatus: jest.fn(),
+      };
     });
 
     it("should return pending state for both", async () => {
       veaInbox.queryFilter.mockResolvedValueOnce([]);
-      const claimResolveState = await getClaimResolveState(
-        veaInbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        epoch,
-        blockNumberOutboxLowerBound,
-        toBlock
-      );
+      const claimResolveState = await getClaimResolveState(mockClaimResolveStateParams);
       expect(claimResolveState).toBeDefined();
       expect(claimResolveState.sendSnapshot.status).toBeFalsy();
       expect(claimResolveState.execution.status).toBe(0);
@@ -273,15 +281,8 @@ describe("snapshotClaim", () => {
     it("should return pending state for execution", async () => {
       veaInbox.queryFilter.mockResolvedValueOnce([{ transactionHash: "0x1234" }]);
       const mockGetMessageStatus = jest.fn().mockResolvedValueOnce(0);
-      const claimResolveState = await getClaimResolveState(
-        veaInbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        epoch,
-        blockNumberOutboxLowerBound,
-        toBlock,
-        mockGetMessageStatus
-      );
+      mockClaimResolveStateParams.fetchMessageStatus = mockGetMessageStatus;
+      const claimResolveState = await getClaimResolveState(mockClaimResolveStateParams);
       expect(claimResolveState).toBeDefined();
       expect(claimResolveState.sendSnapshot.status).toBeTruthy();
       expect(claimResolveState.execution.status).toBe(0);

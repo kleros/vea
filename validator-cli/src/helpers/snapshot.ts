@@ -1,15 +1,17 @@
 import { Network } from "../consts/bridgeRoutes";
-import { BotEvents } from "./botEvents";
-import { getLastMessageSaved } from "./graphQueries";
-import { defaultEmitter } from "./emitter";
+import { getLastMessageSaved } from "../utils/graphQueries";
+import { BotEvents } from "../utils/botEvents";
+import { defaultEmitter } from "../utils/emitter";
 
 interface SnapshotCheckParams {
+  chainId: number;
   veaInbox: any;
   count: number;
   fetchLastSavedMessage?: typeof getLastMessageSaved;
 }
 
 export interface SaveSnapshotParams {
+  chainId: number;
   veaInbox: any;
   network: Network;
   epochPeriod: number;
@@ -21,6 +23,7 @@ export interface SaveSnapshotParams {
 }
 
 export const saveSnapshot = async ({
+  chainId,
   veaInbox,
   network,
   epochPeriod,
@@ -28,7 +31,7 @@ export const saveSnapshot = async ({
   transactionHandler,
   emitter = defaultEmitter,
   toSaveSnapshot = isSnapshotNeeded,
-  now = Date.now(),
+  now = Math.floor(Date.now() / 1000),
 }: SaveSnapshotParams): Promise<any> => {
   if (network != Network.DEVNET) {
     const timeElapsed = now % epochPeriod;
@@ -40,6 +43,7 @@ export const saveSnapshot = async ({
     }
   }
   const { snapshotNeeded, latestCount } = await toSaveSnapshot({
+    chainId,
     veaInbox,
     count,
   });
@@ -49,6 +53,7 @@ export const saveSnapshot = async ({
 };
 
 export const isSnapshotNeeded = async ({
+  chainId,
   veaInbox,
   count,
   fetchLastSavedMessage = getLastMessageSaved,
@@ -63,7 +68,7 @@ export const isSnapshotNeeded = async ({
     lastSavedCount = Number(saveSnapshotLogs[saveSnapshotLogs.length - 1].args[2]);
   } catch {
     const veaInboxAddress = await veaInbox.getAddress();
-    const lastSavedMessageId = await fetchLastSavedMessage(veaInboxAddress);
+    const lastSavedMessageId = await fetchLastSavedMessage(veaInboxAddress, chainId);
     const messageIndex = extractMessageIndex(lastSavedMessageId);
     // adding 1 to the message index to get the last saved count
     lastSavedCount = messageIndex + 1;
@@ -75,6 +80,7 @@ export const isSnapshotNeeded = async ({
 };
 
 function extractMessageIndex(id: string): number {
+  if (id === undefined) return 0;
   const parts = id.split("-");
   if (parts.length < 2) {
     throw new Error(`Invalid message-id format: ${id}`);

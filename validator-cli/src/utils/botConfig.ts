@@ -1,5 +1,5 @@
-import { InvalidBotPathError, InvalidNetworkError } from "./errors";
-import { Network } from "../consts/bridgeRoutes";
+import { InvalidBotPathError, InvalidNetworkError, InvalidChainIdError } from "./errors";
+import { Network, bridges } from "../consts/bridgeRoutes";
 require("dotenv").config();
 
 export enum BotPaths {
@@ -52,6 +52,7 @@ export interface NetworkConfig {
  */
 export function getNetworkConfig(): NetworkConfig[] {
   const chainIds = process.env.VEAOUTBOX_CHAINS ? process.env.VEAOUTBOX_CHAINS.split(",") : [];
+  validateChainId(chainIds);
   const rawNetwork = process.env.NETWORKS ? process.env.NETWORKS.split(",") : [];
   const networks = validateNetworks(rawNetwork);
 
@@ -73,4 +74,12 @@ function validateNetworks(networks: string[]): Network[] {
     }
   }
   return networks as unknown as Network[];
+}
+
+function validateChainId(chainIds: string[]): void {
+  for (const chainId of chainIds) {
+    if (!bridges[chainId]) {
+      throw new InvalidChainIdError(chainId);
+    }
+  }
 }

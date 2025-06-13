@@ -32,6 +32,15 @@ class InvalidBotPathError extends Error {
   }
 }
 
+class InvalidChainIdError extends Error {
+  constructor(chainId: string) {
+    super();
+    this.name = "InvalidChainIdError";
+    const allowed = Object.keys(require("../consts/bridgeRoutes").bridges).join(", ");
+    this.message = `Invalid chainId: ${chainId}, use from: ${allowed}`;
+  }
+}
+
 class DevnetOwnerNotSetError extends Error {
   constructor() {
     super();
@@ -64,4 +73,5 @@ export {
   DevnetOwnerNotSetError,
   InvalidNetworkError,
   MissingEnvError,
+  InvalidChainIdError,
 };

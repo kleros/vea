@@ -64,7 +64,7 @@ const getLatestChallengeableEpoch = (epochPeriod: number, now: number = Date.now
  */
 const getBlockFromEpoch = async (epoch: number, epochPeriod: number, provider: JsonRpcProvider): Promise<number> => {
   const epochTimestamp = epoch * epochPeriod;
-  const latestBlock = await provider.getBlock("latest");
+  const latestBlock = await provider.getBlock("finalized");
   const baseBlock = await provider.getBlock(latestBlock.number - 500);
   const secPerBlock = (latestBlock.timestamp - baseBlock.timestamp) / (latestBlock.number - baseBlock.number);
   const blockFallBack = Math.floor((latestBlock.timestamp - epochTimestamp) / secPerBlock);

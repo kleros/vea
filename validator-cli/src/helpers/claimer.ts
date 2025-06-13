@@ -3,11 +3,9 @@ import { ethers } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { getClaim, ClaimHonestState } from "../utils/claim";
 import { getLastClaimedEpoch } from "../utils/graphQueries";
-import { ArbToEthTransactionHandler } from "./transactionHandler";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { ArbToEthDevnetTransactionHandler } from "./transactionHandlerDevnet";
-import { getTransactionHandler } from "../utils/ethers";
+import { ITransactionHandler, IDevnetTransactionHandler, getTransactionHandler } from "../utils/transactionHandlers";
 import { Network } from "../consts/bridgeRoutes";
 interface CheckAndClaimParams {
   chainId: number;
@@ -19,7 +17,7 @@ interface CheckAndClaimParams {
   veaInboxProvider: JsonRpcProvider;
   veaOutbox: any;
   veaOutboxProvider: JsonRpcProvider;
-  transactionHandler: ArbToEthTransactionHandler | null;
+  transactionHandler: ITransactionHandler | null;
   emitter: EventEmitter;
   fetchClaim?: typeof getClaim;
   fetchLatestClaimedEpoch?: typeof getLastClaimedEpoch;
@@ -48,6 +46,7 @@ async function checkAndClaim({
   if (!transactionHandler) {
     const TransactionHandler = fetchTransactionHandler(chainId, network);
     transactionHandler = new TransactionHandler({
+      chainId,
       network,
       epoch,
       veaInbox,
@@ -60,18 +59,17 @@ async function checkAndClaim({
   } else {
     transactionHandler.claim = claim;
   }
-
   if (network == Network.DEVNET) {
     return makeClaimDevnet(
       epoch,
       claim,
       outboxStateRoot,
-      transactionHandler as ArbToEthDevnetTransactionHandler,
+      transactionHandler as IDevnetTransactionHandler,
       veaInbox,
       emitter
     );
   } else if (claim == null && epoch == claimAbleEpoch) {
-    return makeClaim(epoch, transactionHandler, outboxStateRoot, veaInbox, veaOutbox, fetchLatestClaimedEpoch);
+    return makeClaim(chainId, epoch, transactionHandler, outboxStateRoot, veaInbox, veaOutbox, fetchLatestClaimedEpoch);
   } else if (claim != null) {
     return verifyClaim(transactionHandler, claim, veaOutboxProvider);
   } else {
@@ -84,10 +82,10 @@ async function makeClaimDevnet(
   epoch: number,
   claim: ClaimStruct | null,
   outboxStateRoot: string,
-  transactionHandler: ArbToEthDevnetTransactionHandler,
+  transactionHandler: IDevnetTransactionHandler,
   veaInbox: any,
   emitter: EventEmitter
-): Promise<ArbToEthDevnetTransactionHandler | null> {
+): Promise<IDevnetTransactionHandler | null> {
   if (claim == null) {
     const [savedSnapshot] = await Promise.all([veaInbox.snapshots(epoch)]);
 
@@ -102,16 +100,17 @@ async function makeClaimDevnet(
 }
 
 async function makeClaim(
+  chainId: number,
   epoch: number,
-  transactionHandler: ArbToEthTransactionHandler,
+  transactionHandler: ITransactionHandler,
   outboxStateRoot: string,
   veaInbox: any,
   veaOutbox: any,
   fetchLatestClaimedEpoch: typeof getLastClaimedEpoch = getLastClaimedEpoch
-): Promise<ArbToEthTransactionHandler | null> {
+): Promise<ITransactionHandler | null> {
   const [savedSnapshot, claimData] = await Promise.all([
     veaInbox.snapshots(epoch),
-    fetchLatestClaimedEpoch(veaOutbox.target),
+    fetchLatestClaimedEpoch(veaOutbox.target, chainId),
   ]);
   const newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
   const lastClaimChallenged = claimData?.challenged && savedSnapshot == outboxStateRoot;
@@ -122,7 +121,7 @@ async function makeClaim(
 }
 
 async function verifyClaim(
-  transactionHandler: ArbToEthTransactionHandler,
+  transactionHandler: ITransactionHandler,
   claim: ClaimStruct,
   veaOutboxProvider: JsonRpcProvider
 ) {
