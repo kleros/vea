@@ -1,6 +1,7 @@
 require("dotenv").config();
 import { EventEmitter } from "node:events";
 import { ethers } from "ethers";
+import https from "https";
 import { relayBatch, relayAllFrom } from "./utils/relay";
 import {
   initialize as initializeNonce,
@@ -11,7 +12,7 @@ import {
   getNetworkConfig,
   RelayerNetworkConfig,
 } from "./utils/relayerHelpers";
-import { initialize as initializeEmitter } from "./utils/logger";
+import { initialize as initializeEmitter, logger } from "./utils/logger";
 import { BotEvents } from "./utils/botEvents";
 import { getEpochPeriod, Network } from "./consts/bridgeRoutes";
 
@@ -22,6 +23,53 @@ interface RelayerConfig {
 }
 
 /**
+ * Sends a heartbeat signal to the monitoring service
+ */
+const sendHeartbeat = async (): Promise<void> => {
+  const HEARTBEAT_URL = process.env.HEARTBEAT_URL;
+  if (!HEARTBEAT_URL) {
+    return;
+  }
+  try {
+    const url = new URL(HEARTBEAT_URL);
+    const options = {
+      hostname: url.hostname,
+      port: url.port || 443,
+      path: url.pathname,
+      method: "GET",
+      headers: {
+        "User-Agent": "Vea-Validator-CLI/1.0",
+      },
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let data = "";
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+        res.on("end", () => {
+          resolve();
+        });
+      });
+
+      req.on("error", (error) => {
+        reject(error);
+      });
+
+      req.setTimeout(10000, () => {
+        req.destroy();
+        reject(new Error("Heartbeat request timeout"));
+      });
+
+      req.end();
+    });
+  } catch (error) {
+    // Silently fail - heartbeat errors shouldn't affect the main relayer operation
+  }
+};
+
+/**
  * Start the relayer
  * @param config.networkConfigs The network configurations retrieved from the env.
  * @param config.shutdownManager The shutdown manager
@@ -29,14 +77,25 @@ interface RelayerConfig {
  */
 export async function start({ networkConfigs, shutdownManager, emitter }: RelayerConfig) {
   initializeEmitter(emitter);
+
+  // Send startup heartbeat
+  await sendHeartbeat();
+
   let delayAmount = 7200 * 1000; // 2 hours in ms
   while (!shutdownManager.getIsShuttingDown()) {
     for (const networkConfig of networkConfigs) {
       delayAmount = await processNetworkConfig(networkConfig, shutdownManager, emitter, delayAmount);
     }
     emitter.emit(BotEvents.WAITING, delayAmount);
+
+    // Send heartbeat before waiting
+    await sendHeartbeat();
+
     await delay(delayAmount);
   }
+
+  // Send shutdown heartbeat
+  await sendHeartbeat();
 }
 
 /**
