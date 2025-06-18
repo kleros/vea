@@ -13,8 +13,57 @@ import { CheckAndClaimParams, checkAndClaim } from "./helpers/claimer";
 import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./helpers/validator";
 import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
+import https from "https";
 
 const RPC_BLOCK_LIMIT = 1000; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
+
+/**
+ * Sends a heartbeat signal to the monitoring service
+ * @param status - The status to send with the heartbeat
+ */
+const sendHeartbeat = async (): Promise<void> => {
+  const HEARTBEAT_URL = process.env.HEARTBEAT_URL;
+  if (!HEARTBEAT_URL) {
+    return;
+  }
+  try {
+    const url = new URL(HEARTBEAT_URL);
+    const options = {
+      hostname: url.hostname,
+      port: url.port || 443,
+      path: url.pathname,
+      method: "GET",
+      headers: {
+        "User-Agent": "Vea-Validator-CLI/1.0",
+      },
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let data = "";
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+        res.on("end", () => {
+          resolve();
+        });
+      });
+
+      req.on("error", (error) => {
+        reject(error);
+      });
+
+      req.setTimeout(10000, () => {
+        req.destroy();
+        reject(new Error("Heartbeat request timeout"));
+      });
+
+      req.end();
+    });
+  } catch (error) {
+    // Silently fail - heartbeat errors shouldn't affect the main relayer operation
+  }
+};
 
 /**
  * @file This file contains the logic for watching bridge and validating/resolving for claims.
@@ -35,14 +84,22 @@ export const watch = async (
   const { path, toSaveSnapshot } = getBotPath({ cliCommand });
   const networkConfigs = getNetworkConfig();
   emitter.emit(BotEvents.STARTED, path, networkConfigs[0].networks);
+
+  // Send startup heartbeat
+  await sendHeartbeat();
+
   const transactionHandlers: { [key: string]: any } = {};
   const toWatch: { [key: string]: { count: number; epochs: number[] } } = {};
   while (!shutDownSignal.getIsShutdownSignal()) {
+    await sendHeartbeat();
     for (const networkConfig of networkConfigs) {
       await processNetwork(path, toSaveSnapshot, networkConfig, transactionHandlers, toWatch, emitter);
     }
     await wait(1000 * 10);
   }
+
+  // Send shutdown heartbeat
+  await sendHeartbeat();
 };
 
 async function processNetwork(
@@ -227,5 +284,6 @@ const wait = (ms: number): Promise<void> => new Promise((resolve: () => void) =>
 
 if (require.main === module) {
   const shutDownSignal = new ShutdownSignal(false);
+
   watch(shutDownSignal);
 }
