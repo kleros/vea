@@ -58,3 +58,59 @@ dataSources:
         - event: SnapshotSent(indexed uint256,bytes32)
           handler: handleSnapshotSent
       file: ./src/VeaInbox.ts
+  - kind: ethereum
+    name: VeaInboxArbToGnosisDevnet
+    network: arbitrum-sepolia
+    source:
+      address: "0xF6286b9C6c7F1B33Ea976FA43434027c7b8421A7"
+      abi: VeaInboxArbToGnosisDevnet
+      startBlock: 129093812
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Snapshot
+        - Message
+        - Refs
+      abis:
+        - name: VeaInboxArbToGnosisDevnet
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json
+        - name: VeaInboxArbToEthDevnet
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json
+      eventHandlers:
+        - event: MessageSent(bytes)
+          handler: handleMessageSent
+        - event: SnapshotSaved(bytes32,uint256,uint64)
+          handler: handleSnapshotSaved
+        - event: SnapshotSent(indexed uint256,bytes32)
+          handler: handleSnapshotSent
+      file: ./src/VeaInbox.ts
+  - kind: ethereum
+    name: VeaInboxArbToGnosisTestnet
+    network: arbitrum-sepolia
+    source:
+      address: "0xa0d410b202D69C36871d5135ce42fC7D379BBB1c"
+      abi: VeaInboxArbToGnosisTestnet
+      startBlock: 139057386
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Snapshot
+        - Message
+        - Refs
+      abis:
+        - name: VeaInboxArbToGnosisTestnet
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisTestnet.json
+        - name: VeaInboxArbToEthDevnet
+          file: ../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json
+      eventHandlers:
+        - event: MessageSent(bytes)
+          handler: handleMessageSent
+        - event: SnapshotSaved(bytes32,uint256,uint64)
+          handler: handleSnapshotSaved
+        - event: SnapshotSent(indexed uint256,bytes32)
+          handler: handleSnapshotSent
+      file: ./src/VeaInbox.ts
