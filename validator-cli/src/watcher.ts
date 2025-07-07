@@ -86,12 +86,12 @@ export const watch = async (
   emitter.emit(BotEvents.STARTED, path, networkConfigs[0].networks);
 
   // Send startup heartbeat
-  await sendHeartbeat();
+  await sendHeartbeat().catch(() => {});
 
   const transactionHandlers: { [key: string]: any } = {};
   const toWatch: { [key: string]: { count: number; epochs: number[] } } = {};
   while (!shutDownSignal.getIsShutdownSignal()) {
-    await sendHeartbeat();
+    await sendHeartbeat().catch(() => {});
     for (const networkConfig of networkConfigs) {
       await processNetwork(path, toSaveSnapshot, networkConfig, transactionHandlers, toWatch, emitter);
     }
@@ -99,7 +99,7 @@ export const watch = async (
   }
 
   // Send shutdown heartbeat
-  await sendHeartbeat();
+  await sendHeartbeat().catch(() => {});
 };
 
 async function processNetwork(

@@ -38,7 +38,7 @@ const sendHeartbeat = async (): Promise<void> => {
       path: url.pathname,
       method: "GET",
       headers: {
-        "User-Agent": "Vea-Validator-CLI/1.0",
+        "User-Agent": "Vea-Relayer-CLI/1.0",
       },
     };
 
@@ -79,7 +79,7 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
   initializeEmitter(emitter);
 
   // Send startup heartbeat
-  await sendHeartbeat();
+  await sendHeartbeat().catch(() => {});
 
   let delayAmount = 7200 * 1000; // 2 hours in ms
   while (!shutdownManager.getIsShuttingDown()) {
@@ -89,13 +89,13 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
     emitter.emit(BotEvents.WAITING, delayAmount);
 
     // Send heartbeat before waiting
-    await sendHeartbeat();
+    await sendHeartbeat().catch(() => {});
 
     await delay(delayAmount);
   }
 
   // Send shutdown heartbeat
-  await sendHeartbeat();
+  await sendHeartbeat().catch(() => {});
 }
 
 /**
