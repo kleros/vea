@@ -3,7 +3,7 @@ import {
   BigInt,
   ByteArray,
   Bytes,
-  log,
+  dataSource,
 } from "@graphprotocol/graph-ts";
 import { Snapshot, Message, Ref, Fallback, Inbox } from "../generated/schema";
 import {
@@ -122,10 +122,10 @@ export function handleSnapshotSaved(event: SnapshotSaved): void {
     inbox = new Inbox(event.address);
     inbox.save();
   }
-  const contract = VeaInboxArbToEthDevnet.bind(event.address);
-  const epochPeriod = contract.epochPeriod();
+  const veaInbox = VeaInboxArbToEthDevnet.bind(event.address);
+  const epochPeriod = veaInbox.epochPeriod();
   const epoch = event.block.timestamp.div(epochPeriod);
-  const stateRoot = contract.snapshots(epoch);
+  const stateRoot = veaInbox.snapshots(epoch);
   const currentSnapshot = getCurrentSnapshot(event.address);
   currentSnapshot.saved = true;
   currentSnapshot.caller = event.transaction.from;
