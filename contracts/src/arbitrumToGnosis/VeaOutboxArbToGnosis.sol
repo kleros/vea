@@ -6,7 +6,7 @@
 /// @custom:bounties: []
 /// @custom:deployments: []
 
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
