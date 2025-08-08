@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:authors: [@jaybuidl, @mani99brar, @shotaronowhere]
 /// @custom:reviewers: []
 /// @custom:auditors: []
 /// @custom:bounties: []
@@ -70,26 +70,16 @@ contract VeaInboxArbToEth is IVeaInbox {
     ///      Amortized cost is constant.
     /// Note: See docs for details how inbox manages merkle tree state.
     /// @param _to The address of the contract on the receiving chain which receives the calldata.
-    /// @param _fnSelector The function selector of the receiving contract.
-    /// @param _data The message calldata, abi.encode(param1, param2, ...)
+    /// @param _data The message calldata, abi.encodeWithSelector(fnSelector, param1, param2, ...)
     /// @return msgId The zero based index of the message in the inbox.
-    function sendMessage(address _to, bytes4 _fnSelector, bytes memory _data) external override returns (uint64) {
+    function sendMessage(address _to, bytes memory _data) external override returns (uint64) {
         uint64 oldCount = count;
 
         // Given arbitrum's speed limit of 7 million gas / second, it would take atleast 8 million years of full blocks to overflow.
         // It *should* be impossible to overflow, but we check to be safe when appending to the tree.
         require(oldCount < type(uint64).max, "Inbox is full.");
 
-        bytes memory nodeData = abi.encodePacked(
-            oldCount,
-            _to,
-            // _data is abi.encode(param1, param2, ...), we need to encode it again to get the correct leaf data
-            abi.encodePacked( // equivalent to abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
-                _fnSelector,
-                bytes32(uint256(uint160(msg.sender))), // big endian padded encoding of msg.sender, simulating abi.encodeWithSelector
-                _data
-            )
-        );
+        bytes memory nodeData = abi.encodePacked(oldCount, _to, msg.sender, _data);
 
         // single hashed leaf
         bytes32 newInboxNode = keccak256(nodeData);
