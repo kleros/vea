@@ -35,6 +35,10 @@ contract ReceiverGatewayMock is IReceiverGatewayMock {
         IVeaOutboxOnL1(veaOutbox).setAllowlist(senderGateway, _allowed);
     }
 
+    function allowlistAllSender(bool _allowed) external {
+        IVeaOutboxOnL1(veaOutbox).setAllowlist(address(0), _allowed);
+    }
+
     /// Receive the message from the sender gateway.
     function receiveMessage(uint256 _data) external onlyFromVeaBridge {
         _receiveMessage(_data);
