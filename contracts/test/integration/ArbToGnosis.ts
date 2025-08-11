@@ -249,7 +249,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     it("should relay message after verification", async () => {
       // Setup
       const data = [1121, 1122, 1123, 1124, 1125];
-      const sendMessageTx = await senderGateway.connect(sender).sendMessageArray(data);
+      await senderGateway.connect(sender).sendMessageArray(data);
       await veaInbox.connect(bridger).saveSnapshot();
 
       const MessageSent = veaInbox.filters.MessageSent();
@@ -258,7 +258,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 
@@ -322,7 +322,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 
@@ -380,7 +380,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 
@@ -761,7 +761,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 
@@ -938,7 +938,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 

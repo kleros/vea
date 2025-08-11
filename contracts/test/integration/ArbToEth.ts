@@ -250,7 +250,7 @@ describe("Integration tests", async () => {
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
 
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       const msg2 = MessageSentEvent[1].args._nodeData;
 
@@ -310,7 +310,7 @@ describe("Integration tests", async () => {
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
 
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       const msg2 = MessageSentEvent[1].args._nodeData;
 
@@ -347,7 +347,7 @@ describe("Integration tests", async () => {
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 
-      await expect(veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData)).itself.be.revertedWith(
+      await expect(veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData)).to.be.revertedWith(
         "Message sender not allowed to call receiver."
       );
     });
@@ -365,7 +365,7 @@ describe("Integration tests", async () => {
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
 
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       const msg2 = MessageSentEvent[1].args._nodeData;
 
@@ -426,7 +426,7 @@ describe("Integration tests", async () => {
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
 
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       const msg2 = MessageSentEvent[1].args._nodeData;
 
@@ -478,7 +478,7 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       let nodes: string[] = [];
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
@@ -561,7 +561,7 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       let nodes: string[] = [];
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
@@ -740,7 +740,7 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       let nodes: string[] = [];
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
@@ -879,7 +879,7 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       let nodes: string[] = [];
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
@@ -1007,12 +1007,10 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58); //18+40
-      const msgData = "0x" + msg.slice(58);
+      const { nonce, to, from, msgData } = decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
 
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
@@ -1303,7 +1301,7 @@ async function claimAndVerify({
   });
 }
 
-async function decodeMessage(msg: any) {
+function decodeMessage(msg: any) {
   const nonce = "0x" + msg.slice(2, 18);
   const to = "0x" + msg.slice(18, 58); //18+40
   const from = "0x" + msg.slice(58, 98); //58+40
