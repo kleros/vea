@@ -9,6 +9,7 @@
 pragma solidity ^0.8.24;
 
 import "./IReceiverGatewayMock.sol";
+import "../../interfaces/outboxes/IVeaOutboxOnL1.sol";
 
 /// Receiver Gateway Mock
 /// Counterpart of `SenderGatewayMock`
@@ -18,29 +19,30 @@ contract ReceiverGatewayMock is IReceiverGatewayMock {
 
     uint256 public messageCount;
     uint256 public data;
+    uint256[] public dataArray;
 
     constructor(address _veaOutbox, address _senderGateway) {
         veaOutbox = _veaOutbox;
         senderGateway = _senderGateway;
     }
 
-    modifier onlyFromAuthenticatedVeaSender(address messageSender) {
+    modifier onlyFromVeaBridge() {
         require(veaOutbox == msg.sender, "Vea Bridge only.");
-        require(messageSender == senderGateway, "Only the sender gateway is allowed.");
         _;
     }
 
-    /// Receive the message from the sender gateway.
-    function receiveMessage(address messageSender) external onlyFromAuthenticatedVeaSender(messageSender) {
-        _receiveMessage();
+    function allowlistSender(bool _allowed) external {
+        IVeaOutboxOnL1(veaOutbox).setAllowlist(senderGateway, _allowed);
     }
 
     /// Receive the message from the sender gateway.
-    function receiveMessage(
-        address messageSender,
-        uint256 _data
-    ) external onlyFromAuthenticatedVeaSender(messageSender) {
+    function receiveMessage(uint256 _data) external onlyFromVeaBridge {
         _receiveMessage(_data);
+    }
+
+    function receiveMessageArray(uint256[] calldata _data) external onlyFromVeaBridge {
+        _receiveMessage();
+        dataArray = _data;
     }
 
     function _receiveMessage() internal {
