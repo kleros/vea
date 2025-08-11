@@ -1319,7 +1319,7 @@ async function claimAndVerify({
   });
 }
 
-async function decodeMessage(msg: any) {
+export async function decodeMessage(msg: any) {
   const nonce = "0x" + msg.slice(2, 18);
   const to = "0x" + msg.slice(18, 58); //18+40
   const from = "0x" + msg.slice(58, 98); //58+40
