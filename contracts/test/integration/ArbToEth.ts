@@ -252,10 +252,7 @@ describe("Integration tests", async () => {
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
 
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58); //18+40
-      const from = "0x" + msg.slice(58, 98); //58+40
-      const msgData = "0x" + msg.slice(98);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       const msg2 = MessageSentEvent[1].args._nodeData;
 
@@ -278,49 +275,16 @@ describe("Integration tests", async () => {
       );
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
       // Honest Bridger
-      const epochPeriod = Number(await veaInbox.epochPeriod());
-
-      await network.provider.send("evm_increaseTime", [epochPeriod]);
-      await network.provider.send("evm_mine");
-
-      // Honest Bridger
-      const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
-      const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
-      if (!blockClaim) return;
-      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
-      await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
-      await network.provider.send("evm_mine");
-
-      const startValidationTxn = await veaOutbox.startVerification(epoch, {
-        stateRoot: batchMerkleRoot,
-        claimer: bridger.address,
-        timestampClaimed: blockClaim.timestamp,
-        timestampVerification: 0,
-        blocknumberVerification: 0,
-        honest: 0,
-        challenger: ethers.ZeroAddress,
+      await claimAndVerify({
+        veaInbox,
+        veaOutbox,
+        bridger,
+        epoch,
+        batchMerkleRoot,
+        ethers,
+        network,
+        mine,
       });
-      await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
-
-      const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
-      if (!blockStartValidation) return;
-
-      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
-      await network.provider.send("evm_increaseTime", [minChallengePeriod]);
-      await network.provider.send("evm_mine");
-      const blocksToMine = Math.ceil(minChallengePeriod / 12);
-      await mine(blocksToMine);
-
-      const verifySnapshotTxn = await veaOutbox.connect(bridger).verifySnapshot(epoch, {
-        stateRoot: batchMerkleRoot,
-        claimer: bridger.address,
-        timestampClaimed: blockClaim.timestamp,
-        timestampVerification: blockStartValidation.timestamp!,
-        blocknumberVerification: startValidationTxn.blockNumber!,
-        honest: 0,
-        challenger: ethers.ZeroAddress,
-      });
-
       const mt = new MerkleTree(nodes);
       await expect(veaOutbox.connect(relayer).sendMessage([], nonce, to, from, msgData)).to.be.revertedWith(
         "Invalid proof."
@@ -350,10 +314,7 @@ describe("Integration tests", async () => {
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
 
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58); //18+40
-      const from = "0x" + msg.slice(58, 98); //58+40
-      const msgData = "0x" + msg.slice(98);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       const msg2 = MessageSentEvent[1].args._nodeData;
 
@@ -376,47 +337,15 @@ describe("Integration tests", async () => {
       );
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
       // Honest Bridger
-      const epochPeriod = Number(await veaInbox.epochPeriod());
-
-      await network.provider.send("evm_increaseTime", [epochPeriod]);
-      await network.provider.send("evm_mine");
-
-      // Honest Bridger
-      const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
-      const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
-      if (!blockClaim) return;
-      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
-      await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
-      await network.provider.send("evm_mine");
-
-      const startValidationTxn = await veaOutbox.startVerification(epoch, {
-        stateRoot: batchMerkleRoot,
-        claimer: bridger.address,
-        timestampClaimed: blockClaim.timestamp,
-        timestampVerification: 0,
-        blocknumberVerification: 0,
-        honest: 0,
-        challenger: ethers.ZeroAddress,
-      });
-      await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
-
-      const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
-      if (!blockStartValidation) return;
-
-      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
-      await network.provider.send("evm_increaseTime", [minChallengePeriod]);
-      await network.provider.send("evm_mine");
-      const blocksToMine = Math.ceil(minChallengePeriod / 12);
-      await mine(blocksToMine);
-
-      const verifySnapshotTxn = await veaOutbox.connect(bridger).verifySnapshot(epoch, {
-        stateRoot: batchMerkleRoot,
-        claimer: bridger.address,
-        timestampClaimed: blockClaim.timestamp,
-        timestampVerification: blockStartValidation.timestamp!,
-        blocknumberVerification: startValidationTxn.blockNumber!,
-        honest: 0,
-        challenger: ethers.ZeroAddress,
+      await claimAndVerify({
+        veaInbox,
+        veaOutbox,
+        bridger,
+        epoch,
+        batchMerkleRoot,
+        ethers,
+        network,
+        mine,
       });
 
       const mt = new MerkleTree(nodes);
@@ -440,10 +369,7 @@ describe("Integration tests", async () => {
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
 
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58); //18+40
-      const from = "0x" + msg.slice(58, 98); //58+40
-      const msgData = "0x" + msg.slice(98);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       const msg2 = MessageSentEvent[1].args._nodeData;
 
@@ -466,49 +392,16 @@ describe("Integration tests", async () => {
       );
       const batchMerkleRoot = await veaInbox.snapshots(epoch);
       // Honest Bridger
-      const epochPeriod = Number(await veaInbox.epochPeriod());
-
-      await network.provider.send("evm_increaseTime", [epochPeriod]);
-      await network.provider.send("evm_mine");
-
-      // Honest Bridger
-      const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
-      const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
-      if (!blockClaim) return;
-      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
-      await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
-      await network.provider.send("evm_mine");
-
-      const startValidationTxn = await veaOutbox.startVerification(epoch, {
-        stateRoot: batchMerkleRoot,
-        claimer: bridger.address,
-        timestampClaimed: blockClaim.timestamp,
-        timestampVerification: 0,
-        blocknumberVerification: 0,
-        honest: 0,
-        challenger: ethers.ZeroAddress,
+      await claimAndVerify({
+        veaInbox,
+        veaOutbox,
+        bridger,
+        epoch,
+        batchMerkleRoot,
+        ethers,
+        network,
+        mine,
       });
-      await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
-
-      const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
-      if (!blockStartValidation) return;
-
-      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
-      await network.provider.send("evm_increaseTime", [minChallengePeriod]);
-      await network.provider.send("evm_mine");
-      const blocksToMine = Math.ceil(minChallengePeriod / 12);
-      await mine(blocksToMine);
-
-      const verifySnapshotTxn = await veaOutbox.connect(bridger).verifySnapshot(epoch, {
-        stateRoot: batchMerkleRoot,
-        claimer: bridger.address,
-        timestampClaimed: blockClaim.timestamp,
-        timestampVerification: blockStartValidation.timestamp!,
-        blocknumberVerification: startValidationTxn.blockNumber!,
-        honest: 0,
-        challenger: ethers.ZeroAddress,
-      });
-
       const mt = new MerkleTree(nodes);
       await expect(veaOutbox.connect(relayer).sendMessage([], nonce, to, from, msgData)).to.be.revertedWith(
         "Invalid proof."
@@ -532,10 +425,7 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58); //18+40
-      const from = "0x" + msg.slice(58, 98); //58+40
-      const msgData = "0x" + msg.slice(98);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
@@ -618,10 +508,7 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58); //18+40
-      const from = "0x" + msg.slice(58, 98); //58+40
-      const msgData = "0x" + msg.slice(98);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
@@ -802,10 +689,7 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58); //18+40
-      const from = "0x" + msg.slice(58, 98); //58+40
-      const msgData = "0x" + msg.slice(98);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
@@ -946,10 +830,7 @@ describe("Integration tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58); //18+40
-      const from = "0x" + msg.slice(58, 98); //58+40
-      const msgData = "0x" + msg.slice(98);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
@@ -1314,3 +1195,75 @@ describe("Integration tests", async () => {
     });
   });
 });
+
+// Utility function for claiming and verifying a batch
+async function claimAndVerify({
+  veaInbox,
+  veaOutbox,
+  bridger,
+  epoch,
+  batchMerkleRoot,
+  ethers,
+  network,
+  mine,
+}: {
+  veaInbox: any;
+  veaOutbox: any;
+  bridger: any;
+  epoch: number;
+  batchMerkleRoot: string;
+  ethers: any;
+  network: any;
+  mine: (blocks: number) => Promise<void>;
+}) {
+  const epochPeriod = Number(await veaInbox.epochPeriod());
+
+  await network.provider.send("evm_increaseTime", [epochPeriod]);
+  await network.provider.send("evm_mine");
+
+  // Honest Bridger
+  const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+  const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+  if (!blockClaim) return;
+  const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
+  await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
+  await network.provider.send("evm_mine");
+
+  const startValidationTxn = await veaOutbox.startVerification(epoch, {
+    stateRoot: batchMerkleRoot,
+    claimer: bridger.address,
+    timestampClaimed: blockClaim.timestamp,
+    timestampVerification: 0,
+    blocknumberVerification: 0,
+    honest: 0,
+    challenger: ethers.ZeroAddress,
+  });
+  await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
+
+  const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+  if (!blockStartValidation) return;
+
+  const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
+  await network.provider.send("evm_increaseTime", [minChallengePeriod]);
+  await network.provider.send("evm_mine");
+  const blocksToMine = Math.ceil(minChallengePeriod / 12);
+  await mine(blocksToMine);
+
+  const verifySnapshotTxn = await veaOutbox.connect(bridger).verifySnapshot(epoch, {
+    stateRoot: batchMerkleRoot,
+    claimer: bridger.address,
+    timestampClaimed: blockClaim.timestamp,
+    timestampVerification: blockStartValidation.timestamp!,
+    blocknumberVerification: startValidationTxn.blockNumber!,
+    honest: 0,
+    challenger: ethers.ZeroAddress,
+  });
+}
+
+async function decodeMessage(msg: any) {
+  const nonce = "0x" + msg.slice(2, 18);
+  const to = "0x" + msg.slice(18, 58); //18+40
+  const from = "0x" + msg.slice(58, 98); //58+40
+  const msgData = "0x" + msg.slice(98);
+  return { nonce, to, from, msgData };
+}
