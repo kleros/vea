@@ -73,7 +73,7 @@ contract VeaInboxGnosisToArb is IVeaInbox {
     /// @param _to The address of the contract on the receiving chain which receives the calldata.
     /// @param _data The message calldata, abi.encodeWithSelector(fnSelector, param1, param2, ...)
     /// @return msgId The zero based index of the message in the inbox.
-    function sendMessage(address _to, bytes memory _data) external override returns (uint64) {
+    function sendMessage(address _to, bytes calldata _data) external override returns (uint64) {
         uint64 oldCount = count;
 
         // Given arbitrum's speed limit of 7 million gas / second, it would take atleast 8 million years of full blocks to overflow.

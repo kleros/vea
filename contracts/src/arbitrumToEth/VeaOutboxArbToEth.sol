@@ -354,7 +354,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
 
     /// @dev Sets the allowlist for the sender gateway.
     /// Note: Address(0) is used to allow all addresses.
-    /// @param _from The address to allow.
+    /// @param _from The address to allow or disallow
     /// @param _allowed Whether to allow or disallow the address.
     function setAllowlist(address _from, bool _allowed) external {
         allowlist[msg.sender][_from] = _allowed;

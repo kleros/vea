@@ -14,7 +14,7 @@ interface IVeaInbox {
     /// @param _to The cross-domain contract address which receives the calldata.
     /// @param _data The message calldata, abi.encodeWithSelector(...)
     /// @return msgId The index of the message in the inbox, as a message Id, needed to relay the message.
-    function sendMessage(address _to, bytes memory _data) external returns (uint64 msgId);
+    function sendMessage(address _to, bytes calldata _data) external returns (uint64 msgId);
 
     /// @dev Snapshots can be saved a maximum of once per epoch.
     ///      Saves snapshot of state root.

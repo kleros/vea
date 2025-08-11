@@ -297,7 +297,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     }
 
     /// @dev Sets the allowlist for the sender gateway.
-    /// @param _from The address to allow.
+    /// @param _from The address to allow or disallow
     /// @param _allow Whether to allow or disallow the address.
     function setAllowlist(address _from, bool _allow) external {
         allowlist[msg.sender][_from] = _allow;

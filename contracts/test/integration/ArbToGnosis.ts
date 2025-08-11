@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { deployments, ethers, network } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { MerkleTree } from "../merkle/MerkleTree";
-import { decodeMessage } from "./ArbToEth";
 const { mine } = require("@nomicfoundation/hardhat-network-helpers");
 
 import {
@@ -314,7 +313,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     it("should not be able to relay after verification", async () => {
       // Setup
       const data = 1121;
-      const sendMessageTx = await senderGateway.connect(sender).sendMessage(data);
+      await senderGateway.connect(sender).sendMessage(data);
       await veaInbox.connect(bridger).saveSnapshot();
 
       const MessageSent = veaInbox.filters.MessageSent();
@@ -372,7 +371,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     it("should be able to relay with global allowance after verification", async () => {
       // Setup
       const data = [1121, 1122, 1123, 1124, 1125];
-      const sendMessageTx = await senderGateway.connect(sender).sendMessageArray(data);
+      await senderGateway.connect(sender).sendMessageArray(data);
       await veaInbox.connect(bridger).saveSnapshot();
 
       const MessageSent = veaInbox.filters.MessageSent();
@@ -517,7 +516,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     });
 
     it("should allow challenger to submit a challenge", async () => {
-      const { claimBlock, challengeTx } = await setupClaimAndChallenge(epoch, batchMerkleRoot, 0);
+      const { challengeTx } = await setupClaimAndChallenge(epoch, batchMerkleRoot, 0);
 
       await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch, challenger.address);
     });
@@ -802,7 +801,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     });
 
     it("should allow challenger to submit a challenge to a dishonest claim", async () => {
-      const { claimBlock, challengeTx } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+      const { challengeTx } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
 
       await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch, challenger.address);
     });
@@ -1084,3 +1083,11 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     });
   });
 });
+
+async function decodeMessage(msg: any) {
+  const nonce = "0x" + msg.slice(2, 18);
+  const to = "0x" + msg.slice(18, 58); //18+40
+  const from = "0x" + msg.slice(58, 98); //58+40
+  const msgData = "0x" + msg.slice(98);
+  return { nonce, to, from, msgData };
+}

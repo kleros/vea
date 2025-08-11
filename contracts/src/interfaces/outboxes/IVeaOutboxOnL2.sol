@@ -33,7 +33,7 @@ interface IVeaOutboxOnL2 {
 
     /// @dev Sets the allowlist for the sender gateway.
     /// Note: Address(0) is used to allow all addresses.
-    /// @param _from The address to allow.
+    /// @param _from The address to allow or disallow
     /// @param _allow Whether to allow or disallow the address.
     function setAllowlist(address _from, bool _allow) external;
 }
