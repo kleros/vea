@@ -53,6 +53,7 @@ describe("Integration tests", async () => {
     senderGateway = (await ethers.getContract("SenderGateway")) as SenderGatewayMock;
     bridge = (await ethers.getContract("BridgeMock")) as BridgeMock;
     arbsysMock = (await ethers.getContract("ArbSysMock")) as ArbSysMock;
+    await receiverGateway.allowlistSender(true);
   });
 
   it("should initialize contracts correctly", async () => {
@@ -253,7 +254,8 @@ describe("Integration tests", async () => {
 
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
-      const msgData = "0x" + msg.slice(58);
+      const from = "0x" + msg.slice(58, 98); //58+40
+      const msgData = "0x" + msg.slice(98);
 
       const msg2 = MessageSentEvent[1].args._nodeData;
 
@@ -261,10 +263,11 @@ describe("Integration tests", async () => {
 
       const nonce2 = "0x" + msg2.slice(2, 18);
       const to2 = "0x" + msg2.slice(18, 58); //18+40
-      const msgData2 = "0x" + msg2.slice(58);
+      const from2 = "0x" + msg2.slice(58, 98); //58+40
+      const msgData2 = "0x" + msg2.slice(98);
 
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
-      nodes.push(MerkleTree.makeLeafNode(nonce2, to2, msgData2));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce2, to2, from2, msgData2));
 
       const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
 
@@ -319,13 +322,203 @@ describe("Integration tests", async () => {
       });
 
       const mt = new MerkleTree(nodes);
-      await expect(veaOutbox.connect(relayer).sendMessage([], nonce, to, msgData)).to.be.revertedWith("Invalid proof.");
+      await expect(veaOutbox.connect(relayer).sendMessage([], nonce, to, from, msgData)).to.be.revertedWith(
+        "Invalid proof."
+      );
       const proof = mt.getHexProof(nodes[0]);
 
-      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, nonce, to, msgData);
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
-      await expect(veaOutbox.connect(relayer).sendMessage(proof, nonce, to, msgData)).to.be.revertedWith(
+      await expect(veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData)).to.be.revertedWith(
+        "Message already relayed"
+      );
+    });
+
+    it("should be able to verify but not relay message", async () => {
+      // Disabling the allowlist for the sender enable in beforeEach hook (default is false)
+      await receiverGateway.allowlistSender(false);
+      // sending sample data through the fast bridge
+      const data = 1121;
+      const sendMessagetx = await senderGateway.sendMessage(data);
+      //const inboxsnapshot = await veaInbox.inbox(0);
+
+      const sendMessagetx2 = await senderGateway.sendMessage(data);
+      //const inboxsnapshot2 = await veaInbox.inbox(0);
+      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
+      const MessageSent = veaInbox.filters.MessageSent();
+      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
+      const msg = MessageSentEvent[0].args._nodeData;
+
+      const nonce = "0x" + msg.slice(2, 18);
+      const to = "0x" + msg.slice(18, 58); //18+40
+      const from = "0x" + msg.slice(58, 98); //58+40
+      const msgData = "0x" + msg.slice(98);
+
+      const msg2 = MessageSentEvent[1].args._nodeData;
+
+      let nodes: string[] = [];
+
+      const nonce2 = "0x" + msg2.slice(2, 18);
+      const to2 = "0x" + msg2.slice(18, 58); //18+40
+      const from2 = "0x" + msg2.slice(58, 98); //58+40
+      const msgData2 = "0x" + msg2.slice(98);
+
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce2, to2, from2, msgData2));
+
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
+
+      const BatchOutgoing = veaInbox.filters.SnapshotSaved();
+      const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
+      );
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
+      // Honest Bridger
+      const epochPeriod = Number(await veaInbox.epochPeriod());
+
+      await network.provider.send("evm_increaseTime", [epochPeriod]);
+      await network.provider.send("evm_mine");
+
+      // Honest Bridger
+      const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!blockClaim) return;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
+      await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
+      await network.provider.send("evm_mine");
+
+      const startValidationTxn = await veaOutbox.startVerification(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: blockClaim.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: ethers.ZeroAddress,
+      });
+      await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
+
+      const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+      if (!blockStartValidation) return;
+
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
+      await network.provider.send("evm_increaseTime", [minChallengePeriod]);
+      await network.provider.send("evm_mine");
+      const blocksToMine = Math.ceil(minChallengePeriod / 12);
+      await mine(blocksToMine);
+
+      const verifySnapshotTxn = await veaOutbox.connect(bridger).verifySnapshot(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: blockClaim.timestamp,
+        timestampVerification: blockStartValidation.timestamp!,
+        blocknumberVerification: startValidationTxn.blockNumber!,
+        honest: 0,
+        challenger: ethers.ZeroAddress,
+      });
+
+      const mt = new MerkleTree(nodes);
+      const proof = mt.getHexProof(nodes[0]);
+
+      await expect(veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData)).itself.be.revertedWith(
+        "Message sender not allowed to call receiver."
+      );
+    });
+
+    it("should be able to verify and relay message with dynamic array", async () => {
+      // sending sample data through the fast bridge
+      const data = [1121, 1122, 1123, 1124, 1125];
+      const sendMessagetx = await senderGateway.sendMessageArray(data);
+      //const inboxsnapshot = await veaInbox.inbox(0);
+
+      const sendMessagetx2 = await senderGateway.sendMessageArray(data);
+      //const inboxsnapshot2 = await veaInbox.inbox(0);
+      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
+      const MessageSent = veaInbox.filters.MessageSent();
+      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
+      const msg = MessageSentEvent[0].args._nodeData;
+
+      const nonce = "0x" + msg.slice(2, 18);
+      const to = "0x" + msg.slice(18, 58); //18+40
+      const from = "0x" + msg.slice(58, 98); //58+40
+      const msgData = "0x" + msg.slice(98);
+
+      const msg2 = MessageSentEvent[1].args._nodeData;
+
+      let nodes: string[] = [];
+
+      const nonce2 = "0x" + msg2.slice(2, 18);
+      const to2 = "0x" + msg2.slice(18, 58); //18+40
+      const from2 = "0x" + msg2.slice(58, 98); //58+40
+      const msgData2 = "0x" + msg2.slice(98);
+
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce2, to2, from2, msgData2));
+
+      const sendBatchTx = await veaInbox.connect(bridger).saveSnapshot();
+
+      const BatchOutgoing = veaInbox.filters.SnapshotSaved();
+      const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
+      const epoch = Math.floor(
+        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
+      );
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
+      // Honest Bridger
+      const epochPeriod = Number(await veaInbox.epochPeriod());
+
+      await network.provider.send("evm_increaseTime", [epochPeriod]);
+      await network.provider.send("evm_mine");
+
+      // Honest Bridger
+      const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const blockClaim = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!blockClaim) return;
+      const maxL2StateSyncDelay = Number(await veaOutbox.sequencerDelayLimit()) + epochPeriod / 2;
+      await network.provider.send("evm_increaseTime", [epochPeriod + maxL2StateSyncDelay]);
+      await network.provider.send("evm_mine");
+
+      const startValidationTxn = await veaOutbox.startVerification(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: blockClaim.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: ethers.ZeroAddress,
+      });
+      await expect(startValidationTxn).to.emit(veaOutbox, "VerificationStarted").withArgs(epoch);
+
+      const blockStartValidation = await ethers.provider.getBlock(startValidationTxn.blockNumber!);
+      if (!blockStartValidation) return;
+
+      const minChallengePeriod = Number(await veaOutbox.minChallengePeriod());
+      await network.provider.send("evm_increaseTime", [minChallengePeriod]);
+      await network.provider.send("evm_mine");
+      const blocksToMine = Math.ceil(minChallengePeriod / 12);
+      await mine(blocksToMine);
+
+      const verifySnapshotTxn = await veaOutbox.connect(bridger).verifySnapshot(epoch, {
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: blockClaim.timestamp,
+        timestampVerification: blockStartValidation.timestamp!,
+        blocknumberVerification: startValidationTxn.blockNumber!,
+        honest: 0,
+        challenger: ethers.ZeroAddress,
+      });
+
+      const mt = new MerkleTree(nodes);
+      await expect(veaOutbox.connect(relayer).sendMessage([], nonce, to, from, msgData)).to.be.revertedWith(
+        "Invalid proof."
+      );
+      const proof = mt.getHexProof(nodes[0]);
+
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData);
+      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
+
+      await expect(veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData)).to.be.revertedWith(
         "Message already relayed"
       );
     });
@@ -341,10 +534,11 @@ describe("Integration tests", async () => {
       const msg = MessageSentEvent[0].args._nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
-      const msgData = "0x" + msg.slice(58);
+      const from = "0x" + msg.slice(58, 98); //58+40
+      const msgData = "0x" + msg.slice(98);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
 
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
@@ -401,7 +595,7 @@ describe("Integration tests", async () => {
         challenger: ethers.ZeroAddress,
       });
 
-      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, from, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
       const withdrawClaimDepositTx = await veaOutbox.connect(bridger).withdrawClaimDeposit(epoch, {
@@ -426,10 +620,11 @@ describe("Integration tests", async () => {
       const msg = MessageSentEvent[0].args._nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
-      const msgData = "0x" + msg.slice(58);
+      const from = "0x" + msg.slice(58, 98); //58+40
+      const msgData = "0x" + msg.slice(98);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
 
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
@@ -487,7 +682,7 @@ describe("Integration tests", async () => {
         challenger: ethers.ZeroAddress,
       });
 
-      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, from, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
       const withdrawClaimDepositTx = await veaOutbox.withdrawClaimDeposit(epoch, {
@@ -609,10 +804,11 @@ describe("Integration tests", async () => {
       const msg = MessageSentEvent[0].args._nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
-      const msgData = "0x" + msg.slice(58);
+      const from = "0x" + msg.slice(58, 98); //58+40
+      const msgData = "0x" + msg.slice(98);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
 
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
@@ -715,7 +911,7 @@ describe("Integration tests", async () => {
       );
       //expect(await (await veaOutbox.challenges(epoch)).honest).to.equal(false);
       //expect(await (await veaOutbox.claims(epoch)).honest).to.equal(true);
-      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, from, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
       await expect(
         veaOutbox.withdrawChallengeDeposit(epoch, {
@@ -752,10 +948,11 @@ describe("Integration tests", async () => {
       const msg = MessageSentEvent[0].args._nodeData;
       const nonce = "0x" + msg.slice(2, 18);
       const to = "0x" + msg.slice(18, 58); //18+40
-      const msgData = "0x" + msg.slice(58);
+      const from = "0x" + msg.slice(58, 98); //58+40
+      const msgData = "0x" + msg.slice(98);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
 
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[nodes.length - 1]);
@@ -847,7 +1044,7 @@ describe("Integration tests", async () => {
         },
         { gasLimit: 1000000 }
       );
-      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, msgData);
+      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, 0, to, from, msgData);
       await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
       expect(
         veaOutbox.connect(relayer).withdrawClaimDeposit(epoch, {
