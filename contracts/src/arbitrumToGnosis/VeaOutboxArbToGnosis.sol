@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:authors: [@jaybuidl, @mani99brar, @shotaronowhere]
 /// @custom:reviewers: []
 /// @custom:auditors: []
 /// @custom:bounties: []
@@ -42,6 +42,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     mapping(uint256 epoch => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 messageId => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+    mapping(address => mapping(address => bool)) public allowlist; // to => from => allowed,  Enforces allowed sender addresses for a receiver contract. Address(0) allowing all senders.
 
     uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
     uint256 public timestampDelayUpdated; // The timestamp of the last sequencer delay update.
@@ -295,15 +296,29 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         emit Verified(_epoch);
     }
 
+    /// @dev Sets the allowlist for the sender gateway.
+    /// @param _from The address to allow.
+    /// @param _allow Whether to allow or disallow the address.
+    function setAllowlist(address _from, bool _allow) external {
+        allowlist[msg.sender][_from] = _allow;
+    }
+
     /// @dev Verifies and relays the message. UNTRUSTED.
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Gnosis to call.
-    /// @param _message The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
-    function sendMessage(bytes32[] calldata _proof, uint64 _msgId, address _to, bytes calldata _message) external {
+    /// @param _from The address of the contract on Arbitrum that sent the message.
+    /// @param _message The message in the vea inbox as abi.encodeWithSelector(fnSelector, param1, param2, ...)
+    function sendMessage(
+        bytes32[] calldata _proof,
+        uint64 _msgId,
+        address _to,
+        address _from,
+        bytes calldata _message
+    ) external {
         require(_proof.length < 64, "Proof too long.");
 
-        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _message));
+        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 
         // double hashed leaf
         // avoids second order preimage attacks

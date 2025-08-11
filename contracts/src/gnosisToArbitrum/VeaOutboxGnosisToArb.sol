@@ -41,6 +41,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     mapping(uint256 epoch => Claim) public claims; // epoch => claim
     mapping(uint256 epoch => address) public challengers; // epoch => challenger
     mapping(uint256 messageId => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
+    mapping(address => mapping(address => bool)) public allowlist; // from => to => allowed
 
     enum Party {
         None,
@@ -281,15 +282,32 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         emit Verified(_epoch);
     }
 
+    /// @dev Sets the allowlist for the sender gateway.
+    /// Note: Address(0) is used to allow all addresses.
+    /// @param _from The address to allow.
+    /// @param _allowed Whether to allow or disallow the address.
+    function setAllowlist(address _from, bool _allowed) external {
+        allowlist[msg.sender][_from] = _allowed;
+    }
+
     /// @dev Verifies and relays the message. UNTRUSTED.
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Arbitrum to call.
-    /// @param _message The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
-    function sendMessage(bytes32[] memory _proof, uint64 _msgId, address _to, bytes memory _message) external {
+    /// @param _from The address of the message sender
+    /// @param _message The message in the vea inbox as abi.encodeWithSelector(fnSelector, param1, param2, ...)
+    function sendMessage(
+        bytes32[] memory _proof,
+        uint64 _msgId,
+        address _to,
+        address _from,
+        bytes memory _message
+    ) external {
         require(_proof.length < 64, "Proof too long.");
+        bool isAllowed = allowlist[_from][msg.sender] || allowlist[_from][address(0)];
+        require(isAllowed, "Sender not allowed.");
 
-        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _message));
+        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 
         // double hashed leaf
         // avoids second order preimage attacks
