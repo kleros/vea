@@ -304,8 +304,8 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         bytes memory _message
     ) external {
         require(_proof.length < 64, "Proof too long.");
-        bool isAllowed = allowlist[_from][msg.sender] || allowlist[_from][address(0)];
-        require(isAllowed, "Sender not allowed.");
+        bool isAllowed = allowlist[_to][_from] || allowlist[_from][address(0)];
+        require(isAllowed, "Message sender not allowed to call receiver.");
 
         bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 
