@@ -12,6 +12,7 @@ import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 import "../interfaces/updaters/ISequencerDelayUpdatable.sol";
 import "../interfaces/tokens/gnosis/IWETH.sol";
+import "../interfaces/gateways/IReceiverGateway.sol";
 
 /// @dev Vea Outbox From Arbitrum to Gnosis.
 /// Note: This contract is deployed on Gnosis.
@@ -358,8 +359,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         relayed[relayIndex] = replay | bytes32(1 << offset);
 
         // UNTRUSTED.
-        (bool success, ) = _to.call(_message);
-        require(success, "Failed to call contract");
+        IReceiverGateway(_to).receiveMessage(_from, _message);
 
         emit MessageRelayed(_msgId);
     }

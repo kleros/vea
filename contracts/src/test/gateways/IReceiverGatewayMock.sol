@@ -12,8 +12,8 @@ import "../../interfaces/gateways/IReceiverGateway.sol";
 
 interface IReceiverGatewayMock is IReceiverGateway {
     /// Receive the message from the sender gateway.
-    function receiveMessage(uint256 _data) external;
+    function digestMessage(uint256 _data) external;
 
     /// Receive the message array from the sender gateway.
-    function receiveMessageArray(uint256[] calldata _data) external;
+    function digestMessageArray(uint256[] calldata _data) external;
 }

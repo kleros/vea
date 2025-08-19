@@ -12,6 +12,7 @@ import "../canonical/arbitrum/ISequencerInbox.sol";
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
+import "../interfaces/gateways/IReceiverGateway.sol";
 
 /// @dev Vea Outbox From Arbitrum to Ethereum.
 /// Note: This contract is deployed on Ethereum.
@@ -414,8 +415,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         relayed[relayIndex] = replay | bytes32(1 << offset);
 
         // UNTRUSTED.
-        (bool success, ) = _to.call(_message);
-        require(success, "Failed to call contract");
+        IReceiverGateway(_to).receiveMessage(_from, _message);
 
         emit MessageRelayed(_msgId);
     }

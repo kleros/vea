@@ -10,6 +10,7 @@ pragma solidity ^0.8.24;
 
 import "../interfaces/outboxes/IVeaOutboxOnL2.sol";
 import "../canonical/arbitrum/AddressAliasHelper.sol";
+import "../interfaces/gateways/IReceiverGateway.sol";
 
 /// @dev Vea Outbox From Gnosis to Arbitrum.
 /// Note: This contract is deployed on Arbitrum.
@@ -344,8 +345,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         relayed[relayIndex] = replay | bytes32(1 << offset);
 
         // UNTRUSTED.
-        (bool success, ) = _to.call(_message);
-        require(success, "Failed to call contract");
+        IReceiverGateway(_to).receiveMessage(_from, _message);
 
         emit MessageRelayed(_msgId);
     }
