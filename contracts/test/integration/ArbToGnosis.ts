@@ -298,130 +298,6 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
         blocknumberVerification: startVerificationTx.blockNumber!,
       });
 
-      await receiverGateway.allowlistSender(true);
-
-      // Relay message
-      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, nonce, to, from, msgData);
-      await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
-
-      // Ensure message can't be relayed twice
-      await expect(veaOutbox.connect(receiver).sendMessage(proof, nonce, to, from, msgData)).to.be.revertedWith(
-        "Message already relayed"
-      );
-    });
-
-    it("should not be able to relay after verification", async () => {
-      // Setup
-      const data = 1121;
-      await senderGateway.connect(sender).sendMessage(data);
-      await veaInbox.connect(bridger).saveSnapshot();
-
-      const MessageSent = veaInbox.filters.MessageSent();
-      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args._nodeData;
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
-
-      let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
-      const mt = new MerkleTree(nodes);
-      const proof = mt.getHexProof(nodes[0]);
-
-      const BatchOutgoing = veaInbox.filters.SnapshotSaved();
-      const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / EPOCH_PERIOD);
-      const batchMerkleRoot = await veaInbox.snapshots(epoch);
-
-      // Advance time, make claim, and start verification
-      await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
-      await network.provider.send("evm_mine");
-
-      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH);
-      const claimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot);
-      const block = await ethers.provider.getBlock(claimTx.blockNumber!);
-      if (!block) return;
-
-      const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
-      const maxL2StateSyncDelay = sequencerDelayLimit + BigInt(EPOCH_PERIOD);
-
-      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
-      await network.provider.send("evm_mine");
-
-      const startVerificationTx = await veaOutbox.startVerification(
-        epoch,
-        createClaim(batchMerkleRoot, bridger.address, block.timestamp)
-      );
-      const verificationBlock = await ethers.provider.getBlock(startVerificationTx.blockNumber!);
-      if (!verificationBlock) return;
-
-      await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
-      await mine(Math.ceil(CHALLENGE_PERIOD / 12));
-
-      await veaOutbox.connect(bridger).verifySnapshot(epoch, {
-        ...createClaim(batchMerkleRoot, bridger.address, block.timestamp),
-        timestampVerification: verificationBlock.timestamp,
-        blocknumberVerification: startVerificationTx.blockNumber!,
-      });
-
-      // Relay message
-      await expect(veaOutbox.connect(receiver).sendMessage(proof, nonce, to, from, msgData)).to.be.revertedWith(
-        "Message sender not allowed to call receiver."
-      );
-    });
-
-    it("should be able to relay with global allowance after verification", async () => {
-      // Setup
-      const data = [1121, 1122, 1123, 1124, 1125];
-      await senderGateway.connect(sender).sendMessageArray(data);
-      await veaInbox.connect(bridger).saveSnapshot();
-
-      const MessageSent = veaInbox.filters.MessageSent();
-      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args._nodeData;
-      const { nonce, to, from, msgData } = await decodeMessage(msg);
-
-      let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
-      const mt = new MerkleTree(nodes);
-      const proof = mt.getHexProof(nodes[0]);
-
-      const BatchOutgoing = veaInbox.filters.SnapshotSaved();
-      const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / EPOCH_PERIOD);
-      const batchMerkleRoot = await veaInbox.snapshots(epoch);
-
-      // Advance time, make claim, and start verification
-      await network.provider.send("evm_increaseTime", [EPOCH_PERIOD]);
-      await network.provider.send("evm_mine");
-
-      await weth.connect(bridger).approve(veaOutbox.target, TEN_ETH);
-      const claimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot);
-      const block = await ethers.provider.getBlock(claimTx.blockNumber!);
-      if (!block) return;
-
-      const sequencerDelayLimit = await veaOutbox.sequencerDelayLimit();
-      const maxL2StateSyncDelay = sequencerDelayLimit + BigInt(EPOCH_PERIOD);
-
-      await network.provider.send("evm_increaseTime", [Number(maxL2StateSyncDelay)]);
-      await network.provider.send("evm_mine");
-
-      const startVerificationTx = await veaOutbox.startVerification(
-        epoch,
-        createClaim(batchMerkleRoot, bridger.address, block.timestamp)
-      );
-      const verificationBlock = await ethers.provider.getBlock(startVerificationTx.blockNumber!);
-      if (!verificationBlock) return;
-
-      await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD]);
-      await mine(Math.ceil(CHALLENGE_PERIOD / 12));
-
-      await veaOutbox.connect(bridger).verifySnapshot(epoch, {
-        ...createClaim(batchMerkleRoot, bridger.address, block.timestamp),
-        timestampVerification: verificationBlock.timestamp,
-        blocknumberVerification: startVerificationTx.blockNumber!,
-      });
-
-      await receiverGateway.allowlistAllSender(true);
-
       // Relay message
       const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, nonce, to, from, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
@@ -764,8 +640,6 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
-
-      await receiverGateway.allowlistSender(true);
       const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.target, from, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
     });
@@ -941,8 +815,6 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
-
-      await receiverGateway.allowlistSender(true);
       const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.target, from, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
     });

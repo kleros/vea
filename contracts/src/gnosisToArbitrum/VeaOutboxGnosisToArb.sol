@@ -41,7 +41,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     mapping(uint256 epoch => Claim) public claims; // epoch => claim
     mapping(uint256 epoch => address) public challengers; // epoch => challenger
     mapping(uint256 messageId => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
-    mapping(address => mapping(address => bool)) public allowlist; // to => from => allowed
 
     enum Party {
         None,
@@ -282,14 +281,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         emit Verified(_epoch);
     }
 
-    /// @dev Sets the allowlist for the sender gateway.
-    /// Note: Address(0) is used to allow all addresses.
-    /// @param _from The address to allow or disallow
-    /// @param _allowed Whether to allow or disallow the address.
-    function setAllowlist(address _from, bool _allowed) external {
-        allowlist[msg.sender][_from] = _allowed;
-    }
-
     /// @dev Verifies and relays the message. UNTRUSTED.
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
@@ -304,8 +295,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         bytes memory _message
     ) external {
         require(_proof.length < 64, "Proof too long.");
-        bool isAllowed = allowlist[_to][_from] || allowlist[_to][address(0)];
-        require(isAllowed, "Message sender not allowed to call receiver.");
 
         bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 

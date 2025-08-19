@@ -42,7 +42,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     mapping(uint256 epoch => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 messageId => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
-    mapping(address => mapping(address => bool)) public allowlist; // to => from => allowed,  Enforces allowed sender addresses for a receiver contract. Address(0) allowing all senders.
 
     uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
     uint256 public timestampDelayUpdated; // The timestamp of the last sequencer delay update.
@@ -296,13 +295,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         emit Verified(_epoch);
     }
 
-    /// @dev Sets the allowlist for the sender gateway.
-    /// @param _from The address to allow or disallow
-    /// @param _allow Whether to allow or disallow the address.
-    function setAllowlist(address _from, bool _allow) external {
-        allowlist[msg.sender][_from] = _allow;
-    }
-
     /// @dev Verifies and relays the message. UNTRUSTED.
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
@@ -317,8 +309,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         bytes calldata _message
     ) external {
         require(_proof.length < 64, "Proof too long.");
-        bool isAllowed = allowlist[_to][_from] || allowlist[_to][address(0)];
-        require(isAllowed, "Message sender not allowed to call receiver.");
 
         bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 

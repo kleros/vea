@@ -53,7 +53,6 @@ describe("Integration tests", async () => {
     senderGateway = (await ethers.getContract("SenderGateway")) as SenderGatewayMock;
     bridge = (await ethers.getContract("BridgeMock")) as BridgeMock;
     arbsysMock = (await ethers.getContract("ArbSysMock")) as ArbSysMock;
-    await receiverGateway.allowlistSender(true);
   });
 
   it("should initialize contracts correctly", async () => {
@@ -297,61 +296,6 @@ describe("Integration tests", async () => {
       );
     });
 
-    it("should be able to verify but not relay message", async () => {
-      // Disabling the allowlist for the sender enable in beforeEach hook (default is false)
-      await receiverGateway.allowlistSender(false);
-      // sending sample data through the fast bridge
-      const data = 1121;
-      const sendMessagetx = await senderGateway.sendMessage(data);
-
-      await senderGateway.sendMessage(data);
-      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
-      const MessageSent = veaInbox.filters.MessageSent();
-      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args._nodeData;
-
-      const { nonce, to, from, msgData } = decodeMessage(msg);
-
-      const msg2 = MessageSentEvent[1].args._nodeData;
-
-      let nodes: string[] = [];
-
-      const nonce2 = "0x" + msg2.slice(2, 18);
-      const to2 = "0x" + msg2.slice(18, 58); //18+40
-      const from2 = "0x" + msg2.slice(58, 98); //58+40
-      const msgData2 = "0x" + msg2.slice(98);
-
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
-      nodes.push(MerkleTree.makeLeafNode(nonce2, to2, from2, msgData2));
-
-      await veaInbox.connect(bridger).saveSnapshot();
-
-      const BatchOutgoing = veaInbox.filters.SnapshotSaved();
-      const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
-      );
-      const batchMerkleRoot = await veaInbox.snapshots(epoch);
-      // Honest Bridger
-      await claimAndVerify({
-        veaInbox,
-        veaOutbox,
-        bridger,
-        epoch,
-        batchMerkleRoot,
-        ethers,
-        network,
-        mine,
-      });
-
-      const mt = new MerkleTree(nodes);
-      const proof = mt.getHexProof(nodes[0]);
-
-      await expect(veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData)).to.be.revertedWith(
-        "Message sender not allowed to call receiver."
-      );
-    });
-
     it("should be able to verify and relay message with dynamic array", async () => {
       // sending sample data through the fast bridge
       const data = [1121, 1122, 1123, 1124, 1125];
@@ -410,63 +354,6 @@ describe("Integration tests", async () => {
       await expect(veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData)).to.be.revertedWith(
         "Message already relayed"
       );
-    });
-
-    it("should be able to verify and relay with global allowance", async () => {
-      // Disabling the allowlist for the sender enable in beforeEach hook (default is false)
-      await receiverGateway.allowlistSender(false);
-      await receiverGateway.allowlistAllSender(true);
-      // sending sample data through the fast bridge
-      const data = 1121;
-      const sendMessagetx = await senderGateway.sendMessage(data);
-
-      await senderGateway.sendMessage(data);
-      await expect(sendMessagetx).to.emit(veaInbox, "MessageSent");
-      const MessageSent = veaInbox.filters.MessageSent();
-      const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
-      const msg = MessageSentEvent[0].args._nodeData;
-
-      const { nonce, to, from, msgData } = decodeMessage(msg);
-
-      const msg2 = MessageSentEvent[1].args._nodeData;
-
-      let nodes: string[] = [];
-
-      const nonce2 = "0x" + msg2.slice(2, 18);
-      const to2 = "0x" + msg2.slice(18, 58); //18+40
-      const from2 = "0x" + msg2.slice(58, 98); //58+40
-      const msgData2 = "0x" + msg2.slice(98);
-
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
-      nodes.push(MerkleTree.makeLeafNode(nonce2, to2, from2, msgData2));
-
-      await veaInbox.connect(bridger).saveSnapshot();
-
-      const BatchOutgoing = veaInbox.filters.SnapshotSaved();
-      const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
-      const epoch = Math.floor(
-        (await batchOutGoingEvent[0].getBlock()).timestamp / Number(await veaInbox.epochPeriod())
-      );
-      const batchMerkleRoot = await veaInbox.snapshots(epoch);
-      // Honest Bridger
-      await claimAndVerify({
-        veaInbox,
-        veaOutbox,
-        bridger,
-        epoch,
-        batchMerkleRoot,
-        ethers,
-        network,
-        mine,
-      });
-      const mt = new MerkleTree(nodes);
-      await expect(veaOutbox.connect(relayer).sendMessage([], nonce, to, from, msgData)).to.be.revertedWith(
-        "Invalid proof."
-      );
-      const proof = mt.getHexProof(nodes[0]);
-
-      const verifyAndRelayTx = await veaOutbox.connect(relayer).sendMessage(proof, nonce, to, from, msgData);
-      await expect(verifyAndRelayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
     });
 
     it("should allow bridger to claim deposit", async () => {
