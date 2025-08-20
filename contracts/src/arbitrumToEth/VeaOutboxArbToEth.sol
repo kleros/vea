@@ -484,7 +484,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
             } else {
                 address challenger = _claim.challenger;
                 _claim.challenger = address(0);
-                claimHashes[_epoch] == hashClaim(_claim);
+                claimHashes[_epoch] = hashClaim(_claim);
                 payable(challenger).send(deposit); // User is responsible for accepting ETH.
             }
         }
