@@ -69,8 +69,8 @@ contract VeaInboxArbToGnosis is IVeaInbox {
     ///      `O(log(count))` where count is the number of messages already sent.
     ///      Amortized cost is constant.
     /// Note: See docs for details how inbox manages merkle tree state.
-    /// @param _to The address of the contract on the receiving chain which receives the calldata.
-    /// @param _data The message calldata, abi.encodeWithSelector(fnSelector, param1, param2, ...)
+    /// @param _to The address of the contract on the receiving chain which receives the message.
+    /// @param _data The message data for the receiving gateway.
     /// @return msgId The zero based index of the message in the inbox.
     function sendMessage(address _to, bytes calldata _data) external override returns (uint64) {
         uint64 oldCount = count;

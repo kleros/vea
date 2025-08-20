@@ -287,7 +287,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Arbitrum to call.
     /// @param _from The address of the message sender
-    /// @param _message The message in the vea inbox as abi.encodeWithSelector(fnSelector, param1, param2, ...)
+    /// @param _message The message in the vea inbox
     function sendMessage(
         bytes32[] memory _proof,
         uint64 _msgId,

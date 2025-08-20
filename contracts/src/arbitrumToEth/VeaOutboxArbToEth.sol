@@ -357,7 +357,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Ethereum to call.
     /// @param _from The address of the contract on Arbitrum that sent the message.
-    /// @param _message The message in the vea inbox as abi.encodeWithSelector(fnSelector, param1, param2, ...)
+    /// @param _message The message in the vea inbox.
     function sendMessage(
         bytes32[] calldata _proof,
         uint64 _msgId,
