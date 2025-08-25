@@ -26,7 +26,7 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     this.emitter.emit(BotEvents.CLAIMING, this.epoch);
     const now = Date.now();
     const status = await this.checkTransactionStatus(this.transactions.claimTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
+    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) {
       return;
     }
 
@@ -52,7 +52,7 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     if (!this.claim) throw new ClaimNotSetError();
     const now = Date.now();
     const status = await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
+    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) {
       return;
     }
 
@@ -93,7 +93,7 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
 
     const now = Date.now();
     const status = await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.INBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
+    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) {
       return;
     }
 
@@ -109,7 +109,7 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
     const now = Date.now();
     const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
+    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) {
       return;
     }
 
@@ -143,7 +143,7 @@ export class ArbToEthDevnetTransactionHandler extends ArbToEthTransactionHandler
     this.emitter.emit(BotEvents.ADV_DEVNET, this.epoch);
     const now = Date.now();
     const status = await this.checkTransactionStatus(this.transactions.devnetAdvanceStateTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
+    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) {
       return;
     }
     const { routeConfig } = getBridgeConfig(this.chainId);
