@@ -2,7 +2,7 @@ import { Network } from "../consts/bridgeRoutes";
 import { getLastMessageSaved } from "../utils/graphQueries";
 import { BotEvents } from "../utils/botEvents";
 import { defaultEmitter } from "../utils/emitter";
-
+import { snapshotSavingPeriod } from "../consts/bridgeRoutes";
 interface SnapshotCheckParams {
   chainId: number;
   veaInbox: any;
@@ -33,14 +33,12 @@ export const saveSnapshot = async ({
   toSaveSnapshot = isSnapshotNeeded,
   now = Math.floor(Date.now() / 1000),
 }: SaveSnapshotParams): Promise<any> => {
-  if (network != Network.DEVNET) {
-    const timeElapsed = now % epochPeriod;
-    const timeLeftForEpoch = epochPeriod - timeElapsed;
-    // Saving snapshots in last 10 minutes of the epoch on testnet
-    if (timeLeftForEpoch > 600) {
-      emitter.emit(BotEvents.SNAPSHOT_WAITING, timeLeftForEpoch);
-      return { transactionHandler, latestCount: count };
-    }
+  const timeElapsed = now % epochPeriod;
+  const timeLeftForEpoch = epochPeriod - timeElapsed;
+
+  if (timeLeftForEpoch > snapshotSavingPeriod[network]) {
+    emitter.emit(BotEvents.SNAPSHOT_WAITING, timeLeftForEpoch);
+    return { transactionHandler, latestCount: count };
   }
   const { snapshotNeeded, latestCount } = await toSaveSnapshot({
     chainId,
@@ -71,7 +69,7 @@ export const isSnapshotNeeded = async ({
     const lastSavedMessageId = await fetchLastSavedMessage(veaInboxAddress, chainId);
     const messageIndex = extractMessageIndex(lastSavedMessageId);
     // adding 1 to the message index to get the last saved count
-    lastSavedCount = messageIndex + 1;
+    lastSavedCount = messageIndex;
   }
   if (currentCount > lastSavedCount) {
     return { snapshotNeeded: true, latestCount: currentCount };
