@@ -30,7 +30,7 @@ type RouteConfigs = {
   deposit: bigint;
 };
 
-export enum Network {
+enum Network {
   DEVNET = "devnet",
   TESTNET = "testnet",
 }
@@ -39,7 +39,7 @@ const arbToEthConfigs: { [key in Network]: RouteConfigs } = {
   [Network.DEVNET]: {
     veaInbox: veaInboxArbToEthDevnet,
     veaOutbox: veaOutboxArbToEthDevnet,
-    epochPeriod: 1800,
+    epochPeriod: 300,
     deposit: BigInt("1000000000000000000"),
   },
   [Network.TESTNET]: {
@@ -54,7 +54,7 @@ const arbToGnosisConfigs: { [key in Network]: RouteConfigs } = {
   [Network.DEVNET]: {
     veaInbox: veaInboxArbToGnosisDevnet,
     veaOutbox: veaOutboxArbToGnosisDevnet,
-    epochPeriod: 1800,
+    epochPeriod: 300,
     deposit: BigInt("100000000000000000"),
   },
   [Network.TESTNET]: {
@@ -66,7 +66,7 @@ const arbToGnosisConfigs: { [key in Network]: RouteConfigs } = {
   },
 };
 
-export const bridges: { [chainId: number]: Bridge } = {
+const bridges: { [chainId: number]: Bridge } = {
   11155111: {
     chain: "sepolia",
     minChallengePeriod: 10800,
@@ -87,10 +87,16 @@ export const bridges: { [chainId: number]: Bridge } = {
   },
 };
 
+// For the remaining time in an epoch the bot should save snapshots
+const snapshotSavingPeriod = {
+  [Network.DEVNET]: 90, // 1m 30s
+  [Network.TESTNET]: 600, // 10 mins
+};
+
 const getBridgeConfig = (chainId: number): Bridge => {
   const bridge = bridges[chainId];
   if (!bridge) throw new Error(`Bridge not found for chain`);
   return bridges[chainId];
 };
 
-export { getBridgeConfig, Bridge };
+export { bridges, getBridgeConfig, Bridge, Network, snapshotSavingPeriod };
