@@ -8,7 +8,7 @@
 
 pragma solidity ^0.8.24;
 
-import "./IReceiverGatewayMock.sol";
+import "./ReceiverGatewayMock.sol";
 import "../../interfaces/gateways/ISenderGateway.sol";
 
 /// Sender Gateway
@@ -23,13 +23,13 @@ contract SenderGatewayMock is ISenderGateway {
     }
 
     function sendMessage(uint256 _data) external {
-        bytes4 methodSelector = IReceiverGatewayMock.receiveMessage.selector;
+        bytes4 methodSelector = ReceiverGatewayMock.digestMessage.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _data);
         veaInbox.sendMessage(receiverGateway, data);
     }
 
     function sendMessageArray(uint256[] calldata _data) external {
-        bytes4 methodSelector = IReceiverGatewayMock.receiveMessageArray.selector;
+        bytes4 methodSelector = ReceiverGatewayMock.digestMessageArray.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _data);
         veaInbox.sendMessage(receiverGateway, data);
     }

@@ -12,6 +12,7 @@ import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 import "../interfaces/updaters/ISequencerDelayUpdatable.sol";
 import "../interfaces/tokens/gnosis/IWETH.sol";
+import "../interfaces/gateways/IReceiverGateway.sol";
 
 /// @dev Vea Outbox From Arbitrum to Gnosis.
 /// Note: This contract is deployed on Gnosis.
@@ -42,7 +43,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
 
     mapping(uint256 epoch => bytes32) public claimHashes; // epoch => claim
     mapping(uint256 messageId => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
-    mapping(address => mapping(address => bool)) public allowlist; // to => from => allowed,  Enforces allowed sender addresses for a receiver contract. Address(0) allowing all senders.
 
     uint256 public sequencerDelayLimit; // This is MaxTimeVariation.delaySeconds from the arbitrum sequencer inbox, it is the maximum seconds the sequencer can backdate L2 txns relative to the L1 clock.
     uint256 public timestampDelayUpdated; // The timestamp of the last sequencer delay update.
@@ -296,19 +296,12 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         emit Verified(_epoch);
     }
 
-    /// @dev Sets the allowlist for the sender gateway.
-    /// @param _from The address to allow or disallow
-    /// @param _allow Whether to allow or disallow the address.
-    function setAllowlist(address _from, bool _allow) external {
-        allowlist[msg.sender][_from] = _allow;
-    }
-
     /// @dev Verifies and relays the message. UNTRUSTED.
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Gnosis to call.
     /// @param _from The address of the contract on Arbitrum that sent the message.
-    /// @param _message The message in the vea inbox as abi.encodeWithSelector(fnSelector, param1, param2, ...)
+    /// @param _message The message in the vea inbox
     function sendMessage(
         bytes32[] calldata _proof,
         uint64 _msgId,
@@ -317,8 +310,6 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         bytes calldata _message
     ) external {
         require(_proof.length < 64, "Proof too long.");
-        bool isAllowed = allowlist[_to][_from] || allowlist[_to][address(0)];
-        require(isAllowed, "Message sender not allowed to call receiver.");
 
         bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 
@@ -368,8 +359,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         relayed[relayIndex] = replay | bytes32(1 << offset);
 
         // UNTRUSTED.
-        (bool success, ) = _to.call(_message);
-        require(success, "Failed to call contract");
+        IReceiverGateway(_to).receiveMessage(_from, _message);
 
         emit MessageRelayed(_msgId);
     }
@@ -438,7 +428,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             } else {
                 address challenger = _claim.challenger;
                 _claim.challenger = address(0);
-                claimHashes[_epoch] == hashClaim(_claim);
+                claimHashes[_epoch] = hashClaim(_claim);
                 require(weth.transfer(challenger, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             }
         }

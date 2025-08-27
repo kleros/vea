@@ -33,10 +33,4 @@ interface IVeaOutboxOnL1 {
     /// @param _stateRoot The true state root for the epoch.
     /// @param _claim The claim associated with the epoch.
     function resolveDisputedClaim(uint256 _epoch, bytes32 _stateRoot, Claim memory _claim) external;
-
-    /// @dev Sets the allowlist for the sender gateway.
-    /// Note: Address(0) is used to allow all addresses.
-    /// @param _from The address to allow or disallow
-    /// @param _allow Whether to allow or disallow the address.
-    function setAllowlist(address _from, bool _allow) external;
 }

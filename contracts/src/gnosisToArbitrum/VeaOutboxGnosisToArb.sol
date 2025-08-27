@@ -10,6 +10,7 @@ pragma solidity ^0.8.24;
 
 import "../interfaces/outboxes/IVeaOutboxOnL2.sol";
 import "../canonical/arbitrum/AddressAliasHelper.sol";
+import "../interfaces/gateways/IReceiverGateway.sol";
 
 /// @dev Vea Outbox From Gnosis to Arbitrum.
 /// Note: This contract is deployed on Arbitrum.
@@ -41,7 +42,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     mapping(uint256 epoch => Claim) public claims; // epoch => claim
     mapping(uint256 epoch => address) public challengers; // epoch => challenger
     mapping(uint256 messageId => bytes32) internal relayed; // msgId/256 => packed replay bitmap, preferred over a simple boolean mapping to save 15k gas per message
-    mapping(address => mapping(address => bool)) public allowlist; // to => from => allowed
 
     enum Party {
         None,
@@ -282,20 +282,12 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         emit Verified(_epoch);
     }
 
-    /// @dev Sets the allowlist for the sender gateway.
-    /// Note: Address(0) is used to allow all addresses.
-    /// @param _from The address to allow or disallow
-    /// @param _allowed Whether to allow or disallow the address.
-    function setAllowlist(address _from, bool _allowed) external {
-        allowlist[msg.sender][_from] = _allowed;
-    }
-
     /// @dev Verifies and relays the message. UNTRUSTED.
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Arbitrum to call.
     /// @param _from The address of the message sender
-    /// @param _message The message in the vea inbox as abi.encodeWithSelector(fnSelector, param1, param2, ...)
+    /// @param _message The message in the vea inbox
     function sendMessage(
         bytes32[] memory _proof,
         uint64 _msgId,
@@ -304,8 +296,6 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         bytes memory _message
     ) external {
         require(_proof.length < 64, "Proof too long.");
-        bool isAllowed = allowlist[_to][_from] || allowlist[_to][address(0)];
-        require(isAllowed, "Message sender not allowed to call receiver.");
 
         bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 
@@ -355,8 +345,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         relayed[relayIndex] = replay | bytes32(1 << offset);
 
         // UNTRUSTED.
-        (bool success, ) = _to.call(_message);
-        require(success, "Failed to call contract");
+        IReceiverGateway(_to).receiveMessage(_from, _message);
 
         emit MessageRelayed(_msgId);
     }

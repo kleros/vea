@@ -12,4 +12,6 @@ interface IReceiverGateway {
     function veaOutbox() external view returns (address);
 
     function senderGateway() external view returns (address);
+
+    function receiveMessage(address msgSender, bytes calldata msgData) external;
 }

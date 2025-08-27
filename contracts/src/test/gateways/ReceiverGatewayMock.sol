@@ -26,35 +26,33 @@ contract ReceiverGatewayMock is IReceiverGatewayMock {
         senderGateway = _senderGateway;
     }
 
-    modifier onlyFromVeaBridge() {
+    modifier onlyFromVeaBridge(address msgSender) {
         require(veaOutbox == msg.sender, "Vea Bridge only.");
+        require(senderGateway == msgSender, "Sender gateway mismatch.");
         _;
     }
 
-    function allowlistSender(bool _allowed) external {
-        IVeaOutboxOnL1(veaOutbox).setAllowlist(senderGateway, _allowed);
-    }
-
-    function allowlistAllSender(bool _allowed) external {
-        IVeaOutboxOnL1(veaOutbox).setAllowlist(address(0), _allowed);
+    modifier internalCall() {
+        require(msg.sender == address(this), "Internal call only.");
+        _;
     }
 
     /// Receive the message from the sender gateway.
-    function receiveMessage(uint256 _data) external onlyFromVeaBridge {
-        _receiveMessage(_data);
+    function receiveMessage(address msgSender, bytes calldata data) external override onlyFromVeaBridge(msgSender) {
+        // Internal call to this contract with the provided data
+        (bool success, ) = address(this).call(data);
+        require(success, "Internal call failed");
     }
 
-    function receiveMessageArray(uint256[] calldata _data) external onlyFromVeaBridge {
-        _receiveMessage();
-        dataArray = _data;
-    }
-
-    function _receiveMessage() internal {
-        messageCount++;
-    }
-
-    function _receiveMessage(uint256 _data) internal {
+    /// @dev Only callable via internal call from receiveMessage
+    function digestMessage(uint256 _data) external override internalCall {
         messageCount++;
         data = _data;
+    }
+
+    /// @dev Only callable via internal call from receiveMessage
+    function digestMessageArray(uint256[] calldata _data) external override internalCall {
+        messageCount++;
+        dataArray = _data;
     }
 }
