@@ -1,8 +1,7 @@
-import { Network } from "../consts/bridgeRoutes";
+import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
 import { getLastMessageSaved } from "../utils/graphQueries";
 import { BotEvents } from "../utils/botEvents";
 import { defaultEmitter } from "../utils/emitter";
-import { snapshotSavingPeriod } from "../consts/bridgeRoutes";
 interface SnapshotCheckParams {
   chainId: number;
   veaInbox: any;

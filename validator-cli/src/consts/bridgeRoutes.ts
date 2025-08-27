@@ -11,7 +11,7 @@ import veaOutboxArbToGnosisDevnet from "@kleros/vea-contracts/deployments/chiado
 import veaInboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisTestnet.json";
 import veaOutboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisTestnet.json";
 import veaRouterArbToGnosisTestnet from "@kleros/vea-contracts/deployments/sepolia/RouterArbToGnosisTestnet.json";
-interface Bridge {
+export interface Bridge {
   chain: string;
   minChallengePeriod: number;
   sequencerDelayLimit: number;
@@ -99,4 +99,4 @@ const getBridgeConfig = (chainId: number): Bridge => {
   return bridges[chainId];
 };
 
-export { bridges, getBridgeConfig, Bridge, Network, snapshotSavingPeriod };
+export { bridges, getBridgeConfig, Network, snapshotSavingPeriod };

@@ -1,7 +1,6 @@
-import { Network } from "../consts/bridgeRoutes";
+import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
 import { isSnapshotNeeded, saveSnapshot } from "./snapshot";
 import { MockEmitter } from "../utils/emitter";
-import { snapshotSavingPeriod } from "../consts/bridgeRoutes";
 
 describe("snapshot", () => {
   let veaInbox: any;
