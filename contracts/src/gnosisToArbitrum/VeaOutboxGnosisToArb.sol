@@ -10,6 +10,7 @@ pragma solidity ^0.8.24;
 
 import "../interfaces/outboxes/IVeaOutboxOnL2.sol";
 import "../canonical/arbitrum/AddressAliasHelper.sol";
+import "../interfaces/gateways/IReceiverGateway.sol";
 
 /// @dev Vea Outbox From Gnosis to Arbitrum.
 /// Note: This contract is deployed on Arbitrum.
@@ -285,11 +286,18 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Arbitrum to call.
-    /// @param _message The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
-    function sendMessage(bytes32[] memory _proof, uint64 _msgId, address _to, bytes memory _message) external {
+    /// @param _from The address of the message sender
+    /// @param _message The message in the vea inbox
+    function sendMessage(
+        bytes32[] memory _proof,
+        uint64 _msgId,
+        address _to,
+        address _from,
+        bytes memory _message
+    ) external {
         require(_proof.length < 64, "Proof too long.");
 
-        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _message));
+        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 
         // double hashed leaf
         // avoids second order preimage attacks
@@ -337,8 +345,7 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
         relayed[relayIndex] = replay | bytes32(1 << offset);
 
         // UNTRUSTED.
-        (bool success, ) = _to.call(_message);
-        require(success, "Failed to call contract");
+        IReceiverGateway(_to).receiveMessage(_from, _message);
 
         emit MessageRelayed(_msgId);
     }

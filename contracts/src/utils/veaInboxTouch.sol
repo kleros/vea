@@ -20,7 +20,7 @@ contract VeaInboxTouch {
     }
 
     function touch(uint256 random) external payable {
-        veaInbox.sendMessage(0x0000000000000000000000000000000000000000, 0x00000000, abi.encode(random));
+        veaInbox.sendMessage(0x0000000000000000000000000000000000000000, abi.encode(random));
         veaInbox.saveSnapshot();
     }
 }
