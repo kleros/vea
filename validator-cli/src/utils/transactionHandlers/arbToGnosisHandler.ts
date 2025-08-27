@@ -41,8 +41,8 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
   public async makeClaim(stateRoot: string): Promise<void> {
     this.emitter.emit(BotEvents.CLAIMING, this.epoch);
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.claimTxn, ContractType.OUTBOX, now);
-    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) return;
+    const toSubmit = await this.toSubmitTransaction(this.transactions.claimTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
 
     // Approves WETH for the claim if not already approved
     await this.approveWeth();
@@ -57,8 +57,8 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     this.emitter.emit(BotEvents.CHALLENGING, this.epoch);
     if (!this.claim) throw new ClaimNotSetError();
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX, now);
-    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) return;
+    const toSubmit = await this.toSubmitTransaction(this.transactions.challengeTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
 
     const gasEstimate = await this.veaOutbox[
       "challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
@@ -85,8 +85,8 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     this.emitter.emit(BotEvents.SENDING_SNAPSHOT, this.epoch);
     if (!this.claim) throw new ClaimNotSetError();
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.INBOX, now);
-    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) return;
+    const toSubmit = await this.toSubmitTransaction(this.transactions.sendSnapshotTxn, ContractType.INBOX, now);
+    if (!toSubmit) return;
 
     const ambGasLimit = BigInt(3000000);
     const tx = await this.veaInbox.sendSnapshot(this.epoch, ambGasLimit, this.claim);
@@ -98,8 +98,8 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
     if (!this.claim) throw new ClaimNotSetError();
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn, ContractType.ROUTER, now);
-    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) return;
+    const toSubmit = await this.toSubmitTransaction(this.transactions.executeSnapshotTxn, ContractType.ROUTER, now);
+    if (!toSubmit) return;
     const msgExecuteTrnx = await messageExecutor(sendSnapshotTxn, this.veaInboxProvider, this.veaRouterProvider);
     this.emitter.emit(BotEvents.TXN_MADE, msgExecuteTrnx.hash, this.epoch, "Execute Snapshot");
     this.transactions.executeSnapshotTxn = {
@@ -134,8 +134,8 @@ export class ArbToGnosisDevnetTransactionHandler extends ArbToGnosisTransactionH
   public async devnetAdvanceState(stateRoot: string): Promise<void> {
     this.emitter.emit(BotEvents.ADV_DEVNET, this.epoch);
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.devnetAdvanceStateTxn, ContractType.OUTBOX, now);
-    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) return;
+    const toSubmit = await this.toSubmitTransaction(this.transactions.devnetAdvanceStateTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
     await this.approveWeth();
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[Network.DEVNET];
