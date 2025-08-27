@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:authors: [@jaybuidl, @mani99brar, @shotaronowhere]
 /// @custom:reviewers: []
 /// @custom:auditors: []
 /// @custom:bounties: []
@@ -12,6 +12,7 @@ import "../canonical/arbitrum/ISequencerInbox.sol";
 import "../canonical/arbitrum/IBridge.sol";
 import "../canonical/arbitrum/IOutbox.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
+import "../interfaces/gateways/IReceiverGateway.sol";
 
 /// @dev Vea Outbox From Arbitrum to Ethereum.
 /// Note: This contract is deployed on Ethereum.
@@ -355,11 +356,18 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Ethereum to call.
-    /// @param _message The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
-    function sendMessage(bytes32[] calldata _proof, uint64 _msgId, address _to, bytes calldata _message) external {
+    /// @param _from The address of the contract on Arbitrum that sent the message.
+    /// @param _message The message in the vea inbox.
+    function sendMessage(
+        bytes32[] calldata _proof,
+        uint64 _msgId,
+        address _to,
+        address _from,
+        bytes calldata _message
+    ) external {
         require(_proof.length < 64, "Proof too long.");
 
-        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _message));
+        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 
         // double hashed leaf
         // avoids second order preimage attacks
@@ -407,8 +415,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
         relayed[relayIndex] = replay | bytes32(1 << offset);
 
         // UNTRUSTED.
-        (bool success, ) = _to.call(_message);
-        require(success, "Failed to call contract");
+        IReceiverGateway(_to).receiveMessage(_from, _message);
 
         emit MessageRelayed(_msgId);
     }
@@ -477,7 +484,7 @@ contract VeaOutboxArbToEth is IVeaOutboxOnL1 {
             } else {
                 address challenger = _claim.challenger;
                 _claim.challenger = address(0);
-                claimHashes[_epoch] == hashClaim(_claim);
+                claimHashes[_epoch] = hashClaim(_claim);
                 payable(challenger).send(deposit); // User is responsible for accepting ETH.
             }
         }

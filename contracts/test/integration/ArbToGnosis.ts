@@ -15,7 +15,6 @@ import {
   BridgeMock,
   VeaInboxArbToGnosisMock,
 } from "../../typechain-types";
-import { bigint } from "hardhat/internal/core/params/argumentTypes";
 import { Block } from "ethers";
 
 // Constants
@@ -249,19 +248,17 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
 
     it("should relay message after verification", async () => {
       // Setup
-      const data = 1121;
-      const sendMessageTx = await senderGateway.connect(sender).sendMessage(data);
+      const data = [1121, 1122, 1123, 1124, 1125];
+      await senderGateway.connect(sender).sendMessageArray(data);
       await veaInbox.connect(bridger).saveSnapshot();
 
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58);
-      const msgData = "0x" + msg.slice(58);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
 
@@ -302,11 +299,11 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       });
 
       // Relay message
-      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, nonce, to, msgData);
+      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, nonce, to, from, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
 
       // Ensure message can't be relayed twice
-      await expect(veaOutbox.connect(receiver).sendMessage(proof, nonce, to, msgData)).to.be.revertedWith(
+      await expect(veaOutbox.connect(receiver).sendMessage(proof, nonce, to, from, msgData)).to.be.revertedWith(
         "Message already relayed"
       );
     });
@@ -395,7 +392,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     });
 
     it("should allow challenger to submit a challenge", async () => {
-      const { claimBlock, challengeTx } = await setupClaimAndChallenge(epoch, batchMerkleRoot, 0);
+      const { challengeTx } = await setupClaimAndChallenge(epoch, batchMerkleRoot, 0);
 
       await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch, challenger.address);
     });
@@ -637,16 +634,13 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58);
-      const msgData = "0x" + msg.slice(58);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
-
-      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.target, msgData);
+      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.target, from, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
     });
   });
@@ -681,7 +675,7 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     });
 
     it("should allow challenger to submit a challenge to a dishonest claim", async () => {
-      const { claimBlock, challengeTx } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
+      const { challengeTx } = await setupClaimAndChallenge(epoch, dishonestMerkleRoot, 0);
 
       await expect(challengeTx).to.emit(veaOutbox, "Challenged").withArgs(epoch, challenger.address);
     });
@@ -815,16 +809,13 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       const MessageSent = veaInbox.filters.MessageSent();
       const MessageSentEvent = await veaInbox.queryFilter(MessageSent);
       const msg = MessageSentEvent[0].args._nodeData;
-      const nonce = "0x" + msg.slice(2, 18);
-      const to = "0x" + msg.slice(18, 58);
-      const msgData = "0x" + msg.slice(58);
+      const { nonce, to, from, msgData } = await decodeMessage(msg);
 
       let nodes: string[] = [];
-      nodes.push(MerkleTree.makeLeafNode(nonce, to, msgData));
+      nodes.push(MerkleTree.makeLeafNode(nonce, to, from, msgData));
       const mt = new MerkleTree(nodes);
       const proof = mt.getHexProof(nodes[0]);
-
-      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.target, msgData);
+      const relayTx = await veaOutbox.connect(receiver).sendMessage(proof, 0, receiverGateway.target, from, msgData);
       await expect(relayTx).to.emit(veaOutbox, "MessageRelayed").withArgs(0);
     });
 
@@ -964,3 +955,11 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
     });
   });
 });
+
+async function decodeMessage(msg: any) {
+  const nonce = "0x" + msg.slice(2, 18);
+  const to = "0x" + msg.slice(18, 58); //18+40
+  const from = "0x" + msg.slice(58, 98); //58+40
+  const msgData = "0x" + msg.slice(98);
+  return { nonce, to, from, msgData };
+}

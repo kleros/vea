@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-/// @custom:authors: [@jaybuidl, @shotaronowhere]
+/// @custom:authors: [@jaybuidl, @mani99brar, @shotaronowhere]
 /// @custom:reviewers: []
 /// @custom:auditors: []
 /// @custom:bounties: []
@@ -12,6 +12,7 @@ import "../canonical/gnosis-chain/IAMB.sol";
 import "../interfaces/outboxes/IVeaOutboxOnL1.sol";
 import "../interfaces/updaters/ISequencerDelayUpdatable.sol";
 import "../interfaces/tokens/gnosis/IWETH.sol";
+import "../interfaces/gateways/IReceiverGateway.sol";
 
 /// @dev Vea Outbox From Arbitrum to Gnosis.
 /// Note: This contract is deployed on Gnosis.
@@ -299,11 +300,18 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _proof The merkle proof to prove the message inclusion in the inbox state root.
     /// @param _msgId The zero based index of the message in the inbox.
     /// @param _to The address of the contract on Gnosis to call.
-    /// @param _message The message encoded in the vea inbox as abi.encodeWithSelector(fnSelector, msg.sender, param1, param2, ...)
-    function sendMessage(bytes32[] calldata _proof, uint64 _msgId, address _to, bytes calldata _message) external {
+    /// @param _from The address of the contract on Arbitrum that sent the message.
+    /// @param _message The message in the vea inbox
+    function sendMessage(
+        bytes32[] calldata _proof,
+        uint64 _msgId,
+        address _to,
+        address _from,
+        bytes calldata _message
+    ) external {
         require(_proof.length < 64, "Proof too long.");
 
-        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _message));
+        bytes32 nodeHash = keccak256(abi.encodePacked(_msgId, _to, _from, _message));
 
         // double hashed leaf
         // avoids second order preimage attacks
@@ -351,8 +359,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
         relayed[relayIndex] = replay | bytes32(1 << offset);
 
         // UNTRUSTED.
-        (bool success, ) = _to.call(_message);
-        require(success, "Failed to call contract");
+        IReceiverGateway(_to).receiveMessage(_from, _message);
 
         emit MessageRelayed(_msgId);
     }
@@ -421,7 +428,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
             } else {
                 address challenger = _claim.challenger;
                 _claim.challenger = address(0);
-                claimHashes[_epoch] == hashClaim(_claim);
+                claimHashes[_epoch] = hashClaim(_claim);
                 require(weth.transfer(challenger, deposit), "Failed WETH transfer."); // should revert on errors, but we check return value anyways
             }
         }
