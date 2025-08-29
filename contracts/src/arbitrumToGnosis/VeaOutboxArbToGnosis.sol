@@ -81,6 +81,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _epoch The epoch that was verified.
     event Verified(uint256 _epoch);
 
+    /// @dev This event indicates that a resolution has failed.
+    /// @param _epoch The epoch for which resolution failed.
+    event FailedResolution(uint256 _epoch);
+
     /// @dev This event indicates the sequencer limit updated.
     /// @param _newSequencerDelayLimit The new sequencer delay limit.
     event SequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
@@ -291,9 +295,10 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
                 _claim.honest = Party.Challenger;
             }
             claimHashes[_epoch] = hashClaim(_claim);
+            emit Verified(_epoch);
+        } else {
+            emit FailedResolution(_epoch);
         }
-
-        emit Verified(_epoch);
     }
 
     /// @dev Verifies and relays the message. UNTRUSTED.
