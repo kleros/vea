@@ -224,6 +224,7 @@ contract VeaOutboxArbToGnosis is IVeaOutboxOnL1, ISequencerDelayUpdatable {
     /// @param _claim The claim associated with the epoch.
     function startVerification(uint256 _epoch, Claim memory _claim) external virtual {
         require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
+        require(_claim.challenger == address(0), "Claim is challenged.");
 
         // sequencerDelayLimit + epochPeriod is the worst case time to sync the L2 state compared to L1 clock.
         // using checked arithmetic incase arbitrum governance sets sequencerDelayLimit to a large value
