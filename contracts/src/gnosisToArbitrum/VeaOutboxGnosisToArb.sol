@@ -79,6 +79,10 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
     /// @param _epoch The epoch that was verified.
     event Verified(uint256 indexed _epoch);
 
+    /// @dev This event indicates that a resolution has failed.
+    /// @param _epoch The epoch for which resolution failed.
+    event FailedResolution(uint256 _epoch);
+
     /// @dev This event indicates the sequencer delay limit updated.
     /// @param _newSequencerDelayLimit The new max sequencer past timestamping power.
     event SequencerDelayLimitUpdateReceived(uint256 _newSequencerDelayLimit);
@@ -277,9 +281,10 @@ contract VeaOutboxGnosisToArb is IVeaOutboxOnL2 {
             } else if (challengers[_epoch] != address(0)) {
                 claims[_epoch].honest = Party.Challenger;
             }
+            emit Verified(_epoch);
+        } else {
+            emit FailedResolution(_epoch);
         }
-
-        emit Verified(_epoch);
     }
 
     /// @dev Verifies and relays the message. UNTRUSTED.
