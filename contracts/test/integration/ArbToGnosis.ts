@@ -483,6 +483,50 @@ describe("Arbitrum to Gnosis Bridge Tests", async () => {
       expect(await veaOutbox.latestVerifiedEpoch()).to.equal(epoch, "VeaOutbox latestVerifiedEpoch should be updated");
     });
 
+    it("should not be able to resolve dispute with invalid claim in fallback", async () => {
+      const { claimBlock } = await setupClaimAndChallenge(epoch, batchMerkleRoot, 0);
+      const maliciousClaim = {
+        stateRoot: batchMerkleRoot,
+        claimer: challenger.address, // Switched Addresses
+        timestampClaimed: claimBlock.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 0,
+        challenger: bridger.address, // Switched Addresses
+      };
+      const claim = { ...maliciousClaim };
+      claim.claimer = bridger.address;
+      claim.challenger = challenger.address;
+
+      await veaInbox.connect(bridger).sendSnapshot(epoch, 100000, maliciousClaim, { gasLimit: 100000 });
+
+      const callData = await veaInbox.connect(bridger).getCallData(epoch, 100000, maliciousClaim);
+      const routerAddress = await router.getAddress();
+      await bridgeMock.connect(bridger).executeL1Message(routerAddress, callData);
+
+      await network.provider.send("evm_increaseTime", [CHALLENGE_PERIOD + SEQUENCER_DELAY]);
+      await network.provider.send("evm_mine");
+
+      await expect(veaOutbox.startVerification(epoch, claim)).to.be.revertedWith("Claim is challenged.");
+
+      const events = await amb.queryFilter(amb.filters.MockedEvent());
+      const lastEvent = events[events.length - 1];
+      const claimHashBeforeFallback = await veaOutbox.claimHashes(epoch);
+      const fallbackExecutionTx = await amb.executeMessageCall(
+        veaOutbox.target,
+        router.target,
+        lastEvent.args._data,
+        lastEvent.args.messageId,
+        1000000
+      );
+
+      // The FailedResolution event will also be emitted in the sendSafeFallbackTx due to mock behaviour
+      await expect(fallbackExecutionTx).to.emit(veaOutbox, "FailedResolution").withArgs(epoch);
+
+      const claimHashAfterFallback = await veaOutbox.claimHashes(epoch);
+      expect(claimHashAfterFallback).to.equal(claimHashBeforeFallback);
+    });
+
     it("should not update latestEpoch and stateRoot when resolving older dispute", async () => {
       const { claimBlock } = await setupClaimAndChallenge(epoch, batchMerkleRoot, 0);
 
