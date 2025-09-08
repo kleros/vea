@@ -6,9 +6,9 @@ dataSources:
     name: VeaOutboxArbToGnosisDevnet
     network: gnosis-chiado
     source:
-      address: "0xE24B2838962207F585F4fa5C5bE3e1AcA43a1a1B"
+      address: "0x879A9F4476D4445A1deCf40175a700C4c829824D"
       abi: VeaOutboxArbToGnosisDevnet
-      startBlock: 14598540
+      startBlock: 17544965
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -37,9 +37,9 @@ dataSources:
     name: VeaOutboxArbToGnosisTestnet
     network: gnosis-chiado
     source:
-      address: "0x1c35dF16AAde8Fcf1D56Bca00B3c8Ef451113DfC"
+      address: "0x15aC29269b044E1d9042F597513B27Ffa4A7f257"
       abi: VeaOutboxArbToGnosisTestnet
-      startBlock: 15109734
+      startBlock: 17544978
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
