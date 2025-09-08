@@ -69,12 +69,6 @@ const config: HardhatUserConfig = {
         sepolia: "sepolia",
         chiado: "chiado",
       },
-      verify: {
-        etherscan: {
-          apiUrl: "https://api-sepolia.arbiscan.io",
-          apiKey: process.env.ARBISCAN_API_KEY,
-        },
-      },
     },
     arbitrum: {
       chainId: 42161,
@@ -86,12 +80,6 @@ const config: HardhatUserConfig = {
       companionNetworks: {
         mainnet: "mainnet",
         gnosischain: "gnosischain",
-      },
-      verify: {
-        etherscan: {
-          apiUrl: "https://api.arbiscan.io/api",
-          apiKey: process.env.ARBISCAN_API_KEY,
-        },
       },
     },
     // OUTBOX ---------------------------------------------------------------------------------------
@@ -120,11 +108,6 @@ const config: HardhatUserConfig = {
       tags: ["staging", "outbox", "layer1"],
       companionNetworks: {
         arbitrumSepolia: "arbitrumSepolia",
-      },
-      verify: {
-        etherscan: {
-          apiUrl: "https://blockscout.com/gnosis",
-        },
       },
     },
     sepolia: {
