@@ -23,8 +23,6 @@ contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
         bytes32 _stateRoot,
         Claim memory _claim
     ) external override OnlyBridgeRunning {
-        require(claimHashes[_epoch] == hashClaim(_claim), "Invalid claim.");
-
         require(msg.sender == address(arbSys), "Not from bridge.");
 
         if (_epoch > latestVerifiedEpoch) {
@@ -42,6 +40,9 @@ contract VeaOutboxMockArbToEth is VeaOutboxArbToEth {
                 _claim.honest = Party.Challenger;
             }
             claimHashes[_epoch] = hashClaim(_claim);
+            emit Verified(_epoch);
+        } else {
+            emit FailedResolution(_epoch);
         }
     }
 
