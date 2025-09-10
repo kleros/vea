@@ -676,7 +676,87 @@ describe("Integration tests", async () => {
       expect(claimHashAfterFallback).to.equal(claimHashBeforeFallback);
     });
 
-    it("challenger's deposit should be forfeited", async () => {
+    it("should not update latestEpoch and stateRoot when resolving older dispute", async () => {
+      // sending two messages
+      const data = 1121;
+      await senderGateway.sendMessage(data);
+      await veaInbox.connect(bridger).saveSnapshot();
+
+      const BatchOutgoing = veaInbox.filters.SnapshotSaved();
+      const batchOutGoingEvent = await veaInbox.queryFilter(BatchOutgoing);
+      const epochPeriod = Number(await veaInbox.epochPeriod());
+      const epoch = Math.floor((await batchOutGoingEvent[0].getBlock()).timestamp / epochPeriod);
+      const batchMerkleRoot = await veaInbox.snapshots(epoch);
+
+      await network.provider.send("evm_increaseTime", [epochPeriod]);
+      await network.provider.send("evm_mine");
+
+      // bridger tx starts - Honest Bridger
+      const bridgerClaimTx = await veaOutbox.connect(bridger).claim(epoch, batchMerkleRoot, { value: TEN_ETH });
+      const block = await ethers.provider.getBlock(bridgerClaimTx.blockNumber!);
+      if (!block) return;
+
+      await veaOutbox.connect(challenger)["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
+        epoch,
+        {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestampClaimed: block.timestamp,
+          timestampVerification: 0,
+          blocknumberVerification: 0,
+          honest: 0,
+          challenger: ethers.ZeroAddress,
+        },
+        { value: TEN_ETH }
+      );
+
+      // save snapshot for new epoch
+      await veaInbox.connect(bridger).saveSnapshot();
+      // claim and verify the new epoch
+      await claimAndVerify({
+        veaInbox,
+        veaOutbox,
+        bridger,
+        epoch: epoch + 1,
+        batchMerkleRoot: await veaInbox.snapshots(epoch + 1),
+        ethers,
+        network,
+        mine,
+      });
+
+      // Send snapshot for the older disputed epoch
+      await veaInbox.connect(bridger).sendSnapshot(
+        epoch,
+        {
+          stateRoot: batchMerkleRoot,
+          claimer: bridger.address,
+          timestampClaimed: block.timestamp,
+          timestampVerification: 0,
+          blocknumberVerification: 0,
+          honest: 0,
+          challenger: challenger.address,
+        },
+        { gasLimit: 1000000 }
+      );
+
+      // Ensure that the latest epoch and state root is not updated
+      expect(await veaOutbox.latestVerifiedEpoch()).to.equal(epoch + 1);
+
+      // Verify if the claim is resolved in favour of the bridger
+      const outboxClaimHash = await veaOutbox.claimHashes(epoch);
+      const expectedClaimHash = await veaOutbox.hashClaim({
+        stateRoot: batchMerkleRoot,
+        claimer: bridger.address,
+        timestampClaimed: block.timestamp,
+        timestampVerification: 0,
+        blocknumberVerification: 0,
+        honest: 1, // Dispute resolved in favour of claimer
+        challenger: challenger.address,
+      });
+      expect(outboxClaimHash).to.equal(expectedClaimHash);
+    });
+
+    it("challenger's deposit should be forfeited and bridger should be able to withdraw", async () => {
       // sample data
       const data = 1121;
 
