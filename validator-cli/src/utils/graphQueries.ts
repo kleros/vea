@@ -162,7 +162,7 @@ const getSnapshotSentForEpoch = async (
       `${subgraph}`,
       `{
           snapshots(where: {epoch: ${epoch}, inbox_: { id: "${veaInbox}" }}) {
-            fallback{
+            fallback(orderBy: timestamp, orderDirection: desc){
               txHash
             }
           }
