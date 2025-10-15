@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import { ethers } from "ethers";
 import { relayBatch, relayAllFrom } from "./utils/relay";
 import {
-  initialize as initializeNonce,
+  initialize as initializeNonces,
   updateStateFile,
   delay,
   setupExitHandlers,
@@ -14,6 +14,7 @@ import {
 import { initialize as initializeEmitter } from "./utils/logger";
 import { BotEvents } from "./utils/botEvents";
 import { getEpochPeriod, Network } from "./consts/bridgeRoutes";
+import { runHashiExecutor } from "./utils/hashi";
 
 interface RelayerConfig {
   networkConfigs: RelayerNetworkConfig[];
@@ -59,8 +60,14 @@ async function processNetworkConfig(
 
   await setupExitHandlers(chainId, shutdownManager, network, emitter);
 
-  let nonce = await initializeNonce(chainId, network, emitter);
+  let { nonce, hashiNonce } = await initializeNonces(chainId, network, emitter);
   if (nonce == null) return currentDelay;
+
+  const hashiExecutorEnabled = process.env.HASHI_EXECUTOR_ENABLED === "true";
+  if (hashiExecutorEnabled) {
+    // Execute messages on Hashi (Yaru contract)
+    hashiNonce = await runHashiExecutor(chainId, network, hashiNonce);
+  }
 
   const toRelayAll = senders[0] === ethers.ZeroAddress;
   nonce = toRelayAll
@@ -69,7 +76,7 @@ async function processNetworkConfig(
 
   if (nonce == null) return currentDelay;
 
-  await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, network, emitter);
+  await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, hashiNonce, network, emitter);
 
   if (network === Network.DEVNET) {
     return 1000 * 10; // 10 seconds for devnet

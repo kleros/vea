@@ -17,7 +17,11 @@ interface IBridge {
   epochPeriod: number;
   veaContracts: { [key in Network]: VeaContracts };
   batcherAddress: string;
+  rpcInbox: string;
   rpcOutbox: string;
+  yahoAddress?: string; // Hashi (Yaru) contract address
+  yaruAddress?: string; // Hashi (Yaru) contract address
+  hashiAddress?: string; // Hashi (Yaru) contract address
 }
 
 type VeaContracts = {
@@ -60,7 +64,11 @@ const bridges: { [chainId: number]: IBridge } = {
     epochPeriod: 7200,
     veaContracts: arbToEthContracts,
     batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_SEPOLIA!,
+    rpcInbox: process.env.RPC_ARBITRUM_SEPOLIA!,
     rpcOutbox: process.env.RPC_SEPOLIA!,
+    yahoAddress: "0xDbdF80c87f414fac8342e04D870764197bD3bAC7", // Hashi (Yaho) contract address on Arbitrum Sepolia
+    yaruAddress: "0x231e48AAEaAC6398978a1dBA4Cd38fcA208Ec391", // Hashi (Yaru) contract address on Sepolia
+    hashiAddress: "0x78E4ae687De18B3B71Ccd0e8a3A76Fed49a02A02", // Hashi (Yaru) contract address on Sepolia
   },
   10200: {
     chainId: 10200,
@@ -68,6 +76,7 @@ const bridges: { [chainId: number]: IBridge } = {
     epochPeriod: 3600,
     veaContracts: arbToGnosisContracts,
     batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_CHIADO!,
+    rpcInbox: process.env.RPC_ARBITRUM_SEPOLIA!,
     rpcOutbox: process.env.RPC_CHIADO!,
   },
 };
