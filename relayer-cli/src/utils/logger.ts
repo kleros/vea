@@ -59,4 +59,15 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.MESSAGE_EXECUTION_FAILED, (nonce) => {
     console.error(`Message execution failed for nonce ${nonce}`);
   });
+
+  // Hashi executor logs
+  emitter.on(BotEvents.EXECUTING_HASHI, (startNonce, endNonce) => {
+    console.log(`Executing Hashi for nonces from ${startNonce} to ${endNonce}`);
+  });
+  emitter.on(BotEvents.HASHI_EXECUTED, (endNonce) => {
+    console.log(`Successfully executed Hashi till ${endNonce}`);
+  });
+  emitter.on(BotEvents.HASHI_BATCH_TXN, (txHash, batchSize) => {
+    console.log(`Hashi batch transaction ${txHash} for ${batchSize} messages`);
+  });
 };
