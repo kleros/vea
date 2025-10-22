@@ -142,7 +142,6 @@ const relayBatch = async ({
       }
     }
     if (batchMessages > 0) {
-      console.log(targets, datas);
       const gasLimit = await batcher.batchSend.estimateGas(targets, values, datas);
       const tx = await batcher.batchSend(targets, values, datas, { gasLimit });
       const receipt = await tx.wait();

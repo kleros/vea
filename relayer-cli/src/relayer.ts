@@ -65,8 +65,8 @@ async function processNetworkConfig(
 
   const hashiExecutorEnabled = process.env.HASHI_EXECUTOR_ENABLED === "true";
   if (hashiExecutorEnabled) {
-    // Execute messages on Hashi (Yaru contract)
-    hashiNonce = await runHashiExecutor(chainId, network, hashiNonce);
+    // Execute messages on Hashi
+    hashiNonce = await runHashiExecutor({ chainId, network, nonce: hashiNonce, emitter });
   }
 
   const toRelayAll = senders[0] === ethers.ZeroAddress;
