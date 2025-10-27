@@ -77,6 +77,10 @@ export async function challengeAndResolveClaim({
   // If claim is already resolved, nothing to do
   if (claim.honest !== 0) {
     emitter.emit(BotEvents.CLAIM_ALREADY_RESOLVED, epoch);
+    if (claim.honest === 2) {
+      await transactionHandler.withdrawChallengeDeposit();
+      return transactionHandler;
+    }
     return null;
   }
 
