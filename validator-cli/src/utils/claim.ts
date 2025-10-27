@@ -57,14 +57,12 @@ const getClaim = async ({
   };
   const claimHash = await veaOutbox.claimHashes(epoch);
   if (claimHash === ethers.ZeroHash) return null;
-  console.log("CLAIM HASH FROM CONTRACT", claimHash);
   try {
     const [claimLogs, challengeLogs, verificationLogs] = await Promise.all([
       veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null), fromBlock, toBlock),
       veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null), fromBlock, toBlock),
       veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch), fromBlock, toBlock),
     ]);
-    console.log("CLAIM LOGS", claimLogs);
     claim.stateRoot = claimLogs[0].data;
     claim.claimer = `0x${claimLogs[0].topics[1].slice(26)}`;
     claim.timestampClaimed = (await veaOutboxProvider.getBlock(claimLogs[0].blockNumber)).timestamp;
@@ -126,6 +124,7 @@ export interface ClaimResolveStateParams {
   fromBlock: number;
   toBlock: number | string;
   fetchMessageStatus?: typeof getMessageStatus;
+  fetchSentSnapshotData?: typeof getSentSnapshotData;
 }
 
 /**
@@ -150,6 +149,7 @@ const getClaimResolveState = async ({
   fromBlock,
   toBlock,
   fetchMessageStatus = getMessageStatus,
+  fetchSentSnapshotData = getSentSnapshotData,
 }: ClaimResolveStateParams): Promise<ClaimResolveState> => {
   let claimResolveState: ClaimResolveState = {
     sendSnapshot: {
@@ -168,14 +168,13 @@ const getClaimResolveState = async ({
         a.blockNumber !== b.blockNumber ? b.blockNumber - a.blockNumber : b.logIndex - a.logIndex
       );
       // Add logic to check if the sent message has the actual claimHash or not
-      const expectedClaimHash = await getSentSnapshotData(
+      const expectedClaimHash = await fetchSentSnapshotData(
         sentSnapshotLogs[0].transactionHash,
         veaInboxProvider,
         veaInbox.interface
       );
       const claimHash = await veaOutbox.claimHashes(epoch);
-      console.log("CLAIM HASH FROM CONTRACT", claimHash);
-      console.log("EXPECTED CLAIM HASH FROM SENT SNAPSHOT", expectedClaimHash);
+
       if (claimHash === expectedClaimHash) {
         claimResolveState.sendSnapshot.status = true;
         claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
@@ -188,7 +187,7 @@ const getClaimResolveState = async ({
   } catch {
     const sentSnapshotFromGraph = await getSnapshotSentForEpoch(epoch, await veaInbox.getAddress(), chainId);
     if (sentSnapshotFromGraph) {
-      const expectedClaimHash = await getSentSnapshotData(
+      const expectedClaimHash = await fetchSentSnapshotData(
         sentSnapshotFromGraph.txHash,
         veaInboxProvider,
         veaInbox.interface
