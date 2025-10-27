@@ -125,6 +125,11 @@ async function executeBatchOnHashi(chainId: number, params: VeaNonceToHashiMessa
         };
       });
 
+    if (messages.length === 0) {
+      cursor += chunk.length;
+      continue;
+    }
+
     const tx = await yaru.executeMessages(messages);
     const receipt = await tx.wait();
 

@@ -72,7 +72,7 @@ const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSe
           where: {
             inbox: "${inbox}",
             nonce_gte: ${nonce}, 
-            msgSender_: {id: "${msgSender}"}
+            msgSender_: {id: "${msgSender.toLowerCase()}"}
           }, 
           orderBy: nonce, 
           orderDirection: asc
@@ -82,7 +82,7 @@ const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSe
       }`
   )) as MessageSentsResponse;
 
-  return result[`messageSents`].map((a: { nonce: number }) => a.nonce);
+  return result[`messageSents`].map((a: { nonce: string | number }) => Number(a.nonce));
 };
 
 export { getVeaMsgTrnx, getCount, getNonceFrom };
