@@ -4,6 +4,7 @@ import { MockEmitter } from "../utils/emitter";
 
 describe("snapshot", () => {
   let veaInbox: any;
+  let veaOutbox: any;
   let count: number = 1;
   const chainId = 11155111;
   let fetchLastSavedMessage: jest.Mock;
@@ -14,7 +15,11 @@ describe("snapshot", () => {
       filters: {
         SnapshotSaved: jest.fn(),
       },
+      snapshots: jest.fn(),
       getAddress: jest.fn().mockResolvedValue("0x1"),
+    };
+    veaOutbox = {
+      stateRoot: jest.fn(),
     };
   });
   describe("isSnapshotNeeded", () => {
@@ -27,9 +32,10 @@ describe("snapshot", () => {
       const params = {
         chainId,
         veaInbox,
+        veaOutbox,
         count,
         fetchLastSavedMessage,
-      };
+      } as any;
       expect(isSnapshotNeeded(params)).resolves.toEqual({
         snapshotNeeded: false,
         latestCount: currentCount,
@@ -45,9 +51,10 @@ describe("snapshot", () => {
       const params = {
         chainId,
         veaInbox,
+        veaOutbox,
         count,
         fetchLastSavedMessage,
-      };
+      } as any;
       expect(isSnapshotNeeded(params)).resolves.toEqual({
         snapshotNeeded: false,
         latestCount: count,
@@ -62,9 +69,10 @@ describe("snapshot", () => {
       const params = {
         chainId,
         veaInbox,
+        veaOutbox,
         count,
         fetchLastSavedMessage,
-      };
+      } as any;
       expect(isSnapshotNeeded(params)).resolves.toEqual({
         snapshotNeeded: false,
         latestCount: currentCount,
@@ -79,9 +87,10 @@ describe("snapshot", () => {
       const params = {
         chainId,
         veaInbox,
+        veaOutbox,
         count,
         fetchLastSavedMessage,
-      };
+      } as any;
       expect(isSnapshotNeeded(params)).resolves.toEqual({
         snapshotNeeded: true,
         latestCount: currentCount,
@@ -96,9 +105,30 @@ describe("snapshot", () => {
       const params = {
         chainId,
         veaInbox,
+        veaOutbox,
         count,
         fetchLastSavedMessage,
-      };
+      } as any;
+      expect(isSnapshotNeeded(params)).resolves.toEqual({
+        snapshotNeeded: true,
+        latestCount: currentCount,
+      });
+    });
+    it.only("should return true if claim was missed in previous epoch", async () => {
+      count = 1;
+      let currentCount = 3;
+      veaInbox.count.mockResolvedValue(currentCount);
+      fetchLastSavedMessage = jest.fn().mockResolvedValue("message-3");
+      veaInbox.queryFilter.mockRejectedValue(new Error("queryFilter failed"));
+      veaOutbox.stateRoot.mockResolvedValue("0xabcde");
+      veaInbox.snapshots.mockResolvedValue("0x0");
+      const params = {
+        chainId,
+        veaInbox,
+        veaOutbox,
+        count,
+        fetchLastSavedMessage,
+      } as any;
       expect(isSnapshotNeeded(params)).resolves.toEqual({
         snapshotNeeded: true,
         latestCount: currentCount,
@@ -119,6 +149,7 @@ describe("snapshot", () => {
       const res = await saveSnapshot({
         chainId,
         veaInbox,
+        veaOutbox,
         network,
         epochPeriod,
         count,
@@ -146,6 +177,7 @@ describe("snapshot", () => {
       const res = await saveSnapshot({
         chainId,
         veaInbox,
+        veaOutbox,
         network,
         epochPeriod,
         count,
@@ -172,6 +204,7 @@ describe("snapshot", () => {
       const res = await saveSnapshot({
         chainId,
         veaInbox,
+        veaOutbox,
         network,
         epochPeriod,
         count: -1,
@@ -200,6 +233,7 @@ describe("snapshot", () => {
       const res = await saveSnapshot({
         chainId,
         veaInbox,
+        veaOutbox,
         network: Network.DEVNET,
         epochPeriod,
         count,
