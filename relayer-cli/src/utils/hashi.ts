@@ -17,7 +17,7 @@ interface HashiExecutorInterface {
   emitter: EventEmitter;
   fetchBridgeConfig?: typeof getBridgeConfig;
   fetchVeaInbox?: typeof getVeaInbox;
-  isMessageExecutable?: typeof toExecuteMesssage;
+  isMessageExecutable?: typeof toExecuteMessage;
   executeMsgsOnHashi?: typeof executeBatchOnHashi;
 }
 
@@ -40,7 +40,7 @@ async function runHashiExecutor({
   emitter,
   fetchBridgeConfig = getBridgeConfig,
   fetchVeaInbox = getVeaInbox,
-  isMessageExecutable = toExecuteMesssage,
+  isMessageExecutable = toExecuteMessage,
   executeMsgsOnHashi = executeBatchOnHashi,
 }: HashiExecutorInterface): Promise<number | undefined> {
   const bridgeConfig = fetchBridgeConfig(chainId);
@@ -159,7 +159,7 @@ interface ToExecuteMessageInterface {
  * @param rpcInbox The RPC URL for the inbox network
  * @returns The VeaNonceToHashiMessage if executable, otherwise null
  */
-async function toExecuteMesssage({
+async function toExecuteMessage({
   chainId,
   nonce,
   veaInboxAddress,
@@ -239,4 +239,4 @@ async function getMessageStatus(message: HashiMessage): Promise<HashiExecutionSt
   return ok ? HashiExecutionStatus.EXECUTABLE : HashiExecutionStatus.THRESHOLD_NOT_MET;
 }
 
-export { executeBatchOnHashi, runHashiExecutor, toExecuteMesssage };
+export { executeBatchOnHashi, runHashiExecutor, toExecuteMessage };

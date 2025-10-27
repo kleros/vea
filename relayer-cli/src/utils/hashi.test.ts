@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { BotEvents } from "./botEvents";
-import { toExecuteMesssage, runHashiExecutor } from "./hashi";
+import { toExecuteMessage, runHashiExecutor } from "./hashi";
 import { VeaNonceToHashiMessage, HashiExecutionStatus, HashiMessage } from "./hashiHelpers/hashiTypes";
 
 class MockEmitter extends EventEmitter {
@@ -100,7 +100,7 @@ describe("hashi", () => {
   });
   describe("toExecuteMessage", () => {
     it("should verify if the vea message is executed using Hashi and is executable", async () => {
-      const result = await toExecuteMesssage({
+      const result = await toExecuteMessage({
         chainId,
         nonce,
         veaInboxAddress: "0xInbox",
@@ -116,7 +116,7 @@ describe("hashi", () => {
       expect(result?.hashiMessage.nonce).toBe(BigInt(1));
     });
     it("should return null if the vea message is not executable via Hashi", async () => {
-      const result = await toExecuteMesssage({
+      const result = await toExecuteMessage({
         chainId,
         nonce,
         veaInboxAddress: "0xInbox",
@@ -134,7 +134,7 @@ describe("hashi", () => {
         getTransactionReceipt: jest.fn().mockResolvedValue({ logs: [] }),
       } as any;
 
-      const result = await toExecuteMesssage({
+      const result = await toExecuteMessage({
         chainId,
         nonce,
         veaInboxAddress: "0xInbox",
@@ -150,7 +150,7 @@ describe("hashi", () => {
   });
 
   describe("runHashiExecutor", () => {
-    let mockToExecuteMesssage: jest.Mock;
+    let mocktoExecuteMessage: jest.Mock;
     let mockExecuteMessage: jest.Mock;
     const mockHashiMessage1: HashiMessage = {
       nonce: 3,
@@ -173,12 +173,12 @@ describe("hashi", () => {
       adapters: ["0xAdapter1", "0xAdapter2"],
     };
     beforeEach(() => {
-      mockToExecuteMesssage = jest.fn();
+      mocktoExecuteMessage = jest.fn();
       mockExecuteMessage = jest.fn();
     });
 
     it("should not increment nonce if no messages are executable", async () => {
-      mockToExecuteMesssage.mockResolvedValue(null);
+      mocktoExecuteMessage.mockResolvedValue(null);
 
       const result = await runHashiExecutor({
         chainId,
@@ -187,7 +187,7 @@ describe("hashi", () => {
         emitter: mockEmitter,
         fetchBridgeConfig,
         fetchVeaInbox,
-        isMessageExecutable: mockToExecuteMesssage,
+        isMessageExecutable: mocktoExecuteMessage,
         executeMsgsOnHashi: mockExecuteMessage,
       });
       expect(result).toBeDefined();
@@ -206,7 +206,7 @@ describe("hashi", () => {
         hashiMessage: mockHashiMessage2,
         executed: false,
       });
-      mockToExecuteMesssage
+      mocktoExecuteMessage
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(executableNonces[0])
         .mockResolvedValueOnce(executableNonces[1]);
@@ -220,7 +220,7 @@ describe("hashi", () => {
         emitter: mockEmitter,
         fetchBridgeConfig,
         fetchVeaInbox,
-        isMessageExecutable: mockToExecuteMesssage,
+        isMessageExecutable: mocktoExecuteMessage,
         executeMsgsOnHashi: mockExecuteMessage,
       });
       expect(result).toBeDefined();
