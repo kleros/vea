@@ -13,7 +13,7 @@ const paramsByChainId = {
   ETHEREUM_SEPOLIA: {
     deposit: parseEther("0.001"),
     // Average happy path wait time is 1 hour (30 min, 90 min), happy path only
-    epochPeriod: 1800, // 30 min
+    epochPeriod: 300, // 5 min
     minChallengePeriod: 0, // 0 min
     numEpochTimeout: 10000000000000, // never
     maxMissingBlocks: 10000000000000,
