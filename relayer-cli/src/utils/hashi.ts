@@ -53,9 +53,9 @@ async function runHashiExecutor({
   const legacyNonce = nonce;
   while (nonce < inboxCount) {
     // ToDo: Add cooldown periods for nonces that cannot be executed.
-    const toExecute = await isMessageExecutable({ chainId, nonce, veaInboxAddress, rpcInbox });
-    if (toExecute) {
-      executableNonces.push(toExecute);
+    const messageState = await isMessageExecutable({ chainId, nonce, veaInboxAddress, rpcInbox });
+    if (messageState != null && !messageState.executed) {
+      executableNonces.push(messageState);
     }
     nonce++;
   }
