@@ -233,7 +233,6 @@ async function getMessageStatus(message: HashiMessage): Promise<HashiExecutionSt
     const executionData = ifaceYaru.encodeFunctionData("executed", [id]);
     const ret = await provider.call({ to: yaruAddress, data: executionData });
     const [flag] = ifaceYaru.decodeFunctionResult("executed", ret);
-    console.log("Message already executed flag:", flag);
     if (flag) return HashiExecutionStatus.EXECUTED; // already executed
   }
   return ok ? HashiExecutionStatus.EXECUTABLE : HashiExecutionStatus.THRESHOLD_NOT_MET;

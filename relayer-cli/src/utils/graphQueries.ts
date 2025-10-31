@@ -2,7 +2,6 @@ import request from "graphql-request";
 import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "@kleros/vea-contracts/typechain-types";
 
 async function getVeaMsgTrnx(nonce: number, inboxAddress: string) {
-  console.log(`Fetching transaction hashes for nonce ${nonce} from inbox ${inboxAddress}`);
   try {
     const subgraph = process.env.RELAYER_SUBGRAPH;
     const query = `{messageSents(first: 1, where: {nonce: ${nonce}, inbox: "${inboxAddress}"}) {
