@@ -141,4 +141,7 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.CHALLENGER_WON_CLAIM, () => {
     console.log("Challenger won claim");
   });
+  emitter.on(BotEvents.CLAIM_ALREADY_RESOLVED, (epoch: number) => {
+    console.log(`Claim for epoch ${epoch} is already resolved.`);
+  });
 };

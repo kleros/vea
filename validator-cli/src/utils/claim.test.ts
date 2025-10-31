@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { ethers, getAddress } from "ethers";
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { getClaim, hashClaim, getClaimResolveState, ClaimResolveStateParams } from "./claim";
 import { ClaimNotFoundError } from "./errors";
@@ -232,8 +232,8 @@ describe("snapshotClaim", () => {
 
   describe("getClaimResolveState", () => {
     let veaInbox: any;
-    let veaInboxProvider: any;
-    let veaOutboxProvider: any;
+    let veaOutbox: any;
+    let fetchSentSnapshotData: any;
     const epoch = 1;
     const blockNumberOutboxLowerBound = 1234;
     const toBlock = "latest";
@@ -253,10 +253,17 @@ describe("snapshotClaim", () => {
         filters: {
           SnapshotSent: jest.fn(),
         },
+        getAddress: jest.fn(),
       };
+      veaOutbox = {
+        claimHashes: jest.fn().mockResolvedValueOnce(hashedMockClaim),
+        getAddress: jest.fn(),
+      };
+      fetchSentSnapshotData = jest.fn().mockResolvedValueOnce(hashedMockClaim);
       mockClaimResolveStateParams = {
         chainId: 11155111,
         veaInbox,
+        veaOutbox,
         veaInboxProvider: {
           getBlock: jest.fn().mockResolvedValueOnce({ timestamp: mockClaim.timestampClaimed, number: 1234 }),
         } as any,
@@ -267,6 +274,7 @@ describe("snapshotClaim", () => {
         fromBlock: blockNumberOutboxLowerBound,
         toBlock,
         fetchMessageStatus: jest.fn(),
+        fetchSentSnapshotData,
       };
     });
 
@@ -285,6 +293,16 @@ describe("snapshotClaim", () => {
       const claimResolveState = await getClaimResolveState(mockClaimResolveStateParams);
       expect(claimResolveState).toBeDefined();
       expect(claimResolveState.sendSnapshot.status).toBeTruthy();
+      expect(claimResolveState.execution.status).toBe(0);
+    });
+
+    it("should return false state if incorrect snapshot sent", async () => {
+      veaInbox.queryFilter.mockResolvedValueOnce([{ transactionHash: "0x1234" }]);
+      fetchSentSnapshotData = jest.fn().mockResolvedValueOnce("0xincorrecthash");
+      mockClaimResolveStateParams.fetchSentSnapshotData = fetchSentSnapshotData;
+      const claimResolveState = await getClaimResolveState(mockClaimResolveStateParams);
+      expect(claimResolveState).toBeDefined();
+      expect(claimResolveState.sendSnapshot.status).toBeFalsy();
       expect(claimResolveState.execution.status).toBe(0);
     });
   });

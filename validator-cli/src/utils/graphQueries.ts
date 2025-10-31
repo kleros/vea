@@ -162,7 +162,7 @@ const getSnapshotSentForEpoch = async (
       `${subgraph}`,
       `{
           snapshots(where: {epoch: ${epoch}, inbox_: { id: "${veaInbox}" }}) {
-            fallback{
+            fallback(orderBy: timestamp, orderDirection: desc){
               txHash
             }
           }
@@ -177,6 +177,7 @@ const getSnapshotSentForEpoch = async (
 
 type SnapshotSavedResponse = {
   snapshots: {
+    stateRoot: string;
     messages: {
       id: string;
     }[];
@@ -188,12 +189,13 @@ type SnapshotSavedResponse = {
  * @param veaInbox
  * @returns message id
  */
-const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<string> => {
+const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<{ id: string; stateRoot: string }> => {
   const subgraph = getInboxSubgraphUrl(chainId);
   const result: SnapshotSavedResponse = await request(
     `${subgraph}`,
     `{
       snapshots(first:2, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox}"}) {
+        stateRoot
         messages(first: 1,orderBy:timestamp,orderDirection:desc){
           id 
         }
@@ -201,7 +203,7 @@ const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<s
     }`
   );
   if (result.snapshots.length < 2 || result.snapshots[1].messages.length === 0) return;
-  return result.snapshots[1].messages[0].id;
+  return { id: result.snapshots[1].messages[0].id, stateRoot: result.snapshots[1].stateRoot };
 };
 
 export {
