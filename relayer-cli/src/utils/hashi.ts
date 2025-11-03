@@ -171,6 +171,9 @@ async function toExecuteMessage({
   logIFace = new Interface(messageDispatchedAbi),
 }: ToExecuteMessageInterface): Promise<VeaNonceToHashiMessage | null> {
   const hashes = await fetchVeaMsgTrnx(nonce, veaInboxAddress);
+  if (hashes.length === 0) {
+    return null;
+  }
   const bridgeConfig = fetchBridgeConfig(chainId);
   const yahoAddress = bridgeConfig.yahoAddress?.toLowerCase();
   const receipt = await provider.getTransactionReceipt(hashes[0]);
