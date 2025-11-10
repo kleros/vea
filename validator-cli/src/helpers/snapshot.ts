@@ -51,7 +51,6 @@ export const saveSnapshot = async ({
     veaOutbox,
     count,
   });
-  console.log(snapshotNeeded, latestCount);
   if (!snapshotNeeded) return { transactionHandler, latestCount };
   await transactionHandler.saveSnapshot();
   return { transactionHandler, latestCount };
@@ -75,7 +74,7 @@ export const isSnapshotNeeded = async ({
   try {
     const saveSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSaved());
     lastSavedCount = Number(saveSnapshotLogs[saveSnapshotLogs.length - 1].args[2]);
-    lastSavedSnapshot = saveSnapshotLogs[saveSnapshotLogs.length - 1].args[1];
+    lastSavedSnapshot = saveSnapshotLogs[saveSnapshotLogs.length - 1].args[0];
   } catch {
     const veaInboxAddress = await veaInbox.getAddress();
     const { id: lastSavedMessageId, stateRoot: lastSavedStateRoot } = await fetchLastSavedMessage(
@@ -86,7 +85,6 @@ export const isSnapshotNeeded = async ({
     lastSavedSnapshot = lastSavedStateRoot;
     lastSavedCount = messageIndex;
   }
-  // console.log(lastSavedCount, currentCount);
   const epochNow = Math.floor(Date.now() / (1000 * epochPeriod));
   const currentSnapshot = await veaInbox.snapshots(epochNow);
   const currentStateRoot = await veaOutbox.stateRoot();
