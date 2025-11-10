@@ -84,9 +84,9 @@ export const isSnapshotNeeded = async ({
     );
     const messageIndex = extractMessageIndex(lastSavedMessageId);
     lastSavedSnapshot = lastSavedStateRoot;
-    // adding 1 to the message index to get the last saved count
     lastSavedCount = messageIndex;
   }
+  // console.log(lastSavedCount, currentCount);
   const epochNow = Math.floor(Date.now() / (1000 * epochPeriod));
   const currentSnapshot = await veaInbox.snapshots(epochNow);
   const currentStateRoot = await veaOutbox.stateRoot();
