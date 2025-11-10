@@ -175,11 +175,11 @@ const getSnapshotSentForEpoch = async (
   }
 };
 
-type SnapshotSavedResponse = {
-  snapshots: {
-    stateRoot: string;
-    messages: {
-      id: string;
+type LastMessageSavedResponse = {
+  messages: {
+    id: string;
+    snapshot: {
+      stateRoot: string;
     }[];
   }[];
 };
@@ -191,19 +191,19 @@ type SnapshotSavedResponse = {
  */
 const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<{ id: string; stateRoot: string }> => {
   const subgraph = getInboxSubgraphUrl(chainId);
-  const result: SnapshotSavedResponse = await request(
+  const result: LastMessageSavedResponse = await request(
     `${subgraph}`,
     `{
-      snapshots(first:2, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox}"}) {
-        stateRoot
-        messages(first: 1,orderBy:timestamp,orderDirection:desc){
-          id 
+      messages(first:1, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox}"}) {
+        id
+        snapshot{
+          stateRoot
         }
       }
     }`
   );
-  if (result.snapshots.length < 2 || result.snapshots[1].messages.length === 0) return;
-  return { id: result.snapshots[1].messages[0].id, stateRoot: result.snapshots[1].stateRoot };
+  if (result.messages.length < 1 || result.messages[0].snapshot.length === 0) return;
+  return { id: result.messages[0].id, stateRoot: result.messages[0].snapshot[0].stateRoot };
 };
 
 export {
