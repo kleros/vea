@@ -41,7 +41,7 @@ COPY --chown=node:node contracts ./contracts
 # 
 # Build step to generate contract artifacts and typechain types
 #
-RUN yarn workspace @kleros/vea-contracts build
+RUN [ -d contracts/typechain-types ] && echo "TypeChain present, skipping build" || yarn workspace @kleros/vea-contracts build
 RUN yarn workspaces focus @kleros/vea-relayer-cli
 
 
