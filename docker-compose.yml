@@ -1,0 +1,25 @@
+services:
+  validator:
+    build:
+      context: .
+      dockerfile: ./validator-cli/Dockerfile
+    command: yarn start --saveSnapshot 
+    env_file:
+      - path: ./validator-cli/.env
+        required: true
+    restart: unless-stopped
+    networks:
+      - vea-network
+
+  relayer:
+    build:
+      context: .
+      dockerfile: ./relayer-cli/Dockerfile
+    env_file:
+      - path: ./relayer-cli/.env
+        required: true
+    restart: unless-stopped
+    networks:
+      - vea-network
+networks:
+  vea-network:
