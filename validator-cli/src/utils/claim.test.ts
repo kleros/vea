@@ -1,5 +1,5 @@
 import { ethers, getAddress } from "ethers";
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { getClaim, hashClaim, getClaimResolveState, ClaimResolveStateParams } from "./claim";
 import { ClaimNotFoundError } from "./errors";
 

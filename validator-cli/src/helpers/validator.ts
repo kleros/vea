@@ -6,7 +6,7 @@ import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
 import { Network } from "../consts/bridgeRoutes";
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { getBlockFromEpoch } from "../utils/epochHandler";
 
 export interface ChallengeAndResolveClaimParams {

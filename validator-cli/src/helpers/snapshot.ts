@@ -51,6 +51,7 @@ export const saveSnapshot = async ({
     veaOutbox,
     count,
   });
+  console.log(snapshotNeeded, latestCount);
   if (!snapshotNeeded) return { transactionHandler, latestCount };
   await transactionHandler.saveSnapshot();
   return { transactionHandler, latestCount };

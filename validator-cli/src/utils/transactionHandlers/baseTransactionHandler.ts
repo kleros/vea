@@ -3,7 +3,7 @@ import { BotEvents } from "../botEvents";
 import { ClaimNotSetError } from "../errors";
 import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
 import { defaultEmitter } from "../emitter";
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { ClaimStruct } from "../../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 
 export interface ITransactionHandler {
   /* Public properties */

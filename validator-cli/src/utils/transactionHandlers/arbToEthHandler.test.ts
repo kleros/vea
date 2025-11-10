@@ -1,4 +1,4 @@
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { ClaimStruct } from "../../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { ArbToEthTransactionHandler } from "./arbToEthHandler";
 import { ContractType, BaseTransactionHandlerConstructor } from "./baseTransactionHandler";
 import { MockEmitter } from "../../utils/emitter";

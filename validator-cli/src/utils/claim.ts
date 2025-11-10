@@ -1,5 +1,5 @@
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { VeaInboxArbToEth__factory } from "@kleros/vea-contracts/typechain-types";
+import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { VeaInboxArbToEth__factory } from "../../../contracts/typechain-types";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers, Interface } from "ethers";
 import { ClaimNotFoundError } from "./errors";

@@ -2,7 +2,7 @@ import {
   VeaInboxArbToGnosis,
   VeaOutboxArbToGnosis,
   VeaOutboxArbToGnosisDevnet,
-} from "@kleros/vea-contracts/typechain-types";
+} from "../../../../contracts/typechain-types";
 import { toBigInt } from "ethers";
 import {
   BaseTransactionHandler,

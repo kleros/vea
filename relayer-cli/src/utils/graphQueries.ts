@@ -1,5 +1,5 @@
 import request from "graphql-request";
-import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "@kleros/vea-contracts/typechain-types";
+import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "../../../contracts/typechain-types";
 
 async function getVeaMsgTrnx(nonce: number, inboxAddress: string) {
   try {
