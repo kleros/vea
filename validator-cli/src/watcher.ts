@@ -178,7 +178,15 @@ async function processEpochsForNetwork({
     if (latestBlock.number - epochBlock > RPC_BLOCK_LIMIT) {
       toBlock = epochBlock + RPC_BLOCK_LIMIT;
     }
-    const claim = await getClaim({ chainId, veaOutbox, veaOutboxProvider, epoch, fromBlock: epochBlock, toBlock });
+    const claim = await getClaim({
+      chainId,
+      veaOutbox,
+      veaOutboxProvider,
+      epoch,
+      fromBlock: epochBlock,
+      toBlock,
+      emitter,
+    });
     let updatedTransactions;
     if (path > BotPaths.CLAIMER && claim != null) {
       const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {

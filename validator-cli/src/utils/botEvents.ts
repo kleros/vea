@@ -44,4 +44,8 @@ export enum BotEvents {
   TXN_FINAL = "txn_final",
   TXN_NOT_FINAL = "txn_not_final",
   TXN_EXPIRED = "txn_expired",
+
+  // Error state
+  NO_CLAIM_FETCHED = "no_claim_fetched",
+  CLAIM_MISMATCH = "claim_mismatch",
 }

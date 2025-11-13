@@ -1,7 +1,6 @@
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { VeaInboxArbToEth__factory } from "../../../contracts/typechain-types";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { ethers, Interface } from "ethers";
+import { ethers } from "ethers";
 import { ClaimNotFoundError } from "./errors";
 import { getMessageStatus } from "./arbMsgExecutor";
 import {
@@ -10,7 +9,8 @@ import {
   getVerificationForClaim,
   getSnapshotSentForEpoch,
 } from "./graphQueries";
-
+import { defaultEmitter } from "../utils/emitter";
+import { BotEvents } from "./botEvents";
 enum ClaimHonestState {
   NONE = 0,
   CLAIMER = 1,
@@ -24,6 +24,7 @@ interface ClaimParams {
   epoch: number;
   fromBlock: number;
   toBlock: number | string;
+  emitter: typeof defaultEmitter;
   fetchClaimForEpoch?: typeof getClaimForEpoch;
   fetchVerificationForClaim?: typeof getVerificationForClaim;
   fetchChallengerForClaim?: typeof getChallengerForClaim;
@@ -42,6 +43,7 @@ const getClaim = async ({
   epoch,
   fromBlock,
   toBlock,
+  emitter,
   fetchChallengerForClaim = getChallengerForClaim,
   fetchClaimForEpoch = getClaimForEpoch,
   fetchVerificationForClaim = getVerificationForClaim,
@@ -73,7 +75,11 @@ const getClaim = async ({
     if (challengeLogs.length > 0) claim.challenger = "0x" + challengeLogs[0].topics[2].substring(26);
   } catch {
     const claimFromGraph = await fetchClaimForEpoch(epoch, await veaOutbox.getAddress(), chainId);
-    if (!claimFromGraph) throw new ClaimNotFoundError(epoch);
+    if (!claimFromGraph) {
+      emitter.emit(BotEvents.NO_CLAIM_FETCHED, epoch, fromBlock, toBlock);
+      throw new ClaimNotFoundError(epoch);
+    }
+
     const [verificationFromGraph, challengeFromGraph] = await Promise.all([
       fetchVerificationForClaim(claimFromGraph.id, chainId),
       fetchChallengerForClaim(claimFromGraph.id, chainId),
@@ -100,6 +106,7 @@ const getClaim = async ({
   if (hashClaim(claim) == claimHash) {
     return claim;
   }
+  emitter.emit(BotEvents.CLAIM_MISMATCH, epoch);
   throw new ClaimNotFoundError(epoch);
 };
 

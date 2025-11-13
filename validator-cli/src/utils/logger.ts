@@ -1,7 +1,32 @@
 import { EventEmitter } from "node:events";
+import pino from "pino";
 import { BotEvents } from "./botEvents";
 import { BotPaths } from "./botConfig";
 import { Network } from "../consts/bridgeRoutes";
+
+const logtailToken = process.env.LOGTAIL_TOKEN;
+
+const loggerOptions = {
+  level: "info",
+  base: { service: "Vea" },
+  transport: logtailToken
+    ? {
+        target: "@logtail/pino",
+        options: {
+          sourceToken: logtailToken,
+        },
+      }
+    : {
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+          translateTime: "SYS:standard",
+          ignore: "pid,hostname",
+        },
+      },
+};
+const baseLogger = pino(loggerOptions);
+const getLogger = (context: string) => baseLogger.child({ context });
 
 /**
  * Listens to relevant events of an EventEmitter instance and issues log lines
@@ -19,6 +44,7 @@ export const initialize = (emitter: EventEmitter) => {
 };
 
 export const configurableInitialize = (emitter: EventEmitter) => {
+  const logger = getLogger("Validator");
   // Bridger state logs
   emitter.on(BotEvents.STARTED, (path: BotPaths, networks: Network[]) => {
     let pathString = "claimer and challenger";
@@ -27,121 +53,129 @@ export const configurableInitialize = (emitter: EventEmitter) => {
     } else if (path === BotPaths.CHALLENGER) {
       pathString = "challenger";
     }
-    console.log(`Bot started for ${pathString} on ${networks}`);
+    logger.info({ paths: pathString, networks }, `validator_started`);
   });
 
   emitter.on(BotEvents.WATCHING, (chainId: number, network: Network) => {
-    console.log(`Watching for chain ${chainId} on ${network}`);
+    logger.info({ chainId, network }, `watching_chain`);
   });
 
   emitter.on(BotEvents.CHECKING, (epoch: number) => {
-    console.log(`Running checks for epoch ${epoch}`);
+    logger.debug({ epoch }, `checking_epoch`);
   });
 
   emitter.on(BotEvents.WAITING, (epoch: number) => {
-    console.log(`Waiting for next verifiable epoch after ${epoch}`);
+    logger.debug({ epoch }, `waiting_epoch`);
   });
 
   emitter.on(BotEvents.NO_CLAIM_REQUIRED, (epoch: number) => {
-    console.log(`No claim is required for epoch ${epoch}`);
+    logger.debug({ epoch }, `waiting_next_epoch`);
   });
 
   // Epoch state logs
   emitter.on(BotEvents.NO_SNAPSHOT, () => {
-    console.log("No snapshot saved for epoch");
+    logger.debug(`no_snapshot`);
   });
 
   emitter.on(BotEvents.CLAIM_EPOCH_PASSED, (epoch: number) => {
-    console.log(`Epoch ${epoch} has passed for claiming`);
+    logger.debug({ epoch }, `claim_epoch_passed`);
   });
 
   // Transaction state logs
   emitter.on(BotEvents.TXN_MADE, (transaction: string, epoch: number, state: string) => {
-    console.log(`${state} transaction for ${epoch} made with hash: ${transaction}`);
+    logger.info({ txHash: transaction, epoch, state }, "txn_made");
   });
   emitter.on(BotEvents.TXN_PENDING, (transaction: string) => {
-    console.log(`Transaction is still pending with hash: ${transaction}`);
+    logger.warn({ txHash: transaction }, "txn_pending");
   });
 
   emitter.on(BotEvents.TXN_FINAL, (transaction: string, confirmations: number) => {
-    console.log(`Transaction(${transaction}) is final with ${confirmations} confirmations`);
+    logger.info({ txHash: transaction, confirmations }, "txn_final");
   });
 
   emitter.on(BotEvents.TXN_NOT_FINAL, (transaction: string, confirmations: number) => {
-    console.log(`Transaction(${transaction}) is not final yet, ${confirmations} confirmations left.`);
+    logger.warn({ txHash: transaction, confirmations }, "txn_not_final");
   });
   emitter.on(BotEvents.TXN_PENDING_CONFIRMATIONS, (transaction: string, confirmations: number) => {
-    console.log(`Transaction(${transaction}) is pending with ${confirmations} confirmations`);
+    logger.warn({ txHash: transaction, confirmations }, "txn_pending_confirmations");
   });
   emitter.on(BotEvents.TXN_EXPIRED, (transaction: string) => {
-    console.log(`Transaction(${transaction}) is expired`);
+    logger.error({ txHash: transaction }, "txn_expired");
   });
 
   // Snapshot state logs
   emitter.on(BotEvents.SAVING_SNAPSHOT, (epoch: number) => {
-    console.log(`Saving snapshot for epoch ${epoch}`);
+    logger.debug({ epoch }, `saving_snapshot`);
   });
   emitter.on(BotEvents.SNAPSHOT_WAITING, (time: number) => {
-    console.log(`Waiting for saving snapshot, time left: ${time}`);
+    logger.debug({ timeLeftSec: time }, `snapshot_waiting`);
   });
 
   // Claim state logs
   // claim()
   emitter.on(BotEvents.CLAIMING, (epoch: number) => {
-    console.log(`Claiming for epoch ${epoch}`);
+    logger.debug({ epoch }, `claiming_epoch`);
   });
   // startVerification()
   emitter.on(BotEvents.STARTING_VERIFICATION, (epoch: number) => {
-    console.log(`Starting verification for epoch ${epoch}`);
+    logger.debug({ epoch }, `starting_verification`);
   });
   emitter.on(BotEvents.VERIFICATION_CANT_START, (epoch: number, timeLeft: number) => {
-    console.log(`Verification cant start for epoch ${epoch}, time left: ${timeLeft}`);
+    logger.debug({ epoch, timeLeftSec: timeLeft }, `verification_cant_start`);
   });
   // verifySnapshot()
   emitter.on(BotEvents.VERIFYING_SNAPSHOT, (epoch: number) => {
-    console.log(`Verifying snapshot for epoch ${epoch}`);
+    logger.debug({ epoch }, `verifying_snapshot`);
   });
   emitter.on(BotEvents.CANT_VERIFY_SNAPSHOT, (epoch: number, timeLeft: number) => {
-    console.log(`Cant verify snapshot for epoch ${epoch}, time left: ${timeLeft}`);
+    logger.debug({ epoch, timeLeftSec: timeLeft }, `cant_verify_snapshot`);
   });
   // challenge()
   emitter.on(BotEvents.CHALLENGING, (epoch: number) => {
-    console.log(`Claim can be challenged, challenging for epoch ${epoch}`);
+    logger.debug({ epoch }, `challenging_epoch`);
   });
   emitter.on(BotEvents.CLAIM_CHALLENGED, (epoch: number) => {
-    console.log(`Claim is challenged for epoch ${epoch}`);
+    logger.info({ epoch }, `claim_challenged`);
   });
   // startVerification()
   emitter.on(BotEvents.SENDING_SNAPSHOT, (epoch: number) => {
-    console.log(`Sending snapshot for ${epoch}`);
+    logger.debug({ epoch }, `sending_snapshot`);
   });
   // executeSnapshot()
   emitter.on(BotEvents.EXECUTING_SNAPSHOT, (epoch) => {
-    console.log(`Executing snapshot to resolve dispute for epoch ${epoch}`);
+    logger.debug({ epoch }, `executing_snapshot`);
   });
   // verifySnapshot()
   emitter.on(BotEvents.CANT_EXECUTE_SNAPSHOT, () => {
-    console.log("Cant execute snapshot, waiting l2 challenge period to pass");
+    logger.debug(`cant_execute_snapshot`);
   });
   // withdrawClaimDeposit()
   emitter.on(BotEvents.WITHDRAWING_CHALLENGE_DEPOSIT, () => {
-    console.log(`Withdrawing challenge deposit for epoch`);
+    logger.debug(`withdrawing_challenge_deposit`);
   });
   emitter.on(BotEvents.WAITING_ARB_TIMEOUT, (epoch: number) => {
-    console.log(`Waiting for arbitrum bridge timeout for epoch ${epoch}`);
+    logger.debug({ epoch }, `waiting_arb_timeout`);
   });
 
   // validator
   emitter.on(BotEvents.NO_CLAIM, (epoch: number) => {
-    console.log(`No claim was made for ${epoch}`);
+    logger.debug({ epoch }, `no_claim`);
   });
   emitter.on(BotEvents.VALID_CLAIM, (epoch: number) => {
-    console.log(`Valid claim was made for ${epoch}`);
+    logger.debug({ epoch }, `valid_claim`);
   });
   emitter.on(BotEvents.CHALLENGER_WON_CLAIM, () => {
-    console.log("Challenger won claim");
+    logger.debug("challenger_won_claim");
   });
   emitter.on(BotEvents.CLAIM_ALREADY_RESOLVED, (epoch: number) => {
-    console.log(`Claim for epoch ${epoch} is already resolved.`);
+    logger.debug({ epoch }, `claim_already_resolved`);
+  });
+
+  // error logs
+  emitter.on(BotEvents.NO_CLAIM_FETCHED, (epoch: number, fromBlock?: number, toBlock?: number) => {
+    logger.error({ epoch, fromBlock, toBlock }, `no_claim_fetched`);
+  });
+  emitter.on(BotEvents.CLAIM_MISMATCH, (epoch: number) => {
+    logger.error({ epoch }, `claim_mismatch`);
   });
 };
