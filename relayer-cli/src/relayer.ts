@@ -15,6 +15,7 @@ import { initialize as initializeEmitter } from "./utils/logger";
 import { BotEvents } from "./utils/botEvents";
 import { getEpochPeriod, Network } from "./consts/bridgeRoutes";
 import { runHashiExecutor } from "./utils/hashi";
+import { sendHeartbeat } from "./utils/heartbeat";
 
 interface RelayerConfig {
   networkConfigs: RelayerNetworkConfig[];
@@ -29,15 +30,19 @@ interface RelayerConfig {
  * @param config.emitter The event emitter
  */
 export async function start({ networkConfigs, shutdownManager, emitter }: RelayerConfig) {
+  const HEARTBEAT_URL = process.env.HEARTBEAT_URL;
+  await sendHeartbeat("started", HEARTBEAT_URL);
   initializeEmitter(emitter);
   let delayAmount = 7200 * 1000; // 2 hours in ms
   while (!shutdownManager.getIsShuttingDown()) {
+    await sendHeartbeat("running", HEARTBEAT_URL);
     for (const networkConfig of networkConfigs) {
       delayAmount = await processNetworkConfig(networkConfig, shutdownManager, emitter, delayAmount);
     }
     emitter.emit(BotEvents.WAITING, delayAmount);
     await delay(delayAmount);
   }
+  await sendHeartbeat("stopped", HEARTBEAT_URL);
 }
 
 /**

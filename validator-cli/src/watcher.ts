@@ -13,6 +13,7 @@ import { CheckAndClaimParams, checkAndClaim } from "./helpers/claimer";
 import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./helpers/validator";
 import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
+import { sendHeartbeat } from "./utils/heartbeat";
 
 const RPC_BLOCK_LIMIT = 100; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
 
@@ -30,7 +31,9 @@ export const watch = async (
 ) => {
   initializeLogger(emitter);
   const privKey = process.env.PRIVATE_KEY;
+  const heartbeatURL = process.env.HEARTBEAT_URL;
   if (!privKey) throw new MissingEnvError("PRIVATE_KEY");
+  await sendHeartbeat("started", heartbeatURL);
   const cliCommand = process.argv;
   const { path, toSaveSnapshot } = getBotPath({ cliCommand });
   const networkConfigs = getNetworkConfig();
@@ -38,11 +41,13 @@ export const watch = async (
   const transactionHandlers: { [key: string]: any } = {};
   const toWatch: { [key: string]: { count: number; epochs: number[] } } = {};
   while (!shutDownSignal.getIsShutdownSignal()) {
+    await sendHeartbeat("running", heartbeatURL);
     for (const networkConfig of networkConfigs) {
       await processNetwork(path, toSaveSnapshot, networkConfig, transactionHandlers, toWatch, emitter);
     }
     await wait(1000 * 10);
   }
+  await sendHeartbeat("stopped", heartbeatURL);
 };
 
 async function processNetwork(
