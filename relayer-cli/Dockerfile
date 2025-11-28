@@ -3,7 +3,7 @@
 #
 
 # Node version for Vea
-FROM node:22.14.0-alpine AS relayer-build
+FROM node:24.4-alpine AS relayer-build
 
 # Yarn version for Vea
 ARG YARN_VERSION=4.6.0
