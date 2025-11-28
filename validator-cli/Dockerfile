@@ -53,7 +53,7 @@ RUN yarn workspaces focus @kleros/vea-validator-cli
 # This is the final layer that will be deployed and run
 
 # Node version for Vea
-FROM node:22.14.0-alpine AS validator
+FROM node:24.4-alpine AS validator
 
 # Yarn version for Vea
 ARG YARN_VERSION=4.6.0

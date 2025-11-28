@@ -57,7 +57,7 @@ RUN yarn workspaces focus @kleros/vea-relayer-cli
 # This is the final layer that will be deployed and run
 
 # Node version for all Vea
-FROM node:22.14.0-alpine AS relayer
+FROM node:24.4-alpine AS relayer
 
 # Yarn version for all Vea
 ARG YARN_VERSION=4.6.0
