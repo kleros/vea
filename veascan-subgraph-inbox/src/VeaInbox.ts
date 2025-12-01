@@ -1,10 +1,4 @@
-import {
-  Address,
-  BigInt,
-  ByteArray,
-  Bytes,
-  dataSource,
-} from "@graphprotocol/graph-ts";
+import { Address, BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
 import { Snapshot, Message, Ref, Fallback, Inbox } from "../generated/schema";
 import {
   MessageSent,
@@ -26,6 +20,7 @@ export function handleMessageSent(event: MessageSent): void {
   const messageIndex = useNextMessageIndex(event.address);
   const messageId = event.address.toHexString() + "-" + messageIndex.toString();
   const message = new Message(messageId);
+  message.inbox = inbox.id;
   message.snapshot = snapshot.id;
   message.txHash = event.transaction.hash;
   message.timestamp = event.block.timestamp;
