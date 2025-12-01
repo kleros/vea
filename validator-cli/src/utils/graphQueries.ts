@@ -1,5 +1,5 @@
 import request from "graphql-request";
-import { ClaimNotFoundError } from "./errors";
+import { ClaimNotFoundError, NoMessageSavedError } from "./errors";
 
 interface ClaimData {
   id: string;
@@ -191,9 +191,10 @@ type LastMessageSavedResponse = {
  */
 const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<{ id: string; stateRoot: string }> => {
   const subgraph = getInboxSubgraphUrl(chainId);
-  const result: LastMessageSavedResponse = await request(
-    `${subgraph}`,
-    `{
+  try {
+    const result: LastMessageSavedResponse = await request(
+      `${subgraph}`,
+      `{
       messages(first:1, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox}"}) {
         id
         snapshot{
@@ -201,9 +202,13 @@ const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<{
         }
       }
     }`
-  );
-  if (result.messages.length < 1 || result.messages[0].snapshot.length === 0) return;
-  return { id: result.messages[0].id, stateRoot: result.messages[0].snapshot[0].stateRoot };
+    );
+    if (result.messages.length < 1 || result.messages[0].snapshot.length === 0) return;
+    return { id: result.messages[0].id, stateRoot: result.messages[0].snapshot[0].stateRoot };
+  } catch (e) {
+    console.log(e);
+    throw new NoMessageSavedError(veaInbox);
+  }
 };
 
 export {
