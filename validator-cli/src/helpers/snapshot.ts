@@ -77,10 +77,11 @@ export const isSnapshotNeeded = async ({
     lastSavedSnapshot = saveSnapshotLogs[saveSnapshotLogs.length - 1].args[0];
   } catch {
     const veaInboxAddress = await veaInbox.getAddress();
-    const { id: lastSavedMessageId, stateRoot: lastSavedStateRoot } = await fetchLastSavedMessage(
-      veaInboxAddress,
-      chainId
-    );
+    const res = await fetchLastSavedMessage(veaInboxAddress, chainId);
+    if (!res) {
+      return { snapshotNeeded: false, latestCount: currentCount };
+    }
+    const { id: lastSavedMessageId, stateRoot: lastSavedStateRoot } = res;
     const messageIndex = extractMessageIndex(lastSavedMessageId);
     lastSavedSnapshot = lastSavedStateRoot;
     lastSavedCount = messageIndex;

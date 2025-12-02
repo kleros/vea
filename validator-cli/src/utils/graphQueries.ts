@@ -195,7 +195,7 @@ const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<{
     const result: LastMessageSavedResponse = await request(
       `${subgraph}`,
       `{
-      messages(first:1, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox}"}) {
+      messages(first:1, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox.toLowerCase()}"}) {
         id
         snapshot{
           stateRoot
@@ -203,7 +203,7 @@ const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<{
       }
     }`
     );
-    if (result.messages.length < 1 || result.messages[0].snapshot.length === 0) return;
+    if (result.messages.length < 1 || result.messages[0].snapshot.length === 0) return null;
     return { id: result.messages[0].id, stateRoot: result.messages[0].snapshot[0].stateRoot };
   } catch (e) {
     console.log(e);
