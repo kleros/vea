@@ -7,7 +7,7 @@ import { Network } from "../consts/bridgeRoutes";
 const logtailToken = process.env.LOGTAIL_TOKEN;
 
 const loggerOptions = {
-  level: "info",
+  level: "debug",
   base: { service: "Vea" },
   transport: logtailToken
     ? {
@@ -177,5 +177,8 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   });
   emitter.on(BotEvents.CLAIM_MISMATCH, (epoch: number) => {
     logger.error({ epoch }, `claim_mismatch`);
+  });
+  emitter.on(BotEvents.FINALITY_ISSUE, (epoch: number) => {
+    logger.error({ epoch }, `finality_issue`);
   });
 };
