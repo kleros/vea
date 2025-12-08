@@ -17,7 +17,7 @@ enum ClaimHonestState {
   CHALLENGER = 2,
 }
 
-interface ClaimParams {
+export interface ClaimParams {
   chainId: number;
   veaOutbox: any;
   veaOutboxProvider: JsonRpcProvider;
@@ -44,9 +44,7 @@ const getClaim = async ({
   fromBlock,
   toBlock,
   emitter,
-  fetchChallengerForClaim = getChallengerForClaim,
   fetchClaimForEpoch = getClaimForEpoch,
-  fetchVerificationForClaim = getVerificationForClaim,
 }: ClaimParams): Promise<ClaimStruct | null> => {
   let claim: ClaimStruct = {
     stateRoot: ethers.ZeroHash,
@@ -80,20 +78,16 @@ const getClaim = async ({
       throw new ClaimNotFoundError(epoch);
     }
 
-    const [verificationFromGraph, challengeFromGraph] = await Promise.all([
-      fetchVerificationForClaim(claimFromGraph.id, chainId),
-      fetchChallengerForClaim(claimFromGraph.id, chainId),
-    ]);
     claim.stateRoot = claimFromGraph.stateroot;
     claim.claimer = claimFromGraph.bridger;
     claim.timestampClaimed = claimFromGraph.timestamp;
-    if (verificationFromGraph?.startTimestamp) {
-      claim.timestampVerification = verificationFromGraph.startTimestamp;
-      const startVerificationTxHash = verificationFromGraph.startTxHash;
+    if (claimFromGraph.verification?.startTimestamp) {
+      claim.timestampVerification = claimFromGraph.verification.startTimestamp;
+      const startVerificationTxHash = claimFromGraph.verification.startTxHash;
       const txReceipt = await veaOutboxProvider.getTransactionReceipt(startVerificationTxHash);
       claim.blocknumberVerification = txReceipt.blockNumber;
     }
-    if (challengeFromGraph) claim.challenger = challengeFromGraph.challenger;
+    if (claimFromGraph.challenge) claim.challenger = claimFromGraph.challenge.challenger;
   }
   if (hashClaim(claim) == claimHash) {
     return claim;

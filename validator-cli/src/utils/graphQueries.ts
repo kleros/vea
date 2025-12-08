@@ -1,17 +1,21 @@
 import request from "graphql-request";
 import { ClaimNotFoundError, NoMessageSavedError } from "./errors";
+import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { ethers } from "ethers";
 
 interface ClaimData {
+  epoch?: number;
   id: string;
   bridger: string;
   stateroot: string;
   timestamp: number;
   challenged: boolean;
   txHash: string;
-  verification: {
-    timestamp: number;
+  verification?: {
+    startTimestamp: number;
+    startTxHash: string;
   };
-  challenge: {
+  challenge?: {
     challenger: string;
   };
 }
@@ -48,7 +52,13 @@ const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number):
                         stateroot
                         timestamp
                         txHash
-                        challenged
+                        verification {
+                          startTimestamp
+                          startTxHash
+                        }
+                        challenge {
+                          challenger
+                        }
                       }
           }`
     );
@@ -56,6 +66,63 @@ const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number):
   } catch (e) {
     console.log(e);
     throw new ClaimNotFoundError(epoch);
+  }
+};
+
+/** Fetches the claims data for a given list of epochs (used for claimer - happy path)
+ * @param epochs
+ * @param outbox
+ * @param chainId
+ * @returns ClaimData[]
+ * */
+const getClaimsForEpochs = async (
+  epochs: number[],
+  outbox: string,
+  chainId: number
+): Promise<Map<number, ClaimStruct>> => {
+  try {
+    const subgraph = getOutboxSubgraphUrl(chainId);
+    const epochsString = epochs.join(", ");
+    const query = `{
+      claims(where: {epoch_in: [${epochsString}], outbox: "${outbox}"}) {
+        id
+        bridger
+        stateroot
+        timestamp
+        txHash
+        verification {
+          startTimestamp
+          startTxHash
+        }
+        challenge {
+          challenger
+        }
+        epoch
+      }
+    }`;
+
+    const result: { claims: ClaimData[] } = await request(subgraph, query);
+    // Map returned claims to corresponding epochs (some epochs may not have claims)
+    const claimsByEpoch = new Map<number, ClaimStruct | null>();
+    for (const claim of result.claims) {
+      if (claim.stateroot === ethers.ZeroHash) {
+        claimsByEpoch.set(claim.epoch, null);
+        continue;
+      }
+      claimsByEpoch.set(claim.epoch, {
+        stateRoot: claim.stateroot,
+        claimer: claim.bridger,
+        timestampClaimed: claim.timestamp,
+        timestampVerification: claim.verification?.startTimestamp || 0,
+        blocknumberVerification: 0, // This would require additional data to fill accurately
+        honest: 0, // Placeholder, as this data isn't available in the current query
+        challenger: claim.challenge?.challenger || ethers.ZeroAddress,
+      });
+    }
+    return claimsByEpoch;
+  } catch (e) {
+    console.log(e);
+    throw new Error(`Claims not found for epochs: ${epochs.join(", ")}`);
   }
 };
 
@@ -219,4 +286,5 @@ export {
   getSnapshotSentForEpoch,
   getLastMessageSaved,
   ClaimData,
+  getClaimsForEpochs,
 };

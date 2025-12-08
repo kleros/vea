@@ -2,6 +2,7 @@ import { ethers, getAddress } from "ethers";
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { getClaim, hashClaim, getClaimResolveState, ClaimResolveStateParams } from "./claim";
 import { ClaimNotFoundError } from "./errors";
+import { MockEmitter } from "./emitter";
 
 let mockClaim: ClaimStruct;
 // Pre calculated from the deployed contracts
@@ -9,14 +10,14 @@ const hashedMockClaim = "0xfee47661ef0432da320c3b4706ff7d412f421b9d1531c33ce8f2e
 const mockBlockTag = "latest";
 const mockFromBlock = 0;
 
-describe("snapshotClaim", () => {
+describe.only("snapshotClaim", () => {
   describe("getClaim", () => {
     let veaOutbox: any;
     let veaOutboxProvider: any;
     const epoch = 1;
-    let getVerificationForClaim = jest.fn();
-    let getChallengerForClaim = jest.fn();
     let mockClaimParams: any;
+    let mockFetchClaim: jest.Mock;
+    const mockEmitter = new MockEmitter();
     beforeEach(() => {
       mockClaim = {
         stateRoot: "0xeac817ed5c5b3d1c2c548f231b7cf9a0dfd174059f450ec6f0805acf6a16a551",
@@ -40,15 +41,16 @@ describe("snapshotClaim", () => {
       veaOutboxProvider = {
         getBlock: jest.fn().mockResolvedValueOnce({ timestamp: mockClaim.timestampClaimed, number: 1234 }),
       };
+      mockFetchClaim = jest.fn();
       mockClaimParams = {
+        chainId: 0,
         veaOutbox,
         veaOutboxProvider,
         epoch,
         fromBlock: mockFromBlock,
         toBlock: mockBlockTag,
-        fetchClaimForEpoch: getClaim,
-        fetchVerificationForClaim: getVerificationForClaim,
-        fetchChallengerForClaim: getChallengerForClaim,
+        emitter: mockEmitter,
+        fetchClaimForEpoch: mockFetchClaim,
       };
     });
 
@@ -150,7 +152,7 @@ describe("snapshotClaim", () => {
       const challengeFromGraph = null;
 
       mockClaimParams.veaOutbox = veaOutbox;
-      mockClaimParams.fetchClaimForEpoch = jest.fn().mockResolvedValueOnce(claimFromGraph);
+      mockClaimParams.fetchClaimForEpoch = mockFetchClaim.mockResolvedValueOnce(claimFromGraph);
       mockClaimParams.fetchVerificationForClaim = jest.fn().mockResolvedValueOnce(verificationFromGraph);
       mockClaimParams.fetchChallengerForClaim = jest.fn().mockResolvedValueOnce(challengeFromGraph);
       const claim = await getClaim(mockClaimParams);
@@ -172,9 +174,8 @@ describe("snapshotClaim", () => {
         .mockImplementationOnce(() => Promise.resolve([]))
         .mockImplementationOnce(() => Promise.resolve([]))
         .mockImplementationOnce(() => Promise.resolve([]));
+      mockClaimParams.emitter = mockEmitter;
       mockClaimParams.fetchClaimForEpoch = jest.fn().mockResolvedValueOnce(null);
-      mockClaimParams.fetchVerificationForClaim = jest.fn().mockResolvedValueOnce(null);
-      mockClaimParams.fetchChallengerForClaim = jest.fn().mockResolvedValueOnce(null);
       mockClaimParams.veaOutbox = veaOutbox;
       await expect(async () => {
         await getClaim(mockClaimParams);
