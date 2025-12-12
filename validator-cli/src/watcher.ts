@@ -15,7 +15,7 @@ import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
 import { sendHeartbeat } from "./utils/heartbeat";
 
-const RPC_BLOCK_LIMIT = 100; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
+const RPC_BLOCK_LIMIT = 1000; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
 
 /**
  * @file This file contains the logic for watching bridge and validating/resolving for claims.
@@ -228,7 +228,7 @@ async function processEpochsForNetwork({
 
     if (updatedTransactions) {
       transactionHandlers[epoch] = updatedTransactions;
-    } else if (epoch != latestEpoch) {
+    } else if (epoch != currentEpoch - 1 && epoch != latestEpoch) {
       delete transactionHandlers[epoch];
       toWatch[networkKey].epochs.splice(i, 1);
     }
