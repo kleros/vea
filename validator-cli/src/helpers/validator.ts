@@ -50,13 +50,14 @@ export async function challengeAndResolveClaim({
     return null;
   }
   const queryRpc = veaRouterProvider ?? veaOutboxProvider;
-  const res = await fetchBlocksAndCheckFinality(queryRpc, veaInboxProvider, epoch, epochPeriod);
-  if (res === undefined) {
+  const res = await fetchBlocksAndCheckFinality(queryRpc, veaInboxProvider, epoch, epochPeriod, emitter);
+  const [arbitrumBlock, , finalityIssueFlagArb, finalityIssueFlagEth] = res;
+  if (res === undefined || finalityIssueFlagArb || finalityIssueFlagEth) {
     emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
     return null;
   }
-  const [arbitrumBlock, , finalityIssueFlagEth] = res;
-  const ethBlockTag = finalityIssueFlagEth ? "finalized" : "latest";
+  const ethBlockTag = "latest";
+
   if (!transactionHandler) {
     const TransactionHandler = fetchTransactionHandler(chainId, Network.TESTNET);
     transactionHandler = new TransactionHandler({
