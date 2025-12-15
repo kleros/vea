@@ -141,8 +141,13 @@ async function processEpochsForNetwork({
   const veaOutboxProvider = new JsonRpcProvider(outboxRPC);
   const veaRouterProvider = routerRPC ? new JsonRpcProvider(routerRPC) : undefined;
   let i = toWatch[networkKey].epochs.length - 1;
-  const latestEpoch = toWatch[networkKey].epochs[i];
+  let latestEpoch = toWatch[networkKey].epochs[i];
   const currentEpoch = Math.floor(Date.now() / (1000 * routeConfig[network].epochPeriod));
+  if (latestEpoch != currentEpoch - 1) {
+    toWatch[networkKey].epochs.push(currentEpoch - 1);
+    latestEpoch = currentEpoch - 1;
+    i++;
+  }
   // Checks and saves the snapshot if needed
   if (toSaveSnapshot) {
     const TransactionHandler = getTransactionHandler(chainId, network) as any;
@@ -192,6 +197,7 @@ async function processEpochsForNetwork({
       toBlock,
       emitter,
     });
+
     let updatedTransactions;
     if (path > BotPaths.CLAIMER && claim != null) {
       const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {
