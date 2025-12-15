@@ -181,4 +181,7 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.FINALITY_ISSUE, (epoch: number) => {
     logger.error({ epoch }, `finality_issue`);
   });
+  emitter.on(BotEvents.FINALITY_ERROR, (message: string) => {
+    logger.error({ message }, `finality_error`);
+  });
 };

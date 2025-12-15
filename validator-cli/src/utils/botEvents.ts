@@ -49,4 +49,5 @@ export enum BotEvents {
   NO_CLAIM_FETCHED = "no_claim_fetched",
   CLAIM_MISMATCH = "claim_mismatch",
   FINALITY_ISSUE = "finality_issue",
+  FINALITY_ERROR = "finality_error",
 }

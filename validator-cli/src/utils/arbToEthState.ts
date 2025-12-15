@@ -5,6 +5,8 @@ import { NodeInterface } from "@arbitrum/sdk/dist/lib/abi/NodeInterface";
 import { NODE_INTERFACE_ADDRESS } from "@arbitrum/sdk/dist/lib/dataEntities/constants";
 import { getArbitrumNetwork } from "@arbitrum/sdk";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
+import { defaultEmitter } from "../utils/emitter";
+import { BotEvents } from "../utils/botEvents";
 
 // https://github.com/prysmaticlabs/prysm/blob/493905ee9e33a64293b66823e69704f012b39627/config/params/mainnet_config.go#L103
 const slotsPerEpochEth = 32;
@@ -19,14 +21,15 @@ const secondsPerSlotEth = 12;
  * @param veaEpoch epoch number of the claim to be fetched
  * @param veaEpochPeriod epoch period of the claim to be fetched
  *
- * @returns [Arbitrum block, Ethereum block, finalityIssueFlag]
+ * @returns [Arbitrum block, Ethereum block, finalityIssueFlagArb, finalityIssueFlagEth]
  * */
 const getBlocksAndCheckFinality = async (
   EthProvider: JsonRpcProvider,
   ArbProvider: JsonRpcProvider,
   veaEpoch: number,
-  veaEpochPeriod: number
-): Promise<[Block, Block, boolean] | undefined> => {
+  veaEpochPeriod: number,
+  emitter: typeof defaultEmitter
+): Promise<[Block, Block, boolean, boolean] | undefined> => {
   const currentEpoch = Math.floor(Date.now() / 1000 / veaEpochPeriod);
 
   const l2Network = await getArbitrumNetwork(ArbProvider);
@@ -39,7 +42,7 @@ const getBlocksAndCheckFinality = async (
     blockFinalizedArb.timestamp > veaEpoch * veaEpochPeriod &&
     blockFinalizedEth.timestamp > veaEpoch * veaEpochPeriod
   ) {
-    return [blockFinalizedArb, blockFinalizedEth, false];
+    return [blockFinalizedArb, blockFinalizedEth, false, false];
   }
   const finalityBuffer = 300; // 5 minutes, allows for network delays
   const maxFinalityTimeSecondsEth = slotsPerEpochEth * 2 * secondsPerSlotEth; // finalization after 2 justified epochs
@@ -74,15 +77,16 @@ const getBlocksAndCheckFinality = async (
     blockFinalizedArb,
     fromBlockEthFinalized,
     fromBlockArbFinalized,
-    false
+    false,
+    emitter
   );
 
   if (!blockFinalizedArbToL1Block) {
-    console.error("Arbitrum finalized block is not found on L1.");
+    emitter.emit(BotEvents.FINALITY_ERROR, "Arbitrum finalized block is not found on L1.");
     finalityIssueFlagArb = true;
   } else if (Math.abs(blockFinalizedArbToL1Block[0].timestamp - blockFinalizedArb.timestamp) > 1800) {
     // The L2 timestamp is drifted from the L1 timestamp in which the L2 block is posted.
-    console.error("Finalized L2 block time is more than 30 min drifted from L1 clock.");
+    emitter.emit(BotEvents.FINALITY_ERROR, "Finalized L2 block time is more than 30 min drifted from L1 clock.");
   }
 
   // blockLatestArbToL1Block[0] is the L1 block, blockLatestArbToL1Block[1] is the L2 block (fallsback on latest L2 block if L2 block is not found on L1)
@@ -92,11 +96,12 @@ const getBlocksAndCheckFinality = async (
     blockLatestArb,
     fromBlockEthFinalized,
     fromBlockArbFinalized,
-    true
+    true,
+    emitter
   );
 
   if (finalityIssueFlagArb && !blockLatestArbToL1Block) {
-    console.error("Arbitrum latest block is not found on L1.");
+    emitter.emit(BotEvents.FINALITY_ERROR, "Arbitrum latest block is not found on L1.");
     // this means some issue in the arbitrum node implementation (very bad)
     return undefined;
   }
@@ -113,27 +118,31 @@ const getBlocksAndCheckFinality = async (
   // The sequencer is completely offline
   // Not necessarily a problem, but we should know about it
   if (localTimeSeconds - blockLatestArbToL1Block[0].timestamp > 1800) {
-    console.error("Arbitrum sequencer is offline (from L1 'latest' POV) for atleast 30 minutes.");
+    emitter.emit(
+      BotEvents.FINALITY_ERROR,
+      "Arbitrum sequencer is offline (from L1 'latest' POV) for atleast 30 minutes."
+    );
   }
 
   // The L2 timestamp is drifted from the L1 timestamp in which the L2 block is posted.
   // Not necessarily a problem, but we should know about it
   if (Math.abs(blockLatestArbToL1Block[0].timestamp - blockLatestArb.timestamp) > 1800) {
-    console.error("Latest L2 block time is more than 30 min drifted from L1 clock.");
-    console.error("L2 block time: " + blockLatestArb.timestamp);
-    console.error("L1 block time: " + blockLatestArbToL1Block[0].timestamp);
-    console.error("L2 block number: " + blockLatestArb.number);
+    emitter.emit(
+      BotEvents.FINALITY_ERROR,
+      `Latest L2 block time is more than 30 min drifted from L1 clock. \n L2 block time: ${blockLatestArb.timestamp}, L1 block time: ${blockLatestArbToL1Block[0].timestamp}, L2 block number: ${blockLatestArb.number}`
+    );
   }
 
   // Note: Using last finalized block as a proxy for the latest finalized epoch
   // Using a BeaconChain RPC would be more accurate
   if (localTimeSeconds - blockFinalizedEth.timestamp > maxFinalityTimeSecondsEth + finalityBuffer) {
-    console.error("Ethereum mainnet is not finalizing");
+    emitter.emit(BotEvents.FINALITY_ERROR, "Ethereum mainnet is experiencing finalization issues.");
     finalityIssueFlagEth = true;
   }
 
   if (blockFinalizedEth.number < blockFinalizedArbToL1Block[0].number) {
-    console.error(
+    emitter.emit(
+      BotEvents.FINALITY_ERROR,
       "Arbitrum 'finalized' block is posted in an L1 block which is not finalized. Arbitrum node is out of sync with L1 node. It's recommended to use the same L1 RPC as the L1 node used by the Arbitrum node."
     );
     finalityIssueFlagArb = true;
@@ -142,7 +151,7 @@ const getBlocksAndCheckFinality = async (
   // we could
   const blockArbitrum = finalityIssueFlagArb || finalityIssueFlagEth ? blockFinalizedArb : blockLatestArb;
 
-  return [blockArbitrum, blockFinalizedEth, finalityIssueFlagEth];
+  return [blockArbitrum, blockFinalizedEth, finalityIssueFlagArb, finalityIssueFlagEth];
 };
 
 /**
@@ -165,7 +174,8 @@ const ArbBlockToL1Block = async (
   L2Block: Block,
   fromBlockEth: number,
   fromArbBlock: number,
-  fallbackLatest: boolean
+  fallbackLatest: boolean,
+  emitter: typeof defaultEmitter
 ): Promise<[Block, number] | undefined> => {
   const nodeInterface = NodeInterface__factory.connect(NODE_INTERFACE_ADDRESS, L2Provider);
 
@@ -175,7 +185,7 @@ const ArbBlockToL1Block = async (
     .findBatchContainingBlock(L2Block.number, { blockTag: "latest" })
     .catch((e) => {
       // If the L2Block is the latest ArbBlock this will always throw an error
-      console.log("Error finding batch containing block, searching heuristically...");
+      emitter.emit(BotEvents.FINALITY_ERROR, "Error finding batch containing block, searching heuristically...");
     })) as any;
 
   if (!result) {
