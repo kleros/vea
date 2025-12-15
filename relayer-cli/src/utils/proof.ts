@@ -30,7 +30,7 @@ const getMessageDataToRelay = async (
     const subgraph = process.env.RELAYER_SUBGRAPH;
 
     const result = (await requestGraph(
-      `https://api.studio.thegraph.com/query/${subgraph}`,
+      subgraph,
       `{
                 messageSents(first: 5, where: {nonce: ${nonce}, inbox: "${inbox}"}) {
                 nonce
@@ -92,10 +92,7 @@ const getProofAtCount = async (
 
   try {
     const subgraph = process.env.RELAYER_SUBGRAPH;
-    const result = (await requestGraph(
-      `https://api.studio.thegraph.com/query/${subgraph}`,
-      query
-    )) as ProofAtCountResponse;
+    const result = (await requestGraph(subgraph, query)) as ProofAtCountResponse;
     const proof: string[] = [];
     for (let i = 0; i < proofIndices.length; i++) {
       proof.push(result[`layer${i}`][0].hash);
