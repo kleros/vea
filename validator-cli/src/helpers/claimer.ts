@@ -112,6 +112,9 @@ async function makeClaim(
     veaInbox.snapshots(epoch),
     fetchLatestClaimedEpoch(veaOutbox.target, chainId),
   ]);
+  if (!claimData) {
+    return null;
+  }
   const newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
   const lastClaimChallenged = claimData?.challenged && savedSnapshot == outboxStateRoot;
   if ((newMessagesToBridge || lastClaimChallenged) && savedSnapshot != ethers.ZeroHash) {

@@ -77,8 +77,7 @@ const getBlocksAndCheckFinality = async (
     blockFinalizedArb,
     fromBlockEthFinalized,
     fromBlockArbFinalized,
-    false,
-    emitter
+    false
   );
 
   if (!blockFinalizedArbToL1Block) {
@@ -96,8 +95,7 @@ const getBlocksAndCheckFinality = async (
     blockLatestArb,
     fromBlockEthFinalized,
     fromBlockArbFinalized,
-    true,
-    emitter
+    true
   );
 
   if (finalityIssueFlagArb && !blockLatestArbToL1Block) {
@@ -174,8 +172,7 @@ const ArbBlockToL1Block = async (
   L2Block: Block,
   fromBlockEth: number,
   fromArbBlock: number,
-  fallbackLatest: boolean,
-  emitter: typeof defaultEmitter
+  fallbackLatest: boolean
 ): Promise<[Block, number] | undefined> => {
   const nodeInterface = NodeInterface__factory.connect(NODE_INTERFACE_ADDRESS, L2Provider);
 
@@ -183,22 +180,18 @@ const ArbBlockToL1Block = async (
   let latestL2BlockNumberOnEth: number;
   let result = (await nodeInterface.functions
     .findBatchContainingBlock(L2Block.number, { blockTag: "latest" })
-    .catch((e) => {
-      // If the L2Block is the latest ArbBlock this will always throw an error
-      emitter.emit(BotEvents.FINALITY_ERROR, "Error finding batch containing block, searching heuristically...");
+    .catch(async (e) => {
+      // If the L2Block is the latest ArbBlock this will always throw, so we fallback to finding the latest L2 batch and block
+      if (!fallbackLatest) {
+        return undefined;
+      } else {
+        [latestL2batchOnEth, latestL2BlockNumberOnEth] = await findLatestL2BatchAndBlock(
+          nodeInterface,
+          fromArbBlock,
+          L2Block.number
+        );
+      }
     })) as any;
-
-  if (!result) {
-    if (!fallbackLatest) {
-      return undefined;
-    } else {
-      [latestL2batchOnEth, latestL2BlockNumberOnEth] = await findLatestL2BatchAndBlock(
-        nodeInterface,
-        fromArbBlock,
-        L2Block.number
-      );
-    }
-  }
 
   const batch = result?.batch?.toNumber() ?? latestL2batchOnEth;
   const L2BlockNumberFallback = latestL2BlockNumberOnEth ?? L2Block.number;
