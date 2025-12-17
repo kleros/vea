@@ -143,7 +143,7 @@ async function processEpochsForNetwork({
   let i = toWatch[networkKey].epochs.length - 1;
   let latestEpoch = toWatch[networkKey].epochs[i];
   const currentEpoch = Math.floor(Date.now() / (1000 * routeConfig[network].epochPeriod));
-  if (latestEpoch != currentEpoch - 1) {
+  if (latestEpoch != currentEpoch - 1 && network != Network.DEVNET) {
     toWatch[networkKey].epochs.push(currentEpoch - 1);
     latestEpoch = currentEpoch - 1;
     i++;
@@ -189,6 +189,7 @@ async function processEpochsForNetwork({
       toBlock = epochBlock + RPC_BLOCK_LIMIT;
     }
     const claim = await getClaim({
+      network,
       chainId,
       veaOutbox,
       veaOutboxProvider,

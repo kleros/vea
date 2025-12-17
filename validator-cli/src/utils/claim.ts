@@ -11,6 +11,9 @@ import {
 } from "./graphQueries";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "./botEvents";
+import { Network } from "../consts/bridgeRoutes";
+
+const VERIFICATION_OFFSET_BLOCKS = 7200; // ~1 day on Ethereum (15s/block)
 enum ClaimHonestState {
   NONE = 0,
   CLAIMER = 1,
@@ -18,6 +21,7 @@ enum ClaimHonestState {
 }
 
 export interface ClaimParams {
+  network: Network;
   chainId: number;
   veaOutbox: any;
   veaOutboxProvider: JsonRpcProvider;
@@ -37,6 +41,7 @@ export interface ClaimParams {
  * @returns claim type of ClaimStruct
  */
 const getClaim = async ({
+  network,
   chainId,
   veaOutbox,
   veaOutboxProvider,
@@ -46,6 +51,7 @@ const getClaim = async ({
   emitter,
   fetchClaimForEpoch = getClaimForEpoch,
 }: ClaimParams): Promise<ClaimStruct | null> => {
+  let isFallbackUsed = false;
   let claim: ClaimStruct = {
     stateRoot: ethers.ZeroHash,
     claimer: ethers.ZeroAddress,
@@ -57,11 +63,21 @@ const getClaim = async ({
   };
   const claimHash = await veaOutbox.claimHashes(epoch);
   if (claimHash === ethers.ZeroHash) return null;
+  const verificationBlocks = { startBlock: fromBlock, endBlock: toBlock };
+  // Adjust verification blocks for non-devnet networks, as verification happens around 1 day later for testnets/mainnet
+  if (typeof toBlock === "number" && network != Network.DEVNET) {
+    verificationBlocks.startBlock += VERIFICATION_OFFSET_BLOCKS;
+    verificationBlocks.endBlock = toBlock + VERIFICATION_OFFSET_BLOCKS;
+  }
   try {
     const [claimLogs, challengeLogs, verificationLogs] = await Promise.all([
       veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null), fromBlock, toBlock),
-      veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null), fromBlock, toBlock),
-      veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch), fromBlock, toBlock),
+      veaOutbox.queryFilter(
+        veaOutbox.filters.Challenged(epoch, null),
+        verificationBlocks.startBlock,
+        verificationBlocks.endBlock
+      ),
+      veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch)),
     ]);
     claim.stateRoot = claimLogs[0].data;
     claim.claimer = `0x${claimLogs[0].topics[1].slice(26)}`;
@@ -72,6 +88,7 @@ const getClaim = async ({
     }
     if (challengeLogs.length > 0) claim.challenger = "0x" + challengeLogs[0].topics[2].substring(26);
   } catch {
+    isFallbackUsed = true;
     const claimFromGraph = await fetchClaimForEpoch(epoch, await veaOutbox.getAddress(), chainId);
     if (!claimFromGraph) {
       emitter.emit(BotEvents.NO_CLAIM_FETCHED, epoch, fromBlock, toBlock);
@@ -89,16 +106,30 @@ const getClaim = async ({
     }
     if (claimFromGraph.challenge) claim.challenger = claimFromGraph.challenge.challenger;
   }
-  if (hashClaim(claim) == claimHash) {
+  const isValid = verifyClaimHash({ claim, claimHash });
+  if (isValid) {
     return claim;
   }
-  claim.honest = ClaimHonestState.CLAIMER; // Assuming claimer is honest
-  if (hashClaim(claim) == claimHash) {
-    return claim;
-  }
-  claim.honest = ClaimHonestState.CHALLENGER; // Assuming challenger is honest
-  if (hashClaim(claim) == claimHash) {
-    return claim;
+  if (!isFallbackUsed) {
+    const claimFromGraph = await fetchClaimForEpoch(epoch, await veaOutbox.getAddress(), chainId);
+    if (!claimFromGraph) {
+      emitter.emit(BotEvents.NO_CLAIM_FETCHED, epoch, fromBlock, toBlock);
+      throw new ClaimNotFoundError(epoch);
+    }
+    claim.stateRoot = claimFromGraph.stateroot;
+    claim.claimer = claimFromGraph.bridger;
+    claim.timestampClaimed = claimFromGraph.timestamp;
+    if (claimFromGraph.verification?.startTimestamp) {
+      claim.timestampVerification = claimFromGraph.verification.startTimestamp;
+      const startVerificationTxHash = claimFromGraph.verification.startTxHash;
+      const txReceipt = await veaOutboxProvider.getTransactionReceipt(startVerificationTxHash);
+      claim.blocknumberVerification = txReceipt.blockNumber;
+    }
+    if (claimFromGraph.challenge) claim.challenger = claimFromGraph.challenge.challenger;
+    const isValidFromGraph = verifyClaimHash({ claim, claimHash });
+    if (isValidFromGraph) {
+      return claim;
+    }
   }
   emitter.emit(BotEvents.CLAIM_MISMATCH, epoch);
   throw new ClaimNotFoundError(epoch);
@@ -209,6 +240,21 @@ const getClaimResolveState = async ({
   claimResolveState.execution.status = status;
 
   return claimResolveState;
+};
+
+const verifyClaimHash = ({ claim, claimHash }: { claim: ClaimStruct; claimHash: string }): boolean => {
+  if (hashClaim(claim) == claimHash) {
+    return true;
+  }
+  claim.honest = ClaimHonestState.CLAIMER; // Assuming claimer is honest
+  if (hashClaim(claim) == claimHash) {
+    return true;
+  }
+  claim.honest = ClaimHonestState.CHALLENGER; // Assuming challenger is honest
+  if (hashClaim(claim) == claimHash) {
+    return true;
+  }
+  return false;
 };
 
 /**
