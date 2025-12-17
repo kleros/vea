@@ -114,12 +114,12 @@ const getBlocksAndCheckFinality = async (
   const localTimeSeconds = Math.floor(Date.now() / 1000);
 
   // The sequencer is completely offline
-  // Not necessarily a problem, but we should know about it
   if (localTimeSeconds - blockLatestArbToL1Block[0].timestamp > 1800) {
     emitter.emit(
       BotEvents.FINALITY_ERROR,
       "Arbitrum sequencer is offline (from L1 'latest' POV) for atleast 30 minutes."
     );
+    finalityIssueFlagArb = true;
   }
 
   // The L2 timestamp is drifted from the L1 timestamp in which the L2 block is posted.

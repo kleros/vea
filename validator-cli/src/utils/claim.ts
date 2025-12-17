@@ -116,6 +116,7 @@ const getClaim = async ({
       emitter.emit(BotEvents.NO_CLAIM_FETCHED, epoch, fromBlock, toBlock);
       throw new ClaimNotFoundError(epoch);
     }
+    claim.honest = ClaimHonestState.NONE;
     claim.stateRoot = claimFromGraph.stateroot;
     claim.claimer = claimFromGraph.bridger;
     claim.timestampClaimed = claimFromGraph.timestamp;

@@ -3,12 +3,14 @@ import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/Ve
 import { getClaim, hashClaim, getClaimResolveState, ClaimResolveStateParams } from "./claim";
 import { ClaimNotFoundError } from "./errors";
 import { MockEmitter } from "./emitter";
+import { Network } from "../consts/bridgeRoutes";
 
 let mockClaim: ClaimStruct;
 // Pre calculated from the deployed contracts
 const hashedMockClaim = "0xfee47661ef0432da320c3b4706ff7d412f421b9d1531c33ce8f2e03bfe5dcfa2";
 const mockBlockTag = "latest";
 const mockFromBlock = 0;
+const network = Network.DEVNET;
 
 describe.only("snapshotClaim", () => {
   describe("getClaim", () => {
@@ -43,6 +45,7 @@ describe.only("snapshotClaim", () => {
       };
       mockFetchClaim = jest.fn();
       mockClaimParams = {
+        network,
         chainId: 0,
         veaOutbox,
         veaOutboxProvider,
@@ -146,15 +149,12 @@ describe.only("snapshotClaim", () => {
         stateroot: mockClaim.stateRoot,
         bridger: mockClaim.claimer,
         timestamp: mockClaim.timestampClaimed,
+        verification: null,
+        challenge: null,
       };
-
-      const verificationFromGraph = null;
-      const challengeFromGraph = null;
 
       mockClaimParams.veaOutbox = veaOutbox;
       mockClaimParams.fetchClaimForEpoch = mockFetchClaim.mockResolvedValueOnce(claimFromGraph);
-      mockClaimParams.fetchVerificationForClaim = jest.fn().mockResolvedValueOnce(verificationFromGraph);
-      mockClaimParams.fetchChallengerForClaim = jest.fn().mockResolvedValueOnce(challengeFromGraph);
       const claim = await getClaim(mockClaimParams);
       expect(claim).toBeDefined();
       expect(claim).toEqual(mockClaim);
