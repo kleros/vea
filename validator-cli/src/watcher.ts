@@ -183,8 +183,8 @@ async function processEpochsForNetwork({
   while (i >= 0) {
     const epoch = toWatch[networkKey].epochs[i];
     const epochBlock = await getBlockFromEpoch(epoch, routeConfig[network].epochPeriod, veaOutboxProvider);
-    const latestBlock = await veaOutboxProvider.getBlock("latest");
-    let toBlock: number | string = "latest";
+    const latestBlock = await veaOutboxProvider.getBlock("finalized");
+    let toBlock: number | string = "finalized";
     if (latestBlock.number - epochBlock > RPC_BLOCK_LIMIT) {
       toBlock = epochBlock + RPC_BLOCK_LIMIT;
     }
