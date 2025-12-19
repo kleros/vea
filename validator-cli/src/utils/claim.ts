@@ -13,7 +13,6 @@ import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "./botEvents";
 import { Network } from "../consts/bridgeRoutes";
 
-const VERIFICATION_OFFSET_BLOCKS = 7200; // ~1 day on Ethereum (15s/block)
 enum ClaimHonestState {
   NONE = 0,
   CLAIMER = 1,
@@ -63,20 +62,10 @@ const getClaim = async ({
   };
   const claimHash = await veaOutbox.claimHashes(epoch);
   if (claimHash === ethers.ZeroHash) return null;
-  const verificationBlocks = { startBlock: fromBlock, endBlock: toBlock };
-  // Adjust verification blocks for non-devnet networks, as verification happens around 1 day later for testnets/mainnet
-  if (typeof toBlock === "number" && network != Network.DEVNET) {
-    verificationBlocks.startBlock += VERIFICATION_OFFSET_BLOCKS;
-    verificationBlocks.endBlock = toBlock + VERIFICATION_OFFSET_BLOCKS;
-  }
   try {
     const [claimLogs, challengeLogs, verificationLogs] = await Promise.all([
       veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null), fromBlock, toBlock),
-      veaOutbox.queryFilter(
-        veaOutbox.filters.Challenged(epoch, null),
-        verificationBlocks.startBlock,
-        verificationBlocks.endBlock
-      ),
+      veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null)),
       veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch)),
     ]);
     claim.stateRoot = claimLogs[0].data;
