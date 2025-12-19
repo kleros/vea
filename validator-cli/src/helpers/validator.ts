@@ -56,7 +56,7 @@ export async function challengeAndResolveClaim({
     emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
     return null;
   }
-  const ethBlockTag = "latest";
+  const ethBlockTag = "finalized";
 
   if (!transactionHandler) {
     const TransactionHandler = fetchTransactionHandler(chainId, Network.TESTNET);

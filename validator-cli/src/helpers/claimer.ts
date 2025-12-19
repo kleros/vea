@@ -37,7 +37,6 @@ async function checkAndClaim({
   veaOutboxProvider,
   transactionHandler,
   emitter,
-  fetchLatestClaimedEpoch = getLastClaimedEpoch,
   fetchTransactionHandler = getTransactionHandler,
   now = Date.now(),
 }: CheckAndClaimParams) {
@@ -69,7 +68,7 @@ async function checkAndClaim({
       emitter
     );
   } else if (claim == null && epoch == claimAbleEpoch) {
-    return makeClaim(chainId, epoch, transactionHandler, outboxStateRoot, veaInbox, veaOutbox, fetchLatestClaimedEpoch);
+    return makeClaim(epoch, transactionHandler, outboxStateRoot, veaInbox);
   } else if (claim != null) {
     return verifyClaim(transactionHandler, claim, veaOutboxProvider);
   } else {
@@ -100,24 +99,14 @@ async function makeClaimDevnet(
 }
 
 async function makeClaim(
-  chainId: number,
   epoch: number,
   transactionHandler: ITransactionHandler,
   outboxStateRoot: string,
-  veaInbox: any,
-  veaOutbox: any,
-  fetchLatestClaimedEpoch: typeof getLastClaimedEpoch = getLastClaimedEpoch
+  veaInbox: any
 ): Promise<ITransactionHandler | null> {
-  const [savedSnapshot, claimData] = await Promise.all([
-    veaInbox.snapshots(epoch),
-    fetchLatestClaimedEpoch(veaOutbox.target, chainId),
-  ]);
-  if (!claimData) {
-    return null;
-  }
+  const savedSnapshot = await veaInbox.snapshots(epoch);
   const newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
-  const lastClaimChallenged = claimData?.challenged && savedSnapshot == outboxStateRoot;
-  if ((newMessagesToBridge || lastClaimChallenged) && savedSnapshot != ethers.ZeroHash) {
+  if (newMessagesToBridge && savedSnapshot != ethers.ZeroHash) {
     await transactionHandler.makeClaim(savedSnapshot);
     return transactionHandler;
   }
