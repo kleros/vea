@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import { ethers } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { getClaim, ClaimHonestState } from "../utils/claim";
-import { getLastClaimedEpoch } from "../utils/graphQueries";
+import { ClaimData, getLastClaimedEpoch } from "../utils/graphQueries";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { ITransactionHandler, IDevnetTransactionHandler, getTransactionHandler } from "../utils/transactionHandlers";
@@ -37,6 +37,7 @@ async function checkAndClaim({
   veaOutboxProvider,
   transactionHandler,
   emitter,
+  fetchLatestClaimedEpoch = getLastClaimedEpoch,
   fetchTransactionHandler = getTransactionHandler,
   now = Date.now(),
 }: CheckAndClaimParams) {
@@ -68,7 +69,7 @@ async function checkAndClaim({
       emitter
     );
   } else if (claim == null && epoch == claimAbleEpoch) {
-    return makeClaim(epoch, transactionHandler, outboxStateRoot, veaInbox);
+    return makeClaim(chainId, epoch, transactionHandler, outboxStateRoot, veaInbox, veaOutbox, fetchLatestClaimedEpoch);
   } else if (claim != null) {
     return verifyClaim(transactionHandler, claim, veaOutboxProvider);
   } else {
@@ -99,17 +100,37 @@ async function makeClaimDevnet(
 }
 
 async function makeClaim(
+  chainId: number,
   epoch: number,
   transactionHandler: ITransactionHandler,
   outboxStateRoot: string,
-  veaInbox: any
+  veaInbox: any,
+  veaOutbox: any,
+  fetchLatestClaimedEpoch: typeof getLastClaimedEpoch = getLastClaimedEpoch
 ): Promise<ITransactionHandler | null> {
   const savedSnapshot = await veaInbox.snapshots(epoch);
-  const newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
-  if (newMessagesToBridge && savedSnapshot != ethers.ZeroHash) {
+  if (savedSnapshot == ethers.ZeroHash) {
+    return null;
+  }
+  let lastClaimedStateroot = ethers.ZeroHash;
+  if (savedSnapshot != ethers.ZeroHash) {
+    try {
+      const lastClaimLogs = await veaOutbox.queryFilter(veaOutbox.filters.Claimed());
+      lastClaimedStateroot = lastClaimLogs[lastClaimLogs.length - 1].data;
+    } catch {
+      const claimData = await fetchLatestClaimedEpoch(veaOutbox.target, chainId);
+      lastClaimedStateroot = claimData ? claimData.stateroot : ethers.ZeroHash;
+    }
+  }
+  if (lastClaimedStateroot == ethers.ZeroHash) {
+    return null;
+  }
+  const newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != lastClaimedStateroot;
+  if (newMessagesToBridge) {
     await transactionHandler.makeClaim(savedSnapshot);
     return transactionHandler;
   }
+  return null;
 }
 
 async function verifyClaim(
