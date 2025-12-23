@@ -25,10 +25,9 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
   public async makeClaim(stateRoot: string): Promise<void> {
     this.emitter.emit(BotEvents.CLAIMING, this.epoch);
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.claimTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
-      return;
-    }
+
+    const toSubmit = await this.toSubmitTransaction(this.transactions.claimTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
 
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[this.network];
@@ -51,10 +50,8 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     this.emitter.emit(BotEvents.CHALLENGING, this.epoch);
     if (!this.claim) throw new ClaimNotSetError();
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.challengeTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
-      return;
-    }
+    const toSubmit = await this.toSubmitTransaction(this.transactions.challengeTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
 
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[this.network];
@@ -92,10 +89,8 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     if (!this.claim) throw new ClaimNotSetError();
 
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.sendSnapshotTxn, ContractType.INBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
-      return;
-    }
+    const toSubmit = await this.toSubmitTransaction(this.transactions.sendSnapshotTxn, ContractType.INBOX, now);
+    if (!toSubmit) return;
 
     const tx = await this.veaInbox.sendSnapshot(this.epoch, this.claim);
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Send Snapshot");
@@ -108,10 +103,8 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
   public async resolveChallengedClaim(sendSnapshotHash: string, execFn = messageExecutor): Promise<void> {
     this.emitter.emit(BotEvents.EXECUTING_SNAPSHOT, this.epoch);
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.executeSnapshotTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
-      return;
-    }
+    const toSubmit = await this.toSubmitTransaction(this.transactions.executeSnapshotTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
 
     const result = await execFn(sendSnapshotHash, this.veaInboxProvider, this.veaOutboxProvider);
     this.emitter.emit(BotEvents.TXN_MADE, result.hash, this.epoch, "Execute Snapshot");
@@ -142,10 +135,8 @@ export class ArbToEthDevnetTransactionHandler extends ArbToEthTransactionHandler
   public async devnetAdvanceState(stateRoot: string): Promise<void> {
     this.emitter.emit(BotEvents.ADV_DEVNET, this.epoch);
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.devnetAdvanceStateTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) {
-      return;
-    }
+    const toSubmit = await this.toSubmitTransaction(this.transactions.devnetAdvanceStateTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[Network.DEVNET];
     const tx = await this.veaOutboxDevnet.devnetAdvanceState(this.epoch, stateRoot, {

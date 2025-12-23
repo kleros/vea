@@ -1,4 +1,4 @@
-import { Network } from "../consts/bridgeRoutes";
+import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
 import { isSnapshotNeeded, saveSnapshot } from "./snapshot";
 import { MockEmitter } from "../utils/emitter";
 
@@ -184,7 +184,8 @@ describe("snapshot", () => {
       expect(res).toEqual({ transactionHandler, latestCount: currentCount });
     });
 
-    it("should save snapshot if snapshot is needed at anytime for devnet", async () => {
+    it("should save snapshot in time limit for devnet", async () => {
+      const savingPeriod = snapshotSavingPeriod[Network.DEVNET];
       const currentCount = 6;
       count = -1;
       veaInbox.count.mockResolvedValue(currentCount);
@@ -192,7 +193,7 @@ describe("snapshot", () => {
         snapshotNeeded: true,
         latestCount: currentCount,
       });
-      const now = 1801; // 600 seconds after the epoch started
+      const now = epochPeriod + epochPeriod - savingPeriod; // 60 seconds before the second epoch ends
       const transactionHandler = {
         saveSnapshot: jest.fn(),
       };
