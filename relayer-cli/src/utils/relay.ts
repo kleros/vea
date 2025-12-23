@@ -59,8 +59,8 @@ const relay = async (chainId: number, nonce: number, network: Network) => {
     getMessageDataToRelay(chainId, veaInboxAddress, nonce),
   ]);
   if (!messageData) throw new DataError("relay message data");
-  const [to, data] = messageData;
-  const txn = await veaOutbox.sendMessage(proof, nonce, to, data);
+  const [to, from, data] = messageData;
+  const txn = await veaOutbox.sendMessage(proof, nonce, to, from, data);
   const receipt = await txn.wait();
   return receipt;
 };
@@ -127,10 +127,10 @@ const relayBatch = async ({
         fetchProofAtCount(chainId, nonce, count, veaInboxAddress),
         fetchMessageDataToRelay(chainId, veaInboxAddress, nonce),
       ]);
-      const [to, data] = messageData;
+      const [to, from, data] = messageData;
       try {
-        await veaOutbox.sendMessage.staticCall(proof, nonce, to, data);
-        const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, nonce, to, data]);
+        await veaOutbox.sendMessage.staticCall(proof, nonce, to, from, data);
+        const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, nonce, to, from, data]);
         datas.push(callData);
         targets.push(veaOutboxAddress);
         values.push(0);
@@ -142,6 +142,7 @@ const relayBatch = async ({
       }
     }
     if (batchMessages > 0) {
+      console.log(targets, datas);
       const gasLimit = await batcher.batchSend.estimateGas(targets, values, datas);
       const tx = await batcher.batchSend(targets, values, datas, { gasLimit });
       const receipt = await tx.wait();
@@ -193,9 +194,9 @@ const relayAllFrom = async (
         getProofAtCount(chainId, x, count, veaInboxAddress),
         getMessageDataToRelay(chainId, veaInboxAddress, x),
       ]);
-      const [to, data] = messageData;
+      const [to, from, data] = messageData;
 
-      const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, x, to, data]);
+      const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, x, to, from, data]);
       datas.push(callData);
       targets.push(veaContracts[network].veaOutbox.address);
       values.push(0);

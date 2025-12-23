@@ -5,6 +5,9 @@ interface MessageSentData {
   to: {
     id: string;
   };
+  msgSender: {
+    id: string;
+  };
   data: string;
 }
 
@@ -34,12 +37,15 @@ const getMessageDataToRelay = async (
                 to {
                     id
                 }
+                msgSender {
+                    id
+                }
                 data
                 }
             }`
     )) as MessageSentsDataResponse;
 
-    return [result[`messageSents`][0].to.id, result[`messageSents`][0].data];
+    return [result[`messageSents`][0].to.id, result[`messageSents`][0].msgSender.id, result[`messageSents`][0].data];
   } catch (e) {
     console.log(e);
     return undefined;
