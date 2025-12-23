@@ -61,7 +61,7 @@ describe("relay", () => {
       fetchVeaOutbox = jest.fn().mockReturnValue(veaOutboxMock);
 
       fetchProofAtCount = jest.fn().mockResolvedValue([]);
-      fetchMessageDataToRelay = jest.fn().mockResolvedValue(["to", "data"]);
+      fetchMessageDataToRelay = jest.fn().mockResolvedValue(["to", "from", "data"]);
 
       mockWait = jest.fn().mockResolvedValue("receipt");
       mockBatchSend = jest.fn().mockResolvedValue({ wait: mockWait });

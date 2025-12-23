@@ -30,12 +30,12 @@ export function handleMessageSent(event: MessageSentEvent): void {
   let _to = new ByteArray(20);
   for (let i = 0; i < 20; i++) _to[i] = msgData[i + 8];
 
-  let dataLength = msgData.length - 28;
-  let _data = new ByteArray(dataLength);
-  for (let i = 0; i < dataLength; i++) _data[i] = msgData[i + 28];
-
   let _msgSender = new ByteArray(20);
-  for (let i = 0; i < 20; i++) _msgSender[i] = _data[i + 16];
+  for (let i = 0; i < 20; i++) _msgSender[i] = msgData[i + 28];
+
+  let dataLength = msgData.length - 48;
+  let _data = new ByteArray(dataLength);
+  for (let i = 0; i < dataLength; i++) _data[i] = msgData[i + 48];
 
   entity.inbox = event.address;
   entity.nonce = BigInt.fromByteArray(_nonce.reverse() as ByteArray);
