@@ -32,6 +32,7 @@ export enum BotEvents {
   WITHDRAWING_CHALLENGE_DEPOSIT = "withdrawing_challenge_deposit",
   WITHDRAWING_CLAIM_DEPOSIT = "withdrawing_claim_deposit",
   WAITING_ARB_TIMEOUT = "waiting_arb_timeout",
+  CLAIM_ALREADY_RESOLVED = "claim_already_resolved",
 
   // Devnet state
   ADV_DEVNET = "advance_devnet",

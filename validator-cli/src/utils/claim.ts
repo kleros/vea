@@ -1,6 +1,7 @@
 import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { VeaInboxArbToEth__factory } from "@kleros/vea-contracts/typechain-types";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { ethers } from "ethers";
+import { ethers, Interface } from "ethers";
 import { ClaimNotFoundError } from "./errors";
 import { getMessageStatus } from "./arbMsgExecutor";
 import {
@@ -56,7 +57,6 @@ const getClaim = async ({
   };
   const claimHash = await veaOutbox.claimHashes(epoch);
   if (claimHash === ethers.ZeroHash) return null;
-
   try {
     const [claimLogs, challengeLogs, verificationLogs] = await Promise.all([
       veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null), fromBlock, toBlock),
@@ -118,17 +118,20 @@ export interface ClaimResolveStateParams {
   chainId: number;
   veaInbox: any;
   veaInboxProvider: JsonRpcProvider;
+  veaOutbox: any;
   veaOutboxProvider: JsonRpcProvider;
   epoch: number;
   fromBlock: number;
   toBlock: number | string;
   fetchMessageStatus?: typeof getMessageStatus;
+  fetchSentSnapshotData?: typeof getSentSnapshotData;
 }
 
 /**
- * Fetches the claim resolve state.
+ * Fetches the claim resolve state. Verifies claimHash from sent snapshot logs with Outbox claimHash. To call if claim is not yet resolved else an extra snapshot will be sent.
  * @param veaInbox VeaInbox contract instance
  * @param veaInboxProvider VeaInbox provider
+ * @param veaOutbox VeaOutbox contract instance
  * @param veaOutboxProvider VeaOutbox provider
  * @param epoch epoch number of the claim to be fetched
  * @param fromBlock from block number
@@ -140,11 +143,13 @@ const getClaimResolveState = async ({
   chainId,
   veaInbox,
   veaInboxProvider,
+  veaOutbox,
   veaOutboxProvider,
   epoch,
   fromBlock,
   toBlock,
-  fetchMessageStatus,
+  fetchMessageStatus = getMessageStatus,
+  fetchSentSnapshotData = getSentSnapshotData,
 }: ClaimResolveStateParams): Promise<ClaimResolveState> => {
   let claimResolveState: ClaimResolveState = {
     sendSnapshot: {
@@ -156,20 +161,44 @@ const getClaimResolveState = async ({
       txHash: "",
     },
   };
-
   try {
     const sentSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSent(epoch, null), fromBlock, toBlock);
     if (sentSnapshotLogs.length > 0) {
-      claimResolveState.sendSnapshot.status = true;
-      claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
+      sentSnapshotLogs.sort((a, b) =>
+        a.blockNumber !== b.blockNumber ? b.blockNumber - a.blockNumber : b.logIndex - a.logIndex
+      );
+      // Add logic to check if the sent message has the actual claimHash or not
+      const expectedClaimHash = await fetchSentSnapshotData(
+        sentSnapshotLogs[0].transactionHash,
+        veaInboxProvider,
+        veaInbox.interface
+      );
+      const claimHash = await veaOutbox.claimHashes(epoch);
+
+      if (claimHash === expectedClaimHash) {
+        claimResolveState.sendSnapshot.status = true;
+        claimResolveState.sendSnapshot.txHash = sentSnapshotLogs[0].transactionHash;
+      } else {
+        return claimResolveState;
+      }
     } else {
       return claimResolveState;
     }
   } catch {
     const sentSnapshotFromGraph = await getSnapshotSentForEpoch(epoch, await veaInbox.getAddress(), chainId);
     if (sentSnapshotFromGraph) {
-      claimResolveState.sendSnapshot.status = true;
-      claimResolveState.sendSnapshot.txHash = sentSnapshotFromGraph.txHash;
+      const expectedClaimHash = await fetchSentSnapshotData(
+        sentSnapshotFromGraph.txHash,
+        veaInboxProvider,
+        veaInbox.interface
+      );
+      const claimHash = await veaOutbox.claimHashes(epoch);
+      if (claimHash === expectedClaimHash) {
+        claimResolveState.sendSnapshot.status = true;
+        claimResolveState.sendSnapshot.txHash = sentSnapshotFromGraph.txHash;
+      } else {
+        return claimResolveState;
+      }
     } else {
       return claimResolveState;
     }
@@ -202,6 +231,18 @@ const hashClaim = (claim: ClaimStruct) => {
       claim.challenger,
     ]
   );
+};
+
+const getSentSnapshotData = async (txHash: string, provider: JsonRpcProvider, inboxInterface: any): Promise<string> => {
+  const tx = await provider.getTransaction(txHash);
+  if (!tx) return null;
+
+  // Parse the transaction calldata to identify function + args
+  const parsed = inboxInterface.parseTransaction({ data: tx.data });
+  const args = parsed.args;
+  const claimTuple = args[1] as ClaimStruct;
+  const expectedClaimHash = hashClaim(claimTuple);
+  return expectedClaimHash;
 };
 
 export { getClaim, hashClaim, getClaimResolveState, ClaimHonestState };

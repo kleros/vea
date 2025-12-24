@@ -74,6 +74,15 @@ export async function challengeAndResolveClaim({
   } else {
     transactionHandler.claim = claim;
   }
+  // If claim is already resolved, nothing to do
+  if (claim.honest !== 0) {
+    emitter.emit(BotEvents.CLAIM_ALREADY_RESOLVED, epoch);
+    if (claim.honest === 2) {
+      await transactionHandler.withdrawChallengeDeposit();
+      return transactionHandler;
+    }
+    return null;
+  }
 
   const { challenged, toRelay } = await challengeAndCheckRelay({
     veaInbox,
@@ -94,6 +103,7 @@ export async function challengeAndResolveClaim({
     claim,
     veaInbox,
     veaInboxProvider,
+    veaOutbox,
     queryRpc,
     ethBlockTag,
     transactionHandler,
@@ -141,6 +151,7 @@ interface ResolveFlowParams {
   claim: ClaimStruct;
   veaInbox: any;
   veaInboxProvider: JsonRpcProvider;
+  veaOutbox: any;
   queryRpc: JsonRpcProvider;
   ethBlockTag: "latest" | "finalized";
   transactionHandler: ITransactionHandler;
@@ -154,6 +165,7 @@ async function handleResolveFlow({
   claim,
   veaInbox,
   veaInboxProvider,
+  veaOutbox,
   queryRpc,
   ethBlockTag,
   transactionHandler,
@@ -165,6 +177,7 @@ async function handleResolveFlow({
     chainId,
     veaInbox,
     veaInboxProvider,
+    veaOutbox,
     veaOutboxProvider: queryRpc,
     epoch,
     fromBlock: blockNumberOutboxLowerBound,
@@ -175,7 +188,6 @@ async function handleResolveFlow({
     await transactionHandler.sendSnapshot();
     return;
   }
-
   const execStatus = claimResolveState.execution.status;
   if (execStatus === 1) {
     await transactionHandler.resolveChallengedClaim(claimResolveState.sendSnapshot.txHash);
