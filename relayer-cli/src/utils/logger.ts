@@ -96,4 +96,15 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.HASHI_BATCH_TXN, (txHash, batchSize) => {
     logger.debug({ txHash, batchSize }, "hashi_batch_txn");
   });
+
+  // Hashi executor logs
+  emitter.on(BotEvents.EXECUTING_HASHI, (startNonce, endNonce) => {
+    console.log(`Executing Hashi for nonces from ${startNonce} to ${endNonce}`);
+  });
+  emitter.on(BotEvents.HASHI_EXECUTED, (endNonce) => {
+    console.log(`Successfully executed Hashi till ${endNonce}`);
+  });
+  emitter.on(BotEvents.HASHI_BATCH_TXN, (txHash, batchSize) => {
+    console.log(`Hashi batch transaction ${txHash} for ${batchSize} messages`);
+  });
 };
