@@ -1,11 +1,21 @@
-# bots
+# Relayer bot
 
 A collection of bots for the Vea relayers.
 
-- src/devnetRelayExample.ts
+- src/relayer.ts
 
-# pm2
+# docker
 
-`pm2 start`
+`docker compose build relayer`
 
-Runs a relayer for all messages sent through example gateway contracts.
+`docker compose up relayer`
+
+Runs a relayer for all messages sent through VeaInbox contracts.
+
+# `env` config
+
+- `VEAOUTBOX_CHAINS`: to chose the chains to execute messages on.
+
+- Address params: used to execute for specific sender addresses or everyone if zero address is provided.
+
+- `HASHI_EXECUTOR_ENABLED`: Enable Hashi execution for messages being monitored, checks for Hashi execution and executes if possible.
