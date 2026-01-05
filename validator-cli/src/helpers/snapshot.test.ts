@@ -1,6 +1,7 @@
 import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
 import { isSnapshotNeeded, saveSnapshot } from "./snapshot";
 import { MockEmitter } from "../utils/emitter";
+import { ethers } from "ethers";
 
 describe("snapshot", () => {
   const network = Network.TESTNET;
@@ -130,7 +131,7 @@ describe("snapshot", () => {
       count = 1;
       let currentCount = 2;
       veaInbox.count.mockResolvedValue(currentCount);
-      fetchLastSavedMessage = jest.fn().mockResolvedValue("message-0");
+      fetchLastSavedMessage = jest.fn().mockResolvedValue({ id: "message-0", stateRoot: "0x1" });
       veaInbox.queryFilter.mockRejectedValue(new Error("queryFilter failed"));
       const params = {
         network,
@@ -152,10 +153,10 @@ describe("snapshot", () => {
       count = 1;
       let currentCount = 3;
       veaInbox.count.mockResolvedValue(currentCount);
-      fetchLastSavedMessage = jest.fn().mockResolvedValue("message-3");
+      fetchLastSavedMessage = jest.fn().mockResolvedValue({ id: "message-3", stateRoot: "0x0" });
       veaInbox.queryFilter.mockRejectedValue(new Error("queryFilter failed"));
       veaOutbox.stateRoot.mockResolvedValue("0xabcde");
-      veaInbox.snapshots.mockResolvedValue("0x0");
+      veaInbox.snapshots.mockResolvedValue(ethers.ZeroHash);
       const params = {
         network,
         epochPeriod,

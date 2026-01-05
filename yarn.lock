@@ -4051,6 +4051,8 @@ __metadata:
     graphql: "npm:^16.8.1"
     graphql-request: "npm:^6.1.0"
     jest: "npm:^29.7.0"
+    pino: "npm:^10.1.0"
+    pino-pretty: "npm:13.1.2"
     pm2: "npm:^6.0.5"
     ts-jest: "npm:^29.2.5"
     ts-node: "npm:^10.9.2"
@@ -17428,7 +17430,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pino-pretty@npm:^13.1.2":
+"pino-pretty@npm:13.1.2, pino-pretty@npm:^13.1.2":
   version: 13.1.2
   resolution: "pino-pretty@npm:13.1.2"
   dependencies:

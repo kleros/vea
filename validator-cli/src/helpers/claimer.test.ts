@@ -193,6 +193,8 @@ describe("claimer", () => {
         mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
         mockDeps.claim = null;
         mockDeps.veaInbox = veaInbox;
+        const fetchBlocksAndCheckFinality = jest.fn().mockResolvedValue([0, 0, false, false]);
+        mockDeps.fetchBlocksAndCheckFinality = fetchBlocksAndCheckFinality;
         const result = await checkAndClaim(mockDeps);
         expect(result.transactions.claimTxn).toBe(mockTransactions.claimTxn);
       });

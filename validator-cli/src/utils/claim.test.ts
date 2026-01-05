@@ -12,7 +12,7 @@ const mockBlockTag = "latest";
 const mockFromBlock = 0;
 const network = Network.DEVNET;
 
-describe.only("snapshotClaim", () => {
+describe("snapshotClaim", () => {
   describe("getClaim", () => {
     let veaOutbox: any;
     let veaOutboxProvider: any;

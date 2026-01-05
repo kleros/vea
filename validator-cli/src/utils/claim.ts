@@ -233,16 +233,22 @@ const getClaimResolveState = async ({
 };
 
 const verifyClaimHash = ({ claim, claimHash }: { claim: ClaimStruct; claimHash: string }): boolean => {
-  if (hashClaim(claim) == claimHash) {
+  if (hashClaim(claim) === claimHash) {
     return true;
   }
-  claim.honest = ClaimHonestState.CLAIMER; // Assuming claimer is honest
-  if (hashClaim(claim) == claimHash) {
-    return true;
+  // try with honest = CLAIMER
+  {
+    const claimWithClaimerHonest: ClaimStruct = { ...claim, honest: ClaimHonestState.CLAIMER };
+    if (hashClaim(claimWithClaimerHonest) === claimHash) {
+      return true;
+    }
   }
-  claim.honest = ClaimHonestState.CHALLENGER; // Assuming challenger is honest
-  if (hashClaim(claim) == claimHash) {
-    return true;
+  // try with honest = CHALLENGER
+  {
+    const claimWithChallengerHonest: ClaimStruct = { ...claim, honest: ClaimHonestState.CHALLENGER };
+    if (hashClaim(claimWithChallengerHonest) === claimHash) {
+      return true;
+    }
   }
   return false;
 };
@@ -270,7 +276,11 @@ const hashClaim = (claim: ClaimStruct) => {
   );
 };
 
-const getSentSnapshotData = async (txHash: string, provider: JsonRpcProvider, inboxInterface: any): Promise<string> => {
+const getSentSnapshotData = async (
+  txHash: string,
+  provider: JsonRpcProvider,
+  inboxInterface: any
+): Promise<string | null> => {
   const tx = await provider.getTransaction(txHash);
   if (!tx) return null;
 

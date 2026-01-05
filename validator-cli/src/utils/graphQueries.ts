@@ -79,7 +79,7 @@ const getClaimsForEpochs = async (
   epochs: number[],
   outbox: string,
   chainId: number
-): Promise<Map<number, ClaimStruct>> => {
+): Promise<Map<number, ClaimStruct | null>> => {
   try {
     const subgraph = getOutboxSubgraphUrl(chainId);
     const epochsString = epochs.join(", ");
@@ -256,7 +256,10 @@ type LastMessageSavedResponse = {
  * @param veaInbox
  * @returns message id
  */
-const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<{ id: string; stateRoot: string }> => {
+const getLastMessageSaved = async (
+  veaInbox: string,
+  chainId: number
+): Promise<{ id: string; stateRoot: string } | null> => {
   const subgraph = getInboxSubgraphUrl(chainId);
   try {
     const result: LastMessageSavedResponse = await request(
