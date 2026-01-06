@@ -1,39 +1,11 @@
 require("dotenv").config();
-import request from "graphql-request";
 import { EventEmitter } from "node:events";
-import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "@kleros/vea-contracts/typechain-types";
+import { getCount, getNonceFrom } from "./graphQueries";
 import { getProofAtCount, getMessageDataToRelay } from "./proof";
 import { getVeaOutbox, getBatcher } from "./ethers";
 import { getBridgeConfig, Network } from "../consts/bridgeRoutes";
 import { BotEvents } from "./botEvents";
 import { MissingEnvironmentVariable, InvalidChainId, DataError } from "./errors";
-
-interface SnapshotResponse {
-  snapshotSaveds: Array<{ count: string }>;
-}
-/**
- * Get the count of the veaOutbox
- * @param veaOutbox The veaOutbox contract instance
- * @param chainId The chain id of the veaOutbox chain
- * @returns The count of the veaOutbox
- */
-const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, chainId: number): Promise<number> => {
-  const subgraph = process.env.RELAYER_SUBGRAPH;
-  const stateRoot = await veaOutbox.stateRoot();
-
-  const result = (await request(
-    `https://api.studio.thegraph.com/query/${subgraph}`,
-    `{
-      snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
-        count
-      }
-    }`
-  )) as SnapshotResponse;
-
-  if (result["snapshotSaveds"].length == 0) return 0;
-
-  return Number(result["snapshotSaveds"][0].count);
-};
 
 /**
  * Relay a message from the veaOutbox
@@ -59,8 +31,8 @@ const relay = async (chainId: number, nonce: number, network: Network) => {
     getMessageDataToRelay(chainId, veaInboxAddress, nonce),
   ]);
   if (!messageData) throw new DataError("relay message data");
-  const [to, data] = messageData;
-  const txn = await veaOutbox.sendMessage(proof, nonce, to, data);
+  const [to, from, data] = messageData;
+  const txn = await veaOutbox.sendMessage(proof, nonce, to, from, data);
   const receipt = await txn.wait();
   return receipt;
 };
@@ -127,10 +99,10 @@ const relayBatch = async ({
         fetchProofAtCount(chainId, nonce, count, veaInboxAddress),
         fetchMessageDataToRelay(chainId, veaInboxAddress, nonce),
       ]);
-      const [to, data] = messageData;
+      const [to, from, data] = messageData;
       try {
-        await veaOutbox.sendMessage.staticCall(proof, nonce, to, data);
-        const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, nonce, to, data]);
+        await veaOutbox.sendMessage.staticCall(proof, nonce, to, from, data);
+        const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, nonce, to, from, data]);
         datas.push(callData);
         targets.push(veaOutboxAddress);
         values.push(0);
@@ -193,9 +165,9 @@ const relayAllFrom = async (
         getProofAtCount(chainId, x, count, veaInboxAddress),
         getMessageDataToRelay(chainId, veaInboxAddress, x),
       ]);
-      const [to, data] = messageData;
+      const [to, from, data] = messageData;
 
-      const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, x, to, data]);
+      const callData = veaOutbox.interface.encodeFunctionData("sendMessage", [proof, x, to, from, data]);
       datas.push(callData);
       targets.push(veaContracts[network].veaOutbox.address);
       values.push(0);
@@ -211,45 +183,6 @@ const relayAllFrom = async (
   }
 
   return lastNonce + 1; // return current nonce
-};
-
-interface MessageSent {
-  nonce: number;
-}
-
-interface MessageSentsResponse {
-  messageSents: MessageSent[];
-}
-
-/**
- * Get the nonces of messages sent by a given sender
- * @param chainId The chain id of the veaOutbox chain
- * @param nonce The nonce of the first message to relay
- * @param msgSender The address of the sender
- * @returns The nonces of the messages sent by the sender
- */
-const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSender: string) => {
-  const subgraph = process.env.RELAYER_SUBGRAPH;
-
-  const result = (await request(
-    `https://api.studio.thegraph.com/query/${subgraph}`,
-    `{
-        messageSents(
-          first: 1000, 
-          where: {
-            inbox: "${inbox}",
-            nonce_gte: ${nonce}, 
-            msgSender_: {id: "${msgSender}"}
-          }, 
-          orderBy: nonce, 
-          orderDirection: asc
-        ) {
-          nonce
-        }
-      }`
-  )) as MessageSentsResponse;
-
-  return result[`messageSents`].map((a: { nonce: number }) => a.nonce);
 };
 
 export { relayAllFrom, relay, relayBatch, RelayBatchDeps };

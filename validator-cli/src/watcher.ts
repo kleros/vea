@@ -14,7 +14,7 @@ import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./help
 import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
 
-const RPC_BLOCK_LIMIT = 1000; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
+const RPC_BLOCK_LIMIT = 100; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
 
 /**
  * @file This file contains the logic for watching bridge and validating/resolving for claims.
@@ -157,6 +157,7 @@ async function processEpochsForNetwork({
     const { updatedTransactionHandler, latestCount } = await saveSnapshot({
       chainId,
       veaInbox,
+      veaOutbox,
       network,
       epochPeriod: routeConfig[network].epochPeriod,
       count: toWatch[networkKey].count,
@@ -178,7 +179,6 @@ async function processEpochsForNetwork({
       toBlock = epochBlock + RPC_BLOCK_LIMIT;
     }
     const claim = await getClaim({ chainId, veaOutbox, veaOutboxProvider, epoch, fromBlock: epochBlock, toBlock });
-
     let updatedTransactions;
     if (path > BotPaths.CLAIMER && claim != null) {
       const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {

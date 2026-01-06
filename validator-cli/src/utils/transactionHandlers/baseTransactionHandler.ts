@@ -189,13 +189,23 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     return TransactionStatus.NOT_FINAL;
   }
 
+  public async toSubmitTransaction(
+    trnx: Transaction | null,
+    contract: ContractType,
+    currentTime: number
+  ): Promise<boolean> {
+    const status = await this.checkTransactionStatus(trnx, contract, currentTime);
+    if (status === TransactionStatus.PENDING || status === TransactionStatus.NOT_FINAL) return false;
+    return true;
+  }
+
   public async startVerification(currentTimestamp: number) {
     this.emitter.emit(BotEvents.STARTING_VERIFICATION, this.epoch);
     if (!this.claim) throw new ClaimNotSetError();
 
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.startVerificationTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) return;
+    const toSubmit = await this.toSubmitTransaction(this.transactions.startVerificationTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
 
     const cfg = getBridgeConfig(this.chainId);
     const timeOver =
@@ -222,8 +232,8 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     if (!this.claim) throw new ClaimNotSetError();
 
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.verifySnapshotTxn, ContractType.OUTBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) return;
+    const toSubmit = await this.toSubmitTransaction(this.transactions.verifySnapshotTxn, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
 
     const cfg = getBridgeConfig(this.chainId);
     const timeLeft = currentTimestamp - Number(this.claim.timestampVerification) - cfg.minChallengePeriod;
@@ -246,12 +256,12 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     if (!this.claim) throw new ClaimNotSetError();
 
     const now = Date.now();
-    const status = await this.checkTransactionStatus(
+    const toSubmit = await this.toSubmitTransaction(
       this.transactions.withdrawClaimDepositTxn,
       ContractType.OUTBOX,
       now
     );
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) return;
+    if (!toSubmit) return;
 
     const tx = await (this.veaOutbox as any).withdrawClaimDeposit(this.epoch, this.claim);
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Withdraw Claim Deposit");
@@ -266,12 +276,12 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     if (!this.claim) throw new ClaimNotSetError();
 
     const now = Date.now();
-    const status = await this.checkTransactionStatus(
+    const toSubmit = await this.toSubmitTransaction(
       this.transactions.withdrawChallengeDepositTxn,
       ContractType.OUTBOX,
       now
     );
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) return;
+    if (!toSubmit) return;
 
     const tx = await (this.veaOutbox as any).withdrawChallengeDeposit(this.epoch, this.claim);
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Withdraw Challenge Deposit");
@@ -285,8 +295,8 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     this.emitter.emit(BotEvents.SAVING_SNAPSHOT, this.epoch);
 
     const now = Date.now();
-    const status = await this.checkTransactionStatus(this.transactions.saveSnapshotTxn, ContractType.INBOX, now);
-    if (status !== TransactionStatus.NOT_MADE && status !== TransactionStatus.EXPIRED) return;
+    const toSubmit = await this.toSubmitTransaction(this.transactions.saveSnapshotTxn, ContractType.INBOX, now);
+    if (!toSubmit) return;
 
     const tx = await (this.veaInbox as any).saveSnapshot();
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Save Snapshot");

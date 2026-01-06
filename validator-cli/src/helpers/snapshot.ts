@@ -1,11 +1,13 @@
-import { Network } from "../consts/bridgeRoutes";
+import { ZeroHash } from "ethers";
+import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
 import { getLastMessageSaved } from "../utils/graphQueries";
 import { BotEvents } from "../utils/botEvents";
 import { defaultEmitter } from "../utils/emitter";
-
 interface SnapshotCheckParams {
+  epochPeriod: number;
   chainId: number;
   veaInbox: any;
+  veaOutbox: any;
   count: number;
   fetchLastSavedMessage?: typeof getLastMessageSaved;
 }
@@ -13,6 +15,7 @@ interface SnapshotCheckParams {
 export interface SaveSnapshotParams {
   chainId: number;
   veaInbox: any;
+  veaOutbox: any;
   network: Network;
   epochPeriod: number;
   count: number;
@@ -25,6 +28,7 @@ export interface SaveSnapshotParams {
 export const saveSnapshot = async ({
   chainId,
   veaInbox,
+  veaOutbox,
   network,
   epochPeriod,
   count,
@@ -33,18 +37,18 @@ export const saveSnapshot = async ({
   toSaveSnapshot = isSnapshotNeeded,
   now = Math.floor(Date.now() / 1000),
 }: SaveSnapshotParams): Promise<any> => {
-  if (network != Network.DEVNET) {
-    const timeElapsed = now % epochPeriod;
-    const timeLeftForEpoch = epochPeriod - timeElapsed;
-    // Saving snapshots in last 10 minutes of the epoch on testnet
-    if (timeLeftForEpoch > 600) {
-      emitter.emit(BotEvents.SNAPSHOT_WAITING, timeLeftForEpoch);
-      return { transactionHandler, latestCount: count };
-    }
+  const timeElapsed = now % epochPeriod;
+  const timeLeftForEpoch = epochPeriod - timeElapsed;
+
+  if (timeLeftForEpoch > snapshotSavingPeriod[network]) {
+    emitter.emit(BotEvents.SNAPSHOT_WAITING, timeLeftForEpoch);
+    return { transactionHandler, latestCount: count };
   }
   const { snapshotNeeded, latestCount } = await toSaveSnapshot({
+    epochPeriod,
     chainId,
     veaInbox,
+    veaOutbox,
     count,
   });
   if (!snapshotNeeded) return { transactionHandler, latestCount };
@@ -53,27 +57,41 @@ export const saveSnapshot = async ({
 };
 
 export const isSnapshotNeeded = async ({
+  epochPeriod,
   chainId,
   veaInbox,
+  veaOutbox,
   count,
   fetchLastSavedMessage = getLastMessageSaved,
 }: SnapshotCheckParams): Promise<{ snapshotNeeded: boolean; latestCount: number }> => {
   const currentCount = Number(await veaInbox.count());
+
   if (count == currentCount) {
     return { snapshotNeeded: false, latestCount: currentCount };
   }
   let lastSavedCount: number;
+  let lastSavedSnapshot: string;
   try {
     const saveSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSaved());
     lastSavedCount = Number(saveSnapshotLogs[saveSnapshotLogs.length - 1].args[2]);
+    lastSavedSnapshot = saveSnapshotLogs[saveSnapshotLogs.length - 1].args[1];
   } catch {
     const veaInboxAddress = await veaInbox.getAddress();
-    const lastSavedMessageId = await fetchLastSavedMessage(veaInboxAddress, chainId);
+    const { id: lastSavedMessageId, stateRoot: lastSavedStateRoot } = await fetchLastSavedMessage(
+      veaInboxAddress,
+      chainId
+    );
     const messageIndex = extractMessageIndex(lastSavedMessageId);
+    lastSavedSnapshot = lastSavedStateRoot;
     // adding 1 to the message index to get the last saved count
-    lastSavedCount = messageIndex + 1;
+    lastSavedCount = messageIndex;
   }
+  const epochNow = Math.floor(Date.now() / (1000 * epochPeriod));
+  const currentSnapshot = await veaInbox.snapshots(epochNow);
+  const currentStateRoot = await veaOutbox.stateRoot();
   if (currentCount > lastSavedCount) {
+    return { snapshotNeeded: true, latestCount: currentCount };
+  } else if (currentSnapshot == ZeroHash && lastSavedSnapshot != currentStateRoot) {
     return { snapshotNeeded: true, latestCount: currentCount };
   }
   return { snapshotNeeded: false, latestCount: currentCount };
