@@ -9,10 +9,16 @@ export interface HashiMessage {
   adapters: string[];
 }
 
-export type VeaNonceToHashiMessage = {
-  nonce: number;
+export type HashiMessageState = {
   hashiMessage: HashiMessage;
   executed: boolean;
+};
+
+export type HashiMessageExecutionVars = {
+  txHash: string;
+  blockNumber: number;
+  messageId: bigint;
+  message: HashiMessage;
 };
 
 export enum HashiExecutionStatus {
