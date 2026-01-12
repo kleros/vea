@@ -45,21 +45,21 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   const logger = getLogger("Relayer");
   // Relayer state logs
   emitter.on(BotEvents.STARTED, (chainId, network) => {
-    logger.info(`Relayer started for ${chainId} on ${network}`);
+    logger.info({ chainId, network }, `relayer_started`);
   });
   emitter.on(BotEvents.WAITING, (delayAmount) => {
-    logger.info(`Waiting for next epoch: ${delayAmount} ms`);
+    logger.info({ delayAmount }, "waiting_for_next_cycle");
   });
   emitter.on(BotEvents.EXIT, () => {
-    logger.info("Exiting");
+    logger.info("exiting");
   });
 
   // Bot health logs
   emitter.on(BotEvents.EXCEPTION, (err) => {
-    logger.error({ err }, "Uncaught Exception occurred");
+    logger.error({ err }, "uncaught_exception");
   });
   emitter.on(BotEvents.PROMISE_REJECTION, (reason, promise) => {
-    logger.error({ reason, promise }, "Unhandled promise rejection");
+    logger.error({ reason, promise }, "unhandled_promise_rejection");
   });
 
   // Lock file logs
@@ -90,21 +90,10 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.EXECUTING_HASHI, (startNonce, endNonce) => {
     logger.debug({ startNonce, endNonce }, "executing_hashi");
   });
-  emitter.on(BotEvents.HASHI_EXECUTED, (endNonce) => {
-    logger.info({ endNonce }, "hashi_executed_till_nonce");
+  emitter.on(BotEvents.HASHI_EXECUTED, (blockNumber) => {
+    logger.info({ blockNumber }, "hashi_executed_till_block"); // block number is of source chain
   });
   emitter.on(BotEvents.HASHI_BATCH_TXN, (txHash, batchSize) => {
     logger.debug({ txHash, batchSize }, "hashi_batch_txn");
-  });
-
-  // Hashi executor logs
-  emitter.on(BotEvents.EXECUTING_HASHI, (startNonce, endNonce) => {
-    console.log(`Executing Hashi for nonces from ${startNonce} to ${endNonce}`);
-  });
-  emitter.on(BotEvents.HASHI_EXECUTED, (endNonce) => {
-    console.log(`Successfully executed Hashi till ${endNonce}`);
-  });
-  emitter.on(BotEvents.HASHI_BATCH_TXN, (txHash, batchSize) => {
-    console.log(`Hashi batch transaction ${txHash} for ${batchSize} messages`);
   });
 };

@@ -37,7 +37,7 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
   initializeEmitter(emitter);
   const executeTimes: number[] = networkConfigs.map(() => 0);
   while (!shutdownManager.getIsShuttingDown()) {
-    let executeTime: number = Number.MAX_SAFE_INTEGER;
+    let executeTime: number = HASHI_CYCLE_TIME_MS + Date.now();
     await sendHeartbeat("running", HEARTBEAT_URL);
     for (let i = 0; i < networkConfigs.length; i++) {
       if (executeTimes[i] > Date.now()) {
@@ -76,7 +76,6 @@ async function processNetworkConfig(
 
   let { nonce, hashiBlockNumber } = await initializeNonces(chainId, network, emitter);
   if (sourceChainId) {
-    console.log(`Starting Hashi executor for sourceChainId ${sourceChainId} to targetChainId ${chainId}`);
     // Execute messages on Hashi
     hashiBlockNumber = await runHashiExecutor({
       sourceChainId,

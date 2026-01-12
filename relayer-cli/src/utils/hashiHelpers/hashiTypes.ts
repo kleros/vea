@@ -11,7 +11,8 @@ export interface HashiMessage {
 
 export type HashiMessageState = {
   hashiMessage: HashiMessage;
-  executed: boolean;
+  executable: boolean;
+  status: HashiExecutionStatus;
 };
 
 export type HashiMessageExecutionVars = {
@@ -20,6 +21,8 @@ export type HashiMessageExecutionVars = {
   messageId: bigint;
   message: HashiMessage;
 };
+
+export type DispatchedTxnData = { txns: HashiMessageExecutionVars[]; toBlock: number };
 
 export enum HashiExecutionStatus {
   THRESHOLD_NOT_MET = "THRESHOLD_NOT_MET",

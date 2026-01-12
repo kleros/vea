@@ -134,11 +134,13 @@ async function setupExitHandlers(
     process.exit(0);
   };
 
-  ["SIGINT", "SIGTERM", "SIGQUIT"].forEach((signal) =>
-    process.on(signal, async () => {
-      await handleExit(0);
-    })
-  );
+  ["SIGINT", "SIGTERM", "SIGQUIT"].forEach((signal) => {
+    if (process.listenerCount(signal) === 0) {
+      process.on(signal, async () => {
+        await handleExit(0);
+      });
+    }
+  });
 
   process.on("exit", async () => {
     await handleExit();
@@ -197,6 +199,7 @@ function getNetworkConfig(): RelayerNetworkConfig[] {
     const [sourceChainIdStr, targetChainIdStr] = chainPair.split("-");
     const sourceChainId = Number(sourceChainIdStr);
     const targetChainId = Number(targetChainIdStr);
+
     if (toRelayHashi) {
       relayerNetworkConfig.push({
         chainId: targetChainId,
