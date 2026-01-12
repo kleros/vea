@@ -18,4 +18,4 @@ Runs a relayer for all messages sent through VeaInbox contracts.
 
 - Address params: used to execute for specific sender addresses or everyone if zero address is provided.
 
-- `HASHI_EXECUTOR_ENABLED`: Enable Hashi execution for messages being monitored, checks for Hashi execution and executes if possible.
+- `SENDER_ADDRESSES`: pass zero address to allow all senders and relayer or executor for hashi.
