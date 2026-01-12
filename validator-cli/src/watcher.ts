@@ -16,6 +16,7 @@ import { getTransactionHandler } from "./utils/transactionHandlers";
 import { sendHeartbeat } from "./utils/heartbeat";
 
 const RPC_BLOCK_LIMIT = 1000; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
+const CYCLE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
 
 /**
  * @file This file contains the logic for watching bridge and validating/resolving for claims.
@@ -45,7 +46,7 @@ export const watch = async (
     for (const networkConfig of networkConfigs) {
       await processNetwork(path, toSaveSnapshot, networkConfig, transactionHandlers, toWatch, emitter);
     }
-    await wait(1000 * 10);
+    await wait(CYCLE_DELAY_MS);
   }
   await sendHeartbeat("stopped", heartbeatURL);
 };
