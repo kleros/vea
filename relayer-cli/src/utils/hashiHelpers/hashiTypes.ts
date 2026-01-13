@@ -9,11 +9,20 @@ export interface HashiMessage {
   adapters: string[];
 }
 
-export type VeaNonceToHashiMessage = {
-  nonce: number;
+export type HashiMessageState = {
   hashiMessage: HashiMessage;
-  executed: boolean;
+  executable: boolean;
+  status: HashiExecutionStatus;
 };
+
+export type HashiMessageExecutionVars = {
+  txHash: string;
+  blockNumber: number;
+  messageId: bigint;
+  message: HashiMessage;
+};
+
+export type DispatchedTxnData = { txns: HashiMessageExecutionVars[]; toBlock: number };
 
 export enum HashiExecutionStatus {
   THRESHOLD_NOT_MET = "THRESHOLD_NOT_MET",

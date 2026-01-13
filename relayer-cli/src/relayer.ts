@@ -23,6 +23,8 @@ interface RelayerConfig {
   emitter: EventEmitter;
 }
 
+const HASHI_CYCLE_TIME_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Start the relayer
  * @param config.networkConfigs The network configurations retrieved from the env.
@@ -33,14 +35,20 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
   const HEARTBEAT_URL = process.env.HEARTBEAT_URL;
   await sendHeartbeat("started", HEARTBEAT_URL);
   initializeEmitter(emitter);
-  let delayAmount = 7200 * 1000; // 2 hours in ms
+  const executeTimes: number[] = networkConfigs.map(() => 0);
   while (!shutdownManager.getIsShuttingDown()) {
+    let executeTime: number = HASHI_CYCLE_TIME_MS + Date.now();
     await sendHeartbeat("running", HEARTBEAT_URL);
-    for (const networkConfig of networkConfigs) {
-      delayAmount = await processNetworkConfig(networkConfig, shutdownManager, emitter, delayAmount);
+    for (let i = 0; i < networkConfigs.length; i++) {
+      if (executeTimes[i] > Date.now()) {
+        continue;
+      }
+      executeTimes[i] = await processNetworkConfig(networkConfigs[i], shutdownManager, emitter, executeTimes[i]);
+      executeTime = Math.min(executeTime, executeTimes[i]);
     }
-    emitter.emit(BotEvents.WAITING, delayAmount);
-    await delay(delayAmount);
+    const delayMs = executeTime - Date.now();
+    emitter.emit(BotEvents.WAITING, delayMs);
+    await delay(delayMs);
   }
   await sendHeartbeat("stopped", HEARTBEAT_URL);
 }
@@ -59,37 +67,40 @@ async function processNetworkConfig(
   emitter: EventEmitter,
   currentDelay: number
 ): Promise<number> {
-  const { chainId, network, senders } = networkConfig;
-  emitter.emit(BotEvents.STARTED, chainId, network);
+  const { chainId, network, senders, sourceChainId } = networkConfig;
+  const logNetwork = sourceChainId ? `${sourceChainId}->${chainId} Hashi` : network;
+  emitter.emit(BotEvents.STARTED, chainId, logNetwork);
   const maxBatchSize = 10; // 10 messages per batch
 
   await setupExitHandlers(chainId, shutdownManager, network, emitter);
 
-  let { nonce, hashiNonce } = await initializeNonces(chainId, network, emitter);
-  if (nonce == null) return currentDelay;
-
-  const hashiExecutorEnabled = process.env.HASHI_EXECUTOR_ENABLED === "true";
-  if (hashiExecutorEnabled) {
+  let { nonce, hashiBlockNumber } = await initializeNonces(chainId, network, emitter);
+  if (sourceChainId) {
     // Execute messages on Hashi
-    hashiNonce = await runHashiExecutor({ chainId, network, nonce: hashiNonce, emitter });
+    hashiBlockNumber = await runHashiExecutor({
+      sourceChainId,
+      targetChainId: chainId,
+      network,
+      blockNumber: hashiBlockNumber,
+      emitter,
+    });
+    await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, hashiBlockNumber, network, emitter);
+    return Date.now() + HASHI_CYCLE_TIME_MS;
   }
-
   const toRelayAll = senders[0] === ethers.ZeroAddress;
   nonce = toRelayAll
     ? await relayBatch({ chainId, network, nonce, maxBatchSize, emitter })
     : await relayAllFrom(chainId, network, nonce, senders, emitter);
 
-  if (nonce == null) return currentDelay;
-
-  await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, hashiNonce, network, emitter);
+  await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, hashiBlockNumber, network, emitter);
 
   if (network === Network.DEVNET) {
-    return 1000 * 10; // 10 seconds for devnet
+    return Date.now() + 1000 * 60 * 2; // 2 min for devnet
   } else {
     const currentTS = Math.floor(Date.now() / 1000);
     const epochPeriod = getEpochPeriod(chainId);
     const timeLeft = (epochPeriod - (Math.floor(currentTS / 1000) % epochPeriod)) * 1000 + 100 * 1000;
-    return Math.min(currentDelay, timeLeft);
+    return Date.now() + timeLeft;
   }
 }
 
@@ -102,6 +113,5 @@ if (require.main === module) {
     shutdownManager,
     emitter,
   };
-
   start(testnetRelayerConfig);
 }
