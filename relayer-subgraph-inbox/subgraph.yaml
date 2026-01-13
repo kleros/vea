@@ -6,9 +6,9 @@ dataSources:
     name: VeaInboxArbToEthDevnet
     network: arbitrum-sepolia
     source:
-      address: "0xF6C5640de593fEf76129F1F1A863F7ddc65776C9"
+      address: "0x45138BC4E364A16919C4571699171d774A7590BD"
       abi: VeaInboxArbToEthDevnet
-      startBlock: 129093493
+      startBlock: 189388908
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -32,9 +32,9 @@ dataSources:
     name: VeaInboxArbToEthTestnet
     network: arbitrum-sepolia
     source:
-      address: "0xAA4F00c86bf956C0Fae603D030CBc2dA7f8B7C5B"
+      address: "0x8B925669606026CcCfAFD72840F5b0CAeDA80078"
       abi: VeaInboxArbToEthTestnet
-      startBlock: 139057282
+      startBlock: 189388217
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -60,9 +60,9 @@ dataSources:
     name: VeaInboxArbToGnosisDevnet
     network: arbitrum-sepolia
     source:
-      address: "0xF6286b9C6c7F1B33Ea976FA43434027c7b8421A7"
+      address: "0x2E973e20B24088bc74755a7A5cd1A37Dcb53E061"
       abi: VeaInboxArbToGnosisDevnet
-      startBlock: 129093812
+      startBlock: 189389231
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -88,9 +88,9 @@ dataSources:
     name: VeaInboxArbToGnosisTestnet
     network: arbitrum-sepolia
     source:
-      address: "0xa0d410b202D69C36871d5135ce42fC7D379BBB1c"
+      address: "0x162f826E18380567CE0548395a3Ad2A54EA87B96"
       abi: VeaInboxArbToGnosisTestnet
-      startBlock: 139057386
+      startBlock: 189389497
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
