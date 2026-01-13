@@ -12,8 +12,8 @@ enum ReceiverChains {
 const paramsByChainId = {
   ARBITRUM_SEPOLIA: {
     deposit: parseEther("0.1"),
-    epochPeriod: 1800, // 30 min
-    challengePeriod: 0, // 30 min
+    epochPeriod: 300, // 5 min
+    challengePeriod: 0, // 0 min
     numEpochTimeout: 10000000000000, // never
     sequencerDelayLimit: 86400,
     sequencerFutureLimit: 3600,

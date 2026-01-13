@@ -120,7 +120,7 @@ contract VeaInboxGnosisToArb is IVeaInbox {
         return oldCount;
     }
 
-    /// @dev Saves snapshot of state root. Snapshots can be saved a maximum of once per epoch.
+    /// @dev Saves snapshot of state root. Snapshots can be saved multiple times per active epoch.
     ///      `O(log(count))` where count number of messages in the inbox.
     /// Note: See merkle tree docs for details how inbox manages state.
     function saveSnapshot() external {
