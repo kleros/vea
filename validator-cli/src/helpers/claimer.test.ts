@@ -193,21 +193,10 @@ describe("claimer", () => {
         mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
         mockDeps.claim = null;
         mockDeps.veaInbox = veaInbox;
+        const fetchBlocksAndCheckFinality = jest.fn().mockResolvedValue([0, 0, false, false]);
+        mockDeps.fetchBlocksAndCheckFinality = fetchBlocksAndCheckFinality;
         const result = await checkAndClaim(mockDeps);
         expect(result.transactions.claimTxn).toBe(mockTransactions.claimTxn);
-      });
-      it("should make a valid claim if last claim was challenged", async () => {
-        veaInbox.snapshots = jest.fn().mockResolvedValue(mockClaim.stateRoot);
-        mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
-          challenged: true,
-          stateroot: mockClaim.stateRoot,
-        });
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
-        mockDeps.claim = null;
-        mockDeps.veaInbox = veaInbox;
-        const result = await checkAndClaim(mockDeps);
-        expect(result.transactions.claimTxn).toEqual(mockTransactions.claimTxn);
       });
       it("should withdraw claim deposit if claimer is honest", async () => {
         mockDeps.transactionHandler = mockTransactionHandler;

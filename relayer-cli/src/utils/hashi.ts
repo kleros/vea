@@ -1,22 +1,27 @@
 import { EventEmitter } from "node:events";
 import { JsonRpcProvider, Interface, getAddress, Contract, Wallet, isHexString, getBytes } from "ethers";
-import { getVeaMsgTrnx } from "./graphQueries";
-import { getVeaInbox } from "./ethers";
-import { getBridgeConfig } from "../consts/bridgeRoutes";
 import { getHashiMsgId } from "./hashiHelpers/hashiMsgUtils";
 import { messageDispatchedAbi, thresholdViewAbi, YaruAbi } from "./hashiHelpers/abi";
 import { BotEvents } from "./botEvents";
-import { HashiExecutionStatus, HashiMessage, VeaNonceToHashiMessage } from "./hashiHelpers/hashiTypes";
+import {
+  HashiExecutionStatus,
+  HashiMessage,
+  HashiMessageState,
+  HashiMessageExecutionVars,
+  DispatchedTxnData,
+} from "./hashiHelpers/hashiTypes";
+import { getHashiBridgeConfig } from "./hashiHelpers/bridgeRoutes";
 
-const SOURCE_CHAIN_ID = 421614; // Arbitrum Sepolia
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 interface HashiExecutorInterface {
-  chainId: number;
+  sourceChainId: number;
+  targetChainId: number;
   network: string;
-  nonce: number;
+  blockNumber: number;
   emitter: EventEmitter;
-  fetchBridgeConfig?: typeof getBridgeConfig;
-  fetchVeaInbox?: typeof getVeaInbox;
+  fetchBridgeConfig?: typeof getHashiBridgeConfig;
+  fetchAllMessageLogs?: typeof getAllMessageDispatchedLogs;
   isMessageExecutable?: typeof toExecuteMessage;
   executeMsgsOnHashi?: typeof executeBatchOnHashi;
 }
@@ -34,64 +39,68 @@ interface HashiExecutorInterface {
  * @returns The updated nonce after processing
  */
 async function runHashiExecutor({
-  chainId,
-  network,
-  nonce,
+  sourceChainId,
+  targetChainId,
+  blockNumber,
   emitter,
-  fetchBridgeConfig = getBridgeConfig,
-  fetchVeaInbox = getVeaInbox,
+  fetchBridgeConfig = getHashiBridgeConfig,
+  fetchAllMessageLogs = getAllMessageDispatchedLogs,
   isMessageExecutable = toExecuteMessage,
   executeMsgsOnHashi = executeBatchOnHashi,
-}: HashiExecutorInterface): Promise<number | undefined> {
-  const bridgeConfig = fetchBridgeConfig(chainId);
-  const { veaContracts, rpcInbox } = bridgeConfig;
-  const veaInboxAddress = veaContracts[network].veaInbox.address;
-  const privateKey = process.env.PRIVATE_KEY;
-  const veaInbox = fetchVeaInbox(veaInboxAddress, privateKey, rpcInbox, chainId);
-  const inboxCount = await veaInbox.count();
-  const executableNonces: VeaNonceToHashiMessage[] = [];
-  const legacyNonce = nonce;
-  while (nonce < inboxCount) {
-    // ToDo: Add cooldown periods for nonces that cannot be executed.
-    const toExecute = await isMessageExecutable({ chainId, nonce, veaInboxAddress, rpcInbox });
-    if (toExecute) {
-      executableNonces.push(toExecute);
-    }
-    nonce++;
+}: HashiExecutorInterface): Promise<number> {
+  const bridgeConfig = fetchBridgeConfig(sourceChainId, targetChainId);
+  const { yaruAddress, yahoAddress, hashiAddress, sourceRPC } = bridgeConfig;
+  const legacyBlockNumber = blockNumber;
+  if (!yaruAddress || !yahoAddress || !hashiAddress) {
+    emitter.emit(BotEvents.HASHI_NOT_CONFIGURED, targetChainId);
+    return 0;
   }
-  if (executableNonces.length === 0) {
-    return legacyNonce;
+  const executableMessages: HashiMessageState[] = [];
+
+  const { txns, toBlock } = await fetchAllMessageLogs(sourceRPC, yahoAddress, legacyBlockNumber);
+  for (const tx of txns) {
+    const messageState = await isMessageExecutable({ sourceChainId, hashiMessage: tx.message });
+    if (messageState != null && messageState.executable) {
+      executableMessages.push(messageState);
+    }
+  }
+  if (executableMessages.length === 0) {
+    return toBlock;
   }
   emitter.emit(
     BotEvents.EXECUTING_HASHI,
-    executableNonces[0].nonce,
-    executableNonces[executableNonces.length - 1].nonce
+    executableMessages[0].hashiMessage.nonce,
+    executableMessages[executableMessages.length - 1].hashiMessage.nonce
   );
-  nonce = await executeMsgsOnHashi(chainId, executableNonces);
-  emitter.emit(BotEvents.HASHI_EXECUTED, nonce);
-  return nonce;
+  await executeMsgsOnHashi(sourceChainId, targetChainId, executableMessages, emitter);
+  emitter.emit(BotEvents.HASHI_EXECUTED, toBlock);
+  return toBlock;
 }
 
 /** * Execute a batch of messages on Hashi (Yaru contract)
  * @param chainId The chain ID
- * @param params The array of VeaNonceToHashiMessage to execute
+ * @param params The array of HashiMessageState to execute
  * @returns The last nonce processed + 1
  */
-async function executeBatchOnHashi(chainId: number, params: VeaNonceToHashiMessage[]): Promise<number> {
-  const { yaruAddress, rpcOutbox } = getBridgeConfig(chainId);
+async function executeBatchOnHashi(
+  sourceChainId: number,
+  targetChainId: number,
+  params: HashiMessageState[],
+  emitter: EventEmitter
+): Promise<void> {
+  const { yaruAddress, targetRPC } = getHashiBridgeConfig(sourceChainId, targetChainId);
   const maxPerTx = 20;
-  const provider = new JsonRpcProvider(rpcOutbox);
+  const provider = new JsonRpcProvider(targetRPC);
   const signer = new Wallet(process.env.PRIVATE_KEY!, provider);
   const yaru = new Contract(yaruAddress, YaruAbi, signer);
 
   let cursor = 0;
-  let lastNonceProcessed = 0;
 
   while (cursor < params.length) {
     const chunk = params.slice(cursor, cursor + maxPerTx);
 
     const messages = chunk
-      .filter(({ executed }) => !executed) // only include unexecuted messages
+      .filter(({ executable }) => executable) // only include executable messages
       .map(({ hashiMessage }) => {
         const nonce = BigInt(hashiMessage.nonce);
         const targetChainId = BigInt(hashiMessage.targetChainId);
@@ -132,24 +141,15 @@ async function executeBatchOnHashi(chainId: number, params: VeaNonceToHashiMessa
 
     const tx = await yaru.executeMessages(messages);
     const receipt = await tx.wait();
-
+    emitter.emit(BotEvents.HASHI_BATCH_TXN, receipt.hash, messages.length);
     cursor += chunk.length;
-    lastNonceProcessed = Number(params[Math.min(cursor, params.length) - 1].nonce);
   }
-
-  return ++lastNonceProcessed;
 }
 
 interface ToExecuteMessageInterface {
-  chainId: number;
-  nonce: number;
-  veaInboxAddress: string;
-  rpcInbox: string;
-  fetchVeaMsgTrnx?: typeof getVeaMsgTrnx;
-  fetchBridgeConfig?: typeof getBridgeConfig;
+  sourceChainId: number;
+  hashiMessage: HashiMessage;
   hasThresholdMet?: typeof getMessageStatus;
-  provider?: JsonRpcProvider;
-  logIFace?: Interface;
 }
 /**
  * Check if a message is executable on Hashi by verifying if the threshold is met.
@@ -157,67 +157,37 @@ interface ToExecuteMessageInterface {
  * @param nonce The message nonce
  * @param inboxAddress The Vea Inbox address
  * @param rpcInbox The RPC URL for the inbox network
- * @returns The VeaNonceToHashiMessage if executable, otherwise null
+ * @returns The HashiMessageState if executable, otherwise null
  */
 async function toExecuteMessage({
-  chainId,
-  nonce,
-  veaInboxAddress,
-  rpcInbox,
-  fetchVeaMsgTrnx = getVeaMsgTrnx,
-  fetchBridgeConfig = getBridgeConfig,
+  sourceChainId,
+  hashiMessage,
   hasThresholdMet = getMessageStatus,
-  provider = new JsonRpcProvider(rpcInbox),
-  logIFace = new Interface(messageDispatchedAbi),
-}: ToExecuteMessageInterface): Promise<VeaNonceToHashiMessage | null> {
-  const hashes = await fetchVeaMsgTrnx(nonce, veaInboxAddress);
-  const bridgeConfig = fetchBridgeConfig(chainId);
-  const yahoAddress = bridgeConfig.yahoAddress?.toLowerCase();
-  const receipt = await provider.getTransactionReceipt(hashes[0]);
-  let executeNonce: VeaNonceToHashiMessage | null = null;
-  let hashiMessage: HashiMessage | null = null;
-
-  for (const log of receipt.logs) {
-    if (log.address.toLowerCase() === yahoAddress) {
-      const logData = log.data;
-      const decodedLog = logIFace.decodeEventLog("MessageDispatched", logData, log.topics);
-      const message = decodedLog.message;
-      hashiMessage = {
-        nonce: message[0],
-        targetChainId: message[1],
-        threshold: message[2],
-        sender: message[3],
-        receiver: message[4],
-        data: message[5],
-        reporters: message[6] as string[],
-        adapters: message[7] as string[],
-      };
-      const msgStatus = await hasThresholdMet(hashiMessage);
-      if (msgStatus === HashiExecutionStatus.EXECUTABLE) {
-        executeNonce = { nonce, hashiMessage, executed: false };
-      } else if (msgStatus === HashiExecutionStatus.EXECUTED) {
-        executeNonce = { nonce, hashiMessage, executed: true };
-      }
-      break;
-    }
+}: ToExecuteMessageInterface): Promise<HashiMessageState | null> {
+  let msgState: HashiMessageState | null = null;
+  const msgStatus = await hasThresholdMet(sourceChainId, hashiMessage);
+  if (msgStatus === HashiExecutionStatus.EXECUTABLE) {
+    msgState = { hashiMessage, executable: true, status: msgStatus };
+  } else if (msgStatus === HashiExecutionStatus.EXECUTED) {
+    msgState = { hashiMessage, executable: false, status: msgStatus };
   }
-  return executeNonce;
+  return msgState;
 }
 
 /** * Get the message status for threshold and execution on Hashi.
  * @param message The HashiMessage to check
  * @returns The HashiExecutionStatus indicating if the message is executable or already executed
  */
-async function getMessageStatus(message: HashiMessage): Promise<HashiExecutionStatus> {
-  const bridgeConfig = getBridgeConfig(message.targetChainId);
+async function getMessageStatus(sourceChainId: number, message: HashiMessage): Promise<HashiExecutionStatus> {
+  const bridgeConfig = getHashiBridgeConfig(sourceChainId, message.targetChainId);
   const hashiAddress = bridgeConfig.hashiAddress;
   const yaruAddress = bridgeConfig.yaruAddress;
-  const provider = new JsonRpcProvider(bridgeConfig.rpcOutbox);
+  const provider = new JsonRpcProvider(bridgeConfig.targetRPC);
 
   // Check if msg is already executed
   const ifaceYaru = new Interface(YaruAbi);
-  const domain = BigInt(SOURCE_CHAIN_ID); // uint256
-  const id = getHashiMsgId(SOURCE_CHAIN_ID, bridgeConfig.yahoAddress!, message); // bytes32
+  const domain = BigInt(sourceChainId); // uint256
+  const id = getHashiMsgId(sourceChainId, bridgeConfig.yahoAddress!, message); // bytes32
   const threshold = BigInt(message.threshold); // uint256
   const adapters = message.adapters.map((address) => getAddress(address)); // address[]
   const iface = new Interface(thresholdViewAbi);
@@ -233,10 +203,65 @@ async function getMessageStatus(message: HashiMessage): Promise<HashiExecutionSt
     const executionData = ifaceYaru.encodeFunctionData("executed", [id]);
     const ret = await provider.call({ to: yaruAddress, data: executionData });
     const [flag] = ifaceYaru.decodeFunctionResult("executed", ret);
-    console.log("Message already executed flag:", flag);
     if (flag) return HashiExecutionStatus.EXECUTED; // already executed
   }
   return ok ? HashiExecutionStatus.EXECUTABLE : HashiExecutionStatus.THRESHOLD_NOT_MET;
+}
+
+/**
+ * Get all MessageDispatched logs from Yaho contract starting from a specific block
+ * @param provider The JsonRpcProvider instance
+ * @param yahoAddress The Yaho contract address
+ * @param fromBlock The starting block number to fetch logs from
+ * @param chunkSize The number of blocks to fetch in each chunk (default: 10,000)
+ * @param cooldownMs The cooldown time in milliseconds between chunk fetches (default: 1000ms)
+ * @returns An array of HashiMessageExecutionVars containing the logs and message details
+ */
+async function getAllMessageDispatchedLogs(
+  providerRPC: string,
+  yahoAddress: string,
+  fromBlock: number,
+  chunkSize = 10_000, // RPC’s max range
+  cooldownMs = 1000
+): Promise<DispatchedTxnData> {
+  const provider = new JsonRpcProvider(providerRPC);
+  const toBlock = await provider.getBlockNumber();
+  const iface = new Interface(messageDispatchedAbi);
+  const topic0 = iface.getEvent("MessageDispatched").topicHash;
+
+  const all: HashiMessageExecutionVars[] = [];
+
+  let start = fromBlock;
+  while (start <= toBlock) {
+    const end = Math.min(start + chunkSize - 1, toBlock);
+    const filter = {
+      address: yahoAddress,
+      fromBlock: start,
+      toBlock: end,
+      topics: [topic0],
+    };
+
+    const logs = await provider.getLogs(filter);
+    for (const log of logs) {
+      if (log.address.toLowerCase() == yahoAddress.toLocaleLowerCase()) {
+        const parsed = iface.parseLog(log);
+        const { messageId, message } = parsed.args as any;
+        all.push({
+          txHash: log.transactionHash,
+          blockNumber: log.blockNumber,
+          messageId,
+          message,
+        });
+      }
+    }
+    if (end < toBlock && cooldownMs > 0) {
+      await sleep(cooldownMs);
+    }
+    start = end + 1;
+  }
+
+  all.sort((a, b) => a.blockNumber - b.blockNumber);
+  return { txns: all, toBlock };
 }
 
 export { executeBatchOnHashi, runHashiExecutor, toExecuteMessage };

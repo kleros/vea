@@ -13,6 +13,7 @@ type Inbox @entity(immutable: true) {
 
 type Message @entity {
   id: ID!
+  inbox: Inbox! # address
   txHash: Bytes!
   timestamp: BigInt!
   from: Bytes!

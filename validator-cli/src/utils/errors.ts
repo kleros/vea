@@ -65,6 +65,14 @@ class MissingEnvError extends Error {
   }
 }
 
+class NoMessageSavedError extends Error {
+  constructor(veaInbox: string) {
+    super();
+    this.name = "NoMessageSavedError";
+    this.message = `No message saved found for inbox: ${veaInbox}`;
+  }
+}
+
 export {
   ClaimNotFoundError,
   ClaimNotSetError,
@@ -74,4 +82,5 @@ export {
   InvalidNetworkError,
   MissingEnvError,
   InvalidChainIdError,
+  NoMessageSavedError,
 };

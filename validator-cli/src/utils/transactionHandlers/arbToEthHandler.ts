@@ -1,10 +1,9 @@
-import { VeaInboxArbToEth, VeaOutboxArbToEth, VeaOutboxArbToEthDevnet } from "@kleros/vea-contracts/typechain-types";
+import { VeaInboxArbToEth, VeaOutboxArbToEth, VeaOutboxArbToEthDevnet } from "../../../../contracts/typechain-types";
 import { toBigInt } from "ethers";
 import {
   BaseTransactionHandler,
   BaseTransactionHandlerConstructor,
   ContractType,
-  TransactionStatus,
   Transaction,
   Transactions,
 } from "./baseTransactionHandler";

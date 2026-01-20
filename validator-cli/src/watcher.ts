@@ -13,8 +13,10 @@ import { CheckAndClaimParams, checkAndClaim } from "./helpers/claimer";
 import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./helpers/validator";
 import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
+import { sendHeartbeat } from "./utils/heartbeat";
 
-const RPC_BLOCK_LIMIT = 100; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
+const RPC_BLOCK_LIMIT = 1000; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
+const CYCLE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
 
 /**
  * @file This file contains the logic for watching bridge and validating/resolving for claims.
@@ -30,7 +32,9 @@ export const watch = async (
 ) => {
   initializeLogger(emitter);
   const privKey = process.env.PRIVATE_KEY;
+  const heartbeatURL = process.env.HEARTBEAT_URL;
   if (!privKey) throw new MissingEnvError("PRIVATE_KEY");
+  await sendHeartbeat("started", heartbeatURL);
   const cliCommand = process.argv;
   const { path, toSaveSnapshot } = getBotPath({ cliCommand });
   const networkConfigs = getNetworkConfig();
@@ -38,11 +42,13 @@ export const watch = async (
   const transactionHandlers: { [key: string]: any } = {};
   const toWatch: { [key: string]: { count: number; epochs: number[] } } = {};
   while (!shutDownSignal.getIsShutdownSignal()) {
+    await sendHeartbeat("running", heartbeatURL);
     for (const networkConfig of networkConfigs) {
       await processNetwork(path, toSaveSnapshot, networkConfig, transactionHandlers, toWatch, emitter);
     }
-    await wait(1000 * 10);
+    await wait(CYCLE_DELAY_MS);
   }
+  await sendHeartbeat("stopped", heartbeatURL);
 };
 
 async function processNetwork(
@@ -136,8 +142,13 @@ async function processEpochsForNetwork({
   const veaOutboxProvider = new JsonRpcProvider(outboxRPC);
   const veaRouterProvider = routerRPC ? new JsonRpcProvider(routerRPC) : undefined;
   let i = toWatch[networkKey].epochs.length - 1;
-  const latestEpoch = toWatch[networkKey].epochs[i];
+  let latestEpoch = toWatch[networkKey].epochs[i];
   const currentEpoch = Math.floor(Date.now() / (1000 * routeConfig[network].epochPeriod));
+  if (latestEpoch != currentEpoch - 1 && network != Network.DEVNET) {
+    toWatch[networkKey].epochs.push(currentEpoch - 1);
+    latestEpoch = currentEpoch - 1;
+    i++;
+  }
   // Checks and saves the snapshot if needed
   if (toSaveSnapshot) {
     const TransactionHandler = getTransactionHandler(chainId, network) as any;
@@ -173,12 +184,22 @@ async function processEpochsForNetwork({
   while (i >= 0) {
     const epoch = toWatch[networkKey].epochs[i];
     const epochBlock = await getBlockFromEpoch(epoch, routeConfig[network].epochPeriod, veaOutboxProvider);
-    const latestBlock = await veaOutboxProvider.getBlock("latest");
-    let toBlock: number | string = "latest";
+    const latestBlock = await veaOutboxProvider.getBlock("finalized");
+    let toBlock: number | string = "finalized";
     if (latestBlock.number - epochBlock > RPC_BLOCK_LIMIT) {
       toBlock = epochBlock + RPC_BLOCK_LIMIT;
     }
-    const claim = await getClaim({ chainId, veaOutbox, veaOutboxProvider, epoch, fromBlock: epochBlock, toBlock });
+    const claim = await getClaim({
+      network,
+      chainId,
+      veaOutbox,
+      veaOutboxProvider,
+      epoch,
+      fromBlock: epochBlock,
+      toBlock,
+      emitter,
+    });
+
     let updatedTransactions;
     if (path > BotPaths.CLAIMER && claim != null) {
       const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {
@@ -215,7 +236,7 @@ async function processEpochsForNetwork({
 
     if (updatedTransactions) {
       transactionHandlers[epoch] = updatedTransactions;
-    } else if (epoch != latestEpoch) {
+    } else if (epoch != currentEpoch - 1 && epoch != latestEpoch) {
       delete transactionHandlers[epoch];
       toWatch[networkKey].epochs.splice(i, 1);
     }

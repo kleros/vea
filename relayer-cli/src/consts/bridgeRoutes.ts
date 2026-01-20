@@ -1,15 +1,15 @@
 // File for handling contants and configurations
 require("dotenv").config();
-import veaInboxArbToEthDevnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json";
-import veaOutboxArbToEthDevnet from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
-import veaInboxArbToEthTestnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToEthTestnet.json";
-import veaOutboxArbToEthTestnet from "@kleros/vea-contracts/deployments/sepolia/VeaOutboxArbToEthTestnet.json";
+import veaInboxArbToEthDevnet from "../../../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json";
+import veaOutboxArbToEthDevnet from "../../../contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
+import veaInboxArbToEthTestnet from "../../../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthTestnet.json";
+import veaOutboxArbToEthTestnet from "../../../contracts/deployments/sepolia/VeaOutboxArbToEthTestnet.json";
 
-import veaInboxArbToGnosisDevnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json";
-import veaOutboxArbToGnosisDevnet from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
+import veaInboxArbToGnosisDevnet from "../../../contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisDevnet.json";
+import veaOutboxArbToGnosisDevnet from "../../../contracts/deployments/chiado/VeaOutboxArbToGnosisDevnet.json";
 
-import veaInboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisTestnet.json";
-import veaOutboxArbToGnosisTestnet from "@kleros/vea-contracts/deployments/chiado/VeaOutboxArbToGnosisTestnet.json";
+import veaInboxArbToGnosisTestnet from "../../../contracts/deployments/arbitrumSepolia/VeaInboxArbToGnosisTestnet.json";
+import veaOutboxArbToGnosisTestnet from "../../../contracts/deployments/chiado/VeaOutboxArbToGnosisTestnet.json";
 
 interface IBridge {
   chainId: number;

@@ -7,7 +7,7 @@ import {
   VeaOutboxArbToGnosis__factory,
   VeaOutboxArbToGnosisDevnet__factory,
   TransactionBatcher__factory,
-} from "@kleros/vea-contracts/typechain-types";
+} from "../../../contracts/typechain-types";
 import { getBridgeConfig, Network } from "../consts/bridgeRoutes";
 
 function getWallet(privateKey: string, web3ProviderURL: string): Wallet {

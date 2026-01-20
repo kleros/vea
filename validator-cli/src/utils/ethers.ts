@@ -9,7 +9,7 @@ import {
   IWETH__factory,
   RouterArbToGnosis__factory,
   IAMB__factory,
-} from "@kleros/vea-contracts/typechain-types";
+} from "../../../contracts/typechain-types";
 import { NotDefinedError, InvalidNetworkError } from "./errors";
 import { Network } from "../consts/bridgeRoutes";
 

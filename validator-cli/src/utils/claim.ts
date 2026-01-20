@@ -1,7 +1,6 @@
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { VeaInboxArbToEth__factory } from "@kleros/vea-contracts/typechain-types";
+import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { ethers, Interface } from "ethers";
+import { ethers } from "ethers";
 import { ClaimNotFoundError } from "./errors";
 import { getMessageStatus } from "./arbMsgExecutor";
 import {
@@ -10,6 +9,9 @@ import {
   getVerificationForClaim,
   getSnapshotSentForEpoch,
 } from "./graphQueries";
+import { defaultEmitter } from "../utils/emitter";
+import { BotEvents } from "./botEvents";
+import { Network } from "../consts/bridgeRoutes";
 
 enum ClaimHonestState {
   NONE = 0,
@@ -17,13 +19,15 @@ enum ClaimHonestState {
   CHALLENGER = 2,
 }
 
-interface ClaimParams {
+export interface ClaimParams {
+  network: Network;
   chainId: number;
   veaOutbox: any;
   veaOutboxProvider: JsonRpcProvider;
   epoch: number;
   fromBlock: number;
   toBlock: number | string;
+  emitter: typeof defaultEmitter;
   fetchClaimForEpoch?: typeof getClaimForEpoch;
   fetchVerificationForClaim?: typeof getVerificationForClaim;
   fetchChallengerForClaim?: typeof getChallengerForClaim;
@@ -36,16 +40,17 @@ interface ClaimParams {
  * @returns claim type of ClaimStruct
  */
 const getClaim = async ({
+  network,
   chainId,
   veaOutbox,
   veaOutboxProvider,
   epoch,
   fromBlock,
   toBlock,
-  fetchChallengerForClaim = getChallengerForClaim,
+  emitter,
   fetchClaimForEpoch = getClaimForEpoch,
-  fetchVerificationForClaim = getVerificationForClaim,
 }: ClaimParams): Promise<ClaimStruct | null> => {
+  let isFallbackUsed = false;
   let claim: ClaimStruct = {
     stateRoot: ethers.ZeroHash,
     claimer: ethers.ZeroAddress,
@@ -60,8 +65,8 @@ const getClaim = async ({
   try {
     const [claimLogs, challengeLogs, verificationLogs] = await Promise.all([
       veaOutbox.queryFilter(veaOutbox.filters.Claimed(null, epoch, null), fromBlock, toBlock),
-      veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null), fromBlock, toBlock),
-      veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch), fromBlock, toBlock),
+      veaOutbox.queryFilter(veaOutbox.filters.Challenged(epoch, null)),
+      veaOutbox.queryFilter(veaOutbox.filters.VerificationStarted(epoch)),
     ]);
     claim.stateRoot = claimLogs[0].data;
     claim.claimer = `0x${claimLogs[0].topics[1].slice(26)}`;
@@ -72,34 +77,51 @@ const getClaim = async ({
     }
     if (challengeLogs.length > 0) claim.challenger = "0x" + challengeLogs[0].topics[2].substring(26);
   } catch {
+    isFallbackUsed = true;
     const claimFromGraph = await fetchClaimForEpoch(epoch, await veaOutbox.getAddress(), chainId);
-    if (!claimFromGraph) throw new ClaimNotFoundError(epoch);
-    const [verificationFromGraph, challengeFromGraph] = await Promise.all([
-      fetchVerificationForClaim(claimFromGraph.id, chainId),
-      fetchChallengerForClaim(claimFromGraph.id, chainId),
-    ]);
+    if (!claimFromGraph) {
+      emitter.emit(BotEvents.NO_CLAIM_FETCHED, epoch, fromBlock, toBlock);
+      throw new ClaimNotFoundError(epoch);
+    }
+
     claim.stateRoot = claimFromGraph.stateroot;
     claim.claimer = claimFromGraph.bridger;
     claim.timestampClaimed = claimFromGraph.timestamp;
-    if (verificationFromGraph?.startTimestamp) {
-      claim.timestampVerification = verificationFromGraph.startTimestamp;
-      const startVerificationTxHash = verificationFromGraph.startTxHash;
+    if (claimFromGraph.verification?.startTimestamp) {
+      claim.timestampVerification = claimFromGraph.verification.startTimestamp;
+      const startVerificationTxHash = claimFromGraph.verification.startTxHash;
       const txReceipt = await veaOutboxProvider.getTransactionReceipt(startVerificationTxHash);
       claim.blocknumberVerification = txReceipt.blockNumber;
     }
-    if (challengeFromGraph) claim.challenger = challengeFromGraph.challenger;
+    if (claimFromGraph.challenge) claim.challenger = claimFromGraph.challenge.challenger;
   }
-  if (hashClaim(claim) == claimHash) {
+  const isValid = verifyClaimHash({ claim, claimHash });
+  if (isValid) {
     return claim;
   }
-  claim.honest = ClaimHonestState.CLAIMER; // Assuming claimer is honest
-  if (hashClaim(claim) == claimHash) {
-    return claim;
+  if (!isFallbackUsed) {
+    const claimFromGraph = await fetchClaimForEpoch(epoch, await veaOutbox.getAddress(), chainId);
+    if (!claimFromGraph) {
+      emitter.emit(BotEvents.NO_CLAIM_FETCHED, epoch, fromBlock, toBlock);
+      throw new ClaimNotFoundError(epoch);
+    }
+    claim.honest = ClaimHonestState.NONE;
+    claim.stateRoot = claimFromGraph.stateroot;
+    claim.claimer = claimFromGraph.bridger;
+    claim.timestampClaimed = claimFromGraph.timestamp;
+    if (claimFromGraph.verification?.startTimestamp) {
+      claim.timestampVerification = claimFromGraph.verification.startTimestamp;
+      const startVerificationTxHash = claimFromGraph.verification.startTxHash;
+      const txReceipt = await veaOutboxProvider.getTransactionReceipt(startVerificationTxHash);
+      claim.blocknumberVerification = txReceipt.blockNumber;
+    }
+    if (claimFromGraph.challenge) claim.challenger = claimFromGraph.challenge.challenger;
+    const isValidFromGraph = verifyClaimHash({ claim, claimHash });
+    if (isValidFromGraph) {
+      return claim;
+    }
   }
-  claim.honest = ClaimHonestState.CHALLENGER; // Assuming challenger is honest
-  if (hashClaim(claim) == claimHash) {
-    return claim;
-  }
+  emitter.emit(BotEvents.CLAIM_MISMATCH, epoch);
   throw new ClaimNotFoundError(epoch);
 };
 
@@ -210,6 +232,27 @@ const getClaimResolveState = async ({
   return claimResolveState;
 };
 
+const verifyClaimHash = ({ claim, claimHash }: { claim: ClaimStruct; claimHash: string }): boolean => {
+  if (hashClaim(claim) === claimHash) {
+    return true;
+  }
+  // try with honest = CLAIMER
+  {
+    const claimWithClaimerHonest: ClaimStruct = { ...claim, honest: ClaimHonestState.CLAIMER };
+    if (hashClaim(claimWithClaimerHonest) === claimHash) {
+      return true;
+    }
+  }
+  // try with honest = CHALLENGER
+  {
+    const claimWithChallengerHonest: ClaimStruct = { ...claim, honest: ClaimHonestState.CHALLENGER };
+    if (hashClaim(claimWithChallengerHonest) === claimHash) {
+      return true;
+    }
+  }
+  return false;
+};
+
 /**
  * Hashes the claim data.
  *
@@ -233,7 +276,11 @@ const hashClaim = (claim: ClaimStruct) => {
   );
 };
 
-const getSentSnapshotData = async (txHash: string, provider: JsonRpcProvider, inboxInterface: any): Promise<string> => {
+const getSentSnapshotData = async (
+  txHash: string,
+  provider: JsonRpcProvider,
+  inboxInterface: any
+): Promise<string | null> => {
   const tx = await provider.getTransaction(txHash);
   if (!tx) return null;
 

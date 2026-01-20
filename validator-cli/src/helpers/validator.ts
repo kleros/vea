@@ -6,7 +6,7 @@ import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
 import { Network } from "../consts/bridgeRoutes";
-import { ClaimStruct } from "@kleros/vea-contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { getBlockFromEpoch } from "../utils/epochHandler";
 
 export interface ChallengeAndResolveClaimParams {
@@ -50,13 +50,14 @@ export async function challengeAndResolveClaim({
     return null;
   }
   const queryRpc = veaRouterProvider ?? veaOutboxProvider;
-  const [arbitrumBlock, , finalityIssueFlagEth] = await fetchBlocksAndCheckFinality(
-    queryRpc,
-    veaInboxProvider,
-    epoch,
-    epochPeriod
-  );
-  const ethBlockTag = finalityIssueFlagEth ? "finalized" : "latest";
+  const res = await fetchBlocksAndCheckFinality(queryRpc, veaInboxProvider, epoch, epochPeriod, emitter);
+  const [arbitrumBlock, , finalityIssueFlagArb, finalityIssueFlagEth] = res;
+  if (res === undefined || finalityIssueFlagArb || finalityIssueFlagEth) {
+    emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
+    return null;
+  }
+  const ethBlockTag = "finalized";
+
   if (!transactionHandler) {
     const TransactionHandler = fetchTransactionHandler(chainId, Network.TESTNET);
     transactionHandler = new TransactionHandler({

@@ -1,15 +1,14 @@
 import request from "graphql-request";
-import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "@kleros/vea-contracts/typechain-types";
+import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "../../../contracts/typechain-types";
 
 async function getVeaMsgTrnx(nonce: number, inboxAddress: string) {
-  console.log(`Fetching transaction hashes for nonce ${nonce} from inbox ${inboxAddress}`);
   try {
     const subgraph = process.env.RELAYER_SUBGRAPH;
     const query = `{messageSents(first: 1, where: {nonce: ${nonce}, inbox: "${inboxAddress}"}) {
     id
     transactionHash
   }}`;
-    const result = (await request(`https://api.studio.thegraph.com/query/${subgraph}`, query)) as {
+    const result = (await request(subgraph, query)) as {
       messageSents: { id: string; transactionHash: string }[];
     };
     return result.messageSents.map((trnx) => trnx.transactionHash);
@@ -33,7 +32,7 @@ const getCount = async (veaOutbox: VeaOutboxArbToEth | VeaOutboxArbToGnosis, cha
   const stateRoot = await veaOutbox.stateRoot();
 
   const result = (await request(
-    `https://api.studio.thegraph.com/query/${subgraph}`,
+    subgraph,
     `{
       snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
         count
@@ -65,7 +64,7 @@ const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSe
   const subgraph = process.env.RELAYER_SUBGRAPH;
 
   const result = (await request(
-    `https://api.studio.thegraph.com/query/${subgraph}`,
+    subgraph,
     `{
         messageSents(
           first: 1000, 

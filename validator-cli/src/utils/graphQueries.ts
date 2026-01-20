@@ -1,17 +1,21 @@
 import request from "graphql-request";
-import { ClaimNotFoundError } from "./errors";
+import { ClaimNotFoundError, NoMessageSavedError } from "./errors";
+import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
+import { ethers } from "ethers";
 
 interface ClaimData {
+  epoch?: number;
   id: string;
   bridger: string;
   stateroot: string;
   timestamp: number;
   challenged: boolean;
   txHash: string;
-  verification: {
-    timestamp: number;
+  verification?: {
+    startTimestamp: number;
+    startTxHash: string;
   };
-  challenge: {
+  challenge?: {
     challenger: string;
   };
 }
@@ -48,7 +52,13 @@ const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number):
                         stateroot
                         timestamp
                         txHash
-                        challenged
+                        verification {
+                          startTimestamp
+                          startTxHash
+                        }
+                        challenge {
+                          challenger
+                        }
                       }
           }`
     );
@@ -56,6 +66,63 @@ const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number):
   } catch (e) {
     console.log(e);
     throw new ClaimNotFoundError(epoch);
+  }
+};
+
+/** Fetches the claims data for a given list of epochs (used for claimer - happy path)
+ * @param epochs
+ * @param outbox
+ * @param chainId
+ * @returns ClaimData[]
+ * */
+const getClaimsForEpochs = async (
+  epochs: number[],
+  outbox: string,
+  chainId: number
+): Promise<Map<number, ClaimStruct | null>> => {
+  try {
+    const subgraph = getOutboxSubgraphUrl(chainId);
+    const epochsString = epochs.join(", ");
+    const query = `{
+      claims(where: {epoch_in: [${epochsString}], outbox: "${outbox}"}) {
+        id
+        bridger
+        stateroot
+        timestamp
+        txHash
+        verification {
+          startTimestamp
+          startTxHash
+        }
+        challenge {
+          challenger
+        }
+        epoch
+      }
+    }`;
+
+    const result: { claims: ClaimData[] } = await request(subgraph, query);
+    // Map returned claims to corresponding epochs (some epochs may not have claims)
+    const claimsByEpoch = new Map<number, ClaimStruct | null>();
+    for (const claim of result.claims) {
+      if (claim.stateroot === ethers.ZeroHash) {
+        claimsByEpoch.set(claim.epoch, null);
+        continue;
+      }
+      claimsByEpoch.set(claim.epoch, {
+        stateRoot: claim.stateroot,
+        claimer: claim.bridger,
+        timestampClaimed: claim.timestamp,
+        timestampVerification: claim.verification?.startTimestamp || 0,
+        blocknumberVerification: 0, // This would require additional data to fill accurately
+        honest: 0, // Placeholder, as this data isn't available in the current query
+        challenger: claim.challenge?.challenger || ethers.ZeroAddress,
+      });
+    }
+    return claimsByEpoch;
+  } catch (e) {
+    console.log(e);
+    throw new Error(`Claims not found for epochs: ${epochs.join(", ")}`);
   }
 };
 
@@ -175,12 +242,12 @@ const getSnapshotSentForEpoch = async (
   }
 };
 
-type SnapshotSavedResponse = {
-  snapshots: {
-    stateRoot: string;
-    messages: {
-      id: string;
-    }[];
+type LastMessageSavedResponse = {
+  messages: {
+    id: string;
+    snapshot: {
+      stateRoot: string;
+    };
   }[];
 };
 
@@ -189,21 +256,29 @@ type SnapshotSavedResponse = {
  * @param veaInbox
  * @returns message id
  */
-const getLastMessageSaved = async (veaInbox: string, chainId: number): Promise<{ id: string; stateRoot: string }> => {
+const getLastMessageSaved = async (
+  veaInbox: string,
+  chainId: number
+): Promise<{ id: string; stateRoot: string } | null> => {
   const subgraph = getInboxSubgraphUrl(chainId);
-  const result: SnapshotSavedResponse = await request(
-    `${subgraph}`,
-    `{
-      snapshots(first:2, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox}"}) {
-        stateRoot
-        messages(first: 1,orderBy:timestamp,orderDirection:desc){
-          id 
+  try {
+    const result: LastMessageSavedResponse = await request(
+      `${subgraph}`,
+      `{
+      messages(first:1, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox.toLowerCase()}"}) {
+        id
+        snapshot{
+          stateRoot
         }
       }
     }`
-  );
-  if (result.snapshots.length < 2 || result.snapshots[1].messages.length === 0) return;
-  return { id: result.snapshots[1].messages[0].id, stateRoot: result.snapshots[1].stateRoot };
+    );
+    if (result.messages.length < 1) return null;
+    return { id: result.messages[0].id, stateRoot: result.messages[0].snapshot.stateRoot };
+  } catch (e) {
+    console.log(e);
+    throw new NoMessageSavedError(veaInbox);
+  }
 };
 
 export {
@@ -214,4 +289,5 @@ export {
   getSnapshotSentForEpoch,
   getLastMessageSaved,
   ClaimData,
+  getClaimsForEpochs,
 };

@@ -1,10 +1,4 @@
-import {
-  Address,
-  BigInt,
-  ByteArray,
-  Bytes,
-  dataSource,
-} from "@graphprotocol/graph-ts";
+import { Address, BigInt, ByteArray, Bytes } from "@graphprotocol/graph-ts";
 import { Snapshot, Message, Ref, Fallback, Inbox } from "../generated/schema";
 import {
   MessageSent,
@@ -26,19 +20,20 @@ export function handleMessageSent(event: MessageSent): void {
   const messageIndex = useNextMessageIndex(event.address);
   const messageId = event.address.toHexString() + "-" + messageIndex.toString();
   const message = new Message(messageId);
+  message.inbox = inbox.id;
   message.snapshot = snapshot.id;
   message.txHash = event.transaction.hash;
   message.timestamp = event.block.timestamp;
   const msgData = event.params._nodeData;
-  const _to = new ByteArray(20);
+  let _to = new ByteArray(20);
   for (let i = 0; i < 20; i++) _to[i] = msgData[i + 8];
 
-  const dataLength = msgData.length - 28;
-  const _data = new ByteArray(dataLength);
-  for (let i = 0; i < dataLength; i++) _data[i] = msgData[i + 28];
+  let _msgSender = new ByteArray(20);
+  for (let i = 0; i < 20; i++) _msgSender[i] = msgData[i + 28];
 
-  const _msgSender = new ByteArray(20);
-  for (let i = 0; i < 20; i++) _msgSender[i] = _data[i + 16];
+  let dataLength = msgData.length - 48;
+  let _data = new ByteArray(dataLength);
+  for (let i = 0; i < dataLength; i++) _data[i] = msgData[i + 48];
 
   message.from = Bytes.fromByteArray(_msgSender);
   message.to = Bytes.fromByteArray(_to);

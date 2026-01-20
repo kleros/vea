@@ -4,16 +4,20 @@ A collection of bots for the Vea challenger and bridger ecosystem.
 
 - src/watcher.ts
 
-# pm2
+# docker
 
-`pm2 start`
+`docker compose build validator`
 
-By default, the watcher performs two core functions:
+`docker compose up validator`
 
-- Bridger: Submits stored snapshots to the fast bridge receiver.
-- Challenger: Challenges any detected invalid claims.
+By default, the validator performs two core functions:
+
+- Bridger: Saves snapshots, submits stored snapshots to the fast bridge receiver.
+- Challenger: Challenges any detected invalid claims and relays the correct snapshot.
 
 # flags
+
+Update Dockerfile for passing different flags
 
 `--saveSnapshot`
 
@@ -24,13 +28,3 @@ Enables snapshot saving on the inbox when the bot observes a valid state.
 - challenger: Only challenge invalid claims
 - bridger: Only submit snapshots
 - both: Default mode, acts as both challenger and bridger
-
-# Example usage
-
-Run as both challenger and bridger with snapshots enabled:
-
-`pm2 start -- --saveSnapshot`
-
-Run only as challenger:
-
-`pm2 start dist/watcher.js -- --path=challenger`
