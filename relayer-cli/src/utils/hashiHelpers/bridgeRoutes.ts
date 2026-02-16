@@ -37,6 +37,15 @@ const hashiBridges: { [chainPair: string]: IHashiBridge } = {
     yaruAddress: "0x43017e1d9f66f7E7Be4055CFf6a490F57aF9b8De", // Hashi (Yaru) contract address on Arbitrum One
     hashiAddress: "0x84757602e211E2B2afFB6b1a171f9B05E9Ef0a66", // Hashi (Hashi) contract address on Arbitrum One
   },
+  "42161-1514": {
+    sourceChainId: 42161,
+    targetChainId: 1514,
+    sourceRPC: process.env.RPC_ARBITRUM_ONE!,
+    targetRPC: process.env.RPC_STORY!,
+    yahoAddress: "0xD0375320591ff87797CEb03CBeE80C82fD61BC77", // Hashi (Yaho) contract address on Arbitrum One
+    yaruAddress: "0x5f629f27BA26E17e7E309D886A8490d9e0124bd1", // Hashi (Yaru) contract address on Story
+    hashiAddress: "0xDdb3cBE1EBdF9095618913C90383AD33d5170C32", // Hashi (Hashi) contract address on Story
+  },
 };
 
 export const getHashiBridgeConfig = (sourceChainId: number, targetChainId: number): IHashiBridge | undefined => {
