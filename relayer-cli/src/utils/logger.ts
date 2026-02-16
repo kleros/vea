@@ -2,18 +2,13 @@ import { EventEmitter } from "node:events";
 import pino from "pino";
 import { BotEvents } from "./botEvents";
 
-const logtailToken = process.env.LOGTAIL_TOKEN;
+const localDeploy = process.env.LOCAL_DEPLOY === "true";
 
 const loggerOptions = {
   level: "debug",
   base: { service: "Vea" },
-  transport: logtailToken
-    ? {
-        target: "@logtail/pino",
-        options: {
-          sourceToken: logtailToken,
-        },
-      }
+  transport: !localDeploy
+    ? undefined
     : {
         target: "pino-pretty",
         options: {
@@ -95,5 +90,8 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   });
   emitter.on(BotEvents.HASHI_BATCH_TXN, (txHash, batchSize) => {
     logger.debug({ txHash, batchSize }, "hashi_batch_txn");
+  });
+  emitter.on(BotEvents.HASHI_MESSAGE_FAILING, (nonce, sourceChainId, targetChainId) => {
+    logger.warn({ nonce, sourceChainId, targetChainId }, "hashi_message_failing");
   });
 };

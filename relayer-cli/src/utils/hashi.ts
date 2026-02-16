@@ -133,16 +133,33 @@ async function executeBatchOnHashi(
           adapters,
         };
       });
-
+    cursor += chunk.length;
     if (messages.length === 0) {
-      cursor += chunk.length;
       continue;
     }
 
-    const tx = await yaru.executeMessages(messages);
+    // Check if the filtered messages are executable before sending the transaction
+    const filteredMessages = [];
+    for (const message of messages) {
+      try {
+        await yaru.executeMessages.staticCall([message]);
+        filteredMessages.push(message);
+      } catch {
+        emitter.emit(
+          BotEvents.HASHI_MESSAGE_FAILING,
+          message.nonce.toString(),
+          sourceChainId.toString(),
+          targetChainId.toString()
+        );
+      }
+    }
+
+    if (filteredMessages.length === 0) {
+      continue;
+    }
+    const tx = await yaru.executeMessages(filteredMessages);
     const receipt = await tx.wait();
-    emitter.emit(BotEvents.HASHI_BATCH_TXN, receipt.hash, messages.length);
-    cursor += chunk.length;
+    emitter.emit(BotEvents.HASHI_BATCH_TXN, receipt.hash, filteredMessages.length);
   }
 }
 
@@ -225,7 +242,8 @@ async function getAllMessageDispatchedLogs(
   cooldownMs = 1000
 ): Promise<DispatchedTxnData> {
   const provider = new JsonRpcProvider(providerRPC);
-  const toBlock = await provider.getBlockNumber();
+  // const toBlock = await provider.getBlockNumber();
+  const toBlock = fromBlock + chunkSize - 1; // Limit to chunk size for initial fetch to avoid fetching too many logs at once
   const iface = new Interface(messageDispatchedAbi);
   const topic0 = iface.getEvent("MessageDispatched").topicHash;
 
