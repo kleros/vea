@@ -824,6 +824,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainlink/contracts-ccip@npm:^0.7.6":
+  version: 0.7.6
+  resolution: "@chainlink/contracts-ccip@npm:0.7.6"
+  dependencies:
+    "@eth-optimism/contracts": "npm:^0.5.21"
+    "@openzeppelin/contracts": "npm:~4.3.3"
+    "@openzeppelin/contracts-upgradeable-4.7.3": "npm:@openzeppelin/contracts-upgradeable@v4.7.3"
+    "@openzeppelin/contracts-v0.7": "npm:@openzeppelin/contracts@v3.4.2"
+  checksum: 10/1a2daf828c72ad0ff192d3c9c0d8517be17fc4e6c44db5d90a4f40a7a7104844d184ad2cc0873acdaee7b8cb020d343dadd1d9cb883de90c1f60ec37bcc68d34
+  languageName: node
+  linkType: hard
+
 "@chainsafe/is-ip@npm:^2.0.1":
   version: 2.1.0
   resolution: "@chainsafe/is-ip@npm:2.1.0"
@@ -1179,6 +1191,43 @@ __metadata:
   version: 8.57.1
   resolution: "@eslint/js@npm:8.57.1"
   checksum: 10/7562b21be10c2adbfa4aa5bb2eccec2cb9ac649a3569560742202c8d1cb6c931ce634937a2f0f551e078403a1c1285d6c2c0aa345dafc986149665cd69fe8b59
+  languageName: node
+  linkType: hard
+
+"@eth-optimism/contracts@npm:^0.5.21":
+  version: 0.5.40
+  resolution: "@eth-optimism/contracts@npm:0.5.40"
+  dependencies:
+    "@eth-optimism/core-utils": "npm:0.12.0"
+    "@ethersproject/abstract-provider": "npm:^5.7.0"
+    "@ethersproject/abstract-signer": "npm:^5.7.0"
+  peerDependencies:
+    ethers: ^5
+  checksum: 10/5333f7d5792ad7c656202ce6e9e875993da7423b670f3da5e1cee9330d6c29b4f102ecc2fee06ca353381a2e603485e8a883e8a3979218effec2ead84f46e9a2
+  languageName: node
+  linkType: hard
+
+"@eth-optimism/core-utils@npm:0.12.0":
+  version: 0.12.0
+  resolution: "@eth-optimism/core-utils@npm:0.12.0"
+  dependencies:
+    "@ethersproject/abi": "npm:^5.7.0"
+    "@ethersproject/abstract-provider": "npm:^5.7.0"
+    "@ethersproject/address": "npm:^5.7.0"
+    "@ethersproject/bignumber": "npm:^5.7.0"
+    "@ethersproject/bytes": "npm:^5.7.0"
+    "@ethersproject/constants": "npm:^5.7.0"
+    "@ethersproject/contracts": "npm:^5.7.0"
+    "@ethersproject/hash": "npm:^5.7.0"
+    "@ethersproject/keccak256": "npm:^5.7.0"
+    "@ethersproject/properties": "npm:^5.7.0"
+    "@ethersproject/providers": "npm:^5.7.0"
+    "@ethersproject/rlp": "npm:^5.7.0"
+    "@ethersproject/transactions": "npm:^5.7.0"
+    "@ethersproject/web": "npm:^5.7.0"
+    bufio: "npm:^1.0.7"
+    chai: "npm:^4.3.4"
+  checksum: 10/a7ea17a8b529b2c86b00ef19fa562c2b792d7e8a4071defea4d8a8b82a101105a3ab6dc86361118e17bf9b4784b4eca9c1e937c8b1e7294a1a850f97b5a73a10
   languageName: node
   linkType: hard
 
@@ -1703,7 +1752,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/providers@npm:5.8.0, @ethersproject/providers@npm:^5.7.2":
+"@ethersproject/providers@npm:5.8.0, @ethersproject/providers@npm:^5.7.0, @ethersproject/providers@npm:^5.7.2":
   version: 5.8.0
   resolution: "@ethersproject/providers@npm:5.8.0"
   dependencies:
@@ -4163,6 +4212,54 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@layerzerolabs/lz-evm-messagelib-v2@npm:^2.3.44":
+  version: 2.3.44
+  resolution: "@layerzerolabs/lz-evm-messagelib-v2@npm:2.3.44"
+  peerDependencies:
+    "@arbitrum/nitro-contracts": ^1.1.0
+    "@axelar-network/axelar-gmp-sdk-solidity": ^5.6.4
+    "@chainlink/contracts-ccip": ^0.7.6
+    "@eth-optimism/contracts": ^0.6.0
+    "@layerzerolabs/lz-evm-protocol-v2": ^2.3.44
+    "@layerzerolabs/lz-evm-v1-0.7": ^2.3.44
+    "@openzeppelin/contracts": ^4.8.1 || ^5.0.0
+    "@openzeppelin/contracts-upgradeable": ^4.8.1 || ^5.0.0
+    hardhat-deploy: ^0.12.4
+    solidity-bytes-utils: ^0.8.0
+  peerDependenciesMeta:
+    "@arbitrum/nitro-contracts":
+      optional: true
+  checksum: 10/66f31269e1e88a6c627f13217816beb9e22f45b2d26694d7394b250b2101761b7e10f1aae447ccc28b0a876c761b47f307dc74708716c9f0a202e0f0a99cbcd0
+  languageName: node
+  linkType: hard
+
+"@layerzerolabs/lz-evm-oapp-v2@npm:^2.3.44":
+  version: 2.3.44
+  resolution: "@layerzerolabs/lz-evm-oapp-v2@npm:2.3.44"
+  peerDependencies:
+    "@layerzerolabs/lz-evm-messagelib-v2": ^2.3.44
+    "@layerzerolabs/lz-evm-protocol-v2": ^2.3.44
+    "@layerzerolabs/lz-evm-v1-0.7": ^2.3.44
+    "@openzeppelin/contracts": ^4.8.1 || ^5.0.0
+    "@openzeppelin/contracts-upgradeable": ^4.8.1 || ^5.0.0
+    hardhat-deploy: ^0.12.4
+    solidity-bytes-utils: ^0.8.0
+  checksum: 10/da947fc75e0483e1073611dfa2be43fccef13803f06afe2882b4b7787bef2fa36de35b4b5fdb3272fd0c0f0e8b728d8c87ce5bbbd69197b418d522df7391b667
+  languageName: node
+  linkType: hard
+
+"@layerzerolabs/lz-evm-protocol-v2@npm:^2.3.44":
+  version: 2.3.44
+  resolution: "@layerzerolabs/lz-evm-protocol-v2@npm:2.3.44"
+  peerDependencies:
+    "@openzeppelin/contracts": ^4.8.1 || ^5.0.0
+    "@openzeppelin/contracts-upgradeable": ^4.8.1 || ^5.0.0
+    hardhat-deploy: ^0.12.4
+    solidity-bytes-utils: ^0.8.0
+  checksum: 10/457395260879bb36d83dc524c3725eeb6b3bc7f87bcf167350173f8701e839a1d1fd1fc60089fcb0fb4124084d2a815e17bd808ab0a26ea6794c6f157aa51cd6
+  languageName: node
+  linkType: hard
+
 "@leichtgewicht/ip-codec@npm:^2.0.1":
   version: 2.0.5
   resolution: "@leichtgewicht/ip-codec@npm:2.0.5"
@@ -4792,10 +4889,38 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openzeppelin/contracts-upgradeable-4.7.3@npm:@openzeppelin/contracts-upgradeable@v4.7.3":
+  version: 4.7.3
+  resolution: "@openzeppelin/contracts-upgradeable@npm:4.7.3"
+  checksum: 10/7c72ffeca867478b5aa8e8c7adb3d1ce114cfdc797ed4f3cd074788cf4da25d620ffffd624ac7e9d1223eecffeea9f7b79200ff70dc464cc828c470ccd12ddf1
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts-v0.7@npm:@openzeppelin/contracts@v3.4.2":
+  version: 3.4.2
+  resolution: "@openzeppelin/contracts@npm:3.4.2"
+  checksum: 10/e803e322bd111565e2de742c62f1a598c7c7dd7385c1c0fe3c06e2b4913e599024ad1d32e2693f199f5230af4d9b0eeefb389f32740006312895b962a4d937d4
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts@npm:4.9.6":
+  version: 4.9.6
+  resolution: "@openzeppelin/contracts@npm:4.9.6"
+  checksum: 10/71f45ad42e68c0559be4ba502115462a01c76fc805c08d3005c10b5550a093f1a2b00b2d7e9d6d1f331e147c50fd4ad832f71c4470ec5b34f5a2d0751cd19a47
+  languageName: node
+  linkType: hard
+
 "@openzeppelin/contracts@npm:^5.2.0":
   version: 5.3.0
   resolution: "@openzeppelin/contracts@npm:5.3.0"
   checksum: 10/d1b379a56eb443b6ba2caee51f38bd3e2d5be2d3b2c935a083ed3311c106aa3903d7cadd05457999b24175bb80cc405dd6c70297c9825b15471b38051021fd88
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts@npm:~4.3.3":
+  version: 4.3.3
+  resolution: "@openzeppelin/contracts@npm:4.3.3"
+  checksum: 10/14fb7f3807054033671562165086ac4d1a500cf2068a6eadad16cbeb443df508a659cc658d91bf3ea0aea64920048cc26a7ad7d2a4f7844671e3084a4fc5cf0b
   languageName: node
   linkType: hard
 
@@ -8488,6 +8613,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bufio@npm:^1.0.7":
+  version: 1.2.3
+  resolution: "bufio@npm:1.2.3"
+  checksum: 10/9a79112cdba23d1a319c688b4a53af75dcae27e462915536883ec458a45e6b589f5bb01693e09eba2def1e5f89005d11084d6dcf733d2d5f96007a6d95a42c58
+  languageName: node
+  linkType: hard
+
 "bundle-name@npm:^4.1.0":
   version: 4.1.0
   resolution: "bundle-name@npm:4.1.0"
@@ -8688,7 +8820,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chai@npm:^4.5.0":
+"chai@npm:^4.3.4, chai@npm:^4.5.0":
   version: 4.5.0
   resolution: "chai@npm:4.5.0"
   dependencies:
@@ -19404,6 +19536,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"solidity-bytes-utils@npm:^0.8.4":
+  version: 0.8.4
+  resolution: "solidity-bytes-utils@npm:0.8.4"
+  checksum: 10/a05aac090c9b943c2db7492b48cd7660a4f8b8614c0653046b21d45f6e9037cbd520319e82d707556c8c05a79a00b533aef1396b38ec4c6e71baffbe837d4d1d
+  languageName: node
+  linkType: hard
+
 "solidity-coverage@npm:^0.8.16":
   version: 0.8.16
   resolution: "solidity-coverage@npm:0.8.16"
@@ -19432,6 +19571,13 @@ __metadata:
   bin:
     solidity-coverage: plugins/bin.js
   checksum: 10/e63355e9ddfa9e998df1e63c2d790ec17896786554cb84f9d2cd6340dd471dd082806a169f42d64f80b52f4d695bdb8a01af8e675bd5cfa1683062df77d1e1fa
+  languageName: node
+  linkType: hard
+
+"solidity-rlp@npm:^2.0.8":
+  version: 2.0.8
+  resolution: "solidity-rlp@npm:2.0.8"
+  checksum: 10/4bcc1a2e405bc676342dc4f076aeb14bc2c4069a045ef9231b513403f28e8a415025fd4f6e0f6b55a507ef5069ba4e3bf2a47c6560f9ece02eff099a487c3071
   languageName: node
   linkType: hard
 
@@ -21094,6 +21240,20 @@ __metadata:
     prettier: "npm:^2.8.8"
     prettier-plugin-solidity: "npm:^1.4.2"
     solhint-plugin-prettier: "npm:^0.1.0"
+  languageName: unknown
+  linkType: soft
+
+"veashi-contracts@workspace:veashi-contracts":
+  version: 0.0.0-use.local
+  resolution: "veashi-contracts@workspace:veashi-contracts"
+  dependencies:
+    "@chainlink/contracts-ccip": "npm:^0.7.6"
+    "@layerzerolabs/lz-evm-messagelib-v2": "npm:^2.3.44"
+    "@layerzerolabs/lz-evm-oapp-v2": "npm:^2.3.44"
+    "@layerzerolabs/lz-evm-protocol-v2": "npm:^2.3.44"
+    "@openzeppelin/contracts": "npm:4.9.6"
+    solidity-bytes-utils: "npm:^0.8.4"
+    solidity-rlp: "npm:^2.0.8"
   languageName: unknown
   linkType: soft
 
