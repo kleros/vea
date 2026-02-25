@@ -1,0 +1,9 @@
+[submodule "veashi-contracts/lib/forge-std"]
+	path = veashi-contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "veashi-contracts/lib/hashi"]
+	path = veashi-contracts/lib/hashi
+	url = https://github.com/gnosis/hashi
+[submodule "veashi-contracts/lib/openzeppelin-contracts"]
+	path = veashi-contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
