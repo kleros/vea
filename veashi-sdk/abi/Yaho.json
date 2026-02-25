@@ -1,0 +1,504 @@
+[
+  {
+    "type": "function",
+    "name": "calculateMessageHash",
+    "inputs": [
+      {
+        "name": "message",
+        "type": "tuple",
+        "internalType": "struct Message",
+        "components": [
+          {
+            "name": "nonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "targetChainId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "threshold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "receiver",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "reporters",
+            "type": "address[]",
+            "internalType": "contract IReporter[]"
+          },
+          {
+            "name": "adapters",
+            "type": "address[]",
+            "internalType": "contract IAdapter[]"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "calculateMessageId",
+    "inputs": [
+      {
+        "name": "sourceChainId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "dispatcherAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "messageHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "currentNonce",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "dispatchMessage",
+    "inputs": [
+      {
+        "name": "targetChainId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "threshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "receiver",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "reporters",
+        "type": "address[]",
+        "internalType": "contract IReporter[]"
+      },
+      {
+        "name": "adapters",
+        "type": "address[]",
+        "internalType": "contract IAdapter[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "dispatchMessageToAdapters",
+    "inputs": [
+      {
+        "name": "targetChainId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "threshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "receiver",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "reporters",
+        "type": "address[]",
+        "internalType": "contract IReporter[]"
+      },
+      {
+        "name": "adapters",
+        "type": "address[]",
+        "internalType": "contract IAdapter[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "dispatchMessagesToAdapters",
+    "inputs": [
+      {
+        "name": "targetChainId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "thresholds",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      },
+      {
+        "name": "receivers",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "data",
+        "type": "bytes[]",
+        "internalType": "bytes[]"
+      },
+      {
+        "name": "reporters",
+        "type": "address[]",
+        "internalType": "contract IReporter[]"
+      },
+      {
+        "name": "adapters",
+        "type": "address[]",
+        "internalType": "contract IAdapter[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      },
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "getPendingMessageHash",
+    "inputs": [
+      {
+        "name": "messageId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "relayMessagesToAdapters",
+    "inputs": [
+      {
+        "name": "messages",
+        "type": "tuple[]",
+        "internalType": "struct Message[]",
+        "components": [
+          {
+            "name": "nonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "targetChainId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "threshold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "receiver",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "reporters",
+            "type": "address[]",
+            "internalType": "contract IReporter[]"
+          },
+          {
+            "name": "adapters",
+            "type": "address[]",
+            "internalType": "contract IAdapter[]"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "event",
+    "name": "MessageDispatched",
+    "inputs": [
+      {
+        "name": "messageId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "message",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct Message",
+        "components": [
+          {
+            "name": "nonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "targetChainId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "threshold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "receiver",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "reporters",
+            "type": "address[]",
+            "internalType": "contract IReporter[]"
+          },
+          {
+            "name": "adapters",
+            "type": "address[]",
+            "internalType": "contract IAdapter[]"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "InvalidMessage",
+    "inputs": [
+      {
+        "name": "message",
+        "type": "tuple",
+        "internalType": "struct Message",
+        "components": [
+          {
+            "name": "nonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "targetChainId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "threshold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "receiver",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "reporters",
+            "type": "address[]",
+            "internalType": "contract IReporter[]"
+          },
+          {
+            "name": "adapters",
+            "type": "address[]",
+            "internalType": "contract IAdapter[]"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidThreshold",
+    "inputs": [
+      {
+        "name": "threshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxThreshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "MessageHashNotFound",
+    "inputs": [
+      {
+        "name": "messageId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NoAdaptersGiven",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoMessageIdsGiven",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoMessagesGiven",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoReportersGiven",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnequalArrayLengths",
+    "inputs": [
+      {
+        "name": "arrayOne",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "arrayTwo",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  }
+]
