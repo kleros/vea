@@ -22,7 +22,8 @@
     "relayer-cli",
     "veascan-web",
     "veascan-subgraph-inbox",
-    "veascan-subgraph-outbox"
+    "veascan-subgraph-outbox",
+    "veashi-contracts"
   ],
   "packageManager": "yarn@4.6.0",
   "volta": {
@@ -68,6 +69,7 @@
   "scripts": {
     "changelog": "conventional-changelog --infile CHANGELOG.md --same-file --release-count 0 && prettier --write CHANGELOG.md",
     "postinstall": "husky install",
-    "reinstall": "YARN_CHECKSUM_BEHAVIOR=update yarn install --no-immutable"
+    "reinstall": "YARN_CHECKSUM_BEHAVIOR=update yarn install --no-immutable",
+    "prepublishOnly": "bash ./veashi-contracts/script/generate-types.sh"
   }
 }
