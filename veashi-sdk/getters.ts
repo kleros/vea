@@ -88,3 +88,19 @@ export function getAvailableBridges(sourceChainId: number, destinationChainId: n
     (bridge) => route[bridgeField(bridge, "Reporter")] && route[bridgeField(bridge, "Adapter")]
   );
 }
+
+export function getAllSourceChains(): number[] {
+  const keys = Object.keys(ROUTES);
+  const sourceIds = keys.map((key) => parseInt(key.split("-")[0], 10));
+  return Array.from(new Set(sourceIds)).sort((a, b) => a - b);
+}
+
+export function getDestinationChains(sourceChainId: number): number[] {
+  const keys = Object.keys(ROUTES);
+  const prefix = `${sourceChainId}-`;
+
+  return keys
+    .filter((key) => key.startsWith(prefix))
+    .map((key) => parseInt(key.split("-")[1], 10))
+    .sort((a, b) => a - b);
+}
