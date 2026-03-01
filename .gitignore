@@ -218,3 +218,7 @@ validator-subgraph-inbox/generated/*
 validator-subgraph-inbox/build/*
 
 cache
+
+# veashi-sdk
+veashi-sdk/contracts/
+veashi-sdk/typechain-types/
