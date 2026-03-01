@@ -4212,6 +4212,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@kleros/veashi-sdk@workspace:veashi-sdk":
+  version: 0.0.0-use.local
+  resolution: "@kleros/veashi-sdk@workspace:veashi-sdk"
+  languageName: unknown
+  linkType: soft
+
 "@layerzerolabs/lz-evm-messagelib-v2@npm:^2.3.44":
   version: 2.3.44
   resolution: "@layerzerolabs/lz-evm-messagelib-v2@npm:2.3.44"
