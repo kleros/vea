@@ -1,76 +1,127 @@
 #!/bin/bash
 
-# Configuration
-ARTIFACTS_DIR="./veashi-contracts/out" 
-SOURCE_CONTRACTS_DIR="./veashi-contracts/lib/hashi/packages/evm/contracts/" 
-TARGET_SRC_DIR="./contracts/src"
-SDK_ABI_DIR="./veashi-sdk/abi"
+# --- Configuration ---
+HASHI_SRC="../veashi-contracts/lib/hashi/packages/evm/contracts"
+VEASHI_SRC="../veashi-contracts/src"
+ARTIFACTS_DIR="../veashi-contracts/out"
+
+TARGET_DIR="./contracts"
+SDK_ABI_DIR="./abi"
 TYPECHAIN_DIR="./typechain-types"
 
-# Clean and Prepare
-rm -rf "$SDK_ABI_DIR" "$TYPECHAIN_DIR" "$TARGET_SRC_DIR"
-mkdir -p "$SDK_ABI_DIR" "$TARGET_SRC_DIR"
+# --- Setup ---
+rm -rf "$TARGET_DIR" "$SDK_ABI_DIR"
+mkdir -p "$TARGET_DIR" "$SDK_ABI_DIR"
 
-echo "🔍 Searching for contracts and ABIs recursively..."
+echo "🎯 Executing targeted copy and dependency crawl..."
 
 node -e "
 const fs = require('fs');
 const path = require('path');
 
-const CONTRACTS_TO_FIND = [
-  'VeaReporter.sol', 'VeaAdapter.sol',
-  'LayerZeroAdapter.sol', 'LayerZeroReporter.sol',
-  'CCIPAdapter.sol', 'CCIPReporter.sol',
-  'Yaho.sol', 'Yaru.sol', 'Hashi.sol'
-];
-
-const ABIS_TO_FIND = CONTRACTS_TO_FIND.map(f => f.replace('.sol', '.json'));
+const collectedFiles = new Set();
 
 /**
- * Recursively walks a directory and executes a callback for every file found
+ * CORE LOGIC: 
+ * We define exactly what we want and where it goes.
  */
-function walk(dir, callback) {
-    if (!fs.existsSync(dir)) return;
-    fs.readdirSync(dir).forEach(file => {
-        const filepath = path.join(dir, file);
-        const stat = fs.statSync(filepath);
-        if (stat.isDirectory()) {
-            walk(filepath, callback);
-        } else {
-            callback(filepath, file);
-        }
-    });
+const COPY_PLAN = [
+    // HASHI CORE -> Target Root
+    { srcBase: '$HASHI_SRC', file: 'Hashi.sol', destSubDir: '' },
+    { srcBase: '$HASHI_SRC', file: 'Yaho.sol', destSubDir: '' },
+    { srcBase: '$HASHI_SRC', file: 'Yaru.sol', destSubDir: '' },
+
+    // HASHI ADAPTERS -> adapters/layerZero/
+    { srcBase: '$HASHI_SRC', file: 'adapters/layerZero/LayerZeroAdapter.sol', destSubDir: 'adapters/layerZero' },
+    { srcBase: '$HASHI_SRC', file: 'adapters/layerZero/LayerZeroReporter.sol', destSubDir: 'adapters/layerZero' },
+
+    // VEASHI SRC -> adapters/ (Vea and Chainlink)
+    { srcBase: '$VEASHI_SRC', file: 'vea', destSubDir: 'adapters/vea' },
+    { srcBase: '$VEASHI_SRC', file: 'chainlink', destSubDir: 'adapters/chainlink' }
+];
+
+/**
+ * Dependency Crawler
+ * Ensures that if a contract is moved, its internal imports (interfaces/utils) follow it.
+ */
+function processPath(baseDir, relativePath, targetSubDir) {
+    const fullPath = path.resolve(baseDir, relativePath);
+    if (!fs.existsSync(fullPath) || collectedFiles.has(fullPath)) return;
+
+    const stats = fs.statSync(fullPath);
+
+    if (stats.isDirectory()) {
+        fs.readdirSync(fullPath).forEach(file => {
+            processPath(baseDir, path.join(relativePath, file), targetSubDir);
+        });
+        return;
+    }
+
+    // Only process .sol files
+    if (!relativePath.endsWith('.sol')) return;
+
+    collectedFiles.add(fullPath);
+    
+    // Construct the destination: TARGET_DIR + specific subDir + the filename
+    const fileName = path.basename(fullPath);
+    const finalDest = path.join('$TARGET_DIR', targetSubDir, fileName);
+
+    fs.mkdirSync(path.dirname(finalDest), { recursive: true });
+    fs.copyFileSync(fullPath, finalDest);
+    console.log('✅ Copied: ' + fileName + ' -> ' + targetSubDir);
+
+    // Crawl Imports
+    const content = fs.readFileSync(fullPath, 'utf8');
+    const importRegex = /import\s+(?:\{.*\}\s+from\s+)?['\"](.*\.sol)['\"]/g;
+    let match;
+
+    while ((match = importRegex.exec(content)) !== null) {
+        const importPath = match[1];
+        // Resolve relative to the current file's directory within its original source
+        const resolvedImport = path.join(path.dirname(relativePath), importPath);
+        
+        // Dependencies maintain their internal relative structure (e.g. ./interfaces/...)
+        // unless they are part of the core files we already moved.
+        const depTargetSubDir = path.join(targetSubDir, path.dirname(importPath));
+        processPath(baseDir, resolvedImport, depTargetSubDir);
+    }
 }
 
-// 1. Copy Source Files (Flattened)
-walk('$SOURCE_CONTRACTS_DIR', (filePath, fileName) => {
-    if (CONTRACTS_TO_FIND.includes(fileName)) {
-        fs.copyFileSync(filePath, path.join('$TARGET_SRC_DIR', fileName));
-        console.log('📄 Found & Copied: ' + fileName);
-    }
-});
-
-// 2. Extract ABIs (Flattened)
-walk('$ARTIFACTS_DIR', (filePath, fileName) => {
-    if (ABIS_TO_FIND.includes(fileName)) {
-        try {
-            const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-            if (content.abi) {
-                fs.writeFileSync(
-                    path.join('$SDK_ABI_DIR', fileName),
-                    JSON.stringify(content.abi, null, 2)
-                );
-                console.log('✅ Extracted ABI: ' + fileName);
-            }
-        } catch (e) {
-            console.error('❌ Failed to parse: ' + fileName);
-        }
-    }
+// Execute the plan
+COPY_PLAN.forEach(plan => {
+    console.log('--- Processing: ' + plan.file + ' ---');
+    processPath(plan.srcBase, plan.file, plan.destSubDir);
 });
 "
 
-# 3. Generate TypeChain
-echo "🚀 Generating TypeChain types..."
+# --- ABI Extraction (Stays the same) ---
+echo "📑 Extracting ABIs..."
+node -e "
+const fs = require('fs');
+const path = require('path');
+const ALLOW = [
+  'Hashi.json', 'Yaho.json', 'Yaru.json', 
+  'LayerZeroAdapter.json', 'LayerZeroReporter.json',
+  'VeaAdapter.json', 'VeaReporter.json',
+  'CCIPAdapter.json', 'CCIPReporter.json','Reporter.json',
+  'Adapter.json'
+];
+function walk(dir) {
+    if(!fs.existsSync(dir)) return;
+    fs.readdirSync(dir).forEach(f => {
+        const p = path.join(dir, f);
+        if (fs.statSync(p).isDirectory()) walk(p);
+        else if (ALLOW.includes(f)) {
+            const c = JSON.parse(fs.readFileSync(p, 'utf8'));
+            if (c.abi) fs.writeFileSync(path.join('$SDK_ABI_DIR', f), JSON.stringify(c.abi, null, 2));
+        }
+    });
+}
+walk('$ARTIFACTS_DIR');
+"
+
+# Run TypeChain ONLY on the filtered ABIs
+echo "🚀 Generating targeted TypeChain types..."
 npx typechain --target ethers-v6 "$SDK_ABI_DIR/*.json" --out-dir "$TYPECHAIN_DIR"
 
-echo "✨ All set! Your package is ready for publishing."
+echo "✨ Done! Your target directory is now structured correctly."
