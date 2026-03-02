@@ -1,6 +1,9 @@
 {
   "name": "veashi-contracts",
   "packageManager": "yarn@4.6.0",
+  "scripts": {
+    "deploy": "./script/deploy-route.sh"
+  },
   "dependencies": {
     "@chainlink/contracts-ccip": "^0.7.6",
     "@layerzerolabs/lz-evm-messagelib-v2": "^2.3.44",
