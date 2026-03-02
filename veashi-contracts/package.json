@@ -2,7 +2,7 @@
   "name": "veashi-contracts",
   "packageManager": "yarn@4.6.0",
   "scripts": {
-    "deploy": "./script/deploy-route.sh"
+    "deploy": "./script/deploy-route.sh --reporter-chain $SOURCE_RPC --adapter-chain $DESTINATION_RPC"
   },
   "dependencies": {
     "@chainlink/contracts-ccip": "^0.7.6",
