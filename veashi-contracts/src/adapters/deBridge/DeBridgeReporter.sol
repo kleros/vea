@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Reporter} from "@hashi/adapters/Reporter.sol";
+import {Reporter} from "../Reporter.sol";
 import {IDeBridgeGate} from "./interfaces/IDeBridgeGate.sol";
 import {Flags} from "./utils/Flags.sol";
 

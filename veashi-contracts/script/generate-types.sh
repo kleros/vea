@@ -2,7 +2,7 @@
 
 # --- Configuration ---
 HASHI_SRC="../veashi-contracts/lib/hashi/packages/evm/contracts"
-VEASHI_SRC="../veashi-contracts/src"
+VEASHI_SRC="../veashi-contracts/src/adapters"
 ARTIFACTS_DIR="../veashi-contracts/out"
 
 TARGET_DIR="./contracts"

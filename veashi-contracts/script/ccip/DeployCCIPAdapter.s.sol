@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../../src/chainlink/CCIPReporter.sol";
-import "../../src/chainlink/CCIPAdapter.sol";
+import "../../src/adapters/chainlink/CCIPReporter.sol";
+import "../../src/adapters/chainlink/CCIPAdapter.sol";
 import "../helpers/DeploymentState.sol";
 
 contract DeployCCIPAdapter is DeploymentState {

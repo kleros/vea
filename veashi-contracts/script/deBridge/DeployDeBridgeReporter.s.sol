@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../../src/deBridge/DeBridgeReporter.sol";
+import "../../src/adapters/deBridge/DeBridgeReporter.sol";
 import "../helpers/DeploymentState.sol";
 
 contract DeployDeBridgeReporter is DeploymentState {

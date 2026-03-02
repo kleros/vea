@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Adapter} from "@hashi/adapters/Adapter.sol";
+import {Adapter} from "../Adapter.sol";
 import {IReceiverGateway} from "./interfaces/IReceiverGateway.sol";
 
 contract VeaAdapter is IReceiverGateway, Adapter {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {VeaAdapter} from "./VeaAdapter.sol";
-import {Reporter} from "@hashi/adapters/Reporter.sol";
+import {Reporter} from "../Reporter.sol";
 import {ISenderGateway} from "./interfaces/ISenderGateway.sol";
 import {IVeaInbox} from "./interfaces/IVeaInbox.sol";
 
