@@ -222,3 +222,8 @@ cache
 # veashi-sdk
 veashi-sdk/contracts/
 veashi-sdk/typechain-types/
+
+#veashi-contracts
+veashi-contracts/broadcast/**/*
+!veashi-contracts/broadcast/*.json
+veashi-contracts/broadcast/*/
