@@ -64,8 +64,8 @@ if [[ -z "$REPORTER_CHAIN" || -z "$ADAPTER_CHAIN" ]]; then
   exit 1
 fi
 
-if ! $USE_LZ && ! $USE_VEA && ! $USE_CCIP && !$USE_LIGHTBULB; then
-  echo "❌ At least one bridge flag required (--lz / --vea / --ccip)"
+if ! $USE_LZ && ! $USE_VEA && ! $USE_CCIP && ! $USE_LIGHTBULB && ! $USE_HASHI; then
+  echo "❌ At least one bridge flag required (--lz / --vea / --ccip/ --hashi/ --lightbulb)"
   exit 1
 fi
 

@@ -45,7 +45,7 @@ Deploys Adapter and Reporter contracts for passed bridges.
 $ ./script/deploy-route.sh --reporter-chain $SOURCE_RPC --adapter-chain $DESTINATION_RPC --lz --vea
 ```
 
-**⚠️ Before deploying LayerZero contracts update the DVN addresses in [Adapter](https://github.com/kleros/hashi-lightbulb/blob/main/contracts/script/layerZero/DeployLZAdapter.s.sol$0) and [Reporter](https://github.com/kleros/hashi-lightbulb/blob/main/contracts/script/layerZero/DeployLZReporter.s.sol$0) script.**
+**⚠️ Before deploying LayerZero contracts update the DVN addresses in Adapter and Reporter scripts.**
 
 ##### Hashi flag: --hashi
 

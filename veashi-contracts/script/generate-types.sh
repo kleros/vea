@@ -10,8 +10,8 @@ SDK_ABI_DIR="./abi"
 TYPECHAIN_DIR="./typechain-types"
 
 # --- Setup ---
-rm -rf "$TARGET_DIR" "$SDK_ABI_DIR"
-mkdir -p "$TARGET_DIR" "$SDK_ABI_DIR"
+rm -rf "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR"
+mkdir -p "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR"
 
 echo "🎯 Executing targeted copy and dependency crawl..."
 

@@ -7,7 +7,7 @@ import "../../src/chainlink/CCIPReporter.sol";
 import "../../src/chainlink/CCIPAdapter.sol";
 import "../helpers/DeploymentState.sol";
 
-contract CCIP is DeploymentState {
+contract DeployCCIPAdapter is DeploymentState {
     function run() external {
         // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
