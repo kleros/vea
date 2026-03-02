@@ -9,9 +9,12 @@ TARGET_DIR="./contracts"
 SDK_ABI_DIR="./abi"
 TYPECHAIN_DIR="./typechain-types"
 
+BROADCAST_SRC="../veashi-contracts/broadcast"
+SDK_ADD_DIR="./addresses" 
+
 # --- Setup ---
-rm -rf "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR"
-mkdir -p "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR"
+rm -rf "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR" "$SDK_ADD_DIR"
+mkdir -p "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR" "$SDK_ADD_DIR"
 
 echo "🎯 Executing targeted copy and dependency crawl..."
 
@@ -124,5 +127,38 @@ walk('$ARTIFACTS_DIR');
 # Run TypeChain ONLY on the filtered ABIs
 echo "🚀 Generating targeted TypeChain types..."
 npx typechain --target ethers-v6 "$SDK_ABI_DIR/*.json" --out-dir "$TYPECHAIN_DIR"
+
+# Syncing Addresses with SDK
+echo "🔗 Syncing chain-specific broadcast files to SDK..."
+
+node -e "
+const fs = require('fs');
+const path = require('path');
+
+const broadcastDir = '$BROADCAST_SRC';
+const destDir = '$SDK_ADD_DIR';
+
+// Regex to match files like 1-137.json or 42161-10.json
+const chainPairRegex = /^\d+-\d+\.json$/;
+
+function syncChainFiles(dir) {
+    if (!fs.existsSync(dir)) return;
+
+    fs.readdirSync(dir).forEach(file => {
+        const fullPath = path.join(dir, file);
+        const stats = fs.statSync(fullPath);
+
+        if (stats.isDirectory()) {
+            syncChainFiles(fullPath);
+        } else if (chainPairRegex.test(file)) {
+            const destFile = path.join(destDir, file);
+            fs.copyFileSync(fullPath, destFile);
+            console.log('✅ Synced: ' + file + ' -> ' + destDir);
+        }
+    });
+}
+
+syncChainFiles(broadcastDir);
+"
 
 echo "✨ Done! Your target directory is now structured correctly."
