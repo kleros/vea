@@ -4909,13 +4909,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts@npm:4.9.6":
-  version: 4.9.6
-  resolution: "@openzeppelin/contracts@npm:4.9.6"
-  checksum: 10/71f45ad42e68c0559be4ba502115462a01c76fc805c08d3005c10b5550a093f1a2b00b2d7e9d6d1f331e147c50fd4ad832f71c4470ec5b34f5a2d0751cd19a47
-  languageName: node
-  linkType: hard
-
 "@openzeppelin/contracts@npm:^5.2.0":
   version: 5.3.0
   resolution: "@openzeppelin/contracts@npm:5.3.0"
@@ -21257,7 +21250,6 @@ __metadata:
     "@layerzerolabs/lz-evm-messagelib-v2": "npm:^2.3.44"
     "@layerzerolabs/lz-evm-oapp-v2": "npm:^2.3.44"
     "@layerzerolabs/lz-evm-protocol-v2": "npm:^2.3.44"
-    "@openzeppelin/contracts": "npm:4.9.6"
     solidity-bytes-utils: "npm:^0.8.4"
     solidity-rlp: "npm:^2.0.8"
   languageName: unknown
