@@ -7,7 +7,7 @@ import {Adapter} from "@hashi/adapters/Adapter.sol";
 import {ILayerZeroReceiver} from "./interfaces/ILayerZeroReceiver.sol";
 import {Origin} from "./interfaces/ILayerZeroEndpointV2.sol";
 
-contract LayerZeroAdapter is Adapter, Ownable, ILayerZeroReceiver, OAppCore {
+contract LayerZeroAdapter is Adapter, ILayerZeroReceiver, OAppCore {
     string public constant PROVIDER = "layer-zero";
     address public immutable LAYER_ZERO_ENDPOINT;
 
