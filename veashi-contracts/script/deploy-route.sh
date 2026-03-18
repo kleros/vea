@@ -121,7 +121,7 @@ if $USE_LZ; then
     --broadcast
 
   echo "🔵 Configuring LayerZero Reporter"
-  forge script script/layerZero/ConfigureLZReporter.s.sol:ConfigureLZReporter \
+  forge script script/layerZero/ConfigureLZReporter.s.sol:ConfigureLZReporter --via-ir \
     --rpc-url "$REPORTER_CHAIN" \
     --broadcast
 fi
