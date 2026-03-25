@@ -3,10 +3,10 @@ pragma solidity ^0.8.20;
 
 import {Adapter} from "@hashi/adapters/Adapter.sol";
 import {IReceiverGateway} from "./interfaces/IReceiverGateway.sol";
+import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
 
-contract VeaAdapter is IReceiverGateway, Adapter {
+contract VeaAdapter is IReceiverGateway, Adapter, Ownable {
     string public constant PROVIDER = "vea";
-
     address public immutable VEA_OUTBOX;
     address public REPORTER;
     uint256 public immutable SOURCE_CHAIN_ID;
@@ -15,7 +15,7 @@ contract VeaAdapter is IReceiverGateway, Adapter {
     error InvalidVeaOutbox(address veaOutbox, address expectedVeaOutboux);
     error InvalidReporter(address reporter, address expectedReporter);
 
-    constructor(address veaOutbox_, uint256 sourceChainId) {
+    constructor(address veaOutbox_, uint256 sourceChainId) Ownable(msg.sender) {
         VEA_OUTBOX = veaOutbox_;
         SOURCE_CHAIN_ID = sourceChainId;
     }
@@ -26,7 +26,7 @@ contract VeaAdapter is IReceiverGateway, Adapter {
         _;
     }
 
-    function setReporter(address reporter) external {
+    function setReporter(address reporter) external onlyOwner {
         REPORTER = reporter;
     }
 
