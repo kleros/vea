@@ -1,0 +1,11 @@
+{
+  "name": "veashi-contracts",
+  "packageManager": "yarn@4.6.0",
+  "scripts": {
+    "deploy": "./script/deploy-route.sh"
+  },
+  "dependencies": {
+    "solidity-bytes-utils": "^0.8.4",
+    "solidity-rlp": "^2.0.8"
+  }
+}
