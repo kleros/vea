@@ -28,7 +28,7 @@ contract DeployDeBridgeReporter is DeploymentState {
         reporter.setFee(fee);
 
         // fund the reporter
-        (bool sent, ) = address(reporter).call{value: 0.1 ether}("");
+        (bool sent, ) = address(reporter).call{value: 0.0011 ether}("");
         require(sent, "Failed to fund DeBridgeReporter");
 
         vm.stopBroadcast();

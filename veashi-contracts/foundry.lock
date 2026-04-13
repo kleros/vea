@@ -1,4 +1,13 @@
 {
+  "lib/LayerZero-v2": {
+    "rev": "9c741e7f9790639537b1710a203bcdfd73b0b9ac"
+  },
+  "lib/chainlink-ccip": {
+    "rev": "c24314899921b9bc48b9284f9b13f8ac9a8ca90b"
+  },
+  "lib/chainlink-evm": {
+    "rev": "0a9de1fe8d278e5f990d70ab78e76b6263af99d5"
+  },
   "lib/forge-std": {
     "rev": "c7be2a3481f9e51230880bb0949072c7e3a4da82"
   },

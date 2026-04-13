@@ -7,3 +7,12 @@
 [submodule "veashi-contracts/lib/openzeppelin-contracts"]
 	path = veashi-contracts/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "veashi-contracts/lib/chainlink-evm"]
+	path = veashi-contracts/lib/chainlink-evm
+	url = https://github.com/smartcontractkit/chainlink-evm
+[submodule "veashi-contracts/lib/chainlink-ccip"]
+	path = veashi-contracts/lib/chainlink-ccip
+	url = https://github.com/smartcontractkit/chainlink-ccip
+[submodule "veashi-contracts/lib/LayerZero-v2"]
+	path = veashi-contracts/lib/LayerZero-v2
+	url = https://github.com/LayerZero-Labs/LayerZero-v2

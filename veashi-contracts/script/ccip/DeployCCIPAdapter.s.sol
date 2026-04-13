@@ -22,7 +22,7 @@ contract DeployCCIPAdapter is DeploymentState {
         console.log(" CCIPAdapter deployed at:", address(adapter));
 
         // read chain‐specific setup from env
-        uint256 reportChainId = vm.envUint("CCIP_REPORTER_CHAIN_ID");
+        uint256 reportChainId = vm.envUint("REPORTER_CHAIN_ID");
         uint64 reportChainSelector = uint64(vm.envUint("CCIP_REPORTER_CHAIN_SELECTOR"));
         address reporter = _loadAddress(".ccipReporter");
 

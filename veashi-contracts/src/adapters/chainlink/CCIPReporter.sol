@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IRouterClient} from "@chainlink/interfaces/IRouterClient.sol";
-import {Client} from "@chainlink/libraries/Client.sol";
 import {Reporter} from "../Reporter.sol";
+import {IRouterClient} from "@chainlink/contracts-ccip/interfaces/IRouterClient.sol";
+import {Client} from "@chainlink/contracts-ccip/libraries/Client.sol";
 
 contract CCIPReporter is Reporter, Ownable {
     string public constant PROVIDER = "ccip";
@@ -12,6 +12,7 @@ contract CCIPReporter is Reporter, Ownable {
     IRouterClient public immutable CCIP_ROUTER;
 
     uint256 public fee;
+    uint256 public defaultGasLimit = 200_000;
     mapping(uint256 => uint64) public chainSelectors;
 
     error ChainSelectorNotAvailable();
@@ -46,7 +47,7 @@ contract CCIPReporter is Reporter, Ownable {
             receiver: abi.encode(adapter),
             data: payload,
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array - no tokens are transferred
-            extraArgs: Client._argsToBytes(Client.EVMExtraArgsV1({gasLimit: 200_000, strict: false})),
+            extraArgs: Client._argsToBytes(Client.EVMExtraArgsV1({gasLimit: defaultGasLimit})),
             feeToken: address(0) // Pay fees with native
         });
 
