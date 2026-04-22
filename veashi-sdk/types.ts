@@ -15,6 +15,7 @@ export enum Bridges {
   LZ = "lz",
   CCIP = "ccip",
   VEA = "vea",
+  DEBRIDGE = "deBridge",
 }
 
 export type HashiAddress = {

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../../src/vea/VeaAdapter.sol";
-import "../../src/vea/VeaReporter.sol";
-import {IVeaInbox} from "../../src/vea/interfaces/IVeaInbox.sol";
+import "../../src/adapters/vea/VeaAdapter.sol";
+import "../../src/adapters/vea/VeaReporter.sol";
+import {IVeaInbox} from "../../src/adapters/vea/interfaces/IVeaInbox.sol";
 import "../helpers/DeploymentState.sol";
 
 contract DeployVeaReporter is DeploymentState {

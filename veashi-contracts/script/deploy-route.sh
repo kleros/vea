@@ -8,6 +8,7 @@ USE_HASHI=false # for deploying Hashi contracts
 USE_LZ=false
 USE_VEA=false
 USE_CCIP=false
+USE_DEBRIDGE=false
 USE_LIGHTBULB=false
 
 REPORTER_CHAIN=""
@@ -45,6 +46,10 @@ while [[ $# -gt 0 ]]; do
       USE_CCIP=true
       shift
       ;;
+    --debridge)
+      USE_DEBRIDGE=true
+      shift
+      ;;
     --lightbulb)
       USE_LIGHTBULB=true
       shift
@@ -64,8 +69,8 @@ if [[ -z "$REPORTER_CHAIN" || -z "$ADAPTER_CHAIN" ]]; then
   exit 1
 fi
 
-if ! $USE_LZ && ! $USE_VEA && ! $USE_CCIP && ! $USE_LIGHTBULB && ! $USE_HASHI; then
-  echo "❌ At least one bridge flag required (--lz / --vea / --ccip/ --hashi/ --lightbulb)"
+if ! $USE_LZ && ! $USE_VEA && ! $USE_CCIP && ! $USE_LIGHTBULB && ! $USE_HASHI && ! $USE_DEBRIDGE; then
+  echo "❌ At least one bridge flag required (--lz / --vea / --ccip/ --hashi/ --lightbulb/ --debridge)"
   exit 1
 fi
 
@@ -159,6 +164,22 @@ if $USE_CCIP; then
 
   echo "🔵 Deploying CCIP Adapter"
   forge script script/ccip/DeployCCIPAdapter.s.sol:DeployCCIPAdapter \
+    --rpc-url "$ADAPTER_CHAIN" \
+    --broadcast
+fi
+
+# ----------------------------
+# DeBridge
+# ----------------------------
+if $USE_DEBRIDGE; then
+  echo "🔵 Deploying DeBridge Reporter"
+  forge script script/deBridge/DeployDeBridgeReporter.s.sol:DeployDeBridgeReporter \
+    --rpc-url "$REPORTER_CHAIN" \
+    --verify \
+    --broadcast
+
+  echo "🔵 Deploying DeBridge Adapter"
+  forge script script/deBridge/DeployDeBridgeAdapter.s.sol:DeployDeBridgeAdapter \
     --rpc-url "$ADAPTER_CHAIN" \
     --broadcast
 fi

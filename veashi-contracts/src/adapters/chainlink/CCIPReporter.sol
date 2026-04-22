@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Reporter} from "../Reporter.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/libraries/Client.sol";
-import {Reporter} from "@hashi/adapters/Reporter.sol";
 
 contract CCIPReporter is Reporter, Ownable {
     string public constant PROVIDER = "ccip";
