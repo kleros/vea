@@ -22,7 +22,9 @@
     "relayer-cli",
     "veascan-web",
     "veascan-subgraph-inbox",
-    "veascan-subgraph-outbox"
+    "veascan-subgraph-outbox",
+    "veashi-contracts",
+    "veashi-sdk"
   ],
   "packageManager": "yarn@4.6.0",
   "volta": {

@@ -4163,6 +4163,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@kleros/veashi-sdk@workspace:veashi-sdk":
+  version: 0.0.0-use.local
+  resolution: "@kleros/veashi-sdk@workspace:veashi-sdk"
+  languageName: unknown
+  linkType: soft
+
 "@leichtgewicht/ip-codec@npm:^2.0.1":
   version: 2.0.5
   resolution: "@leichtgewicht/ip-codec@npm:2.0.5"
@@ -19404,6 +19410,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"solidity-bytes-utils@npm:^0.8.4":
+  version: 0.8.4
+  resolution: "solidity-bytes-utils@npm:0.8.4"
+  checksum: 10/a05aac090c9b943c2db7492b48cd7660a4f8b8614c0653046b21d45f6e9037cbd520319e82d707556c8c05a79a00b533aef1396b38ec4c6e71baffbe837d4d1d
+  languageName: node
+  linkType: hard
+
 "solidity-coverage@npm:^0.8.16":
   version: 0.8.16
   resolution: "solidity-coverage@npm:0.8.16"
@@ -19432,6 +19445,13 @@ __metadata:
   bin:
     solidity-coverage: plugins/bin.js
   checksum: 10/e63355e9ddfa9e998df1e63c2d790ec17896786554cb84f9d2cd6340dd471dd082806a169f42d64f80b52f4d695bdb8a01af8e675bd5cfa1683062df77d1e1fa
+  languageName: node
+  linkType: hard
+
+"solidity-rlp@npm:^2.0.8":
+  version: 2.0.8
+  resolution: "solidity-rlp@npm:2.0.8"
+  checksum: 10/4bcc1a2e405bc676342dc4f076aeb14bc2c4069a045ef9231b513403f28e8a415025fd4f6e0f6b55a507ef5069ba4e3bf2a47c6560f9ece02eff099a487c3071
   languageName: node
   linkType: hard
 
@@ -21094,6 +21114,15 @@ __metadata:
     prettier: "npm:^2.8.8"
     prettier-plugin-solidity: "npm:^1.4.2"
     solhint-plugin-prettier: "npm:^0.1.0"
+  languageName: unknown
+  linkType: soft
+
+"veashi-contracts@workspace:veashi-contracts":
+  version: 0.0.0-use.local
+  resolution: "veashi-contracts@workspace:veashi-contracts"
+  dependencies:
+    solidity-bytes-utils: "npm:^0.8.4"
+    solidity-rlp: "npm:^2.0.8"
   languageName: unknown
   linkType: soft
 

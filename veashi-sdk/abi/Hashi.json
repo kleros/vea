@@ -1,0 +1,171 @@
+[
+  {
+    "type": "function",
+    "name": "checkHashWithThresholdFromAdapters",
+    "inputs": [
+      {
+        "name": "domain",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "threshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "adapters",
+        "type": "address[]",
+        "internalType": "contract IAdapter[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getHash",
+    "inputs": [
+      {
+        "name": "domain",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "adapters",
+        "type": "address[]",
+        "internalType": "contract IAdapter[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "hash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getHashFromAdapter",
+    "inputs": [
+      {
+        "name": "domain",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "adapter",
+        "type": "address",
+        "internalType": "contract IAdapter"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getHashesFromAdapters",
+    "inputs": [
+      {
+        "name": "domain",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "adapters",
+        "type": "address[]",
+        "internalType": "contract IAdapter[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "error",
+    "name": "AdaptersDisagree",
+    "inputs": [
+      {
+        "name": "adapterOne",
+        "type": "address",
+        "internalType": "contract IAdapter"
+      },
+      {
+        "name": "adapterTwo",
+        "type": "address",
+        "internalType": "contract IAdapter"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "HashNotAvailableInAdapter",
+    "inputs": [
+      {
+        "name": "adapter",
+        "type": "address",
+        "internalType": "contract IAdapter"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidThreshold",
+    "inputs": [
+      {
+        "name": "threshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxThreshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NoAdaptersGiven",
+    "inputs": []
+  }
+]
