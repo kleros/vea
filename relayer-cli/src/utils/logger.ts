@@ -94,4 +94,7 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.HASHI_MESSAGE_FAILING, (nonce, sourceChainId, targetChainId) => {
     logger.warn({ nonce, sourceChainId, targetChainId }, "hashi_message_failing");
   });
+  emitter.on(BotEvents.INDEXING, (fromBlock, toBlock) => {
+    logger.debug({ fromBlock, toBlock }, "indexing_hashi_messages");
+  });
 };

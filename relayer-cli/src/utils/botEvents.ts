@@ -25,4 +25,5 @@ export enum BotEvents {
   HASHI_EXECUTION_FAILED = "hashi_execution_failed",
   HASHI_NOT_CONFIGURED = "hashi_not_configured",
   HASHI_MESSAGE_FAILING = "hashi_message_failing",
+  INDEXING = "indexing",
 }

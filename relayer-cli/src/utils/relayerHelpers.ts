@@ -25,7 +25,7 @@ async function initialize(
   setLock: typeof claimLock = claimLock,
   syncStateFile: typeof updateStateFile = updateStateFile,
   fileSystem: typeof fs = fs
-): Promise<{ nonce: number; hashiBlockNumber: number | null }> {
+): Promise<{ nonce: number }> {
   setLock(network, chainId);
   emitter.emit(BotEvents.LOCK_CLAIMED);
   // STATE_DIR is absolute path of the directory where the state files are stored
@@ -35,23 +35,19 @@ async function initialize(
   if (!fileSystem.existsSync(stateFile)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
-    await syncStateFile(chainId, tsnow, 0, 0, network, emitter);
+    await syncStateFile(chainId, tsnow, 0, network, emitter);
   }
   // print pwd for debugging
   emitter.emit(BotEvents.LOCK_DIRECTORY, process.cwd());
 
   const chain_state_raw = fileSystem.readFileSync(stateFile, { encoding: "utf8" });
   const chain_state = JSON.parse(chain_state_raw);
-  let nonce = 0,
-    hashiBlockNumber = 0;
+  let nonce = 0;
   if ("nonce" in chain_state) {
     nonce = chain_state["nonce"];
   }
-  if ("hashiBlockNumber" in chain_state) {
-    hashiBlockNumber = chain_state["hashiBlockNumber"];
-  }
 
-  return { nonce, hashiBlockNumber };
+  return { nonce };
 }
 
 /**
@@ -67,7 +63,6 @@ async function updateStateFile(
   chainId: number,
   createdTimestamp: number,
   nonceFrom: number,
-  hashiBlockNumberFrom: number,
   network: string,
   emitter: EventEmitter,
   fileSystem: typeof fs = fs,
@@ -81,7 +76,6 @@ async function updateStateFile(
   const json = {
     ts: createdTimestamp,
     nonce: nonceFrom,
-    hashiBlockNumber: hashiBlockNumberFrom,
   };
   fileSystem.writeFileSync(chain_state_file, JSON.stringify(json), { encoding: "utf8" });
   removeLock(network, chainId);
