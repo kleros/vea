@@ -215,12 +215,14 @@ async function toExecuteMessage({
   hashiMessage,
   hasThresholdMet = getMessageStatus,
 }: ToExecuteMessageInterface): Promise<HashiMessageState | null> {
-  let msgState: HashiMessageState | null = null;
   const msgStatus = await hasThresholdMet(sourceChainId, hashiMessage);
+  const msgState: HashiMessageState = {
+    hashiMessage,
+    executable: false,
+    status: msgStatus,
+  };
   if (msgStatus === HashiExecutionStatus.EXECUTABLE) {
-    msgState = { hashiMessage, executable: true, status: msgStatus };
-  } else if (msgStatus === HashiExecutionStatus.EXECUTED) {
-    msgState = { hashiMessage, executable: false, status: msgStatus };
+    msgState.executable = true;
   }
   return msgState;
 }
@@ -289,7 +291,7 @@ async function getAllMessageDispatchedLogs(
   const all: HashiMessageExecutionVars[] = [];
 
   let start = fromBlock;
-  while (start <= toBlock && all.length <= MAX_BATCH_SIZE) {
+  while (start <= toBlock && all.length < MAX_BATCH_SIZE) {
     const end = Math.min(start + chunkSize - 1, toBlock);
     const filter = {
       address: yahoAddress,

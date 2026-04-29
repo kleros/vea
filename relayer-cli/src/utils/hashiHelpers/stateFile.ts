@@ -33,7 +33,7 @@ async function getStartBlockNumber(
   if (!fileSystem.existsSync(stateFile)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
-    await syncStateFile(chainId, tsnow, 0, [], network, emitter);
+    await syncStateFile(chainId, tsnow, 0, [], network, emitter, true);
   }
   // print pwd for debugging
   emitter.emit(BotEvents.LOCK_DIRECTORY, process.cwd());
@@ -63,6 +63,7 @@ async function updateHashiStateFile(
   hashiMessages: HashiMessageExecutionVars[],
   network: string,
   emitter: EventEmitter,
+  isIniting = false,
   fileSystem: typeof fs = fs,
   removeLock: typeof releaseLock = releaseLock
 ) {
@@ -76,8 +77,10 @@ async function updateHashiStateFile(
     hashiBlockNumber: hashiBlockNumberFrom,
     hashiMessages: hashiMessages,
   };
-  fileSystem.writeFileSync(chain_state_file, JSON.stringify(json, null, 2), { encoding: "utf8" });
-  removeLock(network, chainId);
+  fileSystem.writeFileSync(chain_state_file, JSON.stringify(json, bigIntReplacer, 2), { encoding: "utf8" });
+  if (!isIniting) {
+    removeLock(network, chainId);
+  }
   emitter.emit(BotEvents.LOCK_RELEASED);
 }
 
@@ -103,7 +106,7 @@ async function readPendingMessages(
 
   try {
     const chain_state_raw = fileSystem.readFileSync(stateFile, { encoding: "utf8" });
-    const chain_state = JSON.parse(chain_state_raw);
+    const chain_state = JSON.parse(chain_state_raw, bigIntReviver);
 
     if ("hashiMessages" in chain_state && Array.isArray(chain_state.hashiMessages)) {
       return chain_state.hashiMessages;
@@ -115,5 +118,9 @@ async function readPendingMessages(
     return [];
   }
 }
+
+const bigIntReplacer = (_key: string, value: unknown) => (typeof value === "bigint" ? `${value}n` : value);
+const bigIntReviver = (_key: string, value: unknown) =>
+  typeof value === "string" && /^\d+n$/.test(value) ? BigInt(value.slice(0, -1)) : value;
 
 export { getStartBlockNumber, updateHashiStateFile, readPendingMessages };
