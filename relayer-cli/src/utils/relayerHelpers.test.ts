@@ -22,8 +22,8 @@ describe("relayerHelpers", () => {
   describe("initialize", () => {
     it("should claimLock and create a state file if it doesn't exist", async () => {
       fileSystem.existsSync.mockReturnValue(false);
-      fileSystem.readFileSync.mockReturnValue('{"hashiBlockNumber":0,"nonce":0}');
-      const { hashiBlockNumber, nonce } = await initialize(
+      fileSystem.readFileSync.mockReturnValue('{"nonce":0}');
+      const { nonce } = await initialize(
         chainId,
         network,
         emitter as any,
@@ -32,14 +32,13 @@ describe("relayerHelpers", () => {
         fileSystem as any
       );
       expect(claimLock).toHaveBeenCalledWith(network, chainId);
-      expect(mockUpdateStateFile).toHaveBeenCalledWith(chainId, expect.any(Number), 0, 0, network, emitter);
+      expect(mockUpdateStateFile).toHaveBeenCalledWith(chainId, expect.any(Number), 0, network, emitter);
       expect(nonce).toBe(0);
-      expect(hashiBlockNumber).toBe(0);
     });
     it("should claimLock and return nonce from existing state file", async () => {
       fileSystem.existsSync.mockReturnValue(true);
-      fileSystem.readFileSync.mockReturnValue('{"hashiBlockNumber":10,"nonce":10}');
-      const { hashiBlockNumber, nonce } = await initialize(
+      fileSystem.readFileSync.mockReturnValue('{"nonce":10}');
+      const { nonce } = await initialize(
         chainId,
         network,
         emitter as any,
@@ -50,7 +49,6 @@ describe("relayerHelpers", () => {
       expect(claimLock).toHaveBeenCalledWith(network, chainId);
       expect(mockUpdateStateFile).not.toHaveBeenCalled();
       expect(nonce).toBe(10);
-      expect(hashiBlockNumber).toBe(10);
     });
   });
 
@@ -58,10 +56,10 @@ describe("relayerHelpers", () => {
     it("should write a state file with the provided nonce", async () => {
       const createdTimestamp = 123456;
       const fileDirectory = process.env.STATE_DIR + network + "_" + chainId + ".json";
-      await updateStateFile(chainId, createdTimestamp, 10, 10, network, emitter as any, fileSystem as any, releaseLock);
+      await updateStateFile(chainId, createdTimestamp, 10, network, emitter as any, fileSystem as any, releaseLock);
       expect(fileSystem.writeFileSync).toHaveBeenCalledWith(
         fileDirectory,
-        JSON.stringify({ ts: createdTimestamp, nonce: 10, hashiBlockNumber: 10 }),
+        JSON.stringify({ ts: createdTimestamp, nonce: 10 }),
         { encoding: "utf8" }
       );
       expect(releaseLock).toHaveBeenCalledWith(network, chainId);
