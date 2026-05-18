@@ -1,6 +1,6 @@
 {
   "name": "@kleros/veashi-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "SDK and selected smart contracts for Veashi",
   "packageManager": "yarn@4.6.0",
   "main": "./dist/index.js",
@@ -22,5 +22,8 @@
     "build:ts": "tsc -p tsconfig.json",
     "build": "yarn clean && yarn extract && yarn build:ts",
     "prepack": "yarn build"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.0"
   }
 }
