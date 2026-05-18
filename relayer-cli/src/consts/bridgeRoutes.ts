@@ -1,5 +1,6 @@
 // File for handling contants and configurations
 require("dotenv").config();
+import { MissingEnvironmentVariable } from "../utils/errors";
 import veaInboxArbToEthDevnet from "../../../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthDevnet.json";
 import veaOutboxArbToEthDevnet from "../../../contracts/deployments/sepolia/VeaOutboxArbToEthDevnet.json";
 import veaInboxArbToEthTestnet from "../../../contracts/deployments/arbitrumSepolia/VeaInboxArbToEthTestnet.json";
@@ -56,6 +57,12 @@ const arbToGnosisContracts: { [key in Network]: VeaContracts } = {
   },
 };
 
+const requireRpcEnv = (name: string): string[] => {
+  const value = process.env[name];
+  if (!value) throw new MissingEnvironmentVariable(name);
+  return value.split(",").map((s) => s.trim());
+};
+
 // Using destination chainId to get the route configuration.
 const bridges: { [chainId: number]: IBridge } = {
   11155111: {
@@ -64,12 +71,8 @@ const bridges: { [chainId: number]: IBridge } = {
     epochPeriod: 7200,
     veaContracts: arbToEthContracts,
     batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_SEPOLIA!,
-    rpcInbox: process.env.RPC_ARBITRUM_SEPOLIA
-      ? process.env.RPC_ARBITRUM_SEPOLIA.split(",").map((s) => s.trim())
-      : [process.env.RPC_ARBITRUM_SEPOLIA!],
-    rpcOutbox: process.env.RPC_SEPOLIA
-      ? process.env.RPC_SEPOLIA.split(",").map((s) => s.trim())
-      : [process.env.RPC_SEPOLIA!],
+    rpcInbox: requireRpcEnv("RPC_ARBITRUM_SEPOLIA"),
+    rpcOutbox: requireRpcEnv("RPC_SEPOLIA"),
     yahoAddress: "0xDbdF80c87f414fac8342e04D870764197bD3bAC7", // Hashi (Yaho) contract address on Arbitrum Sepolia
     yaruAddress: "0x231e48AAEaAC6398978a1dBA4Cd38fcA208Ec391", // Hashi (Yaru) contract address on Sepolia
     hashiAddress: "0x78E4ae687De18B3B71Ccd0e8a3A76Fed49a02A02", // Hashi (Hashi) contract address on Sepolia
@@ -80,12 +83,8 @@ const bridges: { [chainId: number]: IBridge } = {
     epochPeriod: 3600,
     veaContracts: arbToGnosisContracts,
     batcherAddress: process.env.TRANSACTION_BATCHER_CONTRACT_CHIADO!,
-    rpcInbox: process.env.RPC_ARBITRUM_SEPOLIA
-      ? process.env.RPC_ARBITRUM_SEPOLIA.split(",").map((s) => s.trim())
-      : [process.env.RPC_ARBITRUM_SEPOLIA!],
-    rpcOutbox: process.env.RPC_CHIADO
-      ? process.env.RPC_CHIADO.split(",").map((s) => s.trim())
-      : [process.env.RPC_CHIADO!],
+    rpcInbox: requireRpcEnv("RPC_ARBITRUM_SEPOLIA"),
+    rpcOutbox: requireRpcEnv("RPC_CHIADO"),
     yahoAddress: "0xDbdF80c87f414fac8342e04D870764197bD3bAC7", // Hashi (Yaho) contract address on Arbitrum Sepolia
     yaruAddress: "0x639c26C9F45C634dD14C599cBAa27363D4665C53", // Hashi (Yaru) contract address on Chiado
     hashiAddress: "0x78E4ae687De18B3B71Ccd0e8a3A76Fed49a02A02", // Hashi (Hashi) contract address on Chiado

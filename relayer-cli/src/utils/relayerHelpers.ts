@@ -116,7 +116,12 @@ async function cleanupAllLockFiles(emitter: EventEmitter, fileSystem: typeof fs 
  * @param emitter EventEmitter instance
  */
 async function setupExitHandlers(shutdownManager: ShutdownManager, emitter: EventEmitter) {
+  let isExiting = false;
+  const registeredEvents = new Set<string>();
+
   const handleExit = async (exitCode: number = 0) => {
+    if (isExiting) return;
+    isExiting = true;
     shutdownManager.triggerShutdown();
     emitter.emit(BotEvents.EXIT);
     await cleanupAllLockFiles(emitter);
@@ -124,21 +129,25 @@ async function setupExitHandlers(shutdownManager: ShutdownManager, emitter: Even
   };
 
   const addListenerOnce = (event: string, handler: (...args: any[]) => void) => {
-    if (process.listenerCount(event) === 0) {
+    if (!registeredEvents.has(event)) {
+      registeredEvents.add(event);
       process.on(event, handler);
     }
   };
 
   ["SIGINT", "SIGTERM", "SIGQUIT"].forEach((signal) => {
-    if (process.listenerCount(signal) === 0) {
-      process.on(signal, async () => {
-        await handleExit(0);
-      });
-    }
+    addListenerOnce(signal, async () => {
+      await handleExit(0);
+    });
   });
 
-  addListenerOnce("exit", async () => {
-    await handleExit();
+  // The exit event fires synchronously during process.exit() — async work won't complete here.
+  // Only synchronous state updates are safe; async cleanup is handled by the handlers above.
+  addListenerOnce("exit", () => {
+    if (!isExiting) {
+      shutdownManager.triggerShutdown();
+      emitter.emit(BotEvents.EXIT);
+    }
   });
 
   addListenerOnce("uncaughtException", async (err: Error) => {

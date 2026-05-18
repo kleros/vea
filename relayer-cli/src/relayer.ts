@@ -91,7 +91,7 @@ async function processNetworkConfig(networkConfig: RelayerNetworkConfig, emitter
     } else {
       const currentTS = Math.floor(Date.now() / 1000);
       const epochPeriod = getEpochPeriod(chainId);
-      const timeLeft = (epochPeriod - (Math.floor(currentTS / 1000) % epochPeriod)) * 1000 + 100 * 1000;
+      const timeLeft = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 100 * 1000;
       return Date.now() + timeLeft;
     }
   } catch (e) {
