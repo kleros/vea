@@ -85,27 +85,27 @@ async function updateStateFile(
 /**
  * Helper function to cleanup and delete the .pid lock file.
  *
- * @param chainId Chain ID of the relayer
- * @param network Network name of the relayer (e.g. "testnet")
  * @param emitter EventEmitter instance
- * @param fileSystem File system module (default is fs)
  */
-async function cleanupLockFile(
-  chainId: number,
-  network: string,
-  emitter: EventEmitter,
-  fileSystem: typeof fs = fs
-): Promise<void> {
+async function cleanupAllLockFiles(emitter: EventEmitter, fileSystem: typeof fs = fs): Promise<void> {
   const stateDir = process.env.STATE_DIR || "";
-  const pidFile = path.join(stateDir, `${network}_${chainId}.pid`);
-  try {
-    if (fileSystem.existsSync(pidFile)) {
-      await fileSystem.promises.unlink(pidFile);
-      emitter.emit(BotEvents.LOCK_RELEASED, `Lock file ${pidFile} deleted.`);
-    }
-  } catch (error) {
-    emitter.emit(BotEvents.EXCEPTION, new Error(`Failed to delete lock file ${pidFile}: ${error}`));
-  }
+  if (!fileSystem.existsSync(stateDir)) return;
+
+  const pidFiles = (await fileSystem.promises.readdir(stateDir)).filter((f) => f.endsWith(".pid"));
+  await Promise.allSettled(
+    pidFiles.map(async (f) => {
+      const fullPath = path.join(stateDir, f);
+      try {
+        const pid = parseInt(await fileSystem.promises.readFile(fullPath, "utf8"), 10);
+        if (pid === process.pid) {
+          await fileSystem.promises.unlink(fullPath);
+          emitter.emit(BotEvents.LOCK_RELEASED, `Lock file ${fullPath} deleted.`);
+        }
+      } catch (err) {
+        emitter.emit(BotEvents.EXCEPTION, new Error(`Failed to clean up ${fullPath}: ${err}`));
+      }
+    })
+  );
 }
 
 /**
@@ -115,17 +115,18 @@ async function cleanupLockFile(
  * @param network Network name of the relayer (e.g. "testnet")
  * @param emitter EventEmitter instance
  */
-async function setupExitHandlers(
-  chainId: number,
-  shutdownManager: ShutdownManager,
-  network: string,
-  emitter: EventEmitter
-) {
+async function setupExitHandlers(shutdownManager: ShutdownManager, emitter: EventEmitter) {
   const handleExit = async (exitCode: number = 0) => {
     shutdownManager.triggerShutdown();
     emitter.emit(BotEvents.EXIT);
-    await cleanupLockFile(chainId, network, emitter);
-    process.exit(0);
+    await cleanupAllLockFiles(emitter);
+    process.exit(exitCode);
+  };
+
+  const addListenerOnce = (event: string, handler: (...args: any[]) => void) => {
+    if (process.listenerCount(event) === 0) {
+      process.on(event, handler);
+    }
   };
 
   ["SIGINT", "SIGTERM", "SIGQUIT"].forEach((signal) => {
@@ -136,16 +137,16 @@ async function setupExitHandlers(
     }
   });
 
-  process.on("exit", async () => {
+  addListenerOnce("exit", async () => {
     await handleExit();
   });
 
-  process.on("uncaughtException", async (err) => {
+  addListenerOnce("uncaughtException", async (err: Error) => {
     emitter.emit(BotEvents.EXCEPTION, err);
     await handleExit(1);
   });
 
-  process.on("unhandledRejection", async (reason, promise) => {
+  addListenerOnce("unhandledRejection", async (reason: unknown, promise: Promise<unknown>) => {
     emitter.emit(BotEvents.PROMISE_REJECTION, reason, promise);
     await handleExit(1);
   });
@@ -216,7 +217,7 @@ export {
   getNetworkConfig,
   initialize,
   updateStateFile,
-  cleanupLockFile,
+  cleanupAllLockFiles,
   setupExitHandlers,
   delay,
   ShutdownManager,
