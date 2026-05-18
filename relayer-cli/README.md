@@ -57,7 +57,7 @@ Generate contract types(from root):
 ```bash
 yarn install
 cd contracts
-yarn test
+yarn build
 ```
 
 Run relayer:
