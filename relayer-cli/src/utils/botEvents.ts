@@ -7,6 +7,9 @@ export enum BotEvents {
   // Bot health
   EXCEPTION = "exception",
   PROMISE_REJECTION = "promise_rejection",
+  ERROR_CONTEXT = "error_context",
+  RPC_FAILURE = "rpc_failure",
+  RPC_RECOVERED = "rpc_recovered",
 
   // Lock file
   LOCK_CLAIMED = "lock_claimed",
@@ -22,7 +25,6 @@ export enum BotEvents {
   EXECUTING_HASHI = "executing_hashi",
   HASHI_EXECUTED = "hashi_executed",
   HASHI_BATCH_TXN = "hashi_batch_txn",
-  HASHI_EXECUTION_FAILED = "hashi_execution_failed",
   HASHI_NOT_CONFIGURED = "hashi_not_configured",
   HASHI_MESSAGE_FAILING = "hashi_message_failing",
   INDEXING = "indexing",

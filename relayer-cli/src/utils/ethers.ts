@@ -10,8 +10,8 @@ import {
 } from "../../../contracts/typechain-types";
 import { getBridgeConfig, Network } from "../consts/bridgeRoutes";
 
-function getWallet(privateKey: string, web3ProviderURL: string): Wallet {
-  return new Wallet(privateKey, new JsonRpcProvider(web3ProviderURL));
+function getWallet(privateKey: string, rpc: JsonRpcProvider): Wallet {
+  return new Wallet(privateKey, rpc);
 }
 
 function getWalletRPC(privateKey: string, rpc: Provider): Wallet {
@@ -19,13 +19,13 @@ function getWalletRPC(privateKey: string, rpc: Provider): Wallet {
 }
 
 // Using destination chainId as identifier, Ex: Arbitrum One (42161) -> Ethereum Mainnet (1): Use "1" as chainId
-function getVeaInbox(veaInboxAddress: string, privateKey: string, web3ProviderURL: string, chainId: number) {
+function getVeaInbox(veaInboxAddress: string, privateKey: string, rpc: JsonRpcProvider, chainId: number) {
   const bridge = getBridgeConfig(chainId);
   switch (bridge.chain) {
     case "sepolia":
-      return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+      return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, rpc));
     case "chiado":
-      return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, web3ProviderURL));
+      return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, rpc));
     default:
       throw new Error(`Unsupported chainId: ${chainId}`);
   }
@@ -46,7 +46,7 @@ function getVeaInboxProvider(veaInboxAddress: string, privateKey: string, rpc: J
 function getVeaOutbox(
   veaOutboxAddress: string,
   privateKey: string,
-  web3ProviderURL: string,
+  rpc: JsonRpcProvider,
   chainId: number,
   network: Network
 ) {
@@ -55,9 +55,9 @@ function getVeaOutbox(
     case "sepolia": {
       switch (network) {
         case Network.DEVNET:
-          return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+          return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
         case Network.TESTNET:
-          return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+          return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
         default:
           throw new Error(`Unsupported network for sepolia: ${network}`);
       }
@@ -65,9 +65,9 @@ function getVeaOutbox(
     case "chiado": {
       switch (network) {
         case Network.DEVNET:
-          return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+          return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
         case Network.TESTNET:
-          return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, web3ProviderURL));
+          return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
         default:
           throw new Error(`Unsupported network for chiado: ${network}`);
       }
@@ -110,8 +110,8 @@ function getVeaOutboxProvider(
       throw new Error(`Unsupported chainId: ${chainId}`);
   }
 }
-function getBatcher(batcherAddress: string, privateKey: string, web3ProviderURL: string) {
-  return TransactionBatcher__factory.connect(batcherAddress, getWallet(privateKey, web3ProviderURL));
+function getBatcher(batcherAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+  return TransactionBatcher__factory.connect(batcherAddress, getWallet(privateKey, rpc));
 }
 
 export { getWalletRPC, getVeaOutbox, getVeaInbox, getVeaOutboxProvider, getVeaInboxProvider, getBatcher };

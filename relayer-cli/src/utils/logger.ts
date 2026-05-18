@@ -53,8 +53,17 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.EXCEPTION, (err) => {
     logger.error({ err }, "uncaught_exception");
   });
-  emitter.on(BotEvents.PROMISE_REJECTION, (reason, promise) => {
-    logger.error({ reason, promise }, "unhandled_promise_rejection");
+  emitter.on(BotEvents.PROMISE_REJECTION, (reason) => {
+    logger.error({ err: reason }, "unhandled_promise_rejection");
+  });
+  emitter.on(BotEvents.ERROR_CONTEXT, (chainId, network) => {
+    logger.error({ chainId, network }, "error_context");
+  });
+  emitter.on(BotEvents.RPC_FAILURE, (data) => {
+    logger.error(data, "rpc_failure");
+  });
+  emitter.on(BotEvents.RPC_RECOVERED, (data) => {
+    logger.info(data, "rpc_recovered");
   });
 
   // Lock file logs
@@ -77,8 +86,8 @@ export const configurableInitialize = (emitter: EventEmitter) => {
     logger.info({ nonce, msgSenders, tx }, "relaying_all_from_till_nonce");
   });
 
-  emitter.on(BotEvents.MESSAGE_EXECUTION_FAILED, (nonce) => {
-    logger.error({ nonce }, "message_execution_failed_for_nonce");
+  emitter.on(BotEvents.MESSAGE_EXECUTION_FAILED, (chainId, network, nonce, err) => {
+    logger.error({ chainId, network, nonce, err }, "message_execution_failed_for_nonce");
   });
 
   // Hashi executor logs
@@ -91,8 +100,8 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.HASHI_BATCH_TXN, (txHash, batchSize) => {
     logger.debug({ txHash, batchSize }, "hashi_batch_txn");
   });
-  emitter.on(BotEvents.HASHI_MESSAGE_FAILING, (nonce, sourceChainId, targetChainId) => {
-    logger.warn({ nonce, sourceChainId, targetChainId }, "hashi_message_failing");
+  emitter.on(BotEvents.HASHI_MESSAGE_FAILING, (nonce, sourceChainId, targetChainId, err) => {
+    logger.warn({ nonce, sourceChainId, targetChainId, err }, "hashi_message_failing");
   });
   emitter.on(BotEvents.INDEXING, (fromBlock, toBlock) => {
     logger.debug({ fromBlock, toBlock }, "indexing_hashi_messages");
