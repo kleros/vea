@@ -82,6 +82,7 @@ const relayBatch = async ({
   try {
     const bridgeConfig = fetchBridgeConfig(chainId);
     const privateKey = process.env.PRIVATE_KEY;
+    if (!privateKey) throw new MissingEnvironmentVariable("PRIVATE_KEY");
     const { batcherAddress, veaContracts, rpcOutbox } = bridgeConfig;
     const veaInboxAddress = veaContracts[network].veaInbox.address;
     const veaOutboxAddress = veaContracts[network].veaOutbox.address;
@@ -125,7 +126,7 @@ const relayBatch = async ({
         const gasLimit = await batcher.batchSend.estimateGas(targets, values, datas);
         const tx = await batcher.batchSend(targets, values, datas, { gasLimit });
         const receipt = await tx.wait();
-        emitter.emit(BotEvents.RELAY_BATCH, nonce, receipt.hash);
+        emitter.emit(BotEvents.RELAY_BATCH, nonce, receipt?.hash);
       }
     }
     return nonce;
@@ -152,6 +153,7 @@ const relayAllFrom = async (
     const bridgeConfig = getBridgeConfig(chainId);
     const { veaContracts, batcherAddress, rpcOutbox } = bridgeConfig;
     const privateKey = process.env.PRIVATE_KEY;
+    if (!privateKey) throw new MissingEnvironmentVariable("PRIVATE_KEY");
     const veaInboxAddress = veaContracts[network].veaInbox.address;
     const veaOutboxAddress = veaContracts[network].veaOutbox.address;
     const rpcOutboxUrls = Array.isArray(rpcOutbox) ? rpcOutbox : [rpcOutbox];
@@ -192,10 +194,11 @@ const relayAllFrom = async (
       const gasLimit = await batcher.batchSend.estimateGas(targets, values, datas);
       const tx = await batcher.batchSend(targets, values, datas, { gasLimit });
       const receipt = await tx.wait();
-      emitter.emit(BotEvents.RELAY_ALL_FROM, nonce, msgSenders, receipt.hash);
+      emitter.emit(BotEvents.RELAY_ALL_FROM, nonce, msgSenders, receipt?.hash);
+      return lastNonce + 1; // return the next nonce to relay
     }
 
-    return lastNonce + 1; // return current nonce
+    return lastNonce; // return current nonce
   } catch (error) {
     throw new ExecutionError("relayAllFrom", chainId, network, { cause: error });
   }
