@@ -1,0 +1,45 @@
+type MessageSent {
+  id: ID!
+  inbox: String!
+  nonce: BigInt!
+  to: String!
+  msgSender: String!
+  data: String!
+  node: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type MerkleNode {
+  id: ID!
+  hash: String!
+}
+
+type Inbox {
+  id: ID!
+}
+
+type Sender {
+  id: ID!
+}
+
+type Receiver {
+  id: ID!
+}
+
+type SnapshotSaved {
+  id: ID!
+  stateRoot: String!
+  epoch: BigInt!
+  count: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type SnapshotSent {
+  id: ID!
+  epochSent: BigInt!
+  ticketId: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
