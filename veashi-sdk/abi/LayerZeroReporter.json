@@ -28,7 +28,7 @@
         "internalType": "address"
       },
       {
-        "name": "defaultFee_",
+        "name": "defaultGasLimit_",
         "type": "uint128",
         "internalType": "uint128"
       }
@@ -188,7 +188,7 @@
   },
   {
     "type": "function",
-    "name": "fee",
+    "name": "gasLimit",
     "inputs": [],
     "outputs": [
       {
@@ -302,10 +302,10 @@
   },
   {
     "type": "function",
-    "name": "setFee",
+    "name": "setGasLimit",
     "inputs": [
       {
-        "name": "fee_",
+        "name": "gasLimit_",
         "type": "uint128",
         "internalType": "uint128"
       }
@@ -396,10 +396,10 @@
   },
   {
     "type": "event",
-    "name": "FeeSet",
+    "name": "GasLimitSet",
     "inputs": [
       {
-        "name": "fee",
+        "name": "gasLimit",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

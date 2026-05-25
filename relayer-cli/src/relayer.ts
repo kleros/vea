@@ -74,25 +74,23 @@ async function processNetworkConfig(
 
   await setupExitHandlers(chainId, shutdownManager, network, emitter);
 
-  let { nonce, hashiBlockNumber } = await initializeNonces(chainId, network, emitter);
   if (sourceChainId) {
-    // Execute messages on Hashi
-    hashiBlockNumber = await runHashiExecutor({
+    await runHashiExecutor({
       sourceChainId,
       targetChainId: chainId,
       network,
-      blockNumber: hashiBlockNumber,
       emitter,
     });
-    await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, hashiBlockNumber, network, emitter);
     return Date.now() + HASHI_CYCLE_TIME_MS;
   }
+
+  let { nonce } = await initializeNonces(chainId, network, emitter);
   const toRelayAll = senders[0] === ethers.ZeroAddress;
   nonce = toRelayAll
     ? await relayBatch({ chainId, network, nonce, maxBatchSize, emitter })
     : await relayAllFrom(chainId, network, nonce, senders, emitter);
 
-  await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, hashiBlockNumber, network, emitter);
+  await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, network, emitter);
 
   if (network === Network.DEVNET) {
     return Date.now() + 1000 * 60 * 2; // 2 min for devnet

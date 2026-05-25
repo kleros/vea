@@ -17,6 +17,7 @@ export type HashiMessageState = {
 
 export type HashiMessageExecutionVars = {
   txHash: string;
+  timestamp: number;
   blockNumber: number;
   messageId: bigint;
   message: HashiMessage;
