@@ -100,26 +100,26 @@ indexer.onEvent({ contract: "VeaInboxArbToEth", event: "SnapshotSaved" }, async 
 
   // @dev size is shifted right each iteration; each set bit represents a perfect
   //      subtree of height `height` whose rightmost leaf index is `oldCount`.
-  let size = Number(count);
-  const oldCount = size - 1;
+  let size = count;
+  const oldCount = size - 1n;
   let isFirstHash = true;
   let nodeHash = "";
-  let height = 0;
-  let index = 0;
+  let height = 0n;
+  let index = 0n;
 
-  while (size > 0) {
-    if ((size & 1) === 1) {
+  while (size > 0n) {
+    if ((size & 1n) === 1n) {
       if (isFirstHash) {
         // @dev Seed nodeHash with the rightmost complete subtree root before
         //      folding in further subtrees to the left.
         isFirstHash = false;
-        if (height === 0) {
+        if (height === 0n) {
           index = oldCount;
           const node = await context.MerkleNode.get(`${inbox}-${index}`);
           if (!node) return;
           nodeHash = node.hash;
         } else {
-          index = oldCount + 1 - 2 ** height;
+          index = oldCount + 1n - 2n ** height;
           const node = await context.MerkleNode.get(`${inbox}-${index},${oldCount}`);
           if (!node) return;
           nodeHash = node.hash;
@@ -127,8 +127,8 @@ indexer.onEvent({ contract: "VeaInboxArbToEth", event: "SnapshotSaved" }, async 
       } else {
         // @dev Combine the next subtree (to the left) with the accumulated hash
         //      and store the resulting internal node if it does not yet exist.
-        const upperIndex = index - 1;
-        index = upperIndex + 1 - 2 ** height;
+        const upperIndex = index - 1n;
+        index = upperIndex + 1n - 2n ** height;
         const node = await context.MerkleNode.get(`${inbox}-${index},${upperIndex}`);
         if (!node) return;
         nodeHash = hashPair(nodeHash, node.hash);
@@ -138,7 +138,7 @@ indexer.onEvent({ contract: "VeaInboxArbToEth", event: "SnapshotSaved" }, async 
         if (!existing) context.MerkleNode.set({ id: newNodeId, hash: nodeHash });
       }
     }
-    size >>= 1;
+    size >>= 1n;
     height++;
   }
 });

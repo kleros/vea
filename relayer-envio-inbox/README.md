@@ -18,6 +18,6 @@ yarn codegen
 
 ### Pre-requisites
 
-- [Node.js (use v18 or newer)](https://nodejs.org/en/download/current)
-- [Yarn (use v1 or newer)](https://classic.yarnpkg.com/en/docs/install)
+- [Node.js ](https://nodejs.org/en/download/current)
+- [Yarn](https://classic.yarnpkg.com/en/docs/install)
 - [Docker desktop](https://www.docker.com/products/docker-desktop/)
