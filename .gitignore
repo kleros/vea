@@ -217,6 +217,9 @@ veascan-subgraph-inbox/build/*
 validator-subgraph-inbox/generated/*
 validator-subgraph-inbox/build/*
 
+# relayer-envio-inbox (envio indexer)
+relayer-envio-inbox/.envio/
+
 cache
 
 # veashi-sdk
