@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Brand Colors */
+  --purple-950: #1e1233;
+  --purple-900: #2d1b4e;
+  --purple-800: #4a2870;
+  --purple-700: #6b46c1;
+  --purple-600: #8b5cf6;
+  --purple-500: #a78bfa;
+  --pink-600: #ec4899;
+  --pink-500: #f472b6;
+  --pink-400: #f9a8d4;
+
+  /* Semantic Colors */
+  --background: #0a0414;
+  --surface: #140d24;
+  --surface-elevated: #1e1533;
+  --border: rgba(139, 92, 246, 0.15);
+  --text-primary: #f8f9fa;
+  --text-secondary: #c4b5fd;
+  --text-muted: #a78bfa;
+  --accent: #ec4899;
+  --accent-glow: rgba(236, 72, 153, 0.3);
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #6b46c1 0%, #ec4899 100%);
+  --gradient-mesh: radial-gradient(at 0% 0%, rgba(107, 70, 193, 0.2) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
+                    radial-gradient(at 50% 50%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+}
+
+@theme inline {
+  --font-sans: 'DM Sans', var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', var(--font-geist-mono), monospace;
+
+  /* Custom colors for Tailwind */
+  --color-purple-950: var(--purple-950);
+  --color-purple-900: var(--purple-900);
+  --color-purple-800: var(--purple-800);
+  --color-purple-700: var(--purple-700);
+  --color-purple-600: var(--purple-600);
+  --color-purple-500: var(--purple-500);
+  --color-pink-600: var(--pink-600);
+  --color-pink-500: var(--pink-500);
+  --color-pink-400: var(--pink-400);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--purple-800);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--purple-700);
+}
+
+/* Selection */
+::selection {
+  background: var(--purple-700);
+  color: white;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  50% {
+    box-shadow: 0 0 40px var(--accent-glow);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Gradient mesh background */
+.gradient-mesh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-mesh);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(20, 13, 36, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+/* Dark-mode native select */
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(107, 70, 193, 0.3);
+}
