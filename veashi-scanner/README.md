@@ -1,147 +1,61 @@
-# Veashi - Cross-Chain Message Explorer
+# Veashi Scanner — Cross-Chain Message Explorer
 
-A distinctive, production-grade cross-chain message explorer for the Hashi protocol. Track messages across multiple bridge providers including CCIP, LayerZero, Vea, and DeBridge with a bold, Kleros-inspired interface.
+A cross-chain message explorer for the [Hashi](https://github.com/gnosis/hashi) protocol, built on the
+[`@kleros/veashi-sdk`](../). It lets you browse messages dispatched through Hashi's `Yaho` contract and
+inspect each message's bridge confirmations, threshold progress, and execution status across multiple bridge
+providers.
 
-## Features
+A message is considered verified once enough independent bridge adapters have relayed and stored its hash on
+the destination chain to meet the message's required threshold.
 
-- **Message List Page**: Browse all cross-chain messages with pagination (7-8 messages per page)
-- **Transaction Details Page**: Deep dive into individual transactions with full bridge and address information
-- **Multi-Bridge Support**: Track messages across CCIP, LayerZero, Vea, and DeBridge
-- **Threshold Status**: Visual progress indicators showing threshold completion (e.g., 2/3)
-- **Block Range Display**: See the block range being scanned
-- **Responsive Design**: Beautiful on all screen sizes
-- **Smooth Animations**: Staggered fade-ins, hover effects, and glowing status indicators
-- **Copy-to-Clipboard**: Easy copying of transaction hashes and addresses
+## Supported routes & bridges
 
-## Design System
+Routes and bridge deployments come from the SDK (`getRoute` / `getAvailableBridges`). Currently supported:
 
-### Color Palette
+| Source chain              | Destination chain     | Bridges              |
+| ------------------------- | --------------------- | -------------------- |
+| Story (1514)              | Arbitrum One (42161)  | LayerZero, DeBridge  |
+| Arbitrum One (42161)      | Story (1514)          | LayerZero, DeBridge  |
+| Arbitrum Sepolia (421614) | Sepolia (11155111)    | LayerZero, CCIP, Vea |
+| Arbitrum Sepolia (421614) | Gnosis Chiado (10200) | CCIP, Vea            |
 
-- **Deep Purple**: `#6b46c1` - Primary brand color
-- **Electric Pink**: `#ec4899` - Accent and CTAs
-- **Dark Background**: `#0a0414` - Main background with gradient mesh
-- **Surface**: `#140d24` - Card backgrounds with glass morphism
+**Bridge providers:** LayerZero, Chainlink CCIP, [Vea](https://github.com/kleros/vea), and deBridge.
 
-### Typography
+> The route table is driven entirely by the installed `@kleros/veashi-sdk` version. As new routes are
+> deployed and the SDK is bumped, they appear automatically — no scanner changes needed.
 
-- **UI Font**: DM Sans - Clean, modern sans-serif
-- **Mono Font**: JetBrains Mono - For addresses and hashes
+## Running locally
 
-### Components
+This package lives in the `vea` monorepo as the `@kleros/veashi-scanner` Yarn workspace.
 
-- **ChainBadge**: Colored badges for different chains (Ethereum, Arbitrum, etc.)
-- **BridgeBadge**: Styled badges for bridge providers
-- **StatusIndicator**: Circular progress indicator with color-coded status
-- **CopyButton**: Interactive button with copy feedback
-- **Pagination**: Elegant page navigation
+### Prerequisites
 
-## Tech Stack
+- Node.js 18+ and Yarn 4 (the repo pins `yarn@4.6.0` via `packageManager`).
+- A running [Envio indexer](../veashi-envio-yaho) exposing a GraphQL endpoint (optional — the scanner falls
+  back to direct RPC reads, but the message list is populated from the indexer).
 
-- **Next.js 16** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS 4** - Utility-first styling
-- **React 19** - Latest React features
-
-## Getting Started
+### Steps
 
 ```bash
-# Install dependencies
+# From the monorepo root (installs all workspaces)
 yarn install
 
-# Run development server
+# Start the scanner dev server
+yarn workspace @kleros/veashi-scanner dev
+# …or from within veashi-scanner/
 yarn dev
-
-# Build for production
-yarn build
-
-# Start production server
-yarn start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Project Structure
+### Environment variables
 
-```
-veashi-scanner/
-├── app/
-│   ├── layout.tsx          # Root layout with gradient mesh background
-│   ├── page.tsx            # Home page with message list
-│   ├── tx/[hash]/
-│   │   └── page.tsx        # Transaction detail page
-│   └── globals.css         # Global styles and design system
-├── components/
-│   ├── Header.tsx          # Main navigation header
-│   ├── ChainBadge.tsx      # Chain identifier badges
-│   ├── BridgeBadge.tsx     # Bridge provider badges
-│   ├── StatusIndicator.tsx # Threshold progress indicator
-│   ├── CopyButton.tsx      # Copy-to-clipboard button
-│   └── Pagination.tsx      # Page navigation
-├── lib/
-│   ├── types.ts            # TypeScript type definitions
-│   └── mock-data.ts        # Mock data for development
-└── next.config.ts          # Next.js configuration
-```
+Create `veashi-scanner/.env.local` (defaults shown are used when unset):
 
-## Pages
+| Variable                          | Default                            | Description                                     |
+| --------------------------------- | ---------------------------------- | ----------------------------------------------- |
+| `NEXT_PUBLIC_ENVIO_URL`           | `http://localhost:8080/v1/graphql` | Envio indexer GraphQL endpoint.                 |
+| `NEXT_PUBLIC_HASURA_ADMIN_SECRET` | `testing`                          | Hasura admin secret sent with indexer requests. |
 
-### Home Page (`/`)
-
-- Lists all cross-chain messages
-- Shows source/destination chains
-- Displays transaction hash (clickable)
-- Shows threshold status (e.g., 2/3)
-- Pagination controls
-- Block range information
-- Stats cards (Total, Completed, In Progress)
-
-### Transaction Detail Page (`/tx/[hash]`)
-
-- Large status indicator with threshold progress
-- Source and destination chain information
-- All active bridges for the transaction
-- Source and destination addresses (with copy functionality)
-- Block number, threshold required, timestamp
-- Back navigation to message list
-
-## Mock Data
-
-The application currently uses mock data defined in `lib/mock-data.ts`. Replace this with actual API calls to your backend or blockchain data source.
-
-## Customization
-
-### Adding New Chains
-
-Edit `lib/types.ts` and `components/ChainBadge.tsx` to add new chain definitions and colors.
-
-### Adding New Bridges
-
-Edit `lib/types.ts` and `components/BridgeBadge.tsx` to add new bridge providers.
-
-### Styling
-
-All design tokens are defined in `app/globals.css` under CSS custom properties for easy theming.
-
-## Deployment
-
-The easiest way to deploy is using [Vercel](https://vercel.com):
-
-```bash
-vercel
-```
-
-Or build and deploy to any Node.js hosting platform:
-
-```bash
-yarn build
-yarn start
-```
-
-## License
-
-MIT
-
-## Credits
-
-Inspired by [Kleros](https://kleros.io) design language.
-Built with [Claude Code](https://claude.com/claude-code).
+RPC access uses viem's default public transport per chain; no RPC keys are required for the supported
+testnets, though you can configure custom transports in [`lib/chains.ts`](lib/chains.ts) if you hit rate limits.
