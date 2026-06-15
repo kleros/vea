@@ -24,7 +24,9 @@
     "veascan-subgraph-inbox",
     "veascan-subgraph-outbox",
     "veashi-contracts",
-    "veashi-sdk"
+    "veashi-sdk",
+    "veashi-scanner",
+    "veashi-envio-yaho"
   ],
   "packageManager": "yarn@4.6.0",
   "volta": {
