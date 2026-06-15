@@ -103,7 +103,7 @@ export function useTransaction(sourceChainId: number, txHash: string) {
 
         setMessage(msg);
         setSource("chain");
-      } catch (err: any) {
+      } catch (err) {
         if (!cancelled) {
           console.error("useTransaction failed:", err);
           setError("Failed to fetch transaction details.");

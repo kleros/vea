@@ -34,7 +34,6 @@ export default function ChainFilterPanel({
   toBlock,
   onFromBlockChange,
   onToBlockChange,
-  stats,
   hasActiveFilter,
   onClearFilters,
 }: Props) {

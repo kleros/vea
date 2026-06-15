@@ -55,8 +55,7 @@ export async function findChainForTx(hash: string): Promise<number | null> {
 
     console.log(`Found transaction on chainId: ${foundChainId}`);
     return foundChainId;
-  } catch (error) {
-    // Promise.any throws an AggregateError only if EVERY promise is rejected
+  } catch {
     console.log(`Transaction ${hash} not found on any supported chains.`);
     return null;
   }

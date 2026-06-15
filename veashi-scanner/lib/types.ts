@@ -85,3 +85,11 @@ export type DropdownSelectProps = AriaSelectProps<ChainItem> & {
   label?: string;
   dropdownClassName?: string;
 };
+
+export type StatusesRecord = Record<string, Status>;
+
+export enum Status {
+  PENDING = "Pending",
+  IN_PROGRESS = "In Progress",
+  CONFIRMED = "Confirmed",
+}

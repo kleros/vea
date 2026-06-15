@@ -285,19 +285,15 @@ export function useMessageScanner(
                 }
               }
             }
-          } catch (chainErr: any) {
-            if (chainErr.name !== "AbortError") {
-              console.error(`Scanning failed for chain ${srcId}:`, chainErr);
-            }
+          } catch (err) {
+            console.error(`Scanning failed for chain ${srcId}:`, err);
           }
         });
 
         await Promise.all(scanPromises);
-      } catch (err: any) {
-        if (err.name !== "AbortError") {
-          console.error("Global scanning failed:", err);
-          setError("Failed to scan blockchain.");
-        }
+      } catch (err) {
+        console.error("Global scanning failed:", err);
+        setError("Failed to scan blockchain.");
       } finally {
         if (!signal.aborted) setIsScanning(false);
       }

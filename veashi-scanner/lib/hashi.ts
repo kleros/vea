@@ -1,7 +1,30 @@
-import { createPublicClient, http, type Address, type Hash } from "viem";
+import { createPublicClient, http, type Address, type Hash, type Hex } from "viem";
 import { YahoAbi } from "@kleros/veashi-sdk";
 import type { HashiMessage } from "./types";
 import { getViemChain } from "./chains";
+
+/**
+ * Decoded shape of a `MessageDispatched` event log. `YahoAbi` is a JSON import,
+ * so viem can't infer `args` from it (the ABI isn't a readonly `as const`
+ * tuple); we type the fields we read explicitly instead of falling back to `any`.
+ */
+type MessageDispatchedLog = {
+  args: {
+    messageId: bigint;
+    message: {
+      nonce: bigint;
+      targetChainId: bigint;
+      threshold: bigint;
+      sender: Address;
+      receiver: Address;
+      data: Hex;
+      reporters: readonly Address[];
+      adapters: readonly Address[];
+    };
+  };
+  transactionHash: Hash;
+  blockNumber: bigint;
+};
 
 export interface HashiMessageExecutionVars {
   txHash: string;
@@ -31,7 +54,7 @@ export async function getMessageDispatchedLogs(
     toBlock: toBlock,
   });
   for (const log of logs) {
-    const { args, transactionHash, blockNumber } = log as any;
+    const { args, transactionHash, blockNumber } = log as unknown as MessageDispatchedLog;
 
     if (!args || !args.message) continue;
 
@@ -72,13 +95,6 @@ export async function getMessageFromTxHash(
   });
   const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
 
-  const logs = await publicClient.getContractEvents({
-    address: yahoAddress,
-    abi: YahoAbi,
-    eventName: "MessageDispatched",
-    strict: true,
-  });
-
   const targetLog = receipt.logs.find((l) => l.address.toLowerCase() === yahoAddress.toLowerCase());
 
   if (!targetLog) return null;
@@ -95,7 +111,7 @@ export async function getMessageFromTxHash(
 
   if (!log) return null;
 
-  const { args, blockNumber } = log as any;
+  const { args, blockNumber } = log as unknown as MessageDispatchedLog;
   const { messageId, message } = args;
 
   const formattedMessage: HashiMessage = {

@@ -12,7 +12,6 @@
     "@kleros/ui-components-library": "^3.6.0",
     "@kleros/veashi-sdk": "0.0.2",
     "clsx": "^2.1.1",
-    "ethers": "^6.16.0",
     "next": "14",
     "react": "18",
     "react-dom": "18",
@@ -25,7 +24,7 @@
     "@types/react": "18",
     "@types/react-dom": "18",
     "eslint": "^9",
-    "eslint-config-next": "14",
+    "eslint-config-next": "^15",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

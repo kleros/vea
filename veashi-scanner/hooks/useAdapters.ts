@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { createPublicClient, http, type Address, type Abi } from "viem";
-import type { Message } from "@/lib/types";
+import { Status, type Message, type StatusesRecord } from "@/lib/types";
 import { AdapterAbi } from "@kleros/veashi-sdk";
 import { getViemChain } from "@/lib/chains";
 
 const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export function useAdapterStatuses(message: Message) {
-  const [statuses, setStatuses] = useState<Record<string, "Confirmed" | "Pending">>({});
+  const [statuses, setStatuses] = useState<StatusesRecord>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -49,15 +49,15 @@ export function useAdapterStatuses(message: Message) {
         });
 
         // Parse the results back to the adapter addresses
-        const newStatuses: Record<string, "Confirmed" | "Pending"> = {};
+        const newStatuses: StatusesRecord = {};
         message.adapters.forEach((adapter, index) => {
           const result = results[index];
           if (result.status === "success") {
             const hash = result.result as string;
-            newStatuses[adapter] = hash && hash !== ZERO_BYTES32 ? "Confirmed" : "Pending";
+            newStatuses[adapter] = hash && hash !== ZERO_BYTES32 ? Status.CONFIRMED : Status.PENDING;
           } else {
             console.error(`Adapter ${adapter} failed:`, result.error);
-            newStatuses[adapter] = "Pending";
+            newStatuses[adapter] = Status.PENDING;
           }
         });
 

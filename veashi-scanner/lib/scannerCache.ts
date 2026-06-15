@@ -62,7 +62,6 @@ let storageWarningEmitted = false;
 function warnStorageOnce(err: unknown): void {
   if (storageWarningEmitted) return;
   storageWarningEmitted = true;
-  // eslint-disable-next-line no-console
   console.warn("[cache] localStorage write failed; cache disabled:", err);
 }
 

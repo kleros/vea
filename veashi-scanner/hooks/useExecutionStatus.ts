@@ -51,7 +51,7 @@ export function useExecutionStatus(message: Message | null | undefined) {
     return () => {
       isMounted = false;
     };
-  }, [message?.messageId, message?.destinationChain]);
+  }, [message]);
 
   // Return just the status and loading state
   return { status, isLoading };

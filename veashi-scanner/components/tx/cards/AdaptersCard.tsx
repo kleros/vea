@@ -1,7 +1,8 @@
-import { Message } from "@/lib/types";
+import { Message, StatusesRecord } from "@/lib/types";
 import { getBridgeName } from "@/lib/veashiHelpers";
 import { Copiable } from "@kleros/ui-components-library";
 import SectionCard from "./SectionCard";
+import { Status } from "@/lib/types";
 
 export default function AdaptersCard({
   message,
@@ -9,7 +10,7 @@ export default function AdaptersCard({
   isLoading,
 }: {
   message: Message;
-  statuses: Record<string, any>;
+  statuses: StatusesRecord;
   isLoading: boolean;
 }) {
   const adapters = message.adapters ?? [];
@@ -23,7 +24,7 @@ export default function AdaptersCard({
     );
   }
 
-  const bridgeGroups = new Map<string, { adapter?: string; reporter?: string; status?: any; bridgeName: string }>();
+  const bridgeGroups = new Map<string, { adapter?: string; reporter?: string; status?: Status; bridgeName: string }>();
 
   // Adapters and reporters are index-aligned: adapters[i] and reporters[i]
   // belong to the same bridge. Process them together so they stay paired even
@@ -98,12 +99,12 @@ export default function AdaptersCard({
             <div className="shrink-0 pt-3 lg:pt-0 border-t border-(--border) lg:border-0 flex items-center">
               {isLoading ? (
                 <span className="text-xs font-medium text-(--text-muted) animate-pulse">Loading...</span>
-              ) : pair.status === "Verified" || pair.status === true ? (
-                <span className="text-xs font-medium text-green-400">Verified</span>
-              ) : pair.status === "Failed" || pair.status === false ? (
-                <span className="text-xs font-medium text-red-400">Failed</span>
+              ) : pair.status === Status.CONFIRMED ? (
+                <span className="text-xs font-medium text-green-400">Confirmed</span>
+              ) : pair.status === Status.PENDING ? (
+                <span className="text-xs font-medium text-red-400">Pending</span>
               ) : (
-                <span className="text-xs font-medium text-amber-400/80">{pair.status || "Pending"}</span>
+                <span className="text-xs font-medium text-amber-400/80">{pair.status || Status.PENDING}</span>
               )}
             </div>
           </div>

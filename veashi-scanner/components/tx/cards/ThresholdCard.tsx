@@ -1,4 +1,4 @@
-import { Message } from "@/lib/types";
+import { Message, Status, StatusesRecord } from "@/lib/types";
 import { getStatusMeta } from "@/lib/utils";
 import SectionCard from "./SectionCard";
 export default function ThresholdCard({
@@ -7,11 +7,11 @@ export default function ThresholdCard({
   isLoading,
 }: {
   message: Message;
-  statuses: Record<string, any>;
+  statuses: StatusesRecord;
   isLoading: boolean;
 }) {
   const required = message.thresholdRequired;
-  const verifiedCount = statuses ? Object.values(statuses).filter((s) => s === "Confirmed" || s === true).length : 0;
+  const verifiedCount = statuses ? Object.values(statuses).filter((s) => s === Status.CONFIRMED).length : 0;
   const current = isLoading ? message.thresholdCurrent ?? 0 : verifiedCount;
 
   const pct = required > 0 ? Math.round((current / required) * 100) : 0;
