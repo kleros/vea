@@ -1,9 +1,9 @@
 import type { Message } from "./types";
 
+// Both the local Envio dev instance and Envio Cloud expose a public,
+// unauthenticated read role for queries — no Hasura admin secret is required
+// (and none should ever ship to the browser).
 const ENVIO_URL = process.env.NEXT_PUBLIC_ENVIO_URL ?? "http://localhost:8080/v1/graphql";
-
-// Default admin secret for envio's local Hasura instance.
-const HASURA_SECRET = process.env.NEXT_PUBLIC_HASURA_ADMIN_SECRET ?? "testing";
 
 const FETCH_TIMEOUT_MS = 5_000;
 
@@ -62,10 +62,7 @@ async function gql<T>(query: string, variables: Record<string, unknown>): Promis
   try {
     const res = await fetch(ENVIO_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-hasura-admin-secret": HASURA_SECRET,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query, variables }),
       signal: controller.signal,
     });
