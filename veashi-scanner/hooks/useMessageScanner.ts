@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPublicClient, http, Address } from "viem";
-import { NO_CHAIN, type ChainFilter, type BlockRange } from "@/components/ChainFilterPanel";
+import { NO_CHAIN, ChainFilter, BlockRange } from "@/lib/types";
 import { getMessageDispatchedLogs } from "@/lib/hashi";
 import { getYaho, getAllSourceChains, getDestinationChains } from "@kleros/veashi-sdk";
 import type { Message } from "@/lib/types";
@@ -105,13 +105,11 @@ export function useMessageScanner(
     abortRef.current = new AbortController();
     const signal = abortRef.current.signal;
 
-    // ── Step 1: Show cached messages synchronously, before any RPC call ──────
-    // localStorage reads are fast — this sets the visible list instantly on
-    // every filter/range change.  The scan below only merges NEW results on top.
+    // Show cached messages synchronously, before any RPC call
     const cached = loadAllCachedMessages(sourceChain, destinationChain);
     setMessages(cached);
 
-    // ── Step 2: Scan for uncached blocks asynchronously ───────────────────────
+    // Scan for uncached blocks asynchronously
     setIsScanning(true);
     setError(null);
 
@@ -194,11 +192,10 @@ export function useMessageScanner(
               setBlockRange(null);
             }
 
-            // ── Per-destination scan: envio first, RPC fallback ──────────────
             for (const dstId of targetDestIds) {
               if (signal.aborted) break;
 
-              // ── Attempt 1: envio indexer ────────────────────────────────────
+              // envio indexer
               const envioMessages = await fetchMessagesFromEnvio({
                 sourceChainId: srcId,
                 destinationChainId: dstId,
@@ -206,7 +203,6 @@ export function useMessageScanner(
               });
 
               if (envioMessages !== null) {
-                // Envio responded — use its results and skip RPC for this pair.
                 const inRange = envioMessages.filter(
                   (m) => m.blockNumber >= displayRange.start && m.blockNumber <= displayRange.end
                 );
@@ -217,7 +213,7 @@ export function useMessageScanner(
                 continue;
               }
 
-              // ── Attempt 2: RPC fallback ────────────────────────────────────
+              // RPC fallback
               const yahoAddr = getYaho(srcId, dstId);
               if (!yahoAddr) continue;
 

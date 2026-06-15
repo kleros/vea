@@ -1,3 +1,5 @@
+import type { SelectProps as AriaSelectProps } from "react-aria-components";
+
 export type Bridge = "CCIP" | "LayerZero" | "Vea" | "DeBridge";
 
 export interface BridgeStatus {
@@ -50,4 +52,36 @@ export interface HashiMessage {
   adapters: string[];
 }
 
+export interface BlockRange {
+  chain: string;
+  start: number;
+  end: number;
+  windowSize: number;
+}
+
+export interface MessageStats {
+  total: number;
+  completed: number;
+  inProgress: number;
+  pending: number;
+}
+
 export type IconType = "route" | "address" | "threshold" | "info" | "bridge";
+
+export const NO_CHAIN = "No Chain" as const;
+export type ChainFilter = number | typeof NO_CHAIN;
+
+export type ChainItem = {
+  id: string | number;
+  text: string;
+  itemValue: ChainFilter;
+};
+
+export type DropdownSelectProps = AriaSelectProps<ChainItem> & {
+  items: ChainItem[];
+  callback: (value: ChainItem) => void;
+  simpleButton?: boolean;
+  smallButton?: boolean;
+  label?: string;
+  dropdownClassName?: string;
+};

@@ -1,5 +1,5 @@
 import { Message } from "@/lib/types";
-import SectionLabel from "../SectionLabel";
+import SectionCard from "./SectionCard";
 
 export default function DetailsCard({
   message,
@@ -11,8 +11,7 @@ export default function DetailsCard({
   execLoading: boolean;
 }) {
   return (
-    <div className="glass rounded-xl border border-(--border) p-5 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-      <SectionLabel icon="info" label="Details" />
+    <SectionCard icon="info" label="Details" delay="0.15s">
       <dl className="mt-4 space-y-3">
         {message.messageId && (
           <MetaRow label="Message ID">
@@ -52,7 +51,7 @@ export default function DetailsCard({
           </div>
         </MetaRow>
       </dl>
-    </div>
+    </SectionCard>
   );
 }
 

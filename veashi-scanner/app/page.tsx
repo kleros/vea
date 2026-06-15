@@ -4,24 +4,14 @@ import { useState, useMemo, useEffect } from "react";
 import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/Pagination";
-import ChainFilterPanel, { NO_CHAIN, type ChainFilter, type MessageStats } from "@/components/ChainFilterPanel";
+import ChainFilterPanel from "@/components/ChainFilterPanel";
+import { NO_CHAIN, ChainFilter, MessageStats } from "@/lib/types";
 import MessagesTable from "@/components/MessagesTable";
+import { parseBlockInput } from "@/lib/utils";
 import { useMessageScanner } from "@/hooks/useMessageScanner";
 import { useDebounce } from "@/hooks/useDebounce";
 
 const ITEMS_PER_PAGE = 10;
-
-/**
- * Parse user-typed block input into a non-negative integer or undefined.
- * Returns undefined for empty / non-numeric / negative input so the hook
- * doesn't try to BigInt(NaN), which throws.
- */
-function parseBlockInput(value: string): number | undefined {
-  if (value === "") return undefined;
-  const n = Number(value);
-  if (!Number.isFinite(n) || n < 0) return undefined;
-  return Math.floor(n);
-}
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,7 +20,7 @@ export default function Home() {
   const [fromBlock, setFromBlock] = useState("");
   const [toBlock, setToBlock] = useState("");
 
-  // Debounce so a scan only fires after the user stops typing for 600 ms.
+  // Debounce so a scan fires after the user stops typing for 600 ms.
   const debouncedFromBlock = useDebounce(fromBlock, 600);
   const debouncedToBlock = useDebounce(toBlock, 600);
 
@@ -61,9 +51,6 @@ export default function Home() {
 
   const totalPages = Math.max(1, Math.ceil(messages.length / ITEMS_PER_PAGE));
 
-  // Clamp currentPage if the message list shrinks (e.g. mid-scan reset, or
-  // a re-scan that returns fewer results) so the user doesn't end up on a
-  // page that's now empty.
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [totalPages, currentPage]);
@@ -95,7 +82,7 @@ export default function Home() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      <main className="max-w-2/3 mx-auto p-6 space-y-6">
         <div className="animate-fade-in">
           <SearchBar />
         </div>

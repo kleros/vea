@@ -1,16 +1,15 @@
 import { Message } from "@/lib/types";
-import SectionLabel from "../SectionLabel";
-import CopyButton from "@/components/CopyButton";
+import { Copiable } from "@kleros/ui-components-library";
+import SectionCard from "./SectionCard";
 
 export default function AddressesCard({ message }: { message: Message }) {
   return (
-    <div className="glass rounded-xl border border-(--border) p-5 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-      <SectionLabel icon="address" label="Addresses" />
+    <SectionCard icon="address" label="Addresses" delay="0.15s">
       <div className="mt-4 space-y-3">
         <AddressRow label="Sender" address={message.sourceAddress} />
         <AddressRow label="Receiver" address={message.destinationAddress} />
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -19,7 +18,9 @@ function AddressRow({ label, address }: { label: string; address: string }) {
     <div>
       <p className="text-xs text-(--text-muted) uppercase tracking-wide mb-1">{label}</p>
       <div className="bg-(--surface) rounded-lg px-3 py-2 border border-(--border)">
-        <CopyButton text={address} displayText={address} className="text-sm font-mono break-all" />
+        <Copiable copiableContent={address} info="Copy address">
+          <span className="font-mono text-sm break-all">{address}</span>
+        </Copiable>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import type { Message } from "@/lib/types";
-import CopyButton from "@/components/CopyButton";
+import { Copiable } from "@kleros/ui-components-library";
+import SectionCard from "./SectionCard";
 
 export default function TxHeaderCard({
   message,
@@ -11,13 +12,15 @@ export default function TxHeaderCard({
   txHash: string;
 }) {
   return (
-    <div className="glass rounded-xl border border-(--border) p-5 animate-fade-in" style={{ animationDelay: "0.05s" }}>
+    <SectionCard delay="0.05s">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) mb-1.5">
             Source Transaction
           </p>
-          <CopyButton text={txHash} displayText={txHash} className="font-mono text-sm break-all" />
+          <Copiable copiableContent={txHash} info="Copy transaction hash">
+            <span className="font-mono text-sm break-all">{txHash}</span>
+          </Copiable>
         </div>
         {source && (
           <span
@@ -44,6 +47,6 @@ export default function TxHeaderCard({
           </span>
         )}
       </div>
-    </div>
+    </SectionCard>
   );
 }

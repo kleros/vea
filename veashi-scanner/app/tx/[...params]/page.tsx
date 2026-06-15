@@ -1,23 +1,15 @@
 "use client";
 
-import { use } from "react";
+import { Button, Copiable } from "@kleros/ui-components-library";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import CopyButton from "@/components/CopyButton";
 import { useTransaction } from "@/hooks/useTransaction";
 import TxDetailContent from "@/components/tx/TxDetailContent";
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-// Handles two URL shapes:
-//   /tx/[hash]              → no chainId known (e.g. from SearchBar)
-//   /tx/[chainId]/[hash]    → full detail (e.g. from messages table)
-
-export default function TransactionPage({ params }: { params: Promise<{ params: string[] }> }) {
-  const { params: segments } = use(params);
-  // const {statuses, isLoading} = useAdapterStatuses(params.)
+export default function TransactionPage({ params }: { params: { params: string[] } }) {
+  const segments = params.params;
   const router = useRouter();
 
-  // Resolve segments → (chainId?, hash)
   const hasChainId = segments.length >= 2;
   const chainId = hasChainId ? Number(segments[0]) : null;
   const txHash = hasChainId ? segments[1] : segments[0];
@@ -26,15 +18,17 @@ export default function TransactionPage({ params }: { params: Promise<{ params: 
     <div className="min-h-screen">
       <Header />
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-4">
-        <button
-          onClick={() => router.push("/")}
-          className="flex items-center gap-2 text-sm text-(--text-muted) hover:text-(--text-primary) transition-colors animate-fade-in"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Messages
-        </button>
+        <Button
+          variant="secondary"
+          small
+          onPress={() => router.push("/")}
+          icon={
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          }
+          text="Back to Messages"
+        />
 
         {/* No chainId: show informational message */}
         {!hasChainId ? (
@@ -46,7 +40,9 @@ export default function TransactionPage({ params }: { params: Promise<{ params: 
               <p className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) mb-1">
                 Source Transaction
               </p>
-              <CopyButton text={txHash} displayText={txHash} className="font-mono text-sm break-all" />
+              <Copiable copiableContent={txHash} info="Copy transaction hash">
+                <span className="font-mono text-sm break-all">{txHash}</span>
+              </Copiable>
             </div>
             <NoChainIdCard />
           </>

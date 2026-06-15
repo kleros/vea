@@ -27,7 +27,9 @@ export async function findChainForTx(hash: string): Promise<number | null> {
       chainIds.map(async (chainId) => {
         const chain = getViemChain(chainId);
         if (!chain) throw new Error("Chain not supported:" + chainId);
-        const response = await fetch(chain.rpcUrls.default.http[0], {
+        const rpcUrl = chain.rpcUrls.default.http[0];
+        if (!rpcUrl) throw new Error("No RPC URL for chain:" + chainId);
+        const response = await fetch(rpcUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -58,4 +60,11 @@ export async function findChainForTx(hash: string): Promise<number | null> {
     console.log(`Transaction ${hash} not found on any supported chains.`);
     return null;
   }
+}
+
+export function parseBlockInput(value: string): number | undefined {
+  if (value === "") return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return undefined;
+  return Math.floor(n);
 }

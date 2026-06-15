@@ -1,8 +1,8 @@
 import { Message } from "@/lib/types";
 import { getBridgeName } from "@/lib/veashiHelpers";
 import type { Bridge } from "@/lib/types";
-import SectionLabel from "../SectionLabel";
 import BridgeBadge from "@/components/BridgeBadge";
+import SectionCard from "./SectionCard";
 
 export default function BridgeSummaryCard({ message }: { message: Message }) {
   const adapters = message.adapters ?? [];
@@ -22,8 +22,7 @@ export default function BridgeSummaryCard({ message }: { message: Message }) {
   const knownBridges: Bridge[] = ["CCIP", "LayerZero", "Vea", "DeBridge"];
 
   return (
-    <div className="glass rounded-xl border border-(--border) p-5 animate-fade-in" style={{ animationDelay: "0.13s" }}>
-      <SectionLabel icon="bridge" label="Bridges" />
+    <SectionCard icon="bridge" label="Bridges" delay="0.13s">
       <div className="mt-4">
         <div className="flex items-baseline gap-1 mb-1">
           <span className="text-3xl font-bold font-mono">{bridges.length}</span>
@@ -53,6 +52,6 @@ export default function BridgeSummaryCard({ message }: { message: Message }) {
           )}
         </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }

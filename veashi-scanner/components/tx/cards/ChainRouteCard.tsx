@@ -1,11 +1,10 @@
 import type { Message } from "@/lib/types";
-import SectionLabel from "../SectionLabel";
 import ChainBadge from "@/components/ChainBadge";
+import SectionCard from "./SectionCard";
 
 export default function ChainRouteCard({ message }: { message: Message }) {
   return (
-    <div className="glass rounded-xl border border-(--border) p-5 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-      <SectionLabel icon="route" label="Chain Route" />
+    <SectionCard icon="route" label="Chain Route" delay="0.1s">
       <div className="mt-4 flex flex-col gap-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted) mb-1.5">From</p>
@@ -25,6 +24,6 @@ export default function ChainRouteCard({ message }: { message: Message }) {
           <ChainBadge chainId={message.destinationChain} className="text-sm" />
         </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }

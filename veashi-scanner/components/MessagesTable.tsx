@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Button } from "@kleros/ui-components-library";
 import ChainBadge from "@/components/ChainBadge";
 import { Message } from "@/lib/types";
 
@@ -28,12 +29,7 @@ export default function MessagesTable({ messages, onClearFilters }: Props) {
           />
         </svg>
         <p className="text-(--text-muted) text-sm">No messages match the selected filters.</p>
-        <button
-          onClick={onClearFilters}
-          className="mt-3 text-sm text-purple-500 hover:text-purple-400 transition-colors"
-        >
-          Clear filters
-        </button>
+        <Button variant="secondary" small onPress={onClearFilters} className="mt-4" text="Clear Filters" />
       </div>
     );
   }

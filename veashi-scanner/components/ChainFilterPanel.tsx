@@ -1,30 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, FC } from "react";
+import { Button, DropdownSelect as RawDropdownSelect, NumberField } from "@kleros/ui-components-library";
+import { getAllSourceChains, getDestinationChains } from "@kleros/veashi-sdk";
 import ChainBadge from "@/components/ChainBadge";
 import { getChainName } from "@/lib/chains";
-import { getAllSourceChains, getDestinationChains } from "@kleros/veashi-sdk";
+import { ChainItem, DropdownSelectProps, NO_CHAIN, ChainFilter, BlockRange, MessageStats } from "@/lib/types";
 
-// ─── Exported types ──────────────────────────────────────────────────────────
-
-export const NO_CHAIN = "No Chain" as const;
-export type ChainFilter = number | typeof NO_CHAIN;
-
-export interface BlockRange {
-  chain: string;
-  start: number;
-  end: number;
-  windowSize: number;
-}
-
-export interface MessageStats {
-  total: number;
-  completed: number;
-  inProgress: number;
-  pending: number;
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
+const DropdownSelect = RawDropdownSelect as unknown as FC<DropdownSelectProps>;
 
 interface Props {
   sourceChain: ChainFilter;
@@ -130,23 +113,12 @@ function PanelHeader({ hasActiveFilter, onClearFilters }: { hasActiveFilter: boo
           <span className="px-2 py-0.5 text-xs rounded-full bg-purple-700 text-white font-medium">Active</span>
         )}
       </div>
-      {hasActiveFilter && (
-        <button
-          onClick={onClearFilters}
-          className="text-xs text-(--text-muted) hover:text-pink-500 transition-colors flex items-center gap-1"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Clear filters
-        </button>
-      )}
+      {hasActiveFilter && <Button variant="secondary" small onPress={onClearFilters} text="Clear filters" />}
     </div>
   );
 }
 
-// Export this from your ChainFilterPanel file, or move it to a shared components folder
-export function ChainSelect({
+function ChainSelect({
   label,
   value,
   options,
@@ -165,43 +137,38 @@ export function ChainSelect({
   hideBadge?: boolean;
   className?: string;
 }) {
+  const items: ChainItem[] = [
+    {
+      id: NO_CHAIN,
+      text: disabled ? "Select Source First" : "All Chains",
+      itemValue: NO_CHAIN,
+    },
+    ...options.map<ChainItem>((chainId) => ({
+      id: chainId,
+      text: getChainName(chainId),
+      itemValue: chainId,
+    })),
+  ];
+
   return (
-    <div className={disabled ? "opacity-50 pointer-events-none" : ""}>
+    <div className={className}>
       {!hideLabel && (
-        <label className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) mb-2 block">{label}</label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-(--klerosUIComponentsSecondaryText) mb-2 block">
+          {label}
+        </label>
       )}
-      <div className="relative">
-        <select
-          value={value.toString()}
-          onChange={(e) => {
-            const val = e.target.value;
-            onChange(val === NO_CHAIN ? NO_CHAIN : Number(val));
-          }}
-          disabled={disabled}
-          // Merge custom className for overrides, fallback to default styling if none provided
-          className={`appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all pr-10 ${
-            className || "w-full px-4 py-2.5 bg-(--surface) border border-(--border) rounded-lg text-sm"
-          }`}
-          style={{
-            color: value === NO_CHAIN ? "var(--text-muted)" : "var(--text-primary)",
-          }}
-        >
-          <option value={NO_CHAIN}>{disabled ? "Select Source First" : "All Chains"}</option>
-          {options.map((chainId) => (
-            <option key={chainId} value={chainId}>
-              {getChainName(chainId)}
-            </option>
-          ))}
-        </select>
-        <svg
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) pointer-events-none"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
+
+      <DropdownSelect
+        items={items}
+        selectedKey={value}
+        isDisabled={disabled}
+        placeholder="All Chains"
+        callback={(item) => {
+          onChange(item.id === NO_CHAIN ? NO_CHAIN : Number(item.id));
+        }}
+        className="w-full"
+      />
+
       {!hideBadge && value !== NO_CHAIN && !disabled && (
         <div className="mt-2">
           <ChainBadge chainId={value as number} />
@@ -237,35 +204,32 @@ function BlockRangeSection({
             d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
           />
         </svg>
-        <span className="text-xs font-semibold uppercase tracking-wider text-(--text-muted)">
-          Block Range{" "}
-          <span className="normal-case font-normal">
-            (optional — leave blank to scan latest {(1_000_000).toLocaleString()} blocks)
-          </span>
-        </span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-(--text-muted)">Block Range</span>
       </div>
 
       <div className={`grid grid-cols-2 gap-3 ${disabled ? "opacity-40 pointer-events-none" : ""}`}>
         <div>
-          <label className="text-xs text-(--text-muted) mb-1.5 block">From Block</label>
-          <input
-            type="number"
-            min={0}
+          <NumberField
+            label="From Block"
+            value={fromBlock === "" ? NaN : Number(fromBlock)}
+            onChange={(n) => onFromBlockChange(Number.isNaN(n) ? "" : String(n))}
+            minValue={0}
             placeholder="e.g. 18000000"
-            value={fromBlock}
-            onChange={(e) => onFromBlockChange(e.target.value)}
-            className="w-full px-3 py-2 bg-(--surface) border border-(--border) rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all placeholder:text-(--text-muted)"
+            isDisabled={disabled}
+            inputProps={{ className: "font-mono" }}
+            className="w-full"
           />
         </div>
         <div>
-          <label className="text-xs text-(--text-muted) mb-1.5 block">To Block</label>
-          <input
-            type="number"
-            min={0}
+          <NumberField
+            label="To Block"
+            value={toBlock === "" ? NaN : Number(toBlock)}
+            onChange={(n) => onToBlockChange(Number.isNaN(n) ? "" : String(n))}
+            minValue={0}
             placeholder="e.g. 18010000"
-            value={toBlock}
-            onChange={(e) => onToBlockChange(e.target.value)}
-            className="w-full px-3 py-2 bg-(--surface) border border-(--border) rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all placeholder:text-(--text-muted)"
+            isDisabled={disabled}
+            inputProps={{ className: "font-mono" }}
+            className="w-full"
           />
         </div>
       </div>
@@ -281,24 +245,6 @@ function BlockRangeSection({
           </span>
         </div>
       )}
-    </div>
-  );
-}
-
-const STAT_COLORS = {
-  green: { wrapper: "bg-green-400/5 border-green-400/20", text: "text-green-400" },
-  amber: { wrapper: "bg-amber-400/5 border-amber-400/20", text: "text-amber-400" },
-  red: { wrapper: "bg-red-400/5 border-red-400/20", text: "text-red-400" },
-} as const;
-
-function StatCard({ label, value, color }: { label: string; value: number; color?: keyof typeof STAT_COLORS }) {
-  const cls = color ? STAT_COLORS[color] : null;
-  return (
-    <div
-      className={`text-center px-3 py-2.5 rounded-lg border ${cls ? cls.wrapper : "bg-(--surface) border-(--border)"}`}
-    >
-      <div className={`text-xl font-bold font-mono ${cls?.text ?? ""}`}>{value}</div>
-      <div className="text-xs text-(--text-muted) mt-0.5">{label}</div>
     </div>
   );
 }

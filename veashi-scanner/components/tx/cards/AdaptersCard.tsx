@@ -1,7 +1,7 @@
 import { Message } from "@/lib/types";
 import { getBridgeName } from "@/lib/veashiHelpers";
-import SectionLabel from "../SectionLabel";
-import CopyButton from "@/components/CopyButton";
+import { Copiable } from "@kleros/ui-components-library";
+import SectionCard from "./SectionCard";
 
 export default function AdaptersCard({
   message,
@@ -17,51 +17,42 @@ export default function AdaptersCard({
 
   if (adapters.length === 0 && reporters.length === 0) {
     return (
-      <div className="glass rounded-xl border border-(--border) p-5 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-        <SectionLabel icon="bridge" label="Adapters & Reporters" />
+      <SectionCard icon="bridge" label="Adapters & Reporters" delay="0.2s">
         <p className="mt-4 text-xs text-(--text-muted)">Adapter data unavailable — not yet fetched from chain.</p>
-      </div>
+      </SectionCard>
     );
   }
 
-  // 1. Group the adapters and reporters by their bridge name
   const bridgeGroups = new Map<string, { adapter?: string; reporter?: string; status?: any; bridgeName: string }>();
 
-  // Process Adapters
-  adapters.forEach((addr) => {
-    const bridge = getBridgeName(message.sourceChain, message.destinationChain, addr, undefined);
-    const key = bridge !== null ? String(bridge) : `unknown-adapter-${addr}`;
+  // Adapters and reporters are index-aligned: adapters[i] and reporters[i]
+  // belong to the same bridge. Process them together so they stay paired even
+  // when the bridge can't be identified.
+  const pairCount = Math.max(adapters.length, reporters.length);
+  for (let i = 0; i < pairCount; i++) {
+    const adapter = adapters[i];
+    const reporter = reporters[i];
+
+    const bridge = getBridgeName(message.sourceChain, message.destinationChain, adapter, reporter);
+    // When the bridge is unknown, key by index so the paired adapter/reporter
+    // share a single group instead of splitting into separate boxes.
+    const key = bridge !== null ? String(bridge) : `unknown-${i}`;
     const current = bridgeGroups.get(key) || {
       bridgeName: bridge !== null ? String(bridge) : "Unknown",
     };
 
     bridgeGroups.set(key, {
       ...current,
-      adapter: addr,
-      status: statuses ? statuses[addr] : null,
+      adapter: adapter ?? current.adapter,
+      reporter: reporter ?? current.reporter,
+      status: adapter && statuses ? statuses[adapter] : current.status,
     });
-  });
-
-  // Process Reporters
-  reporters.forEach((addr) => {
-    const bridge = getBridgeName(message.sourceChain, message.destinationChain, undefined, addr);
-    const key = bridge !== null ? String(bridge) : `unknown-reporter-${addr}`;
-    const current = bridgeGroups.get(key) || {
-      bridgeName: bridge !== null ? String(bridge) : "Unknown",
-    };
-
-    bridgeGroups.set(key, {
-      ...current,
-      reporter: addr,
-    });
-  });
+  }
 
   const pairedData = Array.from(bridgeGroups.values());
 
   return (
-    <div className="glass rounded-xl border border-(--border) p-5 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-      <SectionLabel icon="bridge" label="Adapters & Reporters" />
-
+    <SectionCard icon="bridge" label="Adapters & Reporters" delay="0.2s">
       <div className="mt-4 space-y-3">
         {pairedData.map((pair, idx) => (
           <div
@@ -84,11 +75,9 @@ export default function AdaptersCard({
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
                       Adapter
                     </span>
-                    <CopyButton
-                      text={pair.adapter}
-                      displayText={`${pair.adapter.slice(0, 10)}…${pair.adapter.slice(-8)}`}
-                      className="font-mono text-xs bg-(--background) px-2 py-1 rounded"
-                    />
+                    <Copiable copiableContent={pair.adapter} info="Copy adapter address">
+                      <span className="font-mono text-sm break-all">{pair.adapter}</span>
+                    </Copiable>
                   </div>
                 )}
 
@@ -97,11 +86,9 @@ export default function AdaptersCard({
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
                       Reporter
                     </span>
-                    <CopyButton
-                      text={pair.reporter}
-                      displayText={`${pair.reporter.slice(0, 10)}…${pair.reporter.slice(-8)}`}
-                      className="font-mono text-xs bg-(--background) px-2 py-1 rounded"
-                    />
+                    <Copiable copiableContent={pair.reporter} info="Copy reporter address">
+                      <span className="font-mono text-sm break-all">{pair.reporter}</span>
+                    </Copiable>
                   </div>
                 )}
               </div>
@@ -122,6 +109,6 @@ export default function AdaptersCard({
           </div>
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }

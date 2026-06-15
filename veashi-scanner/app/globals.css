@@ -1,8 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "../node_modules/@kleros/ui-components-library/dist/assets/theme.css";
+@source "../node_modules/@kleros/ui-components-library";
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * ──────────────────────────────────────────────────────────────────────────
+ *  Theming model
+ *  1. Kleros UI Components library ships the foundation tokens
+ *     (--klerosUIComponents*) via the imported theme.css. They switch on the
+ *     `.dark` class set in layout.tsx.
+ *  2. Veashi's semantic tokens below ALIAS the Kleros tokens, so every existing
+ *     `var(--text-muted)`, `var(--surface)`, `var(--border)` in the app matches
+ *     the library components automatically — no per-component rewrite needed.
+ *  3. The Veashi brand layer (pink accent, gradients, deep canvas) is kept
+ *     distinct — that's the part the library has no equivalent for.
+ * ──────────────────────────────────────────────────────────────────────────
+ */
 
 :root {
-  /* Brand Colors */
+  /* ── Veashi brand ramp (signature purple → pink) ── */
   --purple-950: #1e1233;
   --purple-900: #2d1b4e;
   --purple-800: #4a2870;
@@ -13,38 +30,35 @@
   --pink-500: #f472b6;
   --pink-400: #f9a8d4;
 
-  /* Semantic Colors */
+  /* ── Semantic tokens — aliased onto Kleros so the app matches the library ── */
+  /* Page canvas keeps Veashi's signature near-black so library cards (#220050) pop. */
   --background: #0a0414;
-  --surface: #140d24;
-  --surface-elevated: #1e1533;
-  --border: rgba(139, 92, 246, 0.15);
-  --text-primary: #f8f9fa;
-  --text-secondary: #c4b5fd;
-  --text-muted: #a78bfa;
+  /* Inner chips/surfaces inside cards — Kleros mid surface. */
+  --surface: var(--klerosUIComponentsMediumBlue);
+  --surface-elevated: var(--klerosUIComponentsWhiteBackground);
+  --border: var(--klerosUIComponentsStroke);
+  --text-primary: var(--klerosUIComponentsPrimaryText);
+  --text-secondary: var(--klerosUIComponentsSecondaryText);
+  /* Third text level for hierarchy — dimmed secondary, still in the Kleros palette. */
+  --text-muted: color-mix(in srgb, var(--klerosUIComponentsSecondaryText) 72%, transparent);
+
+  /* ── Veashi accent — the pink signature the library doesn't have ── */
   --accent: #ec4899;
   --accent-glow: rgba(236, 72, 153, 0.3);
 
-  /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #6b46c1 0%, #ec4899 100%);
-  --gradient-mesh: radial-gradient(at 0% 0%, rgba(107, 70, 193, 0.2) 0px, transparent 50%),
-                    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
-                    radial-gradient(at 50% 50%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+  /* ── Gradients (Veashi flourish, blends brand purple → pink) ── */
+  --gradient-primary: linear-gradient(135deg, var(--klerosUIComponentsSecondaryPurple) 0%, #ec4899 100%);
+  --gradient-mesh: radial-gradient(at 0% 0%, rgba(126, 27, 212, 0.18) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.14) 0px, transparent 50%),
+                    radial-gradient(at 50% 50%, rgba(144, 19, 254, 0.08) 0px, transparent 50%);
 }
 
 @theme inline {
   --font-sans: 'DM Sans', var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', var(--font-geist-mono), monospace;
 
-  /* Custom colors for Tailwind */
-  --color-purple-950: var(--purple-950);
-  --color-purple-900: var(--purple-900);
-  --color-purple-800: var(--purple-800);
-  --color-purple-700: var(--purple-700);
-  --color-purple-600: var(--purple-600);
-  --color-purple-500: var(--purple-500);
-  --color-pink-600: var(--pink-600);
-  --color-pink-500: var(--pink-500);
-  --color-pink-400: var(--pink-400);
+  /* Expose the Veashi accent as a Tailwind color → `bg-accent`, `text-accent` */
+  --color-accent: var(--accent);
 }
 
 * {
@@ -58,12 +72,11 @@ body {
   overflow-x: hidden;
 }
 
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — Kleros purple tones */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -74,21 +87,21 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--purple-800);
+  background: var(--klerosUIComponentsStroke);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--purple-700);
+  background: var(--klerosUIComponentsSecondaryPurple);
 }
 
-/* Selection */
+/* Selection — Veashi accent */
 ::selection {
-  background: var(--purple-700);
+  background: var(--klerosUIComponentsSecondaryPurple);
   color: white;
 }
 
-/* Animations */
+/* ── Animations (Veashi flourishes) ── */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -97,15 +110,6 @@ html {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
   }
 }
 
@@ -122,51 +126,32 @@ html {
   animation: fadeIn 0.5s ease-out forwards;
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite;
-}
-
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
 }
 
-/* Gradient mesh background */
+/* Gradient mesh background (Veashi signature canvas) */
 .gradient-mesh {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: var(--gradient-mesh);
   z-index: -1;
   pointer-events: none;
 }
 
-/* Glass morphism effect */
+/* Glass morphism — harmonized with the library card surface */
 .glass {
-  background: rgba(20, 13, 36, 0.6);
+  background: color-mix(in srgb, var(--klerosUIComponentsWhiteBackground) 60%, transparent);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
 }
 
-/* Dark-mode native select */
-select {
-  color-scheme: dark;
-}
-
-select option {
-  background-color: var(--surface-elevated);
-  color: var(--text-primary);
-}
-
-/* Hover lift effect */
+/* Hover lift effect (Veashi flourish) */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(107, 70, 193, 0.3);
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--klerosUIComponentsSecondaryPurple) 30%, transparent);
 }
