@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, FC } from "react";
 import { Button, DropdownSelect as RawDropdownSelect, NumberField } from "@kleros/ui-components-library";
 import { getAllSourceChains, getDestinationChains } from "@kleros/veashi-sdk";

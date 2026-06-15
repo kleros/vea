@@ -1,4 +1,3 @@
-"use client";
 import { StandardPagination } from "@kleros/ui-components-library";
 
 interface PaginationProps {

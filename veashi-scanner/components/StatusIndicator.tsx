@@ -1,5 +1,3 @@
-"use client";
-
 import { CircularProgress } from "@kleros/ui-components-library";
 
 interface StatusIndicatorProps {

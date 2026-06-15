@@ -1,14 +1,14 @@
-"use client";
-
 import { Button, Copiable } from "@kleros/ui-components-library";
-import { useRouter } from "next/navigation";
+import { useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import { useTransaction } from "@/hooks/useTransaction";
 import TxDetailContent from "@/components/tx/TxDetailContent";
 
-export default function TransactionPage({ params }: { params: { params: string[] } }) {
-  const segments = params.params;
-  const router = useRouter();
+export default function TransactionPage() {
+  const navigate = useNavigate();
+  // Catch-all route "/tx/*" → segments are "{chainId}/{txHash}" or "{txHash}".
+  const splat = useParams()["*"] ?? "";
+  const segments = splat.split("/").filter(Boolean);
 
   const hasChainId = segments.length >= 2;
   const chainId = hasChainId ? Number(segments[0]) : null;
@@ -21,7 +21,7 @@ export default function TransactionPage({ params }: { params: { params: string[]
         <Button
           variant="secondary"
           small
-          onPress={() => router.push("/")}
+          onPress={() => navigate("/")}
           icon={
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

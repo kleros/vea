@@ -1,6 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@kleros/ui-components-library";
 import ChainBadge from "@/components/ChainBadge";
 import { Message } from "@/lib/types";
@@ -11,7 +9,7 @@ interface Props {
 }
 
 export default function MessagesTable({ messages, onClearFilters }: Props) {
-  const router = useRouter();
+  const navigate = useNavigate();
   if (messages.length === 0) {
     return (
       <div className="glass rounded-xl border border-(--border) py-16 text-center">
@@ -56,7 +54,7 @@ export default function MessagesTable({ messages, onClearFilters }: Props) {
                 key={message.txHash}
                 message={message}
                 index={index}
-                onClick={() => router.push(`/tx/${message.sourceChain}/${message.txHash}`)}
+                onClick={() => navigate(`/tx/${message.sourceChain}/${message.txHash}`)}
               />
             ))}
           </tbody>

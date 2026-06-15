@@ -3,7 +3,7 @@ import type { Message } from "./types";
 // Both the local Envio dev instance and Envio Cloud expose a public,
 // unauthenticated read role for queries — no Hasura admin secret is required
 // (and none should ever ship to the browser).
-const ENVIO_URL = process.env.NEXT_PUBLIC_ENVIO_URL ?? "http://localhost:8080/v1/graphql";
+const ENVIO_URL = import.meta.env.VITE_ENVIO_URL ?? "http://localhost:8080/v1/graphql";
 
 const FETCH_TIMEOUT_MS = 5_000;
 

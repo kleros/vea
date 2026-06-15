@@ -46,16 +46,40 @@ yarn workspace @kleros/veashi-scanner dev
 yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:5173](http://localhost:5173).
 
 ### Environment variables
 
-Create `veashi-scanner/.env.local` (defaults shown are used when unset):
+Create `veashi-scanner/.env.local` (the default below is used when unset):
 
-| Variable                          | Default                            | Description                                     |
-| --------------------------------- | ---------------------------------- | ----------------------------------------------- |
-| `NEXT_PUBLIC_ENVIO_URL`           | `http://localhost:8080/v1/graphql` | Envio indexer GraphQL endpoint.                 |
-| `NEXT_PUBLIC_HASURA_ADMIN_SECRET` | `testing`                          | Hasura admin secret sent with indexer requests. |
+| Variable         | Default                            | Description                     |
+| ---------------- | ---------------------------------- | ------------------------------- |
+| `VITE_ENVIO_URL` | `http://localhost:8080/v1/graphql` | Envio indexer GraphQL endpoint. |
 
-RPC access uses viem's default public transport per chain; no RPC keys are required for the supported
-testnets, though you can configure custom transports in [`lib/chains.ts`](lib/chains.ts) if you hit rate limits.
+The Envio query endpoint (local and Envio Cloud) is public and read-only, so no Hasura admin secret is
+required — none is sent from the client. RPC access uses viem's default public transport per chain; no RPC
+keys are required for the supported testnets, though you can configure custom transports in
+[`lib/chains.ts`](lib/chains.ts) if you hit rate limits.
+
+## Tech stack
+
+- **Vite** + **React 18** (single-page app) — client-rendered; all data is fetched in the browser.
+- **react-router** for routing (`/` and `/tx/{sourceChainId}/{txHash}`).
+- **TypeScript**, **Tailwind CSS v4** (via `@tailwindcss/vite`).
+- **viem** for on-chain reads, **[@kleros/veashi-sdk](../)** for routes/addresses/ABIs, and
+  **[@kleros/ui-components-library](https://github.com/kleros/ui-components-library)** for UI.
+
+## Scripts
+
+| Command        | Description                                 |
+| -------------- | ------------------------------------------- |
+| `yarn dev`     | Start the Vite dev server on port 5173.     |
+| `yarn build`   | Type-check (`tsc -b`) and build to `dist/`. |
+| `yarn preview` | Serve the production build locally.         |
+| `yarn lint`    | Run ESLint.                                 |
+
+## Deploying
+
+The build output in `dist/` is a static SPA. Because routing is client-side, configure your host to rewrite
+all paths to `index.html` so deep links like `/tx/1514/0x…` resolve on refresh. Set `VITE_ENVIO_URL` to your
+Envio Cloud endpoint in the host's environment.

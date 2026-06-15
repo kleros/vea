@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { Searchbar, Button } from "@kleros/ui-components-library";
 import { findChainForTx } from "@/lib/utils";
 
@@ -11,7 +9,7 @@ export default function SearchBar() {
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleChange = (value: string) => {
     setSearch(value);
@@ -34,7 +32,7 @@ export default function SearchBar() {
     try {
       const foundChainId = await findChainForTx(trimmedHash);
       if (foundChainId) {
-        router.push(`/tx/${foundChainId}/${trimmedHash}`);
+        navigate(`/tx/${foundChainId}/${trimmedHash}`);
       } else {
         setError("Transaction not found on any supported chain.");
       }

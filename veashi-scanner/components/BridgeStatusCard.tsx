@@ -1,5 +1,3 @@
-"use client";
-
 import { BridgeStatus } from "@/lib/types";
 import { Tooltip } from "@kleros/ui-components-library";
 
