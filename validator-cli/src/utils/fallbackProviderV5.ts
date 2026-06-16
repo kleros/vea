@@ -7,13 +7,6 @@ type RPCEndpoint = { url: string; label?: string };
 /**
  * ethers v5 (`@ethersproject/providers`) JSON-RPC provider that transparently fails over to the next
  * endpoint when a request fails.
- *
- * Used for the standalone providers (veaInbox/veaOutbox/veaRouter) that feed the Arbitrum SDK and the
- * event/finality queries, which require an ethers v5 `JsonRpcProvider` instance.
- *
- * The transport is overridden at the low level (`send`), so every call - including the `eth_chainId`
- * issued during lazy network detection and every call the Arbitrum SDK proxies through
- * `provider.send` - benefits from the fallback rotation.
  */
 export class FallbackProviderV5 extends JsonRpcProvider {
   private endpoints: RPCEndpoint[];
@@ -25,7 +18,6 @@ export class FallbackProviderV5 extends JsonRpcProvider {
     const list = Array.isArray(endpoints) ? endpoints : [endpoints];
     const normalized = list.map((e) => (typeof e === "string" ? { url: e } : e));
     if (normalized.length === 0) throw new Error("FallbackProviderV5 requires at least one RPC endpoint");
-    // No static network: the chainId is detected lazily through the (fallback-protected) transport.
     super(normalized[0].url);
     this.endpoints = normalized;
     this.emitter = emitter;

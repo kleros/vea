@@ -6,10 +6,6 @@ type RPCEndpoint = { url: string; label?: string };
 
 /**
  * ethers v6 JSON-RPC provider that transparently fails over to the next endpoint when a request fails.
- *
- * Used for the typechain contract connections (veaInbox/veaOutbox wallets) which require an ethers v6 provider.
- * When `chainId` is provided the network is treated as static (no detection RPC), matching the relayer behaviour.
- * When omitted the network is detected lazily through the fallback transport, so a bad first URL never blocks startup.
  */
 export class FallbackRpcProvider extends JsonRpcProvider {
   private endpoints: RPCEndpoint[];
@@ -28,8 +24,6 @@ export class FallbackRpcProvider extends JsonRpcProvider {
     this.staticChainId = chainId;
   }
 
-  // When the chainId is known, return it without any RPC call so a bad first URL never blocks startup.
-  // Otherwise detect through the (fallback-protected) transport.
   async _detectNetwork(): Promise<Network> {
     if (this.staticChainId !== undefined) return Network.from(this.staticChainId);
     return super._detectNetwork();
@@ -67,7 +61,6 @@ export class FallbackRpcProvider extends JsonRpcProvider {
 
   private getInner(i: number) {
     if (!this.inner[i]) {
-      // Pass the static network (when known) so inner providers never attempt their own network detection.
       this.inner[i] = new JsonRpcProvider(
         this.endpoints[i].url,
         this.staticChainId !== undefined ? Network.from(this.staticChainId) : undefined
