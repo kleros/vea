@@ -1,5 +1,5 @@
 import { Message } from "@/lib/types";
-import { getBridgeName } from "@/lib/veashiHelpers";
+import { getBridgeName, getBridgeLabel } from "@/lib/veashiHelpers";
 import type { Bridge } from "@/lib/types";
 import BridgeBadge from "@/components/BridgeBadge";
 import SectionCard from "./SectionCard";
@@ -11,11 +11,11 @@ export default function BridgeSummaryCard({ message }: { message: Message }) {
   const bridgeNames = new Set<string>();
   adapters.forEach((addr) => {
     const name = getBridgeName(message.sourceChain, message.destinationChain, addr, undefined);
-    bridgeNames.add(name !== null ? String(name) : "Unknown");
+    bridgeNames.add(name !== null ? getBridgeLabel(name) : "Unknown");
   });
   reporters.forEach((addr) => {
     const name = getBridgeName(message.sourceChain, message.destinationChain, undefined, addr);
-    bridgeNames.add(name !== null ? String(name) : "Unknown");
+    bridgeNames.add(name !== null ? getBridgeLabel(name) : "Unknown");
   });
 
   const bridges = Array.from(bridgeNames);

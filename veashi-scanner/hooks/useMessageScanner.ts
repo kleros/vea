@@ -201,16 +201,15 @@ export function useMessageScanner(
                 destinationChainId: dstId,
                 limit: 10,
               });
+              if (signal.aborted) break;
 
               if (envioMessages !== null) {
                 const inRange = envioMessages.filter(
                   (m) => m.blockNumber >= displayRange.start && m.blockNumber <= displayRange.end
                 );
-                updateCache(srcId, dstId, scanRange, inRange);
                 if (inRange.length > 0) {
                   setMessages((prev) => mergeMessages(prev, inRange));
                 }
-                continue;
               }
 
               // RPC fallback

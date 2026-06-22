@@ -37,7 +37,7 @@ export default function BridgeStatusCard({ status }: BridgeStatusCardProps) {
 
   const getTimeAgo = (timestamp?: number) => {
     if (!timestamp) return null;
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    const seconds = Math.floor(Date.now() / 1000 - timestamp);
     if (seconds < 60) return `${seconds}s ago`;
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes}m ago`;

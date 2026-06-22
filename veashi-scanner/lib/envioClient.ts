@@ -14,7 +14,7 @@ const MESSAGE_FIELDS = `
 
 const TX_HASH_QUERY = `
   query GetMessageByTxHash($txHash: String!) {
-    MessageDispatched(where: { txHash: { _ilike: $txHash } }, limit: 1) {
+    MessageDispatched(where: { txHash: { _eq: $txHash } }, limit: 1) {
       ${MESSAGE_FIELDS}
     }
   }

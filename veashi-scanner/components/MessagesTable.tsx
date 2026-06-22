@@ -51,7 +51,7 @@ export default function MessagesTable({ messages, onClearFilters }: Props) {
           <tbody className="divide-y divide-(--border)">
             {messages.map((message, index) => (
               <MessageRow
-                key={message.txHash}
+                key={message.messageId ?? `${message.sourceChain}-${message.txHash}`}
                 message={message}
                 index={index}
                 onClick={() => navigate(`/tx/${message.sourceChain}/${message.txHash}`)}

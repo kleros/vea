@@ -1,6 +1,8 @@
 import { getAllSourceChains } from "@kleros/veashi-sdk";
 import { getViemChain } from "./chains";
 
+const RPC_PROBE_TIMEOUT_MS = 8_000;
+
 export function getStatusMeta(current: number, required: number) {
   if (current >= required && required > 0) {
     return {
@@ -20,6 +22,7 @@ export function getStatusMeta(current: number, required: number) {
 }
 
 export async function findChainForTx(hash: string): Promise<number | null> {
+  const normalizedHash = hash.toLowerCase();
   const chainIds = getAllSourceChains();
 
   try {
@@ -29,34 +32,42 @@ export async function findChainForTx(hash: string): Promise<number | null> {
         if (!chain) throw new Error("Chain not supported:" + chainId);
         const rpcUrl = chain.rpcUrls.default.http[0];
         if (!rpcUrl) throw new Error("No RPC URL for chain:" + chainId);
-        const response = await fetch(rpcUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "eth_getTransactionByHash",
-            params: [hash],
-            id: 1,
-          }),
-        });
 
-        if (!response.ok) {
-          throw new Error(`HTTP Error on chain ${chainId}`);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), RPC_PROBE_TIMEOUT_MS);
+        try {
+          const response = await fetch(rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              method: "eth_getTransactionByHash",
+              params: [normalizedHash],
+              id: 1,
+            }),
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP Error on chain ${chainId}`);
+          }
+
+          const data = await response.json();
+
+          if (data.result && data.result.hash === normalizedHash) {
+            return chainId;
+          }
+          throw new Error(`Tx not found on chain ${chainId}`);
+        } finally {
+          clearTimeout(timer);
         }
-
-        const data = await response.json();
-
-        if (data.result && data.result.hash === hash) {
-          return chainId;
-        }
-        throw new Error(`Tx not found on chain ${chainId}`);
       })
     );
 
     console.log(`Found transaction on chainId: ${foundChainId}`);
     return foundChainId;
   } catch {
-    console.log(`Transaction ${hash} not found on any supported chains.`);
+    console.log(`Transaction ${normalizedHash} not found on any supported chains.`);
     return null;
   }
 }

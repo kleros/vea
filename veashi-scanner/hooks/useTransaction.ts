@@ -44,7 +44,12 @@ export function useTransaction(sourceChainId: number, txHash: string) {
       }
 
       // ── 2. Envio indexer lookup ────────────────────────────────────────────
-      const envioMsg = await fetchMessageByTxHash(txHash);
+      let envioMsg: Message | null = null;
+      try {
+        envioMsg = await fetchMessageByTxHash(txHash);
+      } catch (err) {
+        console.error("Envio lookup failed:", err);
+      }
       if (envioMsg && !cancelled) {
         setMessage(envioMsg);
         setSource("chain");

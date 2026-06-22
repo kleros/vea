@@ -50,14 +50,16 @@ export default function AdaptersCard({
     });
   }
 
-  const pairedData = Array.from(bridgeGroups.values());
+  // Keep the Map keys ("ccip"/"lz"/"vea" or "unknown-{i}") — they're stable and
+  // unique per group, so React rows stay bound to the right group if ordering changes.
+  const pairedData = Array.from(bridgeGroups.entries());
 
   return (
     <SectionCard icon="bridge" label="Adapters & Reporters" delay="0.2s">
       <div className="mt-4 space-y-3">
-        {pairedData.map((pair, idx) => (
+        {pairedData.map(([groupKey, pair]) => (
           <div
-            key={idx}
+            key={groupKey}
             className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-(--surface) rounded-lg px-4 py-3 border border-(--border)"
           >
             {/* Left Side: Bridge Name & Addresses mapped in a row */}
