@@ -15,12 +15,23 @@ export interface Bridge {
   chain: string;
   minChallengePeriod: number;
   sequencerDelayLimit: number;
-  inboxRPC: string;
-  outboxRPC: string;
-  routerRPC?: string;
+  // RPC endpoints are stored as ordered lists; the first is primary and the rest are fallbacks.
+  inboxRPC: string[];
+  outboxRPC: string[];
+  routerRPC?: string[];
   routeConfig: { [key in Network]: RouteConfigs };
   depositToken?: string;
 }
+
+/**
+ * Parse a comma-separated list of RPC URLs from an environment variable into an ordered array.
+ * Returns an empty array when the variable is unset so optional RPCs (e.g. router) stay optional.
+ */
+const splitRpcUrls = (value?: string): string[] =>
+  (value ?? "")
+    .split(",")
+    .map((url) => url.trim())
+    .filter((url) => url.length > 0);
 
 type RouteConfigs = {
   veaInbox: any;
@@ -71,17 +82,17 @@ const bridges: { [chainId: number]: Bridge } = {
     chain: "sepolia",
     minChallengePeriod: 10800,
     sequencerDelayLimit: 86400,
-    inboxRPC: process.env.RPC_ARB,
-    outboxRPC: process.env.RPC_ETH,
+    inboxRPC: splitRpcUrls(process.env.RPC_ARB),
+    outboxRPC: splitRpcUrls(process.env.RPC_ETH),
     routeConfig: arbToEthConfigs,
   },
   10200: {
     chain: "chiado",
     minChallengePeriod: 10800,
     sequencerDelayLimit: 86400,
-    inboxRPC: process.env.RPC_ARB,
-    outboxRPC: process.env.RPC_GNOSIS,
-    routerRPC: process.env.RPC_ETH,
+    inboxRPC: splitRpcUrls(process.env.RPC_ARB),
+    outboxRPC: splitRpcUrls(process.env.RPC_GNOSIS),
+    routerRPC: splitRpcUrls(process.env.RPC_ETH),
     routeConfig: arbToGnosisConfigs,
     depositToken: process.env.GNOSIS_WETH,
   },

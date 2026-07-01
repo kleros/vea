@@ -17,6 +17,7 @@ import { ClaimNotSetError } from "../errors";
 import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
 import { getWETH, getWallet } from "../ethers";
 import { messageExecutor } from "../arbMsgExecutor";
+import { FallbackRpcProvider } from "../fallbackProvider";
 
 export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInboxArbToGnosis, VeaOutboxArbToGnosis> {
   constructor(opts: BaseTransactionHandlerConstructor) {
@@ -27,9 +28,10 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     const { depositToken, outboxRPC, routeConfig } = getBridgeConfig(this.chainId);
     const { veaOutbox, deposit } = routeConfig[this.network];
     const privateKey = process.env.PRIVATE_KEY!;
-    const signer = getWallet(privateKey, outboxRPC);
+    const outboxProvider = new FallbackRpcProvider(outboxRPC, this.emitter, this.chainId);
+    const signer = getWallet(privateKey, outboxProvider);
 
-    const weth = getWETH(depositToken, privateKey, outboxRPC);
+    const weth = getWETH(depositToken, privateKey, outboxProvider);
     const currentAllowance: bigint = await weth.allowance(signer.address, veaOutbox.address);
     if (currentAllowance < deposit) {
       const approvalAmount = deposit * BigInt(10); // Approving for 10 claims

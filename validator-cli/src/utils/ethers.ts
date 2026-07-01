@@ -13,33 +13,39 @@ import {
 import { NotDefinedError, InvalidNetworkError } from "./errors";
 import { Network } from "../consts/bridgeRoutes";
 
-function getWallet(privateKey: string, rpcUrl: string) {
-  return new Wallet(privateKey, new JsonRpcProvider(rpcUrl));
+function getWallet(privateKey: string, rpc: JsonRpcProvider) {
+  return new Wallet(privateKey, rpc);
 }
 
 function getWalletRPC(privateKey: string, rpc: JsonRpcProvider) {
   return new Wallet(privateKey, rpc);
 }
 
-function getVeaInbox(veaInboxAddress: string, privateKey: string, rpcUrl: string, chainId: number, network) {
+function getVeaInbox(veaInboxAddress: string, privateKey: string, rpc: JsonRpcProvider, chainId: number, network) {
   switch (chainId) {
     case 11155111:
-      return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, rpcUrl));
+      return VeaInboxArbToEth__factory.connect(veaInboxAddress, getWallet(privateKey, rpc));
     case 10200:
-      return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, rpcUrl));
+      return VeaInboxArbToGnosis__factory.connect(veaInboxAddress, getWallet(privateKey, rpc));
     default:
       throw new NotDefinedError("VeaInbox");
   }
 }
 
-function getVeaOutbox(veaOutboxAddress: string, privateKey: string, rpcUrl: string, chainId: number, network: Network) {
+function getVeaOutbox(
+  veaOutboxAddress: string,
+  privateKey: string,
+  rpc: JsonRpcProvider,
+  chainId: number,
+  network: Network
+) {
   switch (chainId) {
     case 11155111:
       switch (network) {
         case Network.DEVNET:
-          return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+          return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
         case Network.TESTNET:
-          return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+          return VeaOutboxArbToEth__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
         default:
           throw new InvalidNetworkError(`${network}(veaOutbox)`);
       }
@@ -47,9 +53,9 @@ function getVeaOutbox(veaOutboxAddress: string, privateKey: string, rpcUrl: stri
     case 10200:
       switch (network) {
         case Network.DEVNET:
-          return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+          return VeaOutboxArbToGnosisDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
         case Network.TESTNET:
-          return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+          return VeaOutboxArbToGnosis__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
         default:
           throw new InvalidNetworkError(`${network}(veaOutbox)`);
       }
@@ -58,23 +64,23 @@ function getVeaOutbox(veaOutboxAddress: string, privateKey: string, rpcUrl: stri
   }
 }
 
-function getVeaRouter(veaRouterAddress: string, privateKey: string, rpcUrl: string, chainId: number) {
+function getVeaRouter(veaRouterAddress: string, privateKey: string, rpc: JsonRpcProvider, chainId: number) {
   switch (chainId) {
     case 10200:
-      return RouterArbToGnosis__factory.connect(veaRouterAddress, getWallet(privateKey, rpcUrl));
+      return RouterArbToGnosis__factory.connect(veaRouterAddress, getWallet(privateKey, rpc));
   }
 }
 
-function getWETH(WETH: string, privateKey: string, rpcUrl: string) {
-  return IWETH__factory.connect(WETH, getWallet(privateKey, rpcUrl));
+function getWETH(WETH: string, privateKey: string, rpc: JsonRpcProvider) {
+  return IWETH__factory.connect(WETH, getWallet(privateKey, rpc));
 }
 
-function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, rpcUrl: string) {
-  return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpcUrl));
+function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+  return VeaOutboxArbToEthDevnet__factory.connect(veaOutboxAddress, getWallet(privateKey, rpc));
 }
 
-function getAMB(ambAddress: string, privateKey: string, rpcUrl: string) {
-  return IAMB__factory.connect(ambAddress, getWallet(privateKey, rpcUrl));
+function getAMB(ambAddress: string, privateKey: string, rpc: JsonRpcProvider) {
+  return IAMB__factory.connect(ambAddress, getWallet(privateKey, rpc));
 }
 
 export {
