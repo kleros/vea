@@ -54,7 +54,7 @@ export async function findChainForTx(hash: string): Promise<number | null> {
 
           const data = await response.json();
 
-          if (data.result && data.result.hash === normalizedHash) {
+          if (data.result?.hash?.toLowerCase() === normalizedHash) {
             return chainId;
           }
           throw new Error(`Tx not found on chain ${chainId}`);
