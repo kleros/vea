@@ -60,7 +60,7 @@ async function runHashiExecutor({
 }: HashiExecutorInterface): Promise<number> {
   const bridgeConfig = fetchBridgeConfig(sourceChainId, targetChainId);
   const { yaruAddress, yahoAddress, hashiAddress, sourceRPC } = bridgeConfig;
-  const legacyBlockNumber = await fetchStartBlockNumber(targetChainId, "hashi", emitter);
+  const legacyBlockNumber = await fetchStartBlockNumber(sourceChainId, targetChainId, "hashi", emitter);
 
   if (!yaruAddress || !yahoAddress || !hashiAddress) {
     emitter.emit(BotEvents.HASHI_NOT_CONFIGURED, targetChainId);
@@ -68,7 +68,7 @@ async function runHashiExecutor({
     return 0;
   }
   const pendingMessages: HashiMessageExecutionVars[] = [];
-  const localMessages: HashiMessageExecutionVars[] = await fetchPendingMessages(targetChainId, "hashi");
+  const localMessages: HashiMessageExecutionVars[] = await fetchPendingMessages(sourceChainId, targetChainId, "hashi");
   const executableMessages: HashiMessage[] = [];
   const { txns, toBlock } = await fetchAllMessageLogs(
     sourceChainId,
@@ -107,7 +107,15 @@ async function runHashiExecutor({
   }
 
   if (executableMessages.length === 0) {
-    await updateStateFile(targetChainId, Math.floor(Date.now() / 1000), toBlock, pendingMessages, "hashi", emitter);
+    await updateStateFile(
+      sourceChainId,
+      targetChainId,
+      Math.floor(Date.now() / 1000),
+      toBlock,
+      pendingMessages,
+      "hashi",
+      emitter
+    );
     return toBlock;
   }
   emitter.emit(
@@ -117,7 +125,15 @@ async function runHashiExecutor({
   );
   await executeMsgsOnHashi(sourceChainId, targetChainId, executableMessages, emitter);
   emitter.emit(BotEvents.HASHI_EXECUTED, toBlock);
-  await updateStateFile(targetChainId, Math.floor(Date.now() / 1000), toBlock, pendingMessages, "hashi", emitter);
+  await updateStateFile(
+    sourceChainId,
+    targetChainId,
+    Math.floor(Date.now() / 1000),
+    toBlock,
+    pendingMessages,
+    "hashi",
+    emitter
+  );
 
   return toBlock;
 }

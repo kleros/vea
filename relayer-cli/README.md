@@ -28,10 +28,10 @@ Hashi pairs are configured separately (see `HASHI_CHAINS` below).
 
 ### Chain selection
 
-| Variable           | Description                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `VEAOUTBOX_CHAINS` | Comma-separated target chain IDs to relay messages on (e.g. `11155111,10200`)                                 |
-| `HASHI_CHAINS`     | Comma-separated `sourceChainId-targetChainId` pairs for Hashi execution (e.g. `421614-11155111,421614-10200`) |
+| Variable       | Description                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| `VEA_CHAINS`   | Comma-separated `sourceChainId-targetChainId` pairs to relay messages on (e.g. `421614-11155111,421614-10200`) |
+| `HASHI_CHAINS` | Comma-separated `sourceChainId-targetChainId` pairs for Hashi execution (e.g. `421614-11155111,421614-10200`)  |
 
 ### Sender filtering
 

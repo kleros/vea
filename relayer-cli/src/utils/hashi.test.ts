@@ -152,7 +152,7 @@ describe("hashi", () => {
     it("should call fetchAllMessageLogs with the start block from the state file", async () => {
       await runHashiExecutor(buildArgs());
 
-      expect(fetchStartBlockNumber).toHaveBeenCalledWith(targetChainId, "hashi", mockEmitter);
+      expect(fetchStartBlockNumber).toHaveBeenCalledWith(sourceChainId, targetChainId, "hashi", mockEmitter);
       expect(fetchAllMessageLogs).toHaveBeenCalledWith(
         sourceChainId,
         "http://test.rpc",
@@ -168,6 +168,7 @@ describe("hashi", () => {
       expect(result).toBe(currentBlockNumber);
       expect(mockExecuteMsgsOnHashi).not.toHaveBeenCalled();
       expect(updateStateFile).toHaveBeenCalledWith(
+        sourceChainId,
         targetChainId,
         expect.any(Number),
         currentBlockNumber,
@@ -240,6 +241,7 @@ describe("hashi", () => {
       expect(result).toBe(currentBlockNumber);
       expect(mockExecuteMsgsOnHashi).not.toHaveBeenCalled();
       expect(updateStateFile).toHaveBeenCalledWith(
+        sourceChainId,
         targetChainId,
         expect.any(Number),
         currentBlockNumber,
@@ -266,6 +268,7 @@ describe("hashi", () => {
       expect(result).toBe(currentBlockNumber);
       expect(mockExecuteMsgsOnHashi).not.toHaveBeenCalled();
       expect(updateStateFile).toHaveBeenCalledWith(
+        sourceChainId,
         targetChainId,
         expect.any(Number),
         currentBlockNumber,
@@ -291,6 +294,7 @@ describe("hashi", () => {
 
       expect(result).toBe(currentBlockNumber);
       expect(updateStateFile).toHaveBeenCalledWith(
+        sourceChainId,
         targetChainId,
         expect.any(Number),
         currentBlockNumber,
@@ -314,7 +318,7 @@ describe("hashi", () => {
       const result = await runHashiExecutor(buildArgs({ fetchPendingMessages }));
 
       expect(result).toBe(currentBlockNumber);
-      expect(fetchPendingMessages).toHaveBeenCalledWith(targetChainId, "hashi");
+      expect(fetchPendingMessages).toHaveBeenCalledWith(sourceChainId, targetChainId, "hashi");
       expect(mockExecuteMsgsOnHashi).toHaveBeenCalledWith(
         sourceChainId,
         targetChainId,
@@ -353,6 +357,7 @@ describe("hashi", () => {
 
       expect(result).toBe(currentBlockNumber);
       expect(updateStateFile).toHaveBeenCalledWith(
+        sourceChainId,
         targetChainId,
         expect.any(Number),
         currentBlockNumber,
