@@ -3,21 +3,19 @@ import {
   VeaOutboxArbToGnosis,
   VeaOutboxArbToGnosisDevnet,
 } from "../../../../contracts/typechain-types";
-import { toBigInt } from "ethers";
+import { toBigInt, Wallet } from "ethers";
 import {
   BaseTransactionHandler,
   BaseTransactionHandlerConstructor,
   ContractType,
-  TransactionStatus,
   Transaction,
   Transactions,
 } from "./baseTransactionHandler";
 import { BotEvents } from "../botEvents";
 import { ClaimNotSetError } from "../errors";
 import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
-import { getWETH, getWallet } from "../ethers";
+import { getWETH } from "../ethers";
 import { messageExecutor } from "../arbMsgExecutor";
-import { FallbackRpcProvider } from "../fallbackProvider";
 
 export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInboxArbToGnosis, VeaOutboxArbToGnosis> {
   constructor(opts: BaseTransactionHandlerConstructor) {
@@ -25,13 +23,11 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
   }
 
   public async approveWeth(): Promise<void> {
-    const { depositToken, outboxRPC, routeConfig } = getBridgeConfig(this.chainId);
+    const { depositToken, routeConfig } = getBridgeConfig(this.chainId);
     const { veaOutbox, deposit } = routeConfig[this.network];
-    const privateKey = process.env.PRIVATE_KEY!;
-    const outboxProvider = new FallbackRpcProvider(outboxRPC, this.emitter, this.chainId);
-    const signer = getWallet(privateKey, outboxProvider);
+    const signer = this.veaOutbox.runner as Wallet;
 
-    const weth = getWETH(depositToken, privateKey, outboxProvider);
+    const weth = getWETH(depositToken, signer);
     const currentAllowance: bigint = await weth.allowance(signer.address, veaOutbox.address);
     if (currentAllowance < deposit) {
       const approvalAmount = deposit * BigInt(10); // Approving for 10 claims

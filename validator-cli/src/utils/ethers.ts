@@ -71,8 +71,8 @@ function getVeaRouter(veaRouterAddress: string, privateKey: string, rpc: JsonRpc
   }
 }
 
-function getWETH(WETH: string, privateKey: string, rpc: JsonRpcProvider) {
-  return IWETH__factory.connect(WETH, getWallet(privateKey, rpc));
+function getWETH(WETH: string, signer: Wallet) {
+  return IWETH__factory.connect(WETH, signer);
 }
 
 function getVeaOutboxArbToEthDevnet(veaOutboxAddress: string, privateKey: string, rpc: JsonRpcProvider) {
