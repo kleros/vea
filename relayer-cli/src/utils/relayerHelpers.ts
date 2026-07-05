@@ -12,30 +12,32 @@ require("dotenv").config();
  * Initialize the relayer by claiming the lock and reading the nonce from the state file.
  * If the state file does not exist, it will be created with the current timestamp and nonce 0.
  *
- * @param chainId Chain ID of the relayer
+ * @param sourceChainId Chain ID of the relayer
+ * @param targetChainId Chain ID of the target network
  * @param network Network name of the relayer (e.g. "testnet")
  * @param emitter EventEmitter instance
  *
  * @returns The nonce read from the state file
  */
 async function initialize(
-  chainId: number,
+  sourceChainId: number,
+  targetChainId: number,
   network: string,
   emitter: EventEmitter,
   setLock: typeof claimLock = claimLock,
   syncStateFile: typeof updateStateFile = updateStateFile,
   fileSystem: typeof fs = fs
 ): Promise<{ nonce: number }> {
-  setLock(network, chainId);
+  setLock(network, sourceChainId, targetChainId);
   emitter.emit(BotEvents.LOCK_CLAIMED);
   // STATE_DIR is absolute path of the directory where the state files are stored
   // STATE_DIR must have trailing slash
   const stateDir = process.env.STATE_DIR || "";
-  const stateFile = path.join(stateDir, `${network}_${chainId}.json`);
+  const stateFile = path.join(stateDir, `${network}_${sourceChainId}_${targetChainId}.json`);
   if (!fileSystem.existsSync(stateFile)) {
     // No state file so initialize starting now
     const tsnow = Math.floor(Date.now() / 1000);
-    await syncStateFile(chainId, tsnow, 0, network, emitter);
+    await syncStateFile(sourceChainId, targetChainId, tsnow, 0, network, emitter);
   }
   // print pwd for debugging
   emitter.emit(BotEvents.LOCK_DIRECTORY, process.cwd());
@@ -53,14 +55,16 @@ async function initialize(
 /**
  * Update the state file with the new nonce and release the lock.
  * If nonceFrom is null, the state file will not be updated.
- * @param chainId Chain ID of the relayer
+ * @param sourceChainId Chain ID of the relayer
+ * @param targetChainId Chain ID of the target network
  * @param createdTimestamp Timestamp when the relayer was started
  * @param nonceFrom New nonce to be written to the state file
  * @param network Network name of the relayer (e.g. "testnet")
  * @param emitter EventEmitter instance
  */
 async function updateStateFile(
-  chainId: number,
+  sourceChainId: number,
+  targetChainId: number,
   createdTimestamp: number,
   nonceFrom: number,
   network: string,
@@ -72,13 +76,13 @@ async function updateStateFile(
   if (!fileSystem.existsSync(stateDir)) {
     fileSystem.mkdirSync(stateDir, { recursive: true });
   }
-  const chain_state_file = process.env.STATE_DIR + network + "_" + chainId + ".json";
+  const chain_state_file = process.env.STATE_DIR + network + "_" + sourceChainId + "_" + targetChainId + ".json";
   const json = {
     ts: createdTimestamp,
     nonce: nonceFrom,
   };
   fileSystem.writeFileSync(chain_state_file, JSON.stringify(json), { encoding: "utf8" });
-  removeLock(network, chainId);
+  removeLock(network, sourceChainId, targetChainId);
   emitter.emit(BotEvents.LOCK_RELEASED);
 }
 
@@ -162,10 +166,11 @@ async function setupExitHandlers(shutdownManager: ShutdownManager, emitter: Even
 }
 
 type RelayerNetworkConfig = {
-  chainId: number; // target chainId (VeaOutbox chain)
+  sourceChainId: number;
+  targetChainId: number;
   network: Network;
   senders: string[];
-  sourceChainId?: number; // source chainId (for hashi executor)
+  isHashi?: boolean;
 };
 
 /**
@@ -173,7 +178,7 @@ type RelayerNetworkConfig = {
  * @returns The network configurations
  */
 function getNetworkConfig(): RelayerNetworkConfig[] {
-  const chainIds = process.env.VEAOUTBOX_CHAINS ? process.env.VEAOUTBOX_CHAINS.split(",") : [];
+  const veaChains = process.env.VEA_CHAINS ? process.env.VEA_CHAINS.split(",") : [];
   const hashiChains = process.env.HASHI_CHAINS ? process.env.HASHI_CHAINS.split(",") : [];
   const devnetSenders = process.env.SENDER_ADDRESSES_DEVNET ? process.env.SENDER_ADDRESSES_DEVNET.split(",") : [];
   const testnetSenders = process.env.SENDER_ADDRESSES_TESTNET ? process.env.SENDER_ADDRESSES_TESTNET.split(",") : [];
@@ -183,17 +188,23 @@ function getNetworkConfig(): RelayerNetworkConfig[] {
   const toRelayHashi = hashiSenders.length > 0;
 
   const relayerNetworkConfig: RelayerNetworkConfig[] = [];
-  for (const chainId of chainIds) {
+  for (const chainPair of veaChains) {
+    const [sourceChainIdStr, targetChainIdStr] = chainPair.split("-");
+    const sourceChainId = Number(sourceChainIdStr);
+    const targetChainId = Number(targetChainIdStr);
+
     if (toRelayDevnet) {
       relayerNetworkConfig.push({
-        chainId: Number(chainId),
+        sourceChainId,
+        targetChainId,
         network: Network.DEVNET,
         senders: devnetSenders,
       });
     }
     if (toRelayTestnet) {
       relayerNetworkConfig.push({
-        chainId: Number(chainId),
+        sourceChainId,
+        targetChainId,
         network: Network.TESTNET,
         senders: testnetSenders,
       });
@@ -206,10 +217,11 @@ function getNetworkConfig(): RelayerNetworkConfig[] {
 
     if (toRelayHashi) {
       relayerNetworkConfig.push({
-        chainId: targetChainId,
+        sourceChainId,
+        targetChainId,
         network: Network.TESTNET,
         senders: hashiSenders,
-        sourceChainId: sourceChainId,
+        isHashi: true,
       });
     }
   }
