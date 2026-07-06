@@ -9,6 +9,7 @@ USE_LZ=false
 USE_VEA=false
 USE_CCIP=false
 USE_DEBRIDGE=false
+USE_AXELAR=false
 USE_LIGHTBULB=false
 
 REPORTER_CHAIN=""
@@ -50,6 +51,10 @@ while [[ $# -gt 0 ]]; do
       USE_DEBRIDGE=true
       shift
       ;;
+    --axelar)
+      USE_AXELAR=true
+      shift
+      ;;
     --lightbulb)
       USE_LIGHTBULB=true
       shift
@@ -69,8 +74,8 @@ if [[ -z "$REPORTER_CHAIN" || -z "$ADAPTER_CHAIN" ]]; then
   exit 1
 fi
 
-if ! $USE_LZ && ! $USE_VEA && ! $USE_CCIP && ! $USE_LIGHTBULB && ! $USE_HASHI && ! $USE_DEBRIDGE; then
-  echo "❌ At least one bridge flag required (--lz / --vea / --ccip/ --hashi/ --lightbulb/ --debridge)"
+if ! $USE_LZ && ! $USE_VEA && ! $USE_CCIP && ! $USE_LIGHTBULB && ! $USE_HASHI && ! $USE_DEBRIDGE && ! $USE_AXELAR; then
+  echo "❌ At least one bridge flag required (--lz / --vea / --ccip/ --hashi/ --lightbulb/ --debridge/ --axelar)"
   exit 1
 fi
 
@@ -180,6 +185,22 @@ if $USE_DEBRIDGE; then
 
   echo "🔵 Deploying DeBridge Adapter"
   forge script script/deBridge/DeployDeBridgeAdapter.s.sol:DeployDeBridgeAdapter \
+    --rpc-url "$ADAPTER_CHAIN" \
+    --broadcast
+fi
+
+# ----------------------------
+# Axelar
+# ----------------------------
+if $USE_AXELAR; then
+  echo "🔵 Deploying Axelar Reporter"
+  forge script script/axelar/DeployAxelarReporter.s.sol:DeployAxelarReporter \
+    --rpc-url "$REPORTER_CHAIN" \
+    --verify \
+    --broadcast
+
+  echo "🔵 Deploying Axelar Adapter"
+  forge script script/axelar/DeployAxelarAdapter.s.sol:DeployAxelarAdapter \
     --rpc-url "$ADAPTER_CHAIN" \
     --broadcast
 fi
