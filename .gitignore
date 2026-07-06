@@ -230,3 +230,7 @@ veashi-sdk/typechain-types/
 veashi-contracts/broadcast/**/*
 !veashi-contracts/broadcast/*.json
 veashi-contracts/broadcast/*/
+
+#envio
+.envio
+veashi-envio-yaho/build

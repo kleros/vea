@@ -25,7 +25,9 @@
     "veascan-subgraph-inbox",
     "veascan-subgraph-outbox",
     "veashi-contracts",
-    "veashi-sdk"
+    "veashi-sdk",
+    "veashi-scanner",
+    "veashi-envio-yaho"
   ],
   "packageManager": "yarn@4.6.0",
   "volta": {
@@ -66,7 +68,11 @@
     "node-fetch": "^2.6.7",
     "underscore@npm^3.0.4": "^1.12.1",
     "@graphprotocol/graph-ts": "^0.29.3",
-    "vm2@npm:^3.9.8": "^3.9.19"
+    "vm2@npm:^3.9.8": "^3.9.19",
+    "express": "^4.21.2",
+    "tsx": "^4.22.4",
+    "ws": "^8.21.0",
+    "js-yaml@npm:^4.1.1": "^4.2.0"
   },
   "scripts": {
     "changelog": "conventional-changelog --infile CHANGELOG.md --same-file --release-count 0 && prettier --write CHANGELOG.md",
