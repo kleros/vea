@@ -19,7 +19,7 @@
     "typescript": "5.2.2"
   },
   "dependencies": {
-    "envio": "3.0.0",
+    "envio": "3.2.1",
     "ethers": "^6.16.0"
   }
 }
