@@ -30,3 +30,28 @@ chains:
       - name: Yaho
         address:
           - 0xDbdF80c87f414fac8342e04D870764197bD3bAC7
+  - id: 1
+    start_block: 25373011
+    contracts:
+      - name: Yaho
+        address:
+          - 0x47F3Ba12550dFA097c77A10eB6472a881Ea5AA0e
+  - id: 8453
+    start_block: 47621992
+    contracts:
+      - name: Yaho
+        address:
+          - 0x88fAa01842E32beA05b167C679443009c3891183
+  - id: 11155111
+    start_block: 11115803
+    contracts:
+      - name: Yaho
+        address:
+          - 0xb286025885808F2A2D42cd9e2204D007f52b135e
+  - id: 84532
+    start_block: 43182223
+    contracts:
+      - name: Yaho
+        address:
+          - 0xcfD14674659bB15D0304a3608239a46A14d77554
+          - 0xf69BCD5Ff8A64919BE217bC017454aba4f6daa9D
