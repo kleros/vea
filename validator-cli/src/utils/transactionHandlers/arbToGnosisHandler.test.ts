@@ -1,6 +1,6 @@
 import { ArbToGnosisTransactionHandler } from "./arbToGnosisHandler";
 import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
-import { getWallet, getWETH } from "../ethers";
+import { getWETH } from "../ethers";
 import { messageExecutor } from "../arbMsgExecutor";
 import { ClaimNotSetError } from "../errors";
 import { TransactionStatus, BaseTransactionHandlerConstructor } from "./baseTransactionHandler";
@@ -11,7 +11,6 @@ jest.mock("../../consts/bridgeRoutes", () => ({
   Network: { TESTNET: "testnet" },
 }));
 jest.mock("../ethers", () => ({
-  getWallet: jest.fn(),
   getWETH: jest.fn(),
 }));
 jest.mock("../arbMsgExecutor", () => ({ messageExecutor: jest.fn() }));
@@ -68,6 +67,7 @@ describe("ArbToGnosisTransactionHandler", () => {
         estimateGas: jest.fn().mockResolvedValue(BigInt(54321)),
       },
       challenge: jest.fn().mockResolvedValue({ hash: "0xchallenge" }),
+      runner: { address: "0xSigner" },
     };
 
     // Default claim object
@@ -104,10 +104,6 @@ describe("ArbToGnosisTransactionHandler", () => {
   });
 
   describe("approveWeth", () => {
-    beforeEach(() => {
-      (getWallet as jest.Mock).mockReturnValue({ address: "0xSigner" });
-    });
-
     it("should approve WETH when allowance < deposit and then claim", async () => {
       await transactionHandler.approveWeth();
       expect(weth.allowance).toHaveBeenCalledWith("0xSigner", routeConfig[network].veaOutbox.address);
