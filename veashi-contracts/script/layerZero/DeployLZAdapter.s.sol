@@ -27,15 +27,18 @@ contract DeployLZAdapter is DeploymentState {
         address reporter = _loadAddress(".lzReporter");
         // Allow the reporter to send messages
         adapter.setPeer(eid, bytes32(uint256(uint160(reporter))));
-        // console.log("Reporter allowed as peer");
+        console.log("Reporter allowed as peer");
 
         // Set reporter as the message sender
         adapter.setReporterByChain(chainId, eid, reporter);
+
+        // Set reporter as the message sender
+        // adapter.setReporterByChain(chainId, eid, reporter);
         console.log("Reporter set for chainId");
         // Set the DVN config as reporter
         address[] memory optionalDVNs = new address[](0);
         address[] memory requiredDVNs = new address[](1);
-        requiredDVNs[0] = address(0x8eebf8b423B73bFCa51a1Db4B7354AA0bFCA9193);
+        requiredDVNs[0] = address(0xe1a12515F9AB2764b887bF60B923Ca494EBbB2d6);
 
         UlnConfig memory uln = UlnConfig({
             confirmations: 15, // minimum block confirmations required
