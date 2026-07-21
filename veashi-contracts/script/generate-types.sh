@@ -10,7 +10,8 @@ SDK_ABI_DIR="./abi"
 TYPECHAIN_DIR="./typechain-types"
 
 BROADCAST_SRC="../veashi-contracts/broadcast"
-SDK_ADD_DIR="./addresses" 
+SDK_ADD_DIR="./addresses"
+REGISTRY_FILE="./registry.ts"
 
 # --- Setup ---
 rm -rf "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR" "$SDK_ADD_DIR"
@@ -159,6 +160,36 @@ function syncChainFiles(dir) {
 }
 
 syncChainFiles(broadcastDir);
+"
+
+# Regenerating the SDK route registry from the synced address files
+echo "📝 Regenerating registry.ts from synced addresses..."
+
+node -e "
+const fs = require('fs');
+
+const addrDir = '$SDK_ADD_DIR';
+const registryFile = '$REGISTRY_FILE';
+const chainPairRegex = /^\d+-\d+\.json$/;
+
+const routes = fs.readdirSync(addrDir).filter(f => chainPairRegex.test(f)).sort();
+
+const lines = [];
+lines.push('import type { FlatRouteFile } from ' + JSON.stringify('./types') + ';');
+lines.push('');
+routes.forEach((f, i) => {
+    lines.push('import route_' + i + ' from ' + JSON.stringify('./addresses/' + f) + ';');
+});
+lines.push('');
+lines.push('export const ROUTES: Record<string, FlatRouteFile> = {');
+routes.forEach((f, i) => {
+    lines.push('  ' + JSON.stringify(f.replace(/\.json$/, '')) + ': route_' + i + ',');
+});
+lines.push('};');
+lines.push('');
+
+fs.writeFileSync(registryFile, lines.join('\n'));
+console.log('✅ Registry updated with ' + routes.length + ' route(s)');
 "
 
 echo "✨ Done! Your target directory is now structured correctly."
