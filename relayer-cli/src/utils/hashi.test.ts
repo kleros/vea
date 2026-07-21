@@ -92,6 +92,7 @@ describe("hashi", () => {
       const result = await toExecuteMessage({
         sourceChainId,
         hashiMessage: mockHashiMessage1,
+        emitter: mockEmitter,
         hasThresholdMet: jest.fn().mockResolvedValue(HashiExecutionStatus.EXECUTABLE),
       });
       expect(result.executable).toBe(true);
@@ -100,19 +101,22 @@ describe("hashi", () => {
       expect(result!.hashiMessage).toBe(mockHashiMessage1);
     });
 
-    it("should return null if is not executable", async () => {
+    it("should return false executable status if is not executable", async () => {
       const result = await toExecuteMessage({
         sourceChainId,
         hashiMessage: mockHashiMessage1,
+        emitter: mockEmitter,
         hasThresholdMet: jest.fn().mockResolvedValue(HashiExecutionStatus.THRESHOLD_NOT_MET),
       });
-      expect(result).toBeNull();
+      expect(result.executable).toBe(false);
+      expect(result?.status).toBe(HashiExecutionStatus.THRESHOLD_NOT_MET);
     });
 
     it("should return executed status if already executed", async () => {
       const result = await toExecuteMessage({
         sourceChainId,
         hashiMessage: mockHashiMessage1,
+        emitter: mockEmitter,
         hasThresholdMet: jest.fn().mockResolvedValue(HashiExecutionStatus.EXECUTED),
       });
       expect(result.executable).toBe(false);
@@ -149,7 +153,13 @@ describe("hashi", () => {
       await runHashiExecutor(buildArgs());
 
       expect(fetchStartBlockNumber).toHaveBeenCalledWith(targetChainId, "hashi", mockEmitter);
-      expect(fetchAllMessageLogs).toHaveBeenCalledWith("http://test.rpc", "0xYAHO", startBlockNumber, mockEmitter);
+      expect(fetchAllMessageLogs).toHaveBeenCalledWith(
+        sourceChainId,
+        "http://test.rpc",
+        "0xYAHO",
+        startBlockNumber,
+        mockEmitter
+      );
     });
 
     it("should return the updated blockNumber even if no messages are sent", async () => {

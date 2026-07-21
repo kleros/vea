@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@arbitrum/sdk": "4.0.3",
+    "@ethersproject/providers": "5.7.2",
     "@flashbots/ethers-provider-bundle": "^0.6.2",
     "@typechain/ethers-v6": "^0.5.1",
     "dotenv": "^16.4.5",

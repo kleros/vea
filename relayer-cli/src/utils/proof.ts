@@ -1,4 +1,5 @@
 import request from "graphql-request";
+import { DataError } from "./errors";
 
 interface MessageSentData {
   nonce: number;
@@ -24,10 +25,11 @@ const getMessageDataToRelay = async (
   chainId: number,
   inbox: string,
   nonce: number,
+  network: string,
   requestGraph: typeof request = request
 ) => {
   try {
-    const subgraph = process.env.RELAYER_SUBGRAPH;
+    const subgraph = process.env.RELAYER_SUBGRAPH!;
 
     const result = (await requestGraph(
       subgraph,
@@ -47,8 +49,7 @@ const getMessageDataToRelay = async (
 
     return [result[`messageSents`][0].to.id, result[`messageSents`][0].msgSender.id, result[`messageSents`][0].data];
   } catch (e) {
-    console.log(e);
-    return undefined;
+    throw new DataError("Failed to fetch message data (subgraph)", chainId, network, { cause: e });
   }
 };
 
@@ -71,6 +72,7 @@ const getProofAtCount = async (
   nonce: number,
   count: number,
   inboxAddress: string, // New parameter for inbox filtering
+  network: string,
   requestGraph: typeof request = request,
   calculateProofIndices: typeof getProofIndices = getProofIndices
 ): Promise<string[]> => {
@@ -91,7 +93,7 @@ const getProofAtCount = async (
   query += "}";
 
   try {
-    const subgraph = process.env.RELAYER_SUBGRAPH;
+    const subgraph = process.env.RELAYER_SUBGRAPH!;
     const result = (await requestGraph(subgraph, query)) as ProofAtCountResponse;
     const proof: string[] = [];
     for (let i = 0; i < proofIndices.length; i++) {
@@ -99,8 +101,7 @@ const getProofAtCount = async (
     }
     return proof;
   } catch (e) {
-    console.log(e);
-    return [];
+    throw new DataError("Failed to fetch proof (subgraph)", chainId, network, { cause: e });
   }
 };
 

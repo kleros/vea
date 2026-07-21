@@ -23,9 +23,21 @@ export class MissingEnvironmentVariable extends Error {
 }
 
 export class DataError extends Error {
-  constructor(dataCall: string) {
-    super();
+  constructor(dataCall: string, chainId: number, network: string, options?: { cause?: unknown }) {
+    super(`Data error for call: ${dataCall}, Chain ID: ${chainId}, Network: ${network}`);
     this.name = "DataError";
-    this.message = `Data error for call: ${dataCall}`;
+    if (options?.cause !== undefined) {
+      (this as any).cause = options.cause;
+    }
+  }
+}
+
+export class ExecutionError extends Error {
+  constructor(executionCall: string, chainId: number, network: string, options?: { cause?: unknown }) {
+    super(`Error during execution for: ${executionCall}, Chain ID: ${chainId}, Network: ${network}`);
+    this.name = "ExecutionError";
+    if (options?.cause !== undefined) {
+      (this as any).cause = options.cause;
+    }
   }
 }
