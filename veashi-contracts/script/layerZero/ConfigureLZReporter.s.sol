@@ -42,6 +42,7 @@ contract ConfigureLZReporter is DeploymentState {
         // Set the DVN config as reporter
         address[] memory optionalDVNs = new address[](0);
         address[] memory requiredDVNs = new address[](1);
+
         requiredDVNs[0] = address(0x53f488E93b4f1b60E8E83aa374dBe1780A1EE8a8);
 
         UlnConfig memory uln = UlnConfig({
