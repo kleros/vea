@@ -18,7 +18,8 @@ contract DeployCCIPReporter is DeploymentState {
         // Deploy & configure CCIPReporter
         //
         address headerStorage = vm.envAddress("HEADER_STORAGE");
-        address yaho = vm.envAddress("YAHO_ADDRESS");
+        address yaho = vm.envOr("YAHO_ADDRESS", address(0));
+        if (yaho == address(0)) yaho = _loadAddress(".yaho");
         address router = vm.envAddress("CCIP_REPORTER_ROUTER");
 
         CCIPReporter reporter = new CCIPReporter(headerStorage, yaho, router);
@@ -33,7 +34,7 @@ contract DeployCCIPReporter is DeploymentState {
         reporter.setChainSelectorByChainId(adapterChainId, adapterChainSelector);
 
         // fund the reporter
-        (bool sent, ) = address(reporter).call{value: 0.01 ether}("");
+        (bool sent, ) = address(reporter).call{value: 0.0005 ether}("");
         require(sent, "Failed to fund CCIPReporter");
 
         vm.stopBroadcast();

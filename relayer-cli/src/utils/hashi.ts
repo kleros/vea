@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { JsonRpcProvider, Interface, getAddress, Contract, Wallet, isHexString, getBytes } from "ethers";
+import { Interface, getAddress, Contract, Wallet, isHexString, getBytes } from "ethers";
 import { getHashiMsgId } from "./hashiHelpers/hashiMsgUtils";
 import { messageDispatchedAbi, thresholdViewAbi, YaruAbi } from "./hashiHelpers/abi";
 import { BotEvents } from "./botEvents";
@@ -12,6 +12,8 @@ import {
 } from "./hashiHelpers/hashiTypes";
 import { getHashiBridgeConfig } from "./hashiHelpers/bridgeRoutes";
 import { getStartBlockNumber, readPendingMessages, updateHashiStateFile } from "./hashiHelpers/stateFile";
+import { FallbackRpcProvider } from "./fallbackProvider";
+import { MissingEnvironmentVariable } from "./errors";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 const MAX_BATCH_SIZE = 10;
@@ -62,14 +64,21 @@ async function runHashiExecutor({
 
   if (!yaruAddress || !yahoAddress || !hashiAddress) {
     emitter.emit(BotEvents.HASHI_NOT_CONFIGURED, targetChainId);
+    throw new MissingEnvironmentVariable(`Hashi bridge ${sourceChainId} -> ${targetChainId}`);
     return 0;
   }
   const pendingMessages: HashiMessageExecutionVars[] = [];
   const localMessages: HashiMessageExecutionVars[] = await fetchPendingMessages(targetChainId, "hashi");
   const executableMessages: HashiMessage[] = [];
-  const { txns, toBlock } = await fetchAllMessageLogs(sourceRPC, yahoAddress, legacyBlockNumber, emitter);
+  const { txns, toBlock } = await fetchAllMessageLogs(
+    sourceChainId,
+    sourceRPC,
+    yahoAddress,
+    legacyBlockNumber,
+    emitter
+  );
   for (const tx of txns) {
-    const messageState = await isMessageExecutable({ sourceChainId, hashiMessage: tx.message });
+    const messageState = await isMessageExecutable({ sourceChainId, hashiMessage: tx.message, emitter });
     if (messageState === null) {
       continue;
     }
@@ -83,7 +92,7 @@ async function runHashiExecutor({
     }
   }
   for (const localMsg of localMessages) {
-    const messageState = await isMessageExecutable({ sourceChainId, hashiMessage: localMsg.message });
+    const messageState = await isMessageExecutable({ sourceChainId, hashiMessage: localMsg.message, emitter });
     if (messageState === null) {
       continue;
     }
@@ -126,7 +135,8 @@ async function executeBatchOnHashi(
 ): Promise<void> {
   const { yaruAddress, targetRPC } = getHashiBridgeConfig(sourceChainId, targetChainId);
   const maxPerTx = 20;
-  const provider = new JsonRpcProvider(targetRPC);
+  const targetUrls = Array.isArray(targetRPC) ? targetRPC : [targetRPC];
+  const provider = new FallbackRpcProvider(targetUrls, emitter, targetChainId);
   const signer = new Wallet(process.env.PRIVATE_KEY!, provider);
   const yaru = new Contract(yaruAddress, YaruAbi, signer);
 
@@ -178,12 +188,13 @@ async function executeBatchOnHashi(
       try {
         await yaru.executeMessages.staticCall([message]);
         filteredMessages.push(message);
-      } catch {
+      } catch (error) {
         emitter.emit(
           BotEvents.HASHI_MESSAGE_FAILING,
           message.nonce.toString(),
           sourceChainId.toString(),
-          targetChainId.toString()
+          targetChainId.toString(),
+          error
         );
       }
     }
@@ -200,6 +211,7 @@ async function executeBatchOnHashi(
 interface ToExecuteMessageInterface {
   sourceChainId: number;
   hashiMessage: HashiMessage;
+  emitter: EventEmitter;
   hasThresholdMet?: typeof getMessageStatus;
 }
 /**
@@ -213,9 +225,10 @@ interface ToExecuteMessageInterface {
 async function toExecuteMessage({
   sourceChainId,
   hashiMessage,
+  emitter,
   hasThresholdMet = getMessageStatus,
 }: ToExecuteMessageInterface): Promise<HashiMessageState | null> {
-  const msgStatus = await hasThresholdMet(sourceChainId, hashiMessage);
+  const msgStatus = await hasThresholdMet(sourceChainId, hashiMessage, emitter);
   const msgState: HashiMessageState = {
     hashiMessage,
     executable: false,
@@ -231,11 +244,16 @@ async function toExecuteMessage({
  * @param message The HashiMessage to check
  * @returns The HashiExecutionStatus indicating if the message is executable or already executed
  */
-async function getMessageStatus(sourceChainId: number, message: HashiMessage): Promise<HashiExecutionStatus> {
+async function getMessageStatus(
+  sourceChainId: number,
+  message: HashiMessage,
+  emitter: EventEmitter
+): Promise<HashiExecutionStatus> {
   const bridgeConfig = getHashiBridgeConfig(sourceChainId, message.targetChainId);
   const hashiAddress = bridgeConfig.hashiAddress;
   const yaruAddress = bridgeConfig.yaruAddress;
-  const provider = new JsonRpcProvider(bridgeConfig.targetRPC);
+  const targetUrls = Array.isArray(bridgeConfig.targetRPC) ? bridgeConfig.targetRPC : [bridgeConfig.targetRPC];
+  const provider = new FallbackRpcProvider(targetUrls, emitter, message.targetChainId);
 
   // Check if msg is already executed
   const ifaceYaru = new Interface(YaruAbi);
@@ -271,16 +289,18 @@ async function getMessageStatus(sourceChainId: number, message: HashiMessage): P
  * @returns An array of HashiMessageExecutionVars containing the logs and message details
  */
 async function getAllMessageDispatchedLogs(
-  providerRPC: string,
+  chainId: number,
+  providerRPC: string[] | string,
   yahoAddress: string,
   fromBlock: number,
   emitter: EventEmitter,
   chunkSize = 10_000, // RPC’s max range
   cooldownMs = 1000
 ): Promise<DispatchedTxnData> {
-  const provider = new JsonRpcProvider(providerRPC);
+  const rpcOutboxUrls = Array.isArray(providerRPC) ? providerRPC : [providerRPC];
+  const provider = new FallbackRpcProvider(rpcOutboxUrls, emitter, chainId);
   let latestFinalized = await provider.getBlock("finalized");
-  let toBlock = latestFinalized.number;
+  let toBlock = latestFinalized!.number;
   if (toBlock - fromBlock > MAX_BLOCKS_CYCLE) {
     toBlock = fromBlock + MAX_BLOCKS_CYCLE;
   }

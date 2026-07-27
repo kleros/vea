@@ -33,9 +33,12 @@ export type FlatRouteFile = {
   veaReporter?: string;
   veaAdapter?: string;
 
-  lightbulb: string;
-  switch: string;
-  yaho: string;
-  yaru: string;
-  hashi: string;
+  deBridgeReporter?: string;
+  deBridgeAdapter?: string;
+
+  lightbulb?: string;
+  switch?: string;
+  yaho?: string;
+  yaru?: string;
+  hashi?: string;
 };

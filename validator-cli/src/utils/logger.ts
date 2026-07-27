@@ -184,4 +184,12 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.FINALITY_ERROR, (message: string) => {
     logger.error({ message }, `finality_error`);
   });
+
+  // RPC fallback logs
+  emitter.on(BotEvents.RPC_FAILURE, (data) => {
+    logger.error(data, "rpc_failure");
+  });
+  emitter.on(BotEvents.RPC_RECOVERED, (data) => {
+    logger.info(data, "rpc_recovered");
+  });
 };

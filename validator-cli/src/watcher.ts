@@ -1,6 +1,7 @@
-import { JsonRpcProvider } from "@ethersproject/providers";
 import { getBridgeConfig, Network } from "./consts/bridgeRoutes";
 import { getVeaInbox, getVeaOutbox } from "./utils/ethers";
+import { FallbackRpcProvider } from "./utils/fallbackProvider";
+import { FallbackProviderV5 } from "./utils/fallbackProviderV5";
 import { getBlockFromEpoch, setEpochRange } from "./utils/epochHandler";
 import { defaultEmitter } from "./utils/emitter";
 import { BotEvents } from "./utils/botEvents";
@@ -67,7 +68,7 @@ async function processNetwork(
     if (!toWatch[networkKey]) {
       toWatch[networkKey] = { count: -1, epochs: [] };
     }
-    const veaOutboxProvider = new JsonRpcProvider(outboxRPC);
+    const veaOutboxProvider = new FallbackProviderV5(outboxRPC, emitter);
     let veaOutboxLatestBlock = await veaOutboxProvider.getBlock("latest");
 
     // If the watcher has already started, only check the latest epoch
@@ -114,9 +115,9 @@ interface ProcessEpochParams {
   networkKey: string;
   network: Network;
   routeConfig: any;
-  inboxRPC: string;
-  outboxRPC: string;
-  routerRPC: string | undefined;
+  inboxRPC: string[];
+  outboxRPC: string[];
+  routerRPC: string[] | undefined;
   toWatch: { [key: string]: { count: number; epochs: number[] } };
   transactionHandlers: { [key: string]: any };
   emitter: typeof defaultEmitter;
@@ -136,11 +137,27 @@ async function processEpochsForNetwork({
   emitter,
 }: ProcessEpochParams) {
   const privKey = process.env.PRIVATE_KEY;
-  const veaInbox = getVeaInbox(routeConfig[network].veaInbox.address, privKey, inboxRPC, chainId, network);
-  const veaOutbox = getVeaOutbox(routeConfig[network].veaOutbox.address, privKey, outboxRPC, chainId, network);
-  const veaInboxProvider = new JsonRpcProvider(inboxRPC);
-  const veaOutboxProvider = new JsonRpcProvider(outboxRPC);
-  const veaRouterProvider = routerRPC ? new JsonRpcProvider(routerRPC) : undefined;
+  // v6 providers for the typechain contract connections (the inbox chainId is detected via the fallback transport).
+  const veaInboxContractProvider = new FallbackRpcProvider(inboxRPC, emitter);
+  const veaOutboxContractProvider = new FallbackRpcProvider(outboxRPC, emitter, chainId);
+  const veaInbox = getVeaInbox(
+    routeConfig[network].veaInbox.address,
+    privKey,
+    veaInboxContractProvider,
+    chainId,
+    network
+  );
+  const veaOutbox = getVeaOutbox(
+    routeConfig[network].veaOutbox.address,
+    privKey,
+    veaOutboxContractProvider,
+    chainId,
+    network
+  );
+  // v5 providers for the standalone reads / Arbitrum SDK path.
+  const veaInboxProvider = new FallbackProviderV5(inboxRPC, emitter);
+  const veaOutboxProvider = new FallbackProviderV5(outboxRPC, emitter);
+  const veaRouterProvider = routerRPC && routerRPC.length > 0 ? new FallbackProviderV5(routerRPC, emitter) : undefined;
   let i = toWatch[networkKey].epochs.length - 1;
   let latestEpoch = toWatch[networkKey].epochs[i];
   const currentEpoch = Math.floor(Date.now() / (1000 * routeConfig[network].epochPeriod));
