@@ -28,6 +28,8 @@
   --accent: #ec4899;
   --accent-glow: rgba(236, 72, 153, 0.3);
 
+  --header-height: 73px;
+
   --gradient-primary: linear-gradient(135deg, var(--klerosUIComponentsSecondaryPurple) 0%, #ec4899 100%);
   --gradient-mesh: radial-gradient(at 0% 0%, rgba(126, 27, 212, 0.18) 0px, transparent 50%),
                     radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.14) 0px, transparent 50%),

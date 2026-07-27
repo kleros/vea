@@ -95,7 +95,7 @@ export default function ChainFilterPanel({
 
 function PanelHeader({ hasActiveFilter, onClearFilters }: { hasActiveFilter: boolean; onClearFilters: () => void }) {
   return (
-    <div className="px-5 py-3 border-b border-(--border) flex items-center justify-between bg-(--surface)">
+    <div className="px-5 py-3 border-a border-(--border) flex items-center justify-between bg-(--surface)">
       <div className="flex items-center gap-2">
         <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path

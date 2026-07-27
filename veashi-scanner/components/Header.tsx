@@ -1,8 +1,25 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
 export default function Header() {
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const setHeight = () => {
+      document.documentElement.style.setProperty("--header-height", `${el.offsetHeight}px`);
+    };
+
+    setHeight();
+    const observer = new ResizeObserver(setHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 glass border-b border-[var(--border)]">
+    <header ref={headerRef} className="sticky top-0 z-50 glass border-b border-[var(--border)]">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
@@ -25,6 +42,12 @@ export default function Header() {
               className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               Messages
+            </Link>
+            <Link
+              to="/routes"
+              className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              Routes
             </Link>
             <a
               href="https://github.com/kleros/vea"

@@ -1,5 +1,5 @@
 import { getAllSourceChains } from "@kleros/veashi-sdk";
-import { getViemChain } from "./chains";
+import { getViemChain, getRpcUrl } from "./chains";
 
 const RPC_PROBE_TIMEOUT_MS = 8_000;
 
@@ -30,7 +30,7 @@ export async function findChainForTx(hash: string): Promise<number | null> {
       chainIds.map(async (chainId) => {
         const chain = getViemChain(chainId);
         if (!chain) throw new Error("Chain not supported:" + chainId);
-        const rpcUrl = chain.rpcUrls.default.http[0];
+        const rpcUrl = getRpcUrl(chainId);
         if (!rpcUrl) throw new Error("No RPC URL for chain:" + chainId);
 
         const controller = new AbortController();
@@ -70,6 +70,25 @@ export async function findChainForTx(hash: string): Promise<number | null> {
     console.log(`Transaction ${normalizedHash} not found on any supported chains.`);
     return null;
   }
+}
+
+/** Format a unix timestamp (seconds) as a short relative time, e.g. "5m ago". */
+export function formatRelativeTime(unixSeconds?: number): string {
+  if (unixSeconds === undefined) return "—";
+
+  const diffSeconds = Math.max(0, Date.now() / 1000 - unixSeconds);
+  const units: [string, number][] = [
+    ["y", 60 * 60 * 24 * 365],
+    ["d", 60 * 60 * 24],
+    ["h", 60 * 60],
+    ["m", 60],
+  ];
+
+  for (const [label, secondsPerUnit] of units) {
+    const value = Math.floor(diffSeconds / secondsPerUnit);
+    if (value >= 1) return `${value}${label} ago`;
+  }
+  return "just now";
 }
 
 export function parseBlockInput(value: string): number | undefined {
