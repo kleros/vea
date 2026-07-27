@@ -21,6 +21,9 @@ import { fetchMessagesFromEnvio } from "@/lib/envioClient";
 const SCAN_WINDOW_BLOCKS = BigInt(1_000_000);
 const CHUNK_SIZE = BigInt(10_000);
 
+/** How often to re-scan for newly-dispatched messages without a user-triggered filter change. */
+const POLL_INTERVAL_MS = 15_000;
+
 /**
  * Per-route soft cap on newly-fetched (non-cached) messages we'll add to the
  * displayed list before stopping further chunked scans for that route.
@@ -192,10 +195,12 @@ export function useMessageScanner(
               setBlockRange(null);
             }
 
+            const backfillTargets: { dstId: number; scanRange: ScannedRange }[] = [];
+
             for (const dstId of targetDestIds) {
               if (signal.aborted) break;
 
-              // envio indexer
+              // envio indexer (fast path — gates the visible loading state)
               const envioMessages = await fetchMessagesFromEnvio({
                 sourceChainId: srcId,
                 destinationChainId: dstId,
@@ -212,78 +217,15 @@ export function useMessageScanner(
                 }
               }
 
-              // RPC fallback
-              const yahoAddr = getYaho(srcId, dstId);
-              if (!yahoAddr) continue;
-
-              const cacheEntry = getCache(srcId, dstId);
-              const mergedUncached = mergeRanges(getUncachedSubranges(scanRange, cacheEntry?.scannedRanges ?? []));
-              if (mergedUncached.length === 0) continue;
-
-              const targetDestSet = new Set([dstId]);
-              const rangesNewestFirst = [...mergedUncached].sort((a, b) => b.end - a.end);
-              let newAddedForRoute = 0;
-
-              outer: for (const subrange of rangesNewestFirst) {
-                let chunkEnd = BigInt(subrange.end);
-                const subStart = BigInt(subrange.start);
-
-                while (chunkEnd >= subStart) {
-                  if (signal.aborted) break outer;
-
-                  let chunkStart = chunkEnd - CHUNK_SIZE + BigInt(1);
-                  if (chunkStart < subStart) chunkStart = subStart;
-
-                  const chunkRange: ScannedRange = {
-                    start: Number(chunkStart),
-                    end: Number(chunkEnd),
-                  };
-
-                  const rawLogs = await getMessageDispatchedLogs(yahoAddr as Address, chunkStart, chunkEnd, srcId);
-
-                  if (signal.aborted) break outer;
-
-                  const formatted: Message[] = rawLogs.map((log) => ({
-                    txHash: normalizeHash(log.txHash),
-                    sourceChain: srcId,
-                    destinationChain: log.message.targetChainId,
-                    thresholdRequired: log.message.threshold,
-                    thresholdCurrent: 0,
-                    sourceAddress: log.message.sender,
-                    destinationAddress: log.message.receiver,
-                    blockNumber: log.blockNumber,
-                    messageId: log.messageId,
-                    adapters: log.message.adapters,
-                    reporters: log.message.reporters,
-                    nonce: log.message.nonce,
-                  }));
-
-                  const logsForDst = formatted.filter((m) => m.destinationChain === dstId);
-                  updateCache(srcId, dstId, chunkRange, logsForDst);
-
-                  const logsToDisplay = formatted.filter(
-                    (m) =>
-                      targetDestSet.has(m.destinationChain) &&
-                      m.blockNumber >= displayRange.start &&
-                      m.blockNumber <= displayRange.end
-                  );
-
-                  if (logsToDisplay.length > 0) {
-                    const remaining = MAX_NEW_MESSAGES_PER_ROUTE - newAddedForRoute;
-                    const toAdd = logsToDisplay.slice(0, Math.max(0, remaining));
-                    if (toAdd.length > 0) {
-                      setMessages((prev) => mergeMessages(prev, toAdd));
-                      newAddedForRoute += toAdd.length;
-                    }
-                  }
-
-                  if (newAddedForRoute >= MAX_NEW_MESSAGES_PER_ROUTE) break outer;
-
-                  chunkEnd = chunkStart - BigInt(1);
-                  await new Promise((r) => setTimeout(r, 500));
-                }
+              if (getYaho(srcId, dstId)) {
+                backfillTargets.push({ dstId, scanRange });
               }
             }
+
+            // RPC fallback / cache backfill: runs after the fast path so it
+            // never gates isScanning, but keeps filling the cache and
+            // trickling in any messages Envio missed.
+            void backfillRoutes(srcId, backfillTargets, displayRange, signal);
           } catch (err) {
             console.error(`Scanning failed for chain ${srcId}:`, err);
           }
@@ -298,9 +240,93 @@ export function useMessageScanner(
       }
     };
 
+    const backfillRoutes = async (
+      srcId: number,
+      targets: { dstId: number; scanRange: ScannedRange }[],
+      displayRange: ScannedRange,
+      signal: AbortSignal
+    ) => {
+      for (const { dstId, scanRange } of targets) {
+        if (signal.aborted) break;
+
+        const yahoAddr = getYaho(srcId, dstId);
+        if (!yahoAddr) continue;
+
+        const cacheEntry = getCache(srcId, dstId);
+        const mergedUncached = mergeRanges(getUncachedSubranges(scanRange, cacheEntry?.scannedRanges ?? []));
+        if (mergedUncached.length === 0) continue;
+
+        const rangesNewestFirst = [...mergedUncached].sort((a, b) => b.end - a.end);
+        let newAddedForRoute = 0;
+
+        outer: for (const subrange of rangesNewestFirst) {
+          let chunkEnd = BigInt(subrange.end);
+          const subStart = BigInt(subrange.start);
+
+          while (chunkEnd >= subStart) {
+            if (signal.aborted) break outer;
+
+            let chunkStart = chunkEnd - CHUNK_SIZE + BigInt(1);
+            if (chunkStart < subStart) chunkStart = subStart;
+
+            const chunkRange: ScannedRange = {
+              start: Number(chunkStart),
+              end: Number(chunkEnd),
+            };
+
+            const rawLogs = await getMessageDispatchedLogs(yahoAddr as Address, chunkStart, chunkEnd, srcId);
+
+            if (signal.aborted) break outer;
+
+            const formatted: Message[] = rawLogs.map((log) => ({
+              txHash: normalizeHash(log.txHash),
+              sourceChain: srcId,
+              destinationChain: log.message.targetChainId,
+              thresholdRequired: log.message.threshold,
+              thresholdCurrent: 0,
+              sourceAddress: log.message.sender,
+              destinationAddress: log.message.receiver,
+              blockNumber: log.blockNumber,
+              blockTimestamp: log.blockTimestamp,
+              messageId: log.messageId,
+              adapters: log.message.adapters,
+              reporters: log.message.reporters,
+              nonce: log.message.nonce,
+            }));
+
+            const logsForDst = formatted.filter((m) => m.destinationChain === dstId);
+            updateCache(srcId, dstId, chunkRange, logsForDst);
+
+            const logsToDisplay = formatted.filter(
+              (m) =>
+                m.destinationChain === dstId && m.blockNumber >= displayRange.start && m.blockNumber <= displayRange.end
+            );
+
+            if (logsToDisplay.length > 0) {
+              const remaining = MAX_NEW_MESSAGES_PER_ROUTE - newAddedForRoute;
+              const toAdd = logsToDisplay.slice(0, Math.max(0, remaining));
+              if (toAdd.length > 0) {
+                setMessages((prev) => mergeMessages(prev, toAdd));
+                newAddedForRoute += toAdd.length;
+              }
+            }
+
+            if (newAddedForRoute >= MAX_NEW_MESSAGES_PER_ROUTE) break outer;
+
+            chunkEnd = chunkStart - BigInt(1);
+            await new Promise((r) => setTimeout(r, 500));
+          }
+        }
+      }
+    };
+
     scan();
+    const pollId = setInterval(() => {
+      if (!signal.aborted) void scan();
+    }, POLL_INTERVAL_MS);
 
     return () => {
+      clearInterval(pollId);
       if (abortRef.current) abortRef.current.abort();
     };
   }, [sourceChain, destinationChain, fromBlock, toBlock]);

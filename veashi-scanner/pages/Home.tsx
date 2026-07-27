@@ -128,14 +128,13 @@ export default function Home() {
                       className="opacity-75"
                     />
                   </svg>
-                  Scanning blocks...
                 </span>
               )}
             </h2>
             <span className="text-sm text-(--text-muted)">{messages.length} messages found</span>
           </div>
 
-          <MessagesTable messages={paginatedMessages} onClearFilters={clearFilters} />
+          <MessagesTable messages={paginatedMessages} isLoading={isScanning} onClearFilters={clearFilters} />
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "0.3s" }}>

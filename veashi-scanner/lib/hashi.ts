@@ -29,6 +29,7 @@ type MessageDispatchedLog = {
 export interface HashiMessageExecutionVars {
   txHash: string;
   blockNumber: number;
+  blockTimestamp?: number;
   messageId: string;
   message: HashiMessage;
 }
@@ -53,6 +54,10 @@ export async function getMessageDispatchedLogs(
     fromBlock: fromBlock,
     toBlock: toBlock,
   });
+  const uniqueBlockNumbers = [...new Set(logs.map((log) => (log as unknown as MessageDispatchedLog).blockNumber))];
+  const blocks = await Promise.all(uniqueBlockNumbers.map((bn) => publicClient.getBlock({ blockNumber: bn })));
+  const timestampByBlock = new Map(uniqueBlockNumbers.map((bn, i) => [bn, Number(blocks[i].timestamp)]));
+
   for (const log of logs) {
     const { args, transactionHash, blockNumber } = log as unknown as MessageDispatchedLog;
 
@@ -74,6 +79,7 @@ export async function getMessageDispatchedLogs(
     allLogs.push({
       txHash: transactionHash,
       blockNumber: Number(blockNumber),
+      blockTimestamp: timestampByBlock.get(blockNumber),
       messageId: messageId.toString(),
       message: formattedMessage,
     });
@@ -125,9 +131,12 @@ export async function getMessageFromTxHash(
     adapters: [...message.adapters],
   };
 
+  const block = await publicClient.getBlock({ blockNumber });
+
   return {
     txHash: txHash,
     blockNumber: Number(blockNumber),
+    blockTimestamp: Number(block.timestamp),
     messageId: messageId.toString(),
     message: formattedMessage,
   };
