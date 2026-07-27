@@ -1,5 +1,5 @@
 import { getAllSourceChains } from "@kleros/veashi-sdk";
-import { getViemChain } from "./chains";
+import { getViemChain, getRpcUrl } from "./chains";
 
 const RPC_PROBE_TIMEOUT_MS = 8_000;
 
@@ -30,7 +30,7 @@ export async function findChainForTx(hash: string): Promise<number | null> {
       chainIds.map(async (chainId) => {
         const chain = getViemChain(chainId);
         if (!chain) throw new Error("Chain not supported:" + chainId);
-        const rpcUrl = chain.rpcUrls.default.http[0];
+        const rpcUrl = getRpcUrl(chainId);
         if (!rpcUrl) throw new Error("No RPC URL for chain:" + chainId);
 
         const controller = new AbortController();

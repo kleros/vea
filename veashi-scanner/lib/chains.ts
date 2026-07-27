@@ -13,3 +13,13 @@ export function getChainName(chainId: number): string {
 }
 
 export const getViemChain = (chainId: number) => Object.values(viemChains).find((c) => c?.id === chainId);
+
+/**
+ * RPC URL for a chain: `VITE_RPC_<chainId>` if set, else the chain's default
+ * public RPC from viem. Lets any deployment swap in a dedicated/paid RPC per
+ * chain without code changes, while still working out of the box.
+ */
+export function getRpcUrl(chainId: number): string | undefined {
+  const override = (import.meta.env as Record<string, string | undefined>)[`VITE_RPC_${chainId}`];
+  return override || getViemChain(chainId)?.rpcUrls.default.http[0];
+}

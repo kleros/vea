@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { Message } from "@/lib/types";
 import { YaruAbi, getYaru } from "@kleros/veashi-sdk";
 import { createPublicClient, http } from "viem";
-import { getViemChain } from "@/lib/chains";
+import { getViemChain, getRpcUrl } from "@/lib/chains";
 
 export type ExecutionStatus = "pending" | "executed" | "failed";
 
@@ -24,7 +24,7 @@ export function useExecutionStatus(message: Message | null | undefined) {
         if (!message) throw new Error("Message");
         const chain = getViemChain(message.destinationChain);
         const publicClient = createPublicClient({
-          transport: http(),
+          transport: http(getRpcUrl(message.destinationChain)),
           chain,
         });
         const yaruAddress = getYaru(message.sourceChain, message.destinationChain) as `0x${string}`;

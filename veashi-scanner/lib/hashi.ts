@@ -1,7 +1,7 @@
 import { createPublicClient, http, type Address, type Hash, type Hex } from "viem";
 import { YahoAbi } from "@kleros/veashi-sdk";
 import type { HashiMessage } from "./types";
-import { getViemChain } from "./chains";
+import { getViemChain, getRpcUrl } from "./chains";
 
 /**
  * Decoded shape of a `MessageDispatched` event log. `YahoAbi` is a JSON import,
@@ -42,7 +42,7 @@ export async function getMessageDispatchedLogs(
 ): Promise<HashiMessageExecutionVars[]> {
   const chain = getViemChain(chainId);
   const publicClient = createPublicClient({
-    transport: http(),
+    transport: http(getRpcUrl(chainId)),
     chain,
   });
 
@@ -96,7 +96,7 @@ export async function getMessageFromTxHash(
 ): Promise<HashiMessageExecutionVars | null> {
   const chain = getViemChain(chainId);
   const publicClient = createPublicClient({
-    transport: http(),
+    transport: http(getRpcUrl(chainId)),
     chain,
   });
   const receipt = await publicClient.getTransactionReceipt({ hash: txHash });

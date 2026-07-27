@@ -13,7 +13,7 @@ import {
   updateCache,
   type ScannedRange,
 } from "@/lib/scannerCache";
-import { getViemChain } from "@/lib/chains";
+import { getViemChain, getRpcUrl } from "@/lib/chains";
 import { fetchMessagesFromEnvio } from "@/lib/envioClient";
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
@@ -147,60 +147,14 @@ export function useMessageScanner(
 
             if (targetDestIds.length === 0) return;
 
-            const publicClient = createPublicClient({
-              chain: chainConfig,
-              transport: http(),
-            });
-
-            // ── Determine the scan range (what to fetch from RPC) ───────────
-            let startBlock: bigint;
-            let endBlock: bigint;
-
-            if (fromBlock !== undefined && toBlock !== undefined) {
-              startBlock = BigInt(fromBlock);
-              endBlock = BigInt(toBlock);
-            } else {
-              const currentBlock = await publicClient.getBlockNumber();
-              if (signal.aborted) return;
-
-              endBlock = toBlock !== undefined ? BigInt(toBlock) : currentBlock;
-              startBlock =
-                fromBlock !== undefined
-                  ? BigInt(fromBlock)
-                  : endBlock - SCAN_WINDOW_BLOCKS > BigInt(0)
-                  ? endBlock - SCAN_WINDOW_BLOCKS
-                  : BigInt(1);
-            }
-
-            if (signal.aborted) return;
-
-            if (endBlock < startBlock) {
-              console.warn(`Invalid block range for chain ${srcId}: ${startBlock}-${endBlock}`);
-              return;
-            }
-
-            const scanRange: ScannedRange = {
-              start: Number(startBlock),
-              end: Number(endBlock),
-            };
-
-            if (chainsToScan.length === 1) {
-              setBlockRange({
-                chain: chainConfig.name,
-                start: scanRange.start,
-                end: scanRange.end,
-                windowSize: scanRange.end - scanRange.start,
-              });
-            } else {
-              setBlockRange(null);
-            }
-
-            const backfillTargets: { dstId: number; scanRange: ScannedRange }[] = [];
+            // ── Fast path: envio indexer, independent of any RPC call so a
+            // slow/failing source-chain RPC never blocks indexed results
+            // from displaying. ────────────────────────────────────────────
+            const backfillDstIds: number[] = [];
 
             for (const dstId of targetDestIds) {
               if (signal.aborted) break;
 
-              // envio indexer (fast path — gates the visible loading state)
               const envioMessages = await fetchMessagesFromEnvio({
                 sourceChainId: srcId,
                 destinationChainId: dstId,
@@ -218,9 +172,70 @@ export function useMessageScanner(
               }
 
               if (getYaho(srcId, dstId)) {
-                backfillTargets.push({ dstId, scanRange });
+                backfillDstIds.push(dstId);
               }
             }
+
+            if (signal.aborted || backfillDstIds.length === 0) return;
+
+            // ── RPC fallback / cache backfill: compute the scan range. This
+            // may be slow or fail (e.g. a congested chain's public RPC) —
+            // that only skips backfill for this chain, it never affects the
+            // envio results already displayed above. ───────────────────────
+            let scanRange: ScannedRange;
+            try {
+              const publicClient = createPublicClient({
+                chain: chainConfig,
+                transport: http(getRpcUrl(srcId)),
+              });
+
+              let startBlock: bigint;
+              let endBlock: bigint;
+
+              if (fromBlock !== undefined && toBlock !== undefined) {
+                startBlock = BigInt(fromBlock);
+                endBlock = BigInt(toBlock);
+              } else {
+                const currentBlock = await publicClient.getBlockNumber();
+                if (signal.aborted) return;
+
+                endBlock = toBlock !== undefined ? BigInt(toBlock) : currentBlock;
+                startBlock =
+                  fromBlock !== undefined
+                    ? BigInt(fromBlock)
+                    : endBlock - SCAN_WINDOW_BLOCKS > BigInt(0)
+                    ? endBlock - SCAN_WINDOW_BLOCKS
+                    : BigInt(1);
+              }
+
+              if (signal.aborted) return;
+
+              if (endBlock < startBlock) {
+                console.warn(`Invalid block range for chain ${srcId}: ${startBlock}-${endBlock}`);
+                return;
+              }
+
+              scanRange = { start: Number(startBlock), end: Number(endBlock) };
+            } catch (err) {
+              console.error(`Failed to determine RPC scan range for chain ${srcId}:`, err);
+              return;
+            }
+
+            if (chainsToScan.length === 1) {
+              setBlockRange({
+                chain: chainConfig.name,
+                start: scanRange.start,
+                end: scanRange.end,
+                windowSize: scanRange.end - scanRange.start,
+              });
+            } else {
+              setBlockRange(null);
+            }
+
+            const backfillTargets: { dstId: number; scanRange: ScannedRange }[] = backfillDstIds.map((dstId) => ({
+              dstId,
+              scanRange,
+            }));
 
             // RPC fallback / cache backfill: runs after the fast path so it
             // never gates isScanning, but keeps filling the cache and
