@@ -1,6 +1,7 @@
 [profile.default]
 src = "src"
 out = "out"
+via_ir = true
 libs = ["lib","../node_modules/"]
 fs_permissions = [
     { access = "read-write", path = "./broadcast" }
