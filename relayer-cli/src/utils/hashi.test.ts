@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { BotEvents } from "./botEvents";
-import { toExecuteMessage, runHashiExecutor } from "./hashi";
+import { toExecuteMessage, runHashiExecutor, getDispatchedTxns } from "./hashi";
 import { HashiExecutionStatus, HashiMessage, HashiMessageExecutionVars } from "./hashiHelpers/hashiTypes";
 
 class MockEmitter extends EventEmitter {
@@ -22,7 +22,7 @@ describe("hashi", () => {
   const ONE_WEEK = 60 * 60 * 24 * 7;
   const mockHashiMessage1: HashiMessage = {
     nonce: 3,
-    targetChainId: 2,
+    targetChainId: 1,
     threshold: 1,
     sender: "0xSender",
     receiver: "0xReceiver",
@@ -32,7 +32,7 @@ describe("hashi", () => {
   };
   const mockHashiMessage2: HashiMessage = {
     nonce: 5,
-    targetChainId: 2,
+    targetChainId: 1,
     threshold: 1,
     sender: "0xSender",
     receiver: "0xReceiver",
@@ -155,6 +155,7 @@ describe("hashi", () => {
       expect(fetchStartBlockNumber).toHaveBeenCalledWith(sourceChainId, targetChainId, "hashi", mockEmitter);
       expect(fetchAllMessageLogs).toHaveBeenCalledWith(
         sourceChainId,
+        targetChainId,
         "http://test.rpc",
         "0xYAHO",
         startBlockNumber,
@@ -229,6 +230,33 @@ describe("hashi", () => {
         mockEmitter
       );
     });
+    it("should skip messages destined for another chain", async () => {
+      const wrongTargetTxn: HashiMessageExecutionVars = {
+        ...mockDispatchedTxnData1,
+        message: { ...mockHashiMessage1, targetChainId: 99 },
+      };
+      fetchAllMessageLogs = jest.fn().mockResolvedValue({
+        txns: [wrongTargetTxn],
+        toBlock: currentBlockNumber,
+      });
+      fetchPendingMessages = jest.fn().mockResolvedValue([wrongTargetTxn]);
+
+      const result = await runHashiExecutor(buildArgs({ fetchAllMessageLogs, fetchPendingMessages }));
+
+      expect(result).toBe(currentBlockNumber);
+      expect(mockIsMessageExecutable).not.toHaveBeenCalled();
+      expect(mockExecuteMsgsOnHashi).not.toHaveBeenCalled();
+      expect(updateStateFile).toHaveBeenCalledWith(
+        sourceChainId,
+        targetChainId,
+        expect.any(Number),
+        currentBlockNumber,
+        [],
+        "hashi",
+        mockEmitter
+      );
+    });
+
     it("should skip messages where isMessageExecutable returns null", async () => {
       fetchAllMessageLogs = jest.fn().mockResolvedValue({
         txns: [mockDispatchedTxnData1],
@@ -363,6 +391,95 @@ describe("hashi", () => {
         currentBlockNumber,
         [newPendingTxn, localPendingMsg],
         "hashi",
+        mockEmitter
+      );
+    });
+  });
+
+  describe("getDispatchedTxns", () => {
+    const yahoAddress = "0xYAHO";
+    const providerRPC = "http://test.rpc";
+    const fromBlock = startBlockNumber;
+    const envioResult = { txns: [mockDispatchedTxnData1], toBlock: currentBlockNumber };
+    const rpcResult = { txns: [mockDispatchedTxnData2], toBlock: currentBlockNumber };
+    let fetchFromEnvio: jest.Mock;
+    let fetchFromRPC: jest.Mock;
+
+    beforeEach(() => {
+      fetchFromEnvio = jest.fn().mockResolvedValue(envioResult);
+      fetchFromRPC = jest.fn().mockResolvedValue(rpcResult);
+    });
+
+    afterEach(() => {
+      delete process.env.RELAYER_ENVIO_YAHO;
+    });
+
+    it("should fetch from the envio indexer when RELAYER_ENVIO_YAHO is set", async () => {
+      process.env.RELAYER_ENVIO_YAHO = "http://envio.test/v1/graphql";
+
+      const result = await getDispatchedTxns(
+        sourceChainId,
+        targetChainId,
+        providerRPC,
+        yahoAddress,
+        fromBlock,
+        mockEmitter,
+        fetchFromEnvio,
+        fetchFromRPC
+      );
+
+      expect(result).toBe(envioResult);
+      expect(fetchFromEnvio).toHaveBeenCalledWith(sourceChainId, targetChainId, yahoAddress, fromBlock, 10);
+      expect(fetchFromRPC).not.toHaveBeenCalled();
+    });
+
+    it("should fall back to RPC scanning when the envio indexer fails", async () => {
+      process.env.RELAYER_ENVIO_YAHO = "http://envio.test/v1/graphql";
+      fetchFromEnvio.mockRejectedValue(new Error("connection refused"));
+
+      const result = await getDispatchedTxns(
+        sourceChainId,
+        targetChainId,
+        providerRPC,
+        yahoAddress,
+        fromBlock,
+        mockEmitter,
+        fetchFromEnvio,
+        fetchFromRPC
+      );
+
+      expect(result).toBe(rpcResult);
+      expect(fetchFromEnvio).toHaveBeenCalledTimes(1);
+      expect(fetchFromRPC).toHaveBeenCalledWith(
+        sourceChainId,
+        targetChainId,
+        providerRPC,
+        yahoAddress,
+        fromBlock,
+        mockEmitter
+      );
+    });
+
+    it("should use RPC scanning when RELAYER_ENVIO_YAHO is not set", async () => {
+      const result = await getDispatchedTxns(
+        sourceChainId,
+        targetChainId,
+        providerRPC,
+        yahoAddress,
+        fromBlock,
+        mockEmitter,
+        fetchFromEnvio,
+        fetchFromRPC
+      );
+
+      expect(result).toBe(rpcResult);
+      expect(fetchFromEnvio).not.toHaveBeenCalled();
+      expect(fetchFromRPC).toHaveBeenCalledWith(
+        sourceChainId,
+        targetChainId,
+        providerRPC,
+        yahoAddress,
+        fromBlock,
         mockEmitter
       );
     });

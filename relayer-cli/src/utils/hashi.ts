@@ -11,14 +11,16 @@ import {
   DispatchedTxnData,
 } from "./hashiHelpers/hashiTypes";
 import { getHashiBridgeConfig } from "./hashiHelpers/bridgeRoutes";
+import { getDispatchedMessagesFromEnvio } from "./hashiHelpers/envioQueries";
 import { getStartBlockNumber, readPendingMessages, updateHashiStateFile } from "./hashiHelpers/stateFile";
 import { FallbackRpcProvider } from "./fallbackProvider";
-import { MissingEnvironmentVariable } from "./errors";
+import { ExecutionError, MissingEnvironmentVariable } from "./errors";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 const MAX_BATCH_SIZE = 10;
 const MAX_BLOCKS_CYCLE = 1_000_000;
 const MAX_PENDING_TIME_SECONDS = 60 * 60 * 24 * 7; // 1 week
+const TX_CONFIRM_TIMEOUT_MS = 5 * 60 * 1000;
 
 interface HashiExecutorInterface {
   sourceChainId: number;
@@ -26,7 +28,7 @@ interface HashiExecutorInterface {
   network: string;
   emitter: EventEmitter;
   fetchBridgeConfig?: typeof getHashiBridgeConfig;
-  fetchAllMessageLogs?: typeof getAllMessageDispatchedLogs;
+  fetchAllMessageLogs?: typeof getDispatchedTxns;
   isMessageExecutable?: typeof toExecuteMessage;
   executeMsgsOnHashi?: typeof executeBatchOnHashi;
   fetchStartBlockNumber?: typeof getStartBlockNumber;
@@ -51,7 +53,7 @@ async function runHashiExecutor({
   targetChainId,
   emitter,
   fetchBridgeConfig = getHashiBridgeConfig,
-  fetchAllMessageLogs = getAllMessageDispatchedLogs,
+  fetchAllMessageLogs = getDispatchedTxns,
   isMessageExecutable = toExecuteMessage,
   executeMsgsOnHashi = executeBatchOnHashi,
   fetchStartBlockNumber = getStartBlockNumber,
@@ -59,25 +61,29 @@ async function runHashiExecutor({
   updateStateFile = updateHashiStateFile,
 }: HashiExecutorInterface): Promise<number> {
   const bridgeConfig = fetchBridgeConfig(sourceChainId, targetChainId);
-  const { yaruAddress, yahoAddress, hashiAddress, sourceRPC } = bridgeConfig;
+  const { yaruAddress, yahoAddress, hashiAddress, sourceRPC, targetRPC } = bridgeConfig;
   const legacyBlockNumber = await fetchStartBlockNumber(sourceChainId, targetChainId, "hashi", emitter);
 
-  if (!yaruAddress || !yahoAddress || !hashiAddress) {
+  if (!yaruAddress || !yahoAddress || !hashiAddress || !sourceRPC || !targetRPC) {
     emitter.emit(BotEvents.HASHI_NOT_CONFIGURED, targetChainId);
-    throw new MissingEnvironmentVariable(`Hashi bridge ${sourceChainId} -> ${targetChainId}`);
-    return 0;
+    throw new MissingEnvironmentVariable(`Hashi bridge ${sourceChainId} -> ${targetChainId} (addresses or RPC env)`);
   }
   const pendingMessages: HashiMessageExecutionVars[] = [];
   const localMessages: HashiMessageExecutionVars[] = await fetchPendingMessages(sourceChainId, targetChainId, "hashi");
   const executableMessages: HashiMessage[] = [];
   const { txns, toBlock } = await fetchAllMessageLogs(
     sourceChainId,
+    targetChainId,
     sourceRPC,
     yahoAddress,
     legacyBlockNumber,
     emitter
   );
   for (const tx of txns) {
+    // Shared Yahos dispatch for multiple routes; only this route's messages are executable on its Yaru
+    if (Number(tx.message.targetChainId) !== targetChainId) {
+      continue;
+    }
     const messageState = await isMessageExecutable({ sourceChainId, hashiMessage: tx.message, emitter });
     if (messageState === null) {
       continue;
@@ -92,6 +98,9 @@ async function runHashiExecutor({
     }
   }
   for (const localMsg of localMessages) {
+    if (Number(localMsg.message.targetChainId) !== targetChainId) {
+      continue;
+    }
     const messageState = await isMessageExecutable({ sourceChainId, hashiMessage: localMsg.message, emitter });
     if (messageState === null) {
       continue;
@@ -218,9 +227,15 @@ async function executeBatchOnHashi(
     if (filteredMessages.length === 0) {
       continue;
     }
-    const tx = await yaru.executeMessages(filteredMessages);
-    const receipt = await tx.wait();
-    emitter.emit(BotEvents.HASHI_BATCH_TXN, receipt.hash, filteredMessages.length);
+    // Throw on send/confirmation failure so the caller does not checkpoint past unexecuted messages
+    try {
+      const tx = await yaru.executeMessages(filteredMessages);
+      const receipt = await tx.wait(1, TX_CONFIRM_TIMEOUT_MS);
+      emitter.emit(BotEvents.HASHI_BATCH_TXN, receipt.hash, filteredMessages.length);
+    } catch (error) {
+      emitter.emit(BotEvents.HASHI_BATCH_FAILED, sourceChainId, targetChainId, filteredMessages.length, error);
+      throw new ExecutionError("executeMessages batch (hashi)", targetChainId, "hashi", { cause: error });
+    }
   }
 }
 
@@ -297,7 +312,9 @@ async function getMessageStatus(
 
 /**
  * Get all MessageDispatched logs from Yaho contract starting from a specific block
- * @param provider The JsonRpcProvider instance
+ * @param chainId The chain ID of the Yaho (source) chain
+ * @param targetChainId The chain ID the messages are destined for; other routes' messages are excluded
+ * @param providerRPC The RPC URL(s) for the source network
  * @param yahoAddress The Yaho contract address
  * @param fromBlock The starting block number to fetch logs from
  * @param chunkSize The number of blocks to fetch in each chunk (default: 10,000)
@@ -306,6 +323,7 @@ async function getMessageStatus(
  */
 async function getAllMessageDispatchedLogs(
   chainId: number,
+  targetChainId: number,
   providerRPC: string[] | string,
   yahoAddress: string,
   fromBlock: number,
@@ -341,6 +359,9 @@ async function getAllMessageDispatchedLogs(
       if (log.address.toLowerCase() == yahoAddress.toLocaleLowerCase()) {
         const parsed = iface.parseLog(log);
         const { messageId, message } = parsed.args as any;
+        if (Number(message.targetChainId) !== targetChainId) {
+          continue;
+        }
         const block = await provider.getBlock(log.blockNumber);
         all.push({
           txHash: log.transactionHash,
@@ -361,4 +382,35 @@ async function getAllMessageDispatchedLogs(
   return { txns: all, toBlock };
 }
 
-export { executeBatchOnHashi, runHashiExecutor, toExecuteMessage };
+/**
+ * Get MessageDispatched events from the Envio indexer when configured, falling back to RPC log scanning.
+ * @param chainId The chain ID of the Yaho (source) chain
+ * @param targetChainId The chain ID the messages are destined for; other routes' messages are excluded
+ * @param providerRPC The RPC URL(s) for the source network, used for the fallback scan
+ * @param yahoAddress The Yaho contract address
+ * @param fromBlock The starting block number to fetch messages from
+ * @param emitter The event emitter
+ * @returns The dispatched messages and the block number to checkpoint in the state file
+ */
+async function getDispatchedTxns(
+  chainId: number,
+  targetChainId: number,
+  providerRPC: string[] | string,
+  yahoAddress: string,
+  fromBlock: number,
+  emitter: EventEmitter,
+  fetchFromEnvio = getDispatchedMessagesFromEnvio,
+  fetchFromRPC = getAllMessageDispatchedLogs
+): Promise<DispatchedTxnData> {
+  if (process.env.RELAYER_ENVIO_YAHO) {
+    try {
+      emitter.emit(BotEvents.ENVIO_INDEXING, chainId, fromBlock);
+      return await fetchFromEnvio(chainId, targetChainId, yahoAddress, fromBlock, MAX_BATCH_SIZE);
+    } catch (error) {
+      emitter.emit(BotEvents.ENVIO_FAILED, chainId, error);
+    }
+  }
+  return fetchFromRPC(chainId, targetChainId, providerRPC, yahoAddress, fromBlock, emitter);
+}
+
+export { executeBatchOnHashi, runHashiExecutor, toExecuteMessage, getDispatchedTxns };

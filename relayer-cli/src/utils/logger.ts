@@ -106,4 +106,16 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   emitter.on(BotEvents.INDEXING, (fromBlock, toBlock) => {
     logger.debug({ fromBlock, toBlock }, "indexing_hashi_messages");
   });
+  emitter.on(BotEvents.ENVIO_INDEXING, (chainId, fromBlock) => {
+    logger.debug({ chainId, fromBlock }, "indexing_hashi_messages_from_envio");
+  });
+  emitter.on(BotEvents.ENVIO_FAILED, (chainId, err) => {
+    logger.warn({ chainId, err }, "envio_indexer_failed_falling_back_to_rpc");
+  });
+  emitter.on(BotEvents.HASHI_BATCH_FAILED, (sourceChainId, targetChainId, batchSize, err) => {
+    logger.error({ sourceChainId, targetChainId, batchSize, err }, "hashi_batch_send_failed");
+  });
+  emitter.on(BotEvents.ROUTE_FAILED, (sourceChainId, targetChainId, network, err) => {
+    logger.error({ sourceChainId, targetChainId, network, err }, "route_failed_will_retry_next_cycle");
+  });
 };

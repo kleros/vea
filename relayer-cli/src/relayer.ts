@@ -16,6 +16,7 @@ import { BotEvents } from "./utils/botEvents";
 import { getEpochPeriod, Network } from "./consts/bridgeRoutes";
 import { runHashiExecutor } from "./utils/hashi";
 import { sendHeartbeat } from "./utils/heartbeat";
+import { releaseLock, LockfileExistsError } from "./utils/lock";
 
 interface RelayerConfig {
   networkConfigs: RelayerNetworkConfig[];
@@ -44,7 +45,14 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
       if (executeTimes[i] > Date.now()) {
         continue;
       }
-      executeTimes[i] = await processNetworkConfig(networkConfigs[i], emitter);
+      try {
+        executeTimes[i] = await processNetworkConfig(networkConfigs[i], emitter);
+      } catch (e) {
+        // One failing route must not block or kill the others; retry it next cycle
+        const { sourceChainId, targetChainId, network } = networkConfigs[i];
+        emitter.emit(BotEvents.ROUTE_FAILED, sourceChainId, targetChainId, network, e);
+        executeTimes[i] = Date.now() + HASHI_CYCLE_TIME_MS;
+      }
       executeTime = Math.min(executeTime, executeTimes[i]);
     }
     const delayMs = executeTime - Date.now();
@@ -96,6 +104,11 @@ async function processNetworkConfig(networkConfig: RelayerNetworkConfig, emitter
     }
   } catch (e) {
     emitter.emit(BotEvents.ERROR_CONTEXT, sourceChainId + "->" + targetChainId, network);
+    // Release this run's lock so the next cycle can retry; a LockfileExistsError means another process holds it
+    if (!(e instanceof LockfileExistsError)) {
+      releaseLock(isHashi ? "hashi" : network, sourceChainId, targetChainId);
+      emitter.emit(BotEvents.LOCK_RELEASED);
+    }
     throw e;
   }
 }
