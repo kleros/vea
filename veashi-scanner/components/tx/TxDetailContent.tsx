@@ -13,11 +13,11 @@ export default function TxDetailContent({
   message,
   source,
   txHash,
-}: {
+}: Readonly<{
   message: Message;
   source: "cache" | "chain" | null;
   txHash: string;
-}) {
+}>) {
   const { statuses, isLoading: adaptersLoading } = useAdapterStatuses(message);
   const { status: execStatus, isLoading: execLoading } = useExecutionStatus(message);
 

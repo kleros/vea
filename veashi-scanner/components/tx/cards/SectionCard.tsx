@@ -19,7 +19,7 @@ interface SectionCardProps {
  * `glass rounded-xl border ... p-5 animate-fade-in` wrapper that every
  * tx card used to copy-paste.
  */
-export default function SectionCard({ icon, label, delay, className = "", children }: SectionCardProps) {
+export default function SectionCard({ icon, label, delay, className = "", children }: Readonly<SectionCardProps>) {
   return (
     <Card
       round

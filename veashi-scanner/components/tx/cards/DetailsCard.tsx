@@ -10,6 +10,8 @@ export default function DetailsCard({
   execStatus: "pending" | "executed" | "failed";
   execLoading: boolean;
 }) {
+  const execution = getExecutionDisplay(execLoading, execStatus);
+
   return (
     <SectionCard icon="info" label="Details" delay="0.15s">
       <dl className="mt-4 space-y-3">
@@ -30,24 +32,8 @@ export default function DetailsCard({
         )}
         <MetaRow label="Execution">
           <div className="flex items-center gap-1.5">
-            {execLoading ? (
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse inline-block" />
-            ) : execStatus === "executed" ? (
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-            ) : execStatus === "failed" ? (
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-            ) : (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
-            )}
-            <span className="text-sm font-mono">
-              {execLoading
-                ? "Checking…"
-                : execStatus === "executed"
-                ? "Executed"
-                : execStatus === "failed"
-                ? "Failed"
-                : "Pending"}
-            </span>
+            <span className={`w-1.5 h-1.5 rounded-full inline-block ${execution.dotClassName}`} />
+            <span className="text-sm font-mono">{execution.text}</span>
           </div>
         </MetaRow>
       </dl>
@@ -55,7 +41,20 @@ export default function DetailsCard({
   );
 }
 
-function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
+function getExecutionDisplay(execLoading: boolean, execStatus: "pending" | "executed" | "failed") {
+  if (execLoading) {
+    return { dotClassName: "bg-purple-400 animate-pulse", text: "Checking…" };
+  }
+  if (execStatus === "executed") {
+    return { dotClassName: "bg-green-400", text: "Executed" };
+  }
+  if (execStatus === "failed") {
+    return { dotClassName: "bg-red-400", text: "Failed" };
+  }
+  return { dotClassName: "bg-amber-400 animate-pulse", text: "Pending" };
+}
+
+function MetaRow({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
     <div className="flex items-start justify-between gap-4">
       <dt className="text-xs text-(--text-muted) uppercase tracking-wide shrink-0 mt-0.5">{label}</dt>

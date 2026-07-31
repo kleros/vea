@@ -61,7 +61,7 @@ export async function getMessageDispatchedLogs(
   for (const log of logs) {
     const { args, transactionHash, blockNumber } = log as unknown as MessageDispatchedLog;
 
-    if (!args || !args.message) continue;
+    if (!args?.message) continue;
 
     const { messageId, message } = args;
 
@@ -101,9 +101,9 @@ export async function getMessageFromTxHash(
   });
   const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
 
-  const targetLog = receipt.logs.find((l) => l.address.toLowerCase() === yahoAddress.toLowerCase());
+  const hasTargetLog = receipt.logs.some((l) => l.address.toLowerCase() === yahoAddress.toLowerCase());
 
-  if (!targetLog) return null;
+  if (!hasTargetLog) return null;
 
   const decodedLogs = await publicClient.getContractEvents({
     address: yahoAddress,

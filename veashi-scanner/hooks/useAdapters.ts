@@ -6,6 +6,28 @@ import { getViemChain, getRpcUrl } from "@/lib/chains";
 
 const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
+// Merge into the previous statuses rather than replacing them: a per-adapter
+// RPC failure here just means "unknown this poll", not "not relayed" — it
+// must not downgrade an already-CONFIRMED adapter back to PENDING just
+// because this tick's call for it errored.
+function mergeAdapterStatuses(
+  prev: StatusesRecord,
+  adapters: string[],
+  results: Awaited<ReturnType<ReturnType<typeof createPublicClient>["multicall"]>>
+): StatusesRecord {
+  const merged: StatusesRecord = { ...prev };
+  adapters.forEach((adapter, index) => {
+    const result = results[index];
+    if (result.status === "success") {
+      const hash = result.result as string;
+      merged[adapter] = hash && hash !== ZERO_BYTES32 ? Status.CONFIRMED : Status.PENDING;
+    } else {
+      console.error(`Adapter ${adapter} failed:`, result.error);
+    }
+  });
+  return merged;
+}
+
 export function useAdapterStatuses(message: Message) {
   const [statuses, setStatuses] = useState<StatusesRecord>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -13,7 +35,7 @@ export function useAdapterStatuses(message: Message) {
 
   useEffect(() => {
     // Check if we have the necessary data to query
-    if (!message || !message.adapters || message.adapters.length === 0) return;
+    if (!message?.adapters?.length) return;
     if (message.sourceChain === undefined || message.nonce === undefined) return;
 
     let cancelled = false;
@@ -59,23 +81,7 @@ export function useAdapterStatuses(message: Message) {
 
         if (cancelled) return;
 
-        // Merge into the previous statuses rather than replacing them: a
-        // per-adapter RPC failure here just means "unknown this poll", not
-        // "not relayed" — it must not downgrade an already-CONFIRMED adapter
-        // back to PENDING just because this tick's call for it errored.
-        setStatuses((prev) => {
-          const merged: StatusesRecord = { ...prev };
-          message.adapters!.forEach((adapter, index) => {
-            const result = results[index];
-            if (result.status === "success") {
-              const hash = result.result as string;
-              merged[adapter] = hash && hash !== ZERO_BYTES32 ? Status.CONFIRMED : Status.PENDING;
-            } else {
-              console.error(`Adapter ${adapter} failed:`, result.error);
-            }
-          });
-          return merged;
-        });
+        setStatuses((prev) => mergeAdapterStatuses(prev, message.adapters!, results));
       } catch (err) {
         if (cancelled) return;
         console.error("Failed to fetch adapter statuses:", err);

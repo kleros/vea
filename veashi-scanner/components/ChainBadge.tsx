@@ -34,7 +34,7 @@ interface ChainBadgeProps {
   className?: string;
 }
 
-export default function ChainBadge({ chainId, className = "" }: ChainBadgeProps) {
+export default function ChainBadge({ chainId, className = "" }: Readonly<ChainBadgeProps>) {
   const name = getChainName(chainId);
   const colors = KNOWN_CHAIN_COLORS[chainId] ?? generateColor(name);
 

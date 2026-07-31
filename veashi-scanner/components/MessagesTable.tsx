@@ -14,7 +14,7 @@ interface Props {
   onClearFilters: () => void;
 }
 
-export default function MessagesTable({ messages, isLoading, onClearFilters }: Props) {
+export default function MessagesTable({ messages, isLoading, onClearFilters }: Readonly<Props>) {
   const navigate = useNavigate();
 
   // Forces a re-render on an interval so relative timestamps ("2m ago") advance
@@ -97,7 +97,7 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: P
 
 // ─── Private sub-components ───────────────────────────────────────────────────
 
-function MessageRow({ message, index, onClick }: { message: Message; index: number; onClick: () => void }) {
+function MessageRow({ message, index, onClick }: Readonly<{ message: Message; index: number; onClick: () => void }>) {
   return (
     <tr
       onClick={onClick}

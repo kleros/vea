@@ -94,9 +94,7 @@ export function useTransaction(sourceChainId: number, txHash: string) {
           sourceChain: sourceChainId,
           destinationChain: found.message.targetChainId,
           thresholdRequired: found.message.threshold,
-          thresholdCurrent: 0, // TODO: fetch from dest chain adapters
-          bridges: undefined, // TODO: map adapter addresses → Bridge names
-          bridgeStatuses: undefined, // TODO: per-bridge status from dest chain
+          thresholdCurrent: 0,
           sourceAddress: found.message.sender,
           destinationAddress: found.message.receiver,
           blockNumber: found.blockNumber,

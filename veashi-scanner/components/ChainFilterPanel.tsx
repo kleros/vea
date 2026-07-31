@@ -17,9 +17,9 @@ interface Props {
   toBlock: string;
   onFromBlockChange: (val: string) => void;
   onToBlockChange: (val: string) => void;
-  stats: MessageStats;
   hasActiveFilter: boolean;
   onClearFilters: () => void;
+  stats?: MessageStats;
 }
 
 export default function ChainFilterPanel({
@@ -93,9 +93,12 @@ export default function ChainFilterPanel({
 
 // ─── Sub-components (private) ─────────────────────────────────────────────────
 
-function PanelHeader({ hasActiveFilter, onClearFilters }: { hasActiveFilter: boolean; onClearFilters: () => void }) {
+function PanelHeader({
+  hasActiveFilter,
+  onClearFilters,
+}: Readonly<{ hasActiveFilter: boolean; onClearFilters: () => void }>) {
   return (
-    <div className="px-5 py-3 border-a border-(--border) flex items-center justify-between bg-(--surface)">
+    <div className="px-5 py-3 border-b border-(--border) flex items-center justify-between bg-(--surface)">
       <div className="flex items-center gap-2">
         <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
@@ -124,7 +127,7 @@ function ChainSelect({
   hideLabel = false,
   hideBadge = false,
   className = "",
-}: {
+}: Readonly<{
   label: string;
   value: ChainFilter;
   options: number[];
@@ -133,7 +136,7 @@ function ChainSelect({
   hideLabel?: boolean;
   hideBadge?: boolean;
   className?: string;
-}) {
+}>) {
   const items: ChainItem[] = [
     {
       id: NO_CHAIN,
@@ -182,14 +185,14 @@ function BlockRangeSection({
   onFromBlockChange,
   onToBlockChange,
   disabled,
-}: {
+}: Readonly<{
   blockRange: BlockRange | null;
   fromBlock: string;
   toBlock: string;
   onFromBlockChange: (val: string) => void;
   onToBlockChange: (val: string) => void;
   disabled: boolean;
-}) {
+}>) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -208,7 +211,7 @@ function BlockRangeSection({
         <div>
           <NumberField
             label="From Block"
-            value={fromBlock === "" ? NaN : Number(fromBlock)}
+            value={fromBlock === "" ? Number.NaN : Number(fromBlock)}
             onChange={(n) => onFromBlockChange(Number.isNaN(n) ? "" : String(n))}
             minValue={0}
             placeholder="e.g. 18000000"

@@ -32,7 +32,7 @@ interface BridgeStatusCardProps {
   status: BridgeStatus;
 }
 
-export default function BridgeStatusCard({ status }: BridgeStatusCardProps) {
+export default function BridgeStatusCard({ status }: Readonly<BridgeStatusCardProps>) {
   const colors = bridgeColors[status.name];
 
   const getTimeAgo = (timestamp?: number) => {
@@ -47,11 +47,13 @@ export default function BridgeStatusCard({ status }: BridgeStatusCardProps) {
     return `${days}d ago`;
   };
 
-  const tooltipText = status.completed
-    ? status.timestamp
-      ? `${status.name} relayed this message ${getTimeAgo(status.timestamp)}`
-      : `${status.name} has relayed this message`
-    : `${status.name} has not yet relayed this message`;
+  const getTooltipText = () => {
+    if (!status.completed) return `${status.name} has not yet relayed this message`;
+    if (!status.timestamp) return `${status.name} has relayed this message`;
+    return `${status.name} relayed this message ${getTimeAgo(status.timestamp)}`;
+  };
+
+  const tooltipText = getTooltipText();
 
   return (
     <div

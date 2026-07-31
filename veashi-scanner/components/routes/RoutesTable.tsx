@@ -30,7 +30,7 @@ interface Props {
   routes: RouteRow[];
 }
 
-export default function RoutesTable({ routes }: Props) {
+export default function RoutesTable({ routes }: Readonly<Props>) {
   const [selected, setSelected] = useState<RouteRow | null>(null);
 
   if (routes.length === 0) {

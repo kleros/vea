@@ -16,8 +16,6 @@ export interface Message {
   destinationChain: number;
   thresholdCurrent?: number;
   thresholdRequired: number;
-  bridges?: Bridge[];
-  bridgeStatuses?: BridgeStatus[];
   sourceAddress: string;
   destinationAddress: string;
   blockNumber: number;

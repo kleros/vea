@@ -5,11 +5,11 @@ export default function ThresholdCard({
   message,
   statuses,
   isLoading,
-}: {
+}: Readonly<{
   message: Message;
   statuses: StatusesRecord;
   isLoading: boolean;
-}) {
+}>) {
   const required = message.thresholdRequired;
   const verifiedCount = statuses ? Object.values(statuses).filter((s) => s === Status.CONFIRMED).length : 0;
   const current = isLoading ? message.thresholdCurrent ?? 0 : verifiedCount;

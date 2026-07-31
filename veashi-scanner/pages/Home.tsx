@@ -32,19 +32,6 @@ export default function Home() {
     parsedToBlock
   );
 
-  const stats = useMemo<MessageStats>(
-    () => ({
-      total: messages.length,
-      completed: messages.filter((m) => (m.thresholdCurrent ?? 0) >= m.thresholdRequired).length,
-      inProgress: messages.filter((m) => {
-        const c = m.thresholdCurrent ?? 0;
-        return c > 0 && c < m.thresholdRequired;
-      }).length,
-      pending: messages.filter((m) => !m.thresholdCurrent || m.thresholdCurrent === 0).length,
-    }),
-    [messages]
-  );
-
   const hasActiveFilter = sourceChain !== NO_CHAIN || destChain !== NO_CHAIN;
 
   const totalPages = Math.max(1, Math.ceil(messages.length / ITEMS_PER_PAGE));
@@ -108,7 +95,6 @@ export default function Home() {
               setToBlock(val);
               setCurrentPage(1);
             }}
-            stats={stats}
             hasActiveFilter={hasActiveFilter}
             onClearFilters={clearFilters}
           />

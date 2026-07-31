@@ -10,7 +10,7 @@ export default function BridgeSummaryCard({ message }: { message: Message }) {
 
   const bridgeNames = new Set<string>();
   adapters.forEach((addr) => {
-    const name = getBridgeName(message.sourceChain, message.destinationChain, addr, undefined);
+    const name = getBridgeName(message.sourceChain, message.destinationChain, addr);
     bridgeNames.add(name !== null ? getBridgeLabel(name) : "Unknown");
   });
   reporters.forEach((addr) => {

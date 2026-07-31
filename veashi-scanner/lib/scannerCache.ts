@@ -100,7 +100,7 @@ export function mergeRanges(ranges: ScannedRange[]): ScannedRange[] {
   const sorted = [...ranges].sort((a, b) => a.start - b.start);
   const merged: ScannedRange[] = [{ ...sorted[0] }];
   for (let i = 1; i < sorted.length; i++) {
-    const last = merged[merged.length - 1];
+    const last = merged.at(-1)!;
     const curr = sorted[i];
     if (curr.start <= last.end + 1) {
       last.end = Math.max(last.end, curr.end);

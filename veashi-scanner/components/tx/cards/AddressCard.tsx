@@ -2,7 +2,7 @@ import { Message } from "@/lib/types";
 import { Copiable } from "@kleros/ui-components-library";
 import SectionCard from "./SectionCard";
 
-export default function AddressesCard({ message }: { message: Message }) {
+export default function AddressesCard({ message }: Readonly<{ message: Message }>) {
   return (
     <SectionCard icon="address" label="Addresses" delay="0.15s">
       <div className="mt-4 space-y-3">

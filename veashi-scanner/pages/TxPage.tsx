@@ -74,15 +74,15 @@ function NoChainIdCard() {
       </div>
       <p className="text-sm font-medium mb-1">Source chain required</p>
       <p className="text-xs text-(--text-muted) max-w-xs mx-auto">
-        Navigate to this transaction from the messages table, which includes the source chain ID in the URL (
-        <span className="font-mono">/tx/chainId/hash</span>).
+        Navigate to this transaction from the messages table, which includes the source chain ID in the URL
+        (/tx/chainId/hash).
       </p>
     </div>
   );
 }
 
 // ─── Main Data Fetcher ────────────────────────────────────────────────────────
-function TxDetail({ chainId, txHash }: { chainId: number; txHash: string }) {
+function TxDetail({ chainId, txHash }: Readonly<{ chainId: number; txHash: string }>) {
   const { message, isLoading, error, source } = useTransaction(chainId, txHash);
 
   if (isLoading) {

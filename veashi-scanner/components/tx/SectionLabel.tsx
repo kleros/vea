@@ -1,6 +1,6 @@
 import { IconType } from "@/lib/types";
 
-export default function SectionLabel({ icon, label }: { icon: IconType; label: string }) {
+export default function SectionLabel({ icon, label }: Readonly<{ icon: IconType; label: string }>) {
   const icons: Record<IconType, React.ReactNode> = {
     route: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />,
     address: (

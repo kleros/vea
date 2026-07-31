@@ -26,7 +26,16 @@ const STATUS_STYLES = {
 
 export default function StatusIndicator({ current, required, size = "md" }: StatusIndicatorProps) {
   const percentage = Math.min(100, (current / required) * 100);
-  const status = current >= required ? "complete" : current > 0 ? "inProgress" : "pending";
+
+  let status: keyof typeof STATUS_STYLES;
+  if (current >= required) {
+    status = "complete";
+  } else if (current > 0) {
+    status = "inProgress";
+  } else {
+    status = "pending";
+  }
+
   const s = STATUS_STYLES[status];
 
   return (

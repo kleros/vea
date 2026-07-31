@@ -11,10 +11,10 @@ interface RouteDetailsModalProps {
   onOpenChange: (isOpen: boolean) => void;
   sourceChainId: number;
   destinationChainId: number;
-  bridges: Bridges[];
+  bridges: readonly Bridges[];
 }
 
-function AddressRow({ label, chainId, address }: { label: string; chainId: number; address?: string }) {
+function AddressRow({ label, chainId, address }: Readonly<{ label: string; chainId: number; address?: string }>) {
   if (!address) return null;
   const explorerUrl = getExplorerAddressUrl(chainId, address);
 
@@ -49,7 +49,7 @@ export default function RouteDetailsModal({
   sourceChainId,
   destinationChainId,
   bridges,
-}: RouteDetailsModalProps) {
+}: Readonly<RouteDetailsModalProps>) {
   return (
     <Modal
       isOpen={isOpen}
