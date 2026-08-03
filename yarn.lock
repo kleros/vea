@@ -5265,7 +5265,7 @@ __metadata:
   dependencies:
     "@eslint/js": "npm:^9.15.0"
     "@kleros/ui-components-library": "npm:^3.6.0"
-    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.0.3"
+    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.0.4"
     "@tailwindcss/vite": "npm:^4"
     "@types/node": "npm:22"
     "@types/react": "npm:^18.3.12"
@@ -5287,10 +5287,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@kleros/veashi-sdk@npm:@kleros/veashi-sdk@0.0.3":
-  version: 0.0.3
-  resolution: "@kleros/veashi-sdk@npm:0.0.3"
-  checksum: 10/d2f5b75c6c28174042ae7811d54826792fd32b280ad8a42bc5bdc840ff8588d1344d4487be379216895ca802b1e384bc41fdd78085a556afc249532705dde040
+"@kleros/veashi-sdk@npm:@kleros/veashi-sdk@0.0.4":
+  version: 0.0.4
+  resolution: "@kleros/veashi-sdk@npm:0.0.4"
+  checksum: 10/0042ccd609117a15552419b6ce2991d2e9740b99cc7aa2905e786e3f3d1c5631cda8eeb39ca547405d4947f5a115ed338bbf7f6ed346b488cb169ec02942155d
   languageName: node
   linkType: hard
 
