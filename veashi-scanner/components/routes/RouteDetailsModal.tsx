@@ -3,7 +3,6 @@ import type { Bridges } from "@kleros/veashi-sdk";
 import { getReporter, getAdapter, getYaho, getSwitch, getYaru, getHashi, getLightbulb } from "@kleros/veashi-sdk";
 import { getChainName } from "@/lib/chains";
 import { getExplorerAddressUrl } from "@/lib/explorer";
-import { getBridgeLabel } from "@/lib/veashiHelpers";
 import BridgeBadge from "@/components/BridgeBadge";
 
 interface RouteDetailsModalProps {
@@ -11,10 +10,10 @@ interface RouteDetailsModalProps {
   onOpenChange: (isOpen: boolean) => void;
   sourceChainId: number;
   destinationChainId: number;
-  bridges: Bridges[];
+  bridges: readonly Bridges[];
 }
 
-function AddressRow({ label, chainId, address }: { label: string; chainId: number; address?: string }) {
+function AddressRow({ label, chainId, address }: Readonly<{ label: string; chainId: number; address?: string }>) {
   if (!address) return null;
   const explorerUrl = getExplorerAddressUrl(chainId, address);
 
@@ -49,7 +48,7 @@ export default function RouteDetailsModal({
   sourceChainId,
   destinationChainId,
   bridges,
-}: RouteDetailsModalProps) {
+}: Readonly<RouteDetailsModalProps>) {
   return (
     <Modal
       isOpen={isOpen}
@@ -90,7 +89,7 @@ export default function RouteDetailsModal({
           <div className="space-y-4">
             {bridges.map((bridge) => (
               <div key={bridge}>
-                <BridgeBadge bridge={getBridgeLabel(bridge)} className="mb-1.5" />
+                <BridgeBadge bridge={bridge} className="mb-1.5" />
                 <div className="divide-y divide-(--border)">
                   <AddressRow
                     label="Reporter"

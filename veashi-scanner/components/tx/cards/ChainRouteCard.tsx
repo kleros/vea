@@ -2,7 +2,7 @@ import type { Message } from "@/lib/types";
 import ChainBadge from "@/components/ChainBadge";
 import SectionCard from "./SectionCard";
 
-export default function ChainRouteCard({ message }: { message: Message }) {
+export default function ChainRouteCard({ message }: Readonly<{ message: Message }>) {
   return (
     <SectionCard icon="route" label="Chain Route" delay="0.1s">
       <div className="mt-4 flex flex-col gap-2">

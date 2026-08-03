@@ -13,13 +13,17 @@ export default function TxDetailContent({
   message,
   source,
   txHash,
-}: {
+}: Readonly<{
   message: Message;
   source: "cache" | "chain" | null;
   txHash: string;
-}) {
-  const { statuses, isLoading: adaptersLoading } = useAdapterStatuses(message);
-  const { status: execStatus, isLoading: execLoading } = useExecutionStatus(message);
+}>) {
+  const { status: execStatus, isLoading: execLoading, error: execError } = useExecutionStatus(message);
+  const {
+    statuses,
+    isLoading: adaptersLoading,
+    error: adaptersError,
+  } = useAdapterStatuses(message, execStatus === "executed");
 
   return (
     <>
@@ -29,18 +33,18 @@ export default function TxDetailContent({
       {/* ── Route | Threshold | Bridges (3-col) ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <ChainRouteCard message={message} />
-        <ThresholdCard message={message} statuses={statuses} isLoading={adaptersLoading} />
+        <ThresholdCard message={message} statuses={statuses} isLoading={adaptersLoading} error={adaptersError} />
         <BridgeSummaryCard message={message} />
       </div>
 
       {/* ── Addresses | Details + Execution (2-col) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AddressesCard message={message} />
-        <DetailsCard message={message} execStatus={execStatus} execLoading={execLoading} />
+        <DetailsCard message={message} execStatus={execStatus} execLoading={execLoading} execError={execError} />
       </div>
 
       {/* ── Adapters & Reporters ── */}
-      <AdaptersCard message={message} statuses={statuses} isLoading={adaptersLoading} />
+      <AdaptersCard message={message} statuses={statuses} isLoading={adaptersLoading} error={adaptersError} />
     </>
   );
 }

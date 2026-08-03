@@ -2,8 +2,8 @@ import { useMemo, FC } from "react";
 import { Button, DropdownSelect as RawDropdownSelect, NumberField } from "@kleros/ui-components-library";
 import { getAllSourceChains, getDestinationChains } from "@kleros/veashi-sdk";
 import ChainBadge from "@/components/ChainBadge";
-import { getChainName } from "@/lib/chains";
-import { ChainItem, DropdownSelectProps, NO_CHAIN, ChainFilter, BlockRange, MessageStats } from "@/lib/types";
+import { getChainName, matchesNetwork } from "@/lib/chains";
+import { ChainItem, DropdownSelectProps, NO_CHAIN, ChainFilter, BlockRange, Network } from "@/lib/types";
 
 const DropdownSelect = RawDropdownSelect as unknown as FC<DropdownSelectProps>;
 
@@ -17,9 +17,9 @@ interface Props {
   toBlock: string;
   onFromBlockChange: (val: string) => void;
   onToBlockChange: (val: string) => void;
-  stats: MessageStats;
   hasActiveFilter: boolean;
   onClearFilters: () => void;
+  network?: Network;
 }
 
 export default function ChainFilterPanel({
@@ -34,26 +34,29 @@ export default function ChainFilterPanel({
   onToBlockChange,
   hasActiveFilter,
   onClearFilters,
+  network,
 }: Props) {
   const availableSourceChains = useMemo(() => {
     try {
-      return getAllSourceChains();
+      const chains = getAllSourceChains();
+      return network ? chains.filter((id) => matchesNetwork(id, network)) : chains;
     } catch {
       return [];
     }
-  }, []);
+  }, [network]);
 
   const availableDestChains = useMemo(() => {
     if (sourceChain === NO_CHAIN) return [];
     try {
-      return getDestinationChains(sourceChain);
+      const chains = getDestinationChains(sourceChain);
+      return network ? chains.filter((id) => matchesNetwork(id, network)) : chains;
     } catch {
       return [];
     }
-  }, [sourceChain]);
+  }, [sourceChain, network]);
 
   return (
-    <div className="glass rounded-xl border border-(--border) overflow-hidden">
+    <div className="glass border border-(--border) overflow-hidden">
       <PanelHeader hasActiveFilter={hasActiveFilter} onClearFilters={onClearFilters} />
 
       <div className="p-5">
@@ -93,9 +96,12 @@ export default function ChainFilterPanel({
 
 // ─── Sub-components (private) ─────────────────────────────────────────────────
 
-function PanelHeader({ hasActiveFilter, onClearFilters }: { hasActiveFilter: boolean; onClearFilters: () => void }) {
+function PanelHeader({
+  hasActiveFilter,
+  onClearFilters,
+}: Readonly<{ hasActiveFilter: boolean; onClearFilters: () => void }>) {
   return (
-    <div className="px-5 py-3 border-a border-(--border) flex items-center justify-between bg-(--surface)">
+    <div className="px-5 py-3 border-b border-(--border) flex items-center justify-between bg-(--surface)">
       <div className="flex items-center gap-2">
         <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
@@ -124,7 +130,7 @@ function ChainSelect({
   hideLabel = false,
   hideBadge = false,
   className = "",
-}: {
+}: Readonly<{
   label: string;
   value: ChainFilter;
   options: number[];
@@ -133,7 +139,7 @@ function ChainSelect({
   hideLabel?: boolean;
   hideBadge?: boolean;
   className?: string;
-}) {
+}>) {
   const items: ChainItem[] = [
     {
       id: NO_CHAIN,
@@ -182,14 +188,14 @@ function BlockRangeSection({
   onFromBlockChange,
   onToBlockChange,
   disabled,
-}: {
+}: Readonly<{
   blockRange: BlockRange | null;
   fromBlock: string;
   toBlock: string;
   onFromBlockChange: (val: string) => void;
   onToBlockChange: (val: string) => void;
   disabled: boolean;
-}) {
+}>) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -208,7 +214,7 @@ function BlockRangeSection({
         <div>
           <NumberField
             label="From Block"
-            value={fromBlock === "" ? NaN : Number(fromBlock)}
+            value={fromBlock === "" ? Number.NaN : Number(fromBlock)}
             onChange={(n) => onFromBlockChange(Number.isNaN(n) ? "" : String(n))}
             minValue={0}
             placeholder="e.g. 18000000"
@@ -232,7 +238,7 @@ function BlockRangeSection({
       </div>
 
       {blockRange && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-(--surface) border border-(--border)">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-base bg-(--surface) border border-(--border)">
           <span className="text-xs text-(--text-muted)">
             Scanning <span className="font-semibold text-(--text-secondary)">{blockRange.chain}</span> blocks{" "}
             <span className="font-mono text-purple-500">#{blockRange.start.toLocaleString()}</span>

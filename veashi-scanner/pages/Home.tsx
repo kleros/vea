@@ -3,7 +3,8 @@ import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/Pagination";
 import ChainFilterPanel from "@/components/ChainFilterPanel";
-import { NO_CHAIN, ChainFilter, MessageStats } from "@/lib/types";
+import NetworkToggle from "@/components/NetworkToggle";
+import { NO_CHAIN, ChainFilter, Network } from "@/lib/types";
 import MessagesTable from "@/components/MessagesTable";
 import { parseBlockInput } from "@/lib/utils";
 import { useMessageScanner } from "@/hooks/useMessageScanner";
@@ -13,6 +14,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [network, setNetwork] = useState<Network>("mainnet");
   const [sourceChain, setSourceChain] = useState<ChainFilter>(NO_CHAIN);
   const [destChain, setDestChain] = useState<ChainFilter>(NO_CHAIN);
   const [fromBlock, setFromBlock] = useState("");
@@ -29,20 +31,8 @@ export default function Home() {
     sourceChain,
     destChain,
     parsedFromBlock,
-    parsedToBlock
-  );
-
-  const stats = useMemo<MessageStats>(
-    () => ({
-      total: messages.length,
-      completed: messages.filter((m) => (m.thresholdCurrent ?? 0) >= m.thresholdRequired).length,
-      inProgress: messages.filter((m) => {
-        const c = m.thresholdCurrent ?? 0;
-        return c > 0 && c < m.thresholdRequired;
-      }).length,
-      pending: messages.filter((m) => !m.thresholdCurrent || m.thresholdCurrent === 0).length,
-    }),
-    [messages]
+    parsedToBlock,
+    network
   );
 
   const hasActiveFilter = sourceChain !== NO_CHAIN || destChain !== NO_CHAIN;
@@ -57,6 +47,15 @@ export default function Home() {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return messages.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [messages, currentPage]);
+
+  const handleNetworkChange = (nextNetwork: Network) => {
+    setNetwork(nextNetwork);
+    setSourceChain(NO_CHAIN);
+    setDestChain(NO_CHAIN);
+    setFromBlock("");
+    setToBlock("");
+    setCurrentPage(1);
+  };
 
   const handleSourceChange = (chain: ChainFilter) => {
     setSourceChain(chain);
@@ -81,12 +80,15 @@ export default function Home() {
       <Header />
 
       <main className="max-w-2/3 mx-auto p-6 space-y-6">
-        <div className="animate-fade-in">
-          <SearchBar />
+        <div className="animate-fade-in flex items-center justify-between gap-4">
+          <div className="flex-1">
+            <SearchBar />
+          </div>
+          <NetworkToggle value={network} onChange={handleNetworkChange} />
         </div>
 
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm animate-fade-in">
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-base text-red-500 text-sm animate-fade-in">
             {error}
           </div>
         )}
@@ -108,9 +110,9 @@ export default function Home() {
               setToBlock(val);
               setCurrentPage(1);
             }}
-            stats={stats}
             hasActiveFilter={hasActiveFilter}
             onClearFilters={clearFilters}
+            network={network}
           />
         </div>
 

@@ -14,7 +14,7 @@ interface Props {
   onClearFilters: () => void;
 }
 
-export default function MessagesTable({ messages, isLoading, onClearFilters }: Props) {
+export default function MessagesTable({ messages, isLoading, onClearFilters }: Readonly<Props>) {
   const navigate = useNavigate();
 
   // Forces a re-render on an interval so relative timestamps ("2m ago") advance
@@ -27,7 +27,7 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: P
 
   if (messages.length === 0 && isLoading) {
     return (
-      <div className="glass rounded-xl border border-(--border) py-16 text-center">
+      <div className="glass border border-(--border) py-16 text-center">
         <svg className="w-8 h-8 mx-auto mb-3 text-purple-500 animate-spin" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
           <path
@@ -43,7 +43,7 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: P
 
   if (messages.length === 0) {
     return (
-      <div className="glass rounded-xl border border-(--border) py-16 text-center">
+      <div className="glass border border-(--border) py-16 text-center">
         <svg
           className="w-12 h-12 mx-auto mb-3 text-(--text-muted) opacity-40"
           fill="none"
@@ -64,7 +64,7 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: P
   }
 
   return (
-    <div className="glass rounded-xl overflow-hidden border border-(--border)">
+    <div className="glass overflow-hidden border border-(--border)">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -97,7 +97,7 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: P
 
 // ─── Private sub-components ───────────────────────────────────────────────────
 
-function MessageRow({ message, index, onClick }: { message: Message; index: number; onClick: () => void }) {
+function MessageRow({ message, index, onClick }: Readonly<{ message: Message; index: number; onClick: () => void }>) {
   return (
     <tr
       onClick={onClick}

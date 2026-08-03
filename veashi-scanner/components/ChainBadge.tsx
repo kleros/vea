@@ -34,14 +34,14 @@ interface ChainBadgeProps {
   className?: string;
 }
 
-export default function ChainBadge({ chainId, className = "" }: ChainBadgeProps) {
+export default function ChainBadge({ chainId, className = "" }: Readonly<ChainBadgeProps>) {
   const name = getChainName(chainId);
   const colors = KNOWN_CHAIN_COLORS[chainId] ?? generateColor(name);
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${className}`}
-      style={{ backgroundColor: colors.bg, color: colors.text }}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white whitespace-nowrap ${className}`}
+      style={{ backgroundColor: colors.bg }}
     >
       {name}
     </span>

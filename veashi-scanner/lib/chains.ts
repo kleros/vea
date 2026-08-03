@@ -1,4 +1,5 @@
 import * as viemChains from "viem/chains";
+import type { Network } from "@/lib/types";
 
 const VIEM_CHAINS = (Object.values(viemChains) as unknown[]).filter(
   (c): c is { id: number; name: string } =>
@@ -22,4 +23,14 @@ export const getViemChain = (chainId: number) => Object.values(viemChains).find(
 export function getRpcUrl(chainId: number): string | undefined {
   const override = (import.meta.env as Record<string, string | undefined>)[`VITE_RPC_${chainId}`];
   return override || getViemChain(chainId)?.rpcUrls.default.http[0];
+}
+
+/** True if the chain is a testnet, per viem's own chain metadata. Unknown chains default to mainnet. */
+export function isTestnetChain(chainId: number): boolean {
+  return getViemChain(chainId)?.testnet === true;
+}
+
+/** True if a chain belongs to the given network. */
+export function matchesNetwork(chainId: number, network: Network): boolean {
+  return isTestnetChain(chainId) === (network === "testnet");
 }

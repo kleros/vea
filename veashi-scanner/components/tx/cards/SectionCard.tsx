@@ -16,13 +16,12 @@ interface SectionCardProps {
 /**
  * Generic container for transaction-detail cards. Wraps the library `Card`
  * and optionally renders a `SectionLabel` header. Replaces the repeated
- * `glass rounded-xl border ... p-5 animate-fade-in` wrapper that every
- * tx card used to copy-paste.
+ * `glass border ... p-5 animate-fade-in` wrapper that every tx card used
+ * to copy-paste.
  */
-export default function SectionCard({ icon, label, delay, className = "", children }: SectionCardProps) {
+export default function SectionCard({ icon, label, delay, className = "", children }: Readonly<SectionCardProps>) {
   return (
     <Card
-      round
       // Override the library Card's hardcoded `w-[328px] h-[200px]` so cards fill
       // their grid column and grow with content. (Card uses tailwind-merge, so
       // these win over the defaults.)

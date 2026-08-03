@@ -1,18 +1,30 @@
-import { Message, StatusesRecord } from "@/lib/types";
-import { getBridgeName } from "@/lib/veashiHelpers";
+import { Message, StatusesRecord, Status } from "@/lib/types";
+import { getBridgeName, getBridgeLabel } from "@/lib/veashiHelpers";
 import { Copiable } from "@kleros/ui-components-library";
+import RpcErrorNote from "@/components/tx/RpcErrorNote";
 import SectionCard from "./SectionCard";
-import { Status } from "@/lib/types";
+
+function getStatusDisplay(status: Status | undefined, isLoading: boolean, hasError: boolean) {
+  if (isLoading) return { label: "Loading...", className: "text-(--text-muted) animate-pulse" };
+  if (status === Status.CONFIRMED) return { label: "Confirmed", className: "text-green-400" };
+  if (status === Status.PENDING) return { label: "Pending", className: "text-red-400" };
+  // No status yet (never successfully fetched) and the last poll errored —
+  // "Pending" would wrongly read as a confirmed real state; we just don't know yet.
+  if (!status && hasError) return { label: "Checking…", className: "text-amber-400/80 animate-pulse" };
+  return { label: status || Status.PENDING, className: "text-amber-400/80" };
+}
 
 export default function AdaptersCard({
   message,
   statuses,
   isLoading,
-}: {
+  error,
+}: Readonly<{
   message: Message;
   statuses: StatusesRecord;
   isLoading: boolean;
-}) {
+  error?: Error | null;
+}>) {
   const adapters = message.adapters ?? [];
   const reporters = message.reporters ?? [];
 
@@ -37,9 +49,9 @@ export default function AdaptersCard({
     const bridge = getBridgeName(message.sourceChain, message.destinationChain, adapter, reporter);
     // When the bridge is unknown, key by index so the paired adapter/reporter
     // share a single group instead of splitting into separate boxes.
-    const key = bridge !== null ? String(bridge) : `unknown-${i}`;
+    const key = bridge !== null ? bridge : `unknown-${i}`;
     const current = bridgeGroups.get(key) || {
-      bridgeName: bridge !== null ? String(bridge) : "Unknown",
+      bridgeName: bridge !== null ? getBridgeLabel(bridge) : "Unknown",
     };
 
     bridgeGroups.set(key, {
@@ -57,61 +69,58 @@ export default function AdaptersCard({
   return (
     <SectionCard icon="bridge" label="Adapters & Reporters" delay="0.2s">
       <div className="mt-4 space-y-3">
-        {pairedData.map(([groupKey, pair]) => (
-          <div
-            key={groupKey}
-            className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-(--surface) rounded-lg px-4 py-3 border border-(--border)"
-          >
-            {/* Left Side: Bridge Name & Addresses mapped in a row */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
-              {/* Bridge Name (Fixed width to keep rows aligned) */}
-              <div className="w-24 shrink-0">
-                <span className="text-xs font-bold uppercase tracking-wider text-(--text-primary)">
-                  {pair.bridgeName}
-                </span>
+        {pairedData.map(([groupKey, pair]) => {
+          const statusDisplay = getStatusDisplay(pair.status, isLoading, !!error);
+
+          return (
+            <div
+              key={groupKey}
+              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-(--surface) rounded-base px-4 py-3 border border-(--border)"
+            >
+              {/* Left Side: Bridge Name & Addresses mapped in a row */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                {/* Bridge Name (Fixed width to keep rows aligned) */}
+                <div className="w-24 shrink-0">
+                  <span className="text-xs font-bold uppercase tracking-wider text-(--text-primary)">
+                    {pair.bridgeName}
+                  </span>
+                </div>
+
+                {/* Addresses (Side-by-side with flex-wrap) */}
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  {pair.adapter && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
+                        Adapter
+                      </span>
+                      <Copiable copiableContent={pair.adapter} info="Copy adapter address">
+                        <span className="font-mono text-sm break-all">{pair.adapter}</span>
+                      </Copiable>
+                    </div>
+                  )}
+
+                  {pair.reporter && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
+                        Reporter
+                      </span>
+                      <Copiable copiableContent={pair.reporter} info="Copy reporter address">
+                        <span className="font-mono text-sm break-all">{pair.reporter}</span>
+                      </Copiable>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Addresses (Side-by-side with flex-wrap) */}
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                {pair.adapter && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
-                      Adapter
-                    </span>
-                    <Copiable copiableContent={pair.adapter} info="Copy adapter address">
-                      <span className="font-mono text-sm break-all">{pair.adapter}</span>
-                    </Copiable>
-                  </div>
-                )}
-
-                {pair.reporter && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
-                      Reporter
-                    </span>
-                    <Copiable copiableContent={pair.reporter} info="Copy reporter address">
-                      <span className="font-mono text-sm break-all">{pair.reporter}</span>
-                    </Copiable>
-                  </div>
-                )}
+              {/* Right Side: Shared Confirmation Status */}
+              <div className="shrink-0 pt-3 lg:pt-0 border-t border-(--border) lg:border-0 flex items-center">
+                <span className={`text-xs font-medium ${statusDisplay.className}`}>{statusDisplay.label}</span>
               </div>
             </div>
-
-            {/* Right Side: Shared Confirmation Status */}
-            <div className="shrink-0 pt-3 lg:pt-0 border-t border-(--border) lg:border-0 flex items-center">
-              {isLoading ? (
-                <span className="text-xs font-medium text-(--text-muted) animate-pulse">Loading...</span>
-              ) : pair.status === Status.CONFIRMED ? (
-                <span className="text-xs font-medium text-green-400">Confirmed</span>
-              ) : pair.status === Status.PENDING ? (
-                <span className="text-xs font-medium text-red-400">Pending</span>
-              ) : (
-                <span className="text-xs font-medium text-amber-400/80">{pair.status || Status.PENDING}</span>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+      {error && <RpcErrorNote />}
     </SectionCard>
   );
 }

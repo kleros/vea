@@ -6,11 +6,11 @@ export default function TxHeaderCard({
   message,
   source,
   txHash,
-}: {
+}: Readonly<{
   message: Message;
   source: "cache" | "chain" | null;
   txHash: string;
-}) {
+}>) {
   return (
     <SectionCard delay="0.05s">
       <div className="flex items-start justify-between gap-4 flex-wrap">
