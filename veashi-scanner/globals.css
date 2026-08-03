@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "@kleros/ui-components-library/theme.css";
+@import "tailwindcss";
+@source "./node_modules/@kleros/ui-components-library";
+@custom-variant dark (&:where(.dark, .dark *));
+
+
+:root {
+  --purple-950: #1e1233;
+  --purple-900: #2d1b4e;
+  --purple-800: #4a2870;
+  --purple-700: #6b46c1;
+  --purple-600: #8b5cf6;
+  --purple-500: #a78bfa;
+  --pink-600: #ec4899;
+  --pink-500: #f472b6;
+  --pink-400: #f9a8d4;
+
+
+  --background: #0a0414;
+  --surface: var(--klerosUIComponentsMediumBlue);
+  --surface-elevated: var(--klerosUIComponentsWhiteBackground);
+  --border: var(--klerosUIComponentsStroke);
+  --text-primary: var(--klerosUIComponentsPrimaryText);
+  --text-secondary: var(--klerosUIComponentsSecondaryText);
+  --text-muted: color-mix(in srgb, var(--klerosUIComponentsSecondaryText) 72%, transparent);
+
+  --accent: #ec4899;
+  --accent-glow: rgba(236, 72, 153, 0.3);
+
+  --header-height: 73px;
+
+  --gradient-primary: linear-gradient(135deg, var(--klerosUIComponentsSecondaryPurple) 0%, #ec4899 100%);
+  --gradient-mesh: radial-gradient(at 0% 0%, rgba(126, 27, 212, 0.18) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.14) 0px, transparent 50%),
+                    radial-gradient(at 50% 50%, rgba(144, 19, 254, 0.08) 0px, transparent 50%);
+}
+
+@theme inline {
+  --font-sans: 'DM Sans', var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', var(--font-geist-mono), monospace;
+  --color-accent: var(--accent);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--klerosUIComponentsStroke);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--klerosUIComponentsSecondaryPurple);
+}
+
+::selection {
+  background: var(--klerosUIComponentsSecondaryPurple);
+  color: white;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  50% {
+    box-shadow: 0 0 40px var(--accent-glow);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.gradient-mesh {
+  position: fixed;
+  inset: 0;
+  background: var(--gradient-mesh);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.glass {
+  background: color-mix(in srgb, var(--klerosUIComponentsWhiteBackground) 60%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--klerosUIComponentsBaseRadius);
+}
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--klerosUIComponentsSecondaryPurple) 30%, transparent);
+}
