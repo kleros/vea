@@ -39,10 +39,11 @@ const COPY_PLAN = [
     { srcBase: '$HASHI_SRC', file: 'adapters/layerZero/LayerZeroAdapter.sol', destSubDir: 'adapters/layerZero' },
     { srcBase: '$HASHI_SRC', file: 'adapters/layerZero/LayerZeroReporter.sol', destSubDir: 'adapters/layerZero' },
 
-    // VEASHI SRC -> adapters/ (Vea, DeBridge and Chainlink)
+    // VEASHI SRC -> adapters/ (Vea, DeBridge, Chainlink and Axelar)
     { srcBase: '$VEASHI_SRC', file: 'vea', destSubDir: 'adapters/vea' },
     { srcBase: '$VEASHI_SRC', file: 'chainlink', destSubDir: 'adapters/chainlink' },
-    { srcBase: '$VEASHI_SRC', file: 'deBridge', destSubDir: 'adapters/deBridge' }
+    { srcBase: '$VEASHI_SRC', file: 'deBridge', destSubDir: 'adapters/deBridge' },
+    { srcBase: '$VEASHI_SRC', file: 'axelar', destSubDir: 'adapters/axelar' }
 ];
 
 /**
@@ -109,7 +110,8 @@ const ALLOW = [
   'LayerZeroAdapter.json', 'LayerZeroReporter.json',
   'VeaAdapter.json', 'VeaReporter.json',
   'CCIPAdapter.json', 'CCIPReporter.json','Reporter.json',
-  'Adapter.json', 'DeBridgeReporter.json', 'DeBridgeAdapter.json'
+  'Adapter.json', 'DeBridgeReporter.json', 'DeBridgeAdapter.json',
+  'AxelarReporter.json', 'AxelarAdapter.json'
 ];
 function walk(dir) {
     if(!fs.existsSync(dir)) return;

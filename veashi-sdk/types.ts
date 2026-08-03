@@ -16,6 +16,7 @@ export enum Bridges {
   CCIP = "ccip",
   VEA = "vea",
   DEBRIDGE = "deBridge",
+  AXELAR = "axelar",
 }
 
 export type HashiAddress = {
@@ -24,6 +25,9 @@ export type HashiAddress = {
 };
 
 export type FlatRouteFile = {
+  axelarReporter?: string;
+  axelarAdapter?: string;
+
   lzReporter?: string;
   lzAdapter?: string;
 
