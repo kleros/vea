@@ -15,10 +15,10 @@ const ZERO_BYTES32 = "0x00000000000000000000000000000000000000000000000000000000
 // throw — viem resolves normally with a per-contract `results` array where
 // the affected entries have `status: "failure"`. So failures must be
 // detected here, not just in the caller's try/catch.
-function mergeAdapterStatuses(
+function mergeAdapterStatuses<T extends { status: "success"; result: unknown } | { status: "failure"; error: unknown }>(
   prev: StatusesRecord,
   adapters: string[],
-  results: Awaited<ReturnType<ReturnType<typeof createPublicClient>["multicall"]>>
+  results: readonly T[]
 ): { merged: StatusesRecord; failedCount: number } {
   const merged: StatusesRecord = { ...prev };
   let failedCount = 0;
