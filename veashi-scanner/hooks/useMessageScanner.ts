@@ -241,6 +241,29 @@ async function backfillRoutes(
   }
 }
 
+/**
+ * Start a source chain's RPC backfill unless one is already running for that
+ * srcId. A backfill run can easily outlive POLL_INTERVAL_MS (chunking sleeps
+ * 500ms per chunk), so without this guard each poll tick would stack another
+ * overlapping run on top, duplicating RPC queries and cache writes for the
+ * same subranges.
+ */
+function startBackfillIfIdle(
+  activeBackfills: Map<number, Promise<void>>,
+  srcId: number,
+  targets: { dstId: number; scanRange: ScannedRange }[],
+  displayRange: ScannedRange,
+  signal: AbortSignal,
+  setMessages: Dispatch<SetStateAction<Message[]>>
+): void {
+  if (activeBackfills.has(srcId)) return;
+
+  const run = backfillRoutes(srcId, targets, displayRange, signal, setMessages).finally(() => {
+    activeBackfills.delete(srcId);
+  });
+  activeBackfills.set(srcId, run);
+}
+
 // ─── Scanning: envio fast path ───────────────────────────────────────────────
 
 /**
@@ -352,6 +375,7 @@ async function scanSourceChain(
   displayRange: ScannedRange,
   signal: AbortSignal,
   isSingleChain: boolean,
+  activeBackfills: Map<number, Promise<void>>,
   setMessages: Dispatch<SetStateAction<Message[]>>,
   setBlockRange: Dispatch<SetStateAction<BlockRange | null>>
 ): Promise<void> {
@@ -392,8 +416,9 @@ async function scanSourceChain(
 
     // RPC fallback / cache backfill: runs after the fast path so it
     // never gates isScanning, but keeps filling the cache and
-    // trickling in any messages Envio missed.
-    void backfillRoutes(srcId, backfillTargets, displayRange, signal, setMessages);
+    // trickling in any messages Envio missed. Skipped if a backfill for
+    // this srcId is still running from a previous poll tick.
+    startBackfillIfIdle(activeBackfills, srcId, backfillTargets, displayRange, signal, setMessages);
   } catch (err) {
     console.error(`Scanning failed for chain ${srcId}:`, err);
   }
@@ -434,6 +459,7 @@ export function useMessageScanner(
     // Scan for uncached blocks asynchronously
     setIsScanning(true);
     setError(null);
+    setBlockRange(null);
 
     const chainsToScan =
       sourceChain === NO_CHAIN ? filterByNetwork(getAllSourceChains(), network) : [sourceChain as number];
@@ -444,6 +470,10 @@ export function useMessageScanner(
       start: fromBlock ?? 0,
       end: toBlock ?? Number.MAX_SAFE_INTEGER,
     };
+
+    // Tracks in-flight backfill runs by srcId across poll ticks so a slow
+    // backfill (can outlive POLL_INTERVAL_MS) isn't duplicated by the next tick.
+    const activeBackfills = new Map<number, Promise<void>>();
 
     const scan = async () => {
       try {
@@ -456,6 +486,7 @@ export function useMessageScanner(
             displayRange,
             signal,
             chainsToScan.length === 1,
+            activeBackfills,
             setMessages,
             setBlockRange
           )

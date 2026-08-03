@@ -34,7 +34,7 @@ export default function BridgeSummaryCard({ message }: { message: Message }) {
         </div>
         <div className="mb-3">
           <span className="text-xs font-medium text-(--text-secondary)">
-            {totalCount === 0 ? "No adapters found" : "Active adapters"}
+            {totalCount === 0 ? "No bridges found" : "Active bridges"}
           </span>
         </div>
         <div className="flex flex-wrap gap-1.5">
