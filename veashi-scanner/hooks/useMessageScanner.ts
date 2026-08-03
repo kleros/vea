@@ -141,7 +141,9 @@ async function processChunk(
   );
   if (logsToDisplay.length === 0) return 0;
 
-  const toAdd = logsToDisplay.slice(0, Math.max(0, remainingBudget));
+  // Newest-first, matching the newest-first chunk walk in `backfillSubrange`,
+  // so a truncated budget keeps the most recent messages.
+  const toAdd = [...logsToDisplay].sort((a, b) => b.blockNumber - a.blockNumber).slice(0, Math.max(0, remainingBudget));
   if (toAdd.length === 0) return 0;
 
   setMessages((prev) => mergeMessages(prev, toAdd));
@@ -258,9 +260,15 @@ function startBackfillIfIdle(
 ): void {
   if (activeBackfills.has(srcId)) return;
 
-  const run = backfillRoutes(srcId, targets, displayRange, signal, setMessages).finally(() => {
-    activeBackfills.delete(srcId);
-  });
+  const run = backfillRoutes(srcId, targets, displayRange, signal, setMessages)
+    .catch((err) => {
+      // RPC failures during chunked backfill are expected. Log and let the
+      // next poll tick retry the still-uncached subranges.
+      console.error(`RPC backfill failed for chain ${srcId}:`, err);
+    })
+    .finally(() => {
+      activeBackfills.delete(srcId);
+    });
   activeBackfills.set(srcId, run);
 }
 

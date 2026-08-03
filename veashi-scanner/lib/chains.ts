@@ -15,13 +15,28 @@ export function getChainName(chainId: number): string {
 
 export const getViemChain = (chainId: number) => Object.values(viemChains).find((c) => c?.id === chainId);
 
+// Vite only statically replaces literal `import.meta.env.VITE_X` references
+// at build time — a computed `import.meta.env[key]` lookup is not replaced
+// and resolves to undefined in production builds. Each override must be
+// referenced literally here; keep in sync with `.env.example`.
+const RPC_OVERRIDES: Record<number, string | undefined> = {
+  1: import.meta.env.VITE_RPC_1, // Ethereum
+  1514: import.meta.env.VITE_RPC_1514, // Story
+  8453: import.meta.env.VITE_RPC_8453, // Base
+  10200: import.meta.env.VITE_RPC_10200, // Gnosis Chiado
+  42161: import.meta.env.VITE_RPC_42161, // Arbitrum One
+  84532: import.meta.env.VITE_RPC_84532, // Base Sepolia
+  421614: import.meta.env.VITE_RPC_421614, // Arbitrum Sepolia
+  11155111: import.meta.env.VITE_RPC_11155111, // Ethereum Sepolia
+};
+
 /**
  * RPC URL for a chain: `VITE_RPC_<chainId>` if set, else the chain's default
  * public RPC from viem. Lets any deployment swap in a dedicated/paid RPC per
  * chain without code changes, while still working out of the box.
  */
 export function getRpcUrl(chainId: number): string | undefined {
-  const override = (import.meta.env as Record<string, string | undefined>)[`VITE_RPC_${chainId}`];
+  const override = RPC_OVERRIDES[chainId];
   return override || getViemChain(chainId)?.rpcUrls.default.http[0];
 }
 

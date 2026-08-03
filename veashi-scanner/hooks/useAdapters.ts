@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPublicClient, http, type Address, type Abi } from "viem";
 import { Status, type Message, type StatusesRecord } from "@/lib/types";
 import { AdapterAbi } from "@kleros/veashi-sdk";
@@ -44,6 +44,7 @@ function mergeAdapterStatuses<T extends { status: "success"; result: unknown } |
  */
 export function useAdapterStatuses(message: Message, isExecuted = false) {
   const [statuses, setStatuses] = useState<StatusesRecord>({});
+  const statusesRef = useRef<StatusesRecord>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -51,6 +52,8 @@ export function useAdapterStatuses(message: Message, isExecuted = false) {
     // Check if we have the necessary data to query
     if (!message?.adapters?.length) return;
     if (message.sourceChain === undefined || message.nonce === undefined) return;
+
+    statusesRef.current = {};
 
     let cancelled = false;
     let inFlight = false;
@@ -97,25 +100,19 @@ export function useAdapterStatuses(message: Message, isExecuted = false) {
 
         if (cancelled) return;
 
-        let failedCount = 0;
-        setStatuses((prev) => {
-          const result = mergeAdapterStatuses(prev, message.adapters!, results);
-          failedCount = result.failedCount;
+        const { merged, failedCount } = mergeAdapterStatuses(statusesRef.current, message.adapters, results);
+        statusesRef.current = merged;
+        setStatuses(merged);
 
-          const confirmedCount = message.adapters!.filter(
-            (adapter) => result.merged[adapter] === Status.CONFIRMED
-          ).length;
-          const allConfirmed = confirmedCount === message.adapters!.length;
-          const thresholdMet = confirmedCount >= message.thresholdRequired;
+        const confirmedCount = message.adapters.filter((adapter) => merged[adapter] === Status.CONFIRMED).length;
+        const allConfirmed = confirmedCount === message.adapters.length;
+        const thresholdMet = confirmedCount >= message.thresholdRequired;
 
-          // Stop once every adapter has confirmed, or once the threshold is
-          // met and the message is already executed — either way, nothing
-          // left that could change (a slower, non-required adapter
-          // confirming later isn't worth polling for).
-          shouldStopPolling = allConfirmed || (thresholdMet && isExecuted);
-
-          return result.merged;
-        });
+        // Stop once every adapter has confirmed, or once the threshold is
+        // met and the message is already executed — either way, nothing
+        // left that could change (a slower, non-required adapter
+        // confirming later isn't worth polling for).
+        shouldStopPolling = allConfirmed || (thresholdMet && isExecuted);
 
         // `multicall` resolves even when every call in the batch failed (e.g.
         // rate-limited) — surface that as an error instead of silently
