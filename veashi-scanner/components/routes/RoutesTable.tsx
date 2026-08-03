@@ -4,7 +4,6 @@ import { Button } from "@kleros/ui-components-library";
 import type { Bridges } from "@kleros/veashi-sdk";
 import ChainBadge from "@/components/ChainBadge";
 import BridgeBadge from "@/components/BridgeBadge";
-import { getBridgeLabel } from "@/lib/veashiHelpers";
 import RouteDetailsModal from "./RouteDetailsModal";
 
 export interface RouteRow {
@@ -35,7 +34,7 @@ export default function RoutesTable({ routes }: Readonly<Props>) {
 
   if (routes.length === 0) {
     return (
-      <div className="glass rounded-xl border border-(--border) py-16 text-center">
+      <div className="glass border border-(--border) py-16 text-center">
         <p className="text-(--text-muted) text-sm">No routes configured.</p>
       </div>
     );
@@ -43,7 +42,7 @@ export default function RoutesTable({ routes }: Readonly<Props>) {
 
   return (
     <>
-      <div className="glass rounded-xl overflow-hidden border border-(--border)">
+      <div className="glass overflow-hidden border border-(--border)">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -79,7 +78,7 @@ export default function RoutesTable({ routes }: Readonly<Props>) {
                           onClick={() => setSelected(route)}
                           className="appearance-none bg-transparent border-0 p-0 m-0 cursor-pointer"
                         >
-                          <BridgeBadge bridge={getBridgeLabel(bridge)} />
+                          <BridgeBadge bridge={bridge} />
                         </button>
                       ))}
                     </div>

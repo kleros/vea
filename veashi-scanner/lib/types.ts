@@ -1,13 +1,5 @@
 import type { SelectProps as AriaSelectProps } from "react-aria-components";
 
-export type Bridge = "CCIP" | "LayerZero" | "Vea" | "DeBridge";
-
-export interface BridgeStatus {
-  name: Bridge;
-  completed: boolean;
-  timestamp?: number;
-}
-
 export interface Message {
   txHash: string;
   /** EIP-155 chain ID (e.g. 1 = Ethereum, 42161 = Arbitrum) */
@@ -29,6 +21,8 @@ export interface Message {
   reporters?: string[];
   /** Message nonce */
   nonce?: number;
+  /** Raw ABI-encoded calldata payload carried by the Hashi message */
+  data?: string;
 }
 
 export interface PaginationInfo {
@@ -68,6 +62,8 @@ export type IconType = "route" | "address" | "threshold" | "info" | "bridge";
 
 export const NO_CHAIN = "No Chain" as const;
 export type ChainFilter = number | typeof NO_CHAIN;
+
+export type Network = "mainnet" | "testnet";
 
 export type ChainItem = {
   id: string | number;

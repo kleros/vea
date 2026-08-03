@@ -29,7 +29,7 @@ interface CacheEntry {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CACHE_PREFIX = "veashi_v1_";
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 
 /**
  * Cap on how many messages to retain per chain pair.

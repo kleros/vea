@@ -1,14 +1,17 @@
 import { Message, Status, StatusesRecord } from "@/lib/types";
 import { getStatusMeta } from "@/lib/utils";
+import RpcErrorNote from "@/components/tx/RpcErrorNote";
 import SectionCard from "./SectionCard";
 export default function ThresholdCard({
   message,
   statuses,
   isLoading,
+  error,
 }: Readonly<{
   message: Message;
   statuses: StatusesRecord;
   isLoading: boolean;
+  error?: Error | null;
 }>) {
   const required = message.thresholdRequired;
   const verifiedCount = statuses ? Object.values(statuses).filter((s) => s === Status.CONFIRMED).length : 0;
@@ -16,8 +19,19 @@ export default function ThresholdCard({
 
   const pct = required > 0 ? Math.round((current / required) * 100) : 0;
   const { label, dotClass, barClass } = getStatusMeta(current, required);
-  const displayLabel = isLoading ? "Verifying..." : label;
-  const displayDotClass = isLoading ? "bg-purple-400 animate-pulse" : dotClass;
+
+  // With no confirmations yet, "Pending" reads as a confirmed real state —
+  // but if the last poll errored, we don't actually know that yet. Only
+  // override when current is 0: once we have at least one real confirmation,
+  // that data is accurate (merged, never downgraded), so show it as-is.
+  const unknownDueToError = !isLoading && !!error && current === 0;
+
+  const displayLabel = isLoading ? "Verifying..." : unknownDueToError ? "Checking…" : label;
+  const displayDotClass = isLoading
+    ? "bg-purple-400 animate-pulse"
+    : unknownDueToError
+    ? "bg-amber-400 animate-pulse"
+    : dotClass;
 
   return (
     <SectionCard icon="threshold" label="Threshold" delay="0.1s">
@@ -39,6 +53,7 @@ export default function ThresholdCard({
           />
         </div>
         <p className="text-xs text-(--text-muted) mt-1.5">{pct}% met</p>
+        {error && <RpcErrorNote />}
       </div>
     </SectionCard>
   );

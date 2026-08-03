@@ -33,10 +33,7 @@ export default function TransactionPage() {
         {/* No chainId: show informational message */}
         {!hasChainId ? (
           <>
-            <div
-              className="glass rounded-xl border border-(--border) p-5 animate-fade-in"
-              style={{ animationDelay: "0.05s" }}
-            >
+            <div className="glass border border-(--border) p-5 animate-fade-in" style={{ animationDelay: "0.05s" }}>
               <p className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) mb-1">
                 Source Transaction
               </p>
@@ -58,10 +55,7 @@ export default function TransactionPage() {
 
 function NoChainIdCard() {
   return (
-    <div
-      className="glass rounded-xl border border-(--border) p-10 text-center animate-fade-in"
-      style={{ animationDelay: "0.1s" }}
-    >
+    <div className="glass border border-(--border) p-10 text-center animate-fade-in" style={{ animationDelay: "0.1s" }}>
       <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
         <svg className="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
@@ -87,7 +81,7 @@ function TxDetail({ chainId, txHash }: Readonly<{ chainId: number; txHash: strin
 
   if (isLoading) {
     return (
-      <div className="glass rounded-xl border border-(--border) p-10 text-center animate-fade-in">
+      <div className="glass border border-(--border) p-10 text-center animate-fade-in">
         <p className="text-sm text-(--text-muted)">Loading transaction…</p>
       </div>
     );
@@ -95,7 +89,7 @@ function TxDetail({ chainId, txHash }: Readonly<{ chainId: number; txHash: strin
 
   if (error || !message) {
     return (
-      <div className="glass rounded-xl border border-red-500/20 p-10 text-center animate-fade-in">
+      <div className="glass border border-red-500/20 p-10 text-center animate-fade-in">
         <p className="text-sm font-medium text-red-400 mb-1">Not found</p>
         <p className="text-xs text-(--text-muted)">{error ?? "Transaction could not be loaded."}</p>
       </div>

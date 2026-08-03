@@ -102,6 +102,7 @@ export function useTransaction(sourceChainId: number, txHash: string) {
           adapters: found.message.adapters,
           reporters: found.message.reporters,
           nonce: found.message.nonce,
+          data: found.message.data,
         };
 
         setMessage(msg);

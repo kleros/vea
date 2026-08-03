@@ -10,25 +10,39 @@ const ZERO_BYTES32 = "0x00000000000000000000000000000000000000000000000000000000
 // RPC failure here just means "unknown this poll", not "not relayed" — it
 // must not downgrade an already-CONFIRMED adapter back to PENDING just
 // because this tick's call for it errored.
+//
+// Note: a rate-limited/failed RPC call does NOT make `multicall()` itself
+// throw — viem resolves normally with a per-contract `results` array where
+// the affected entries have `status: "failure"`. So failures must be
+// detected here, not just in the caller's try/catch.
 function mergeAdapterStatuses(
   prev: StatusesRecord,
   adapters: string[],
   results: Awaited<ReturnType<ReturnType<typeof createPublicClient>["multicall"]>>
-): StatusesRecord {
+): { merged: StatusesRecord; failedCount: number } {
   const merged: StatusesRecord = { ...prev };
+  let failedCount = 0;
   adapters.forEach((adapter, index) => {
     const result = results[index];
     if (result.status === "success") {
       const hash = result.result as string;
       merged[adapter] = hash && hash !== ZERO_BYTES32 ? Status.CONFIRMED : Status.PENDING;
     } else {
+      failedCount += 1;
       console.error(`Adapter ${adapter} failed:`, result.error);
     }
   });
-  return merged;
+  return { merged, failedCount };
 }
 
-export function useAdapterStatuses(message: Message) {
+/**
+ * @param isExecuted Whether the message has already been executed on the
+ * destination chain (from `useExecutionStatus`). Once executed AND enough
+ * adapters have confirmed to meet the threshold, nothing the user cares
+ * about can change further — a slower, non-required adapter confirming
+ * later isn't worth polling for.
+ */
+export function useAdapterStatuses(message: Message, isExecuted = false) {
   const [statuses, setStatuses] = useState<StatusesRecord>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -40,6 +54,7 @@ export function useAdapterStatuses(message: Message) {
 
     let cancelled = false;
     let inFlight = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const fetchStatuses = async () => {
       // Skip this poll tick if the previous one hasn't resolved yet — a slow
@@ -51,9 +66,10 @@ export function useAdapterStatuses(message: Message) {
       setIsLoading(true);
       setError(null);
 
+      let shouldStopPolling = false;
+
       try {
         const chain = getViemChain(message.destinationChain);
-        console.log(chain?.name);
         const publicClient = createPublicClient({
           transport: http(getRpcUrl(message.destinationChain)),
           chain,
@@ -81,7 +97,32 @@ export function useAdapterStatuses(message: Message) {
 
         if (cancelled) return;
 
-        setStatuses((prev) => mergeAdapterStatuses(prev, message.adapters!, results));
+        let failedCount = 0;
+        setStatuses((prev) => {
+          const result = mergeAdapterStatuses(prev, message.adapters!, results);
+          failedCount = result.failedCount;
+
+          const confirmedCount = message.adapters!.filter(
+            (adapter) => result.merged[adapter] === Status.CONFIRMED
+          ).length;
+          const allConfirmed = confirmedCount === message.adapters!.length;
+          const thresholdMet = confirmedCount >= message.thresholdRequired;
+
+          // Stop once every adapter has confirmed, or once the threshold is
+          // met and the message is already executed — either way, nothing
+          // left that could change (a slower, non-required adapter
+          // confirming later isn't worth polling for).
+          shouldStopPolling = allConfirmed || (thresholdMet && isExecuted);
+
+          return result.merged;
+        });
+
+        // `multicall` resolves even when every call in the batch failed (e.g.
+        // rate-limited) — surface that as an error instead of silently
+        // treating the missing results as "genuinely unconfirmed".
+        if (failedCount > 0) {
+          setError(new Error(`${failedCount} adapter call(s) failed`));
+        }
       } catch (err) {
         if (cancelled) return;
         console.error("Failed to fetch adapter statuses:", err);
@@ -90,16 +131,19 @@ export function useAdapterStatuses(message: Message) {
         inFlight = false;
         if (!cancelled) setIsLoading(false);
       }
+
+      if (!cancelled && !shouldStopPolling) {
+        timeoutId = setTimeout(fetchStatuses, 10000);
+      }
     };
 
     fetchStatuses();
 
-    const intervalId = setInterval(fetchStatuses, 10000);
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [message]);
+  }, [message, isExecuted]);
 
   return { statuses, isLoading, error };
 }

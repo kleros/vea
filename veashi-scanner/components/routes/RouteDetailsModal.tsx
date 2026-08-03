@@ -3,7 +3,6 @@ import type { Bridges } from "@kleros/veashi-sdk";
 import { getReporter, getAdapter, getYaho, getSwitch, getYaru, getHashi, getLightbulb } from "@kleros/veashi-sdk";
 import { getChainName } from "@/lib/chains";
 import { getExplorerAddressUrl } from "@/lib/explorer";
-import { getBridgeLabel } from "@/lib/veashiHelpers";
 import BridgeBadge from "@/components/BridgeBadge";
 
 interface RouteDetailsModalProps {
@@ -90,7 +89,7 @@ export default function RouteDetailsModal({
           <div className="space-y-4">
             {bridges.map((bridge) => (
               <div key={bridge}>
-                <BridgeBadge bridge={getBridgeLabel(bridge)} className="mb-1.5" />
+                <BridgeBadge bridge={bridge} className="mb-1.5" />
                 <div className="divide-y divide-(--border)">
                   <AddressRow
                     label="Reporter"

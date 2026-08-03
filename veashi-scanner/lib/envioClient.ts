@@ -53,6 +53,7 @@ function toMessage(e: EnvioMessage): Message {
     nonce: Number(e.nonce),
     adapters: JSON.parse(e.adapters) as string[],
     reporters: JSON.parse(e.reporters) as string[],
+    data: e.data,
   };
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import { createPublicClient, http, Address } from "viem";
-import { NO_CHAIN, ChainFilter, BlockRange } from "@/lib/types";
+import { NO_CHAIN, ChainFilter, BlockRange, Network } from "@/lib/types";
 import { getMessageDispatchedLogs } from "@/lib/hashi";
 import { getYaho, getAllSourceChains, getDestinationChains } from "@kleros/veashi-sdk";
 import type { Message } from "@/lib/types";
@@ -13,7 +13,7 @@ import {
   updateCache,
   type ScannedRange,
 } from "@/lib/scannerCache";
-import { getViemChain, getRpcUrl } from "@/lib/chains";
+import { getViemChain, getRpcUrl, matchesNetwork } from "@/lib/chains";
 import { fetchMessagesFromEnvio } from "@/lib/envioClient";
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
@@ -67,12 +67,23 @@ function resolveTargetDestIds(destinationChain: ChainFilter, supportedDestinatio
   return [];
 }
 
+/** Narrow a list of chain IDs to just mainnet or just testnet chains. Undefined network = no filtering. */
+function filterByNetwork(chainIds: number[], network: Network | undefined): number[] {
+  if (!network) return chainIds;
+  return chainIds.filter((id) => matchesNetwork(id, network));
+}
+
 /**
  * Load all cached messages for the given chain filter synchronously from
  * localStorage.  Returns them sorted newest-first.
  */
-function loadAllCachedMessages(sourceChain: ChainFilter, destinationChain: ChainFilter): Message[] {
-  const chainsToScan = sourceChain === NO_CHAIN ? getAllSourceChains() : [sourceChain as number];
+function loadAllCachedMessages(
+  sourceChain: ChainFilter,
+  destinationChain: ChainFilter,
+  network: Network | undefined
+): Message[] {
+  const chainsToScan =
+    sourceChain === NO_CHAIN ? filterByNetwork(getAllSourceChains(), network) : [sourceChain as number];
 
   const all: Message[] = [];
   for (const srcId of chainsToScan) {
@@ -119,6 +130,7 @@ async function processChunk(
     adapters: log.message.adapters,
     reporters: log.message.reporters,
     nonce: log.message.nonce,
+    data: log.message.data,
   }));
 
   const logsForDst = formatted.filter((m) => m.destinationChain === dstId);
@@ -393,7 +405,8 @@ export function useMessageScanner(
   sourceChain: ChainFilter,
   destinationChain: ChainFilter,
   fromBlock?: number,
-  toBlock?: number
+  toBlock?: number,
+  network?: Network
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -415,14 +428,15 @@ export function useMessageScanner(
     const signal = abortRef.current.signal;
 
     // Show cached messages synchronously, before any RPC call
-    const cached = loadAllCachedMessages(sourceChain, destinationChain);
+    const cached = loadAllCachedMessages(sourceChain, destinationChain, network);
     setMessages(cached);
 
     // Scan for uncached blocks asynchronously
     setIsScanning(true);
     setError(null);
 
-    const chainsToScan = sourceChain === NO_CHAIN ? getAllSourceChains() : [sourceChain as number];
+    const chainsToScan =
+      sourceChain === NO_CHAIN ? filterByNetwork(getAllSourceChains(), network) : [sourceChain as number];
 
     // displayRange filters newly-fetched logs before rendering them.
     // Cached messages are always shown regardless of this range.
@@ -465,7 +479,7 @@ export function useMessageScanner(
       clearInterval(pollId);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [sourceChain, destinationChain, fromBlock, toBlock]);
+  }, [sourceChain, destinationChain, fromBlock, toBlock, network]);
 
   return { messages, isScanning, blockRange, error };
 }

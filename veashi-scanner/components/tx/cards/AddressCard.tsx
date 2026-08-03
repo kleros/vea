@@ -17,7 +17,7 @@ function AddressRow({ label, address }: { label: string; address: string }) {
   return (
     <div>
       <p className="text-xs text-(--text-muted) uppercase tracking-wide mb-1">{label}</p>
-      <div className="bg-(--surface) rounded-lg px-3 py-2 border border-(--border)">
+      <div className="bg-(--surface) rounded-base px-3 py-2 border border-(--border)">
         <Copiable copiableContent={address} info="Copy address">
           <span className="font-mono text-sm break-all">{address}</span>
         </Copiable>

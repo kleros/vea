@@ -120,6 +120,7 @@ html {
   background: color-mix(in srgb, var(--klerosUIComponentsWhiteBackground) 60%, transparent);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
+  border-radius: var(--klerosUIComponentsBaseRadius);
 }
 
 .hover-lift {

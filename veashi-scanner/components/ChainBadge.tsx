@@ -40,8 +40,8 @@ export default function ChainBadge({ chainId, className = "" }: Readonly<ChainBa
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${className}`}
-      style={{ backgroundColor: colors.bg, color: colors.text }}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white whitespace-nowrap ${className}`}
+      style={{ backgroundColor: colors.bg }}
     >
       {name}
     </span>
