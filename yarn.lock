@@ -22629,6 +22629,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"relayer-envio-inbox@workspace:relayer-envio-inbox":
+  version: 0.0.0-use.local
+  resolution: "relayer-envio-inbox@workspace:relayer-envio-inbox"
+  dependencies:
+    "@types/jest": "npm:^29.5.14"
+    "@types/node": "npm:20.8.8"
+    envio: "npm:3.0.0"
+    ethers: "npm:^6.16.0"
+    jest: "npm:^29.7.0"
+    ts-jest: "npm:^29.2.5"
+    typescript: "npm:5.2.2"
+  languageName: unknown
+  linkType: soft
+
 "remark-parse@npm:^11.0.0":
   version: 11.0.0
   resolution: "remark-parse@npm:11.0.0"
