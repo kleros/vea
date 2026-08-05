@@ -25,3 +25,9 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@0efb1d1d84fc9633afcdaad14c485cbbc90ef46c # v2.5.1
+        with:
+          # @cyntler/react-doc-viewer@1.17.1 (latest): TXTRenderer XSS, no patched version available upstream yet.
+          # ajv@7.2.4 (transitive via @cyntler/react-doc-viewer): ReDoS in `$data` option, fixed in 8.18.0 but
+          # react-doc-viewer has not bumped its ajv dependency yet. 
+          # THESE ARE KNOWN VULNERABILITIES AND NOT AN ISSUE WITH THE CURRENT STATE OF THE PROJECT.
+          allow-ghsas: GHSA-fvhg-p4hf-79x3, GHSA-2g4f-4pwh-qvx6

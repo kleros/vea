@@ -16,3 +16,6 @@
 [submodule "veashi-contracts/lib/LayerZero-v2"]
 	path = veashi-contracts/lib/LayerZero-v2
 	url = https://github.com/LayerZero-Labs/LayerZero-v2
+[submodule "veashi-contracts/lib/axelar-gmp-sdk-solidity"]
+	path = veashi-contracts/lib/axelar-gmp-sdk-solidity
+	url = https://github.com/axelarnetwork/axelar-gmp-sdk-solidity

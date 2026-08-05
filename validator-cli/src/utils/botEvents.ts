@@ -50,4 +50,8 @@ export enum BotEvents {
   CLAIM_MISMATCH = "claim_mismatch",
   FINALITY_ISSUE = "finality_issue",
   FINALITY_ERROR = "finality_error",
+
+  // RPC fallback state
+  RPC_FAILURE = "rpc_failure",
+  RPC_RECOVERED = "rpc_recovered",
 }

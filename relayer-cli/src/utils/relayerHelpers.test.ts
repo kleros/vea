@@ -1,5 +1,6 @@
+import path from "path";
 import EventEmitter from "events";
-import { initialize, updateStateFile, cleanupLockFile, setupExitHandlers, ShutdownManager } from "./relayerHelpers";
+import { initialize, updateStateFile, cleanupAllLockFiles, setupExitHandlers, ShutdownManager } from "./relayerHelpers";
 
 describe("relayerHelpers", () => {
   const emitter = new EventEmitter();
@@ -13,6 +14,8 @@ describe("relayerHelpers", () => {
     writeFileSync: jest.fn(),
     promises: {
       unlink: jest.fn(),
+      readdir: jest.fn(),
+      readFile: jest.fn(),
     },
   };
   const releaseLock = jest.fn();
@@ -66,18 +69,36 @@ describe("relayerHelpers", () => {
     });
   });
 
-  describe("cleanupLockFile", () => {
-    it("should delete the .pid file if it exists", async () => {
-      const stateDir = process.env.STATE_DIR || "";
-      const pidFile = stateDir + network + "_" + chainId + ".pid";
-      // Simulate that the .pid file exists.
-      fileSystem.existsSync.mockReturnValue(true);
-      await cleanupLockFile(chainId, network, emitter, fileSystem as any);
-      expect(fileSystem.promises.unlink).toHaveBeenCalledWith(pidFile);
-    });
-    it("should not attempt to delete the .pid file if it does not exist", async () => {
+  describe("cleanupAllLockFiles", () => {
+    const stateDir = process.env.STATE_DIR || "";
+    const pidFileName = `${network}_${chainId}.pid`;
+    const pidFilePath = path.join(stateDir, pidFileName);
+
+    it("should return early if state directory does not exist", async () => {
       fileSystem.existsSync.mockReturnValue(false);
-      await cleanupLockFile(chainId, network, emitter, fileSystem as any);
+      await cleanupAllLockFiles(emitter as any, fileSystem as any);
+      expect(fileSystem.promises.readdir).not.toHaveBeenCalled();
+      expect(fileSystem.promises.unlink).not.toHaveBeenCalled();
+    });
+    it("should delete the .pid file if it belongs to the current process", async () => {
+      fileSystem.existsSync.mockReturnValue(true);
+      fileSystem.promises.readdir.mockResolvedValue([pidFileName]);
+      fileSystem.promises.readFile.mockResolvedValue(String(process.pid));
+      fileSystem.promises.unlink.mockResolvedValue(undefined);
+      await cleanupAllLockFiles(emitter as any, fileSystem as any);
+      expect(fileSystem.promises.unlink).toHaveBeenCalledWith(pidFilePath);
+    });
+    it("should not delete the .pid file if it belongs to a different process", async () => {
+      fileSystem.existsSync.mockReturnValue(true);
+      fileSystem.promises.readdir.mockResolvedValue([pidFileName]);
+      fileSystem.promises.readFile.mockResolvedValue(String(process.pid + 1));
+      await cleanupAllLockFiles(emitter as any, fileSystem as any);
+      expect(fileSystem.promises.unlink).not.toHaveBeenCalled();
+    });
+    it("should not attempt to delete files when no .pid files exist", async () => {
+      fileSystem.existsSync.mockReturnValue(true);
+      fileSystem.promises.readdir.mockResolvedValue(["state.json"]);
+      await cleanupAllLockFiles(emitter as any, fileSystem as any);
       expect(fileSystem.promises.unlink).not.toHaveBeenCalled();
     });
   });
@@ -96,7 +117,7 @@ describe("relayerHelpers", () => {
         return undefined as never;
       });
 
-      setupExitHandlers(chainId, shutdownManager, network, emitter);
+      setupExitHandlers(shutdownManager, emitter);
     });
 
     afterEach(() => {
