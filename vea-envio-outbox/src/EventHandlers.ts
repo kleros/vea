@@ -83,8 +83,7 @@ indexer.onEvent({ contract: "VeaOutbox", event: "VerificationStarted" }, async (
 /**
  * @dev Handles the Verified event. Looks up the currently active claim for
  *      this epoch, marks it verified, and records the verification's
- *      completion. `verifiedCaller` has no event param either, so it's read
- *      from the transaction sender.
+ *      completion.
  */
 indexer.onEvent({ contract: "VeaOutbox", event: "Verified" }, async ({ event, context }) => {
   const outbox = event.srcAddress;
