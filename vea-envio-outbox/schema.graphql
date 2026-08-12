@@ -1,0 +1,51 @@
+type Outbox {
+  id: ID!
+}
+
+type Claim {
+  id: ID!
+  outbox: Outbox!
+  epoch: BigInt!
+  stateRoot: String!
+  bridger: String!
+  timestamp: BigInt!
+  txHash: String!
+  challenged: Boolean!
+  verified: Boolean!
+  honest: Boolean!
+  challenge: [Challenge!]! @derivedFrom(field: "claim")
+  verification: [Verification!]! @derivedFrom(field: "claim")
+}
+
+type Challenge {
+  id: ID!
+  claim: Claim!
+  txHash: String!
+  timestamp: BigInt!
+  challenger: String!
+  honest: Boolean!
+}
+
+type Verification {
+  id: ID!
+  claim: Claim!
+  startTimestamp: BigInt
+  startCaller: String
+  startTxHash: String
+  verifiedTimestamp: BigInt
+  verifiedCaller: String
+  verifiedTxHash: String
+}
+
+type Message {
+  id: ID!
+  outbox: Outbox!
+  timestamp: BigInt!
+  txHash: String!
+  relayer: String!
+}
+
+type CurrentClaim {
+  id: ID!
+  claim: Claim!
+}

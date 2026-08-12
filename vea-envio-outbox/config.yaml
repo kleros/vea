@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: envio-outbox
+field_selection:
+  transaction_fields:
+    - hash
+    - from
+contracts:
+  - name: VeaOutbox
+    handler: src/EventHandlers.ts
+    events:
+      - event: Claimed(address indexed _claimer, uint256 indexed _epoch, bytes32 _stateRoot)
+      - event: Challenged(uint256 indexed _epoch, address indexed _challenger)
+      - event: VerificationStarted(uint256 indexed _epoch)
+      - event: Verified(uint256 _epoch)
+      - event: MessageRelayed(uint64 _msgId)
+chains:
+  - id: 11155111
+    start_block: 9100938
+    contracts:
+      - name: VeaOutbox
+        address:
+          - 0xf720FA4575FB2FE96c7f05B1b5abc2d281cDa09a # ArbToEth Testnet
+          - 0x60af9Fc1dd7d5bce69a66A8AEf456952b03A39C7 # ArbToEth Devnet
+  - id: 10200
+    start_block: 17544965
+    contracts:
+      - name: VeaOutbox
+        address:
+          - 0x879A9F4476D4445A1deCf40175a700C4c829824D # ArbToGnosis Devnet
+          - 0x15aC29269b044E1d9042F597513B27Ffa4A7f257 # ArbToGnosis Testnet
