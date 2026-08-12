@@ -107,9 +107,7 @@ indexer.onEvent({ contract: "VeaOutbox", event: "Verified" }, async ({ event, co
 
 /**
  * @dev Handles the MessageRelayed event. Upserts the Outbox entity and
- *      creates a Message keyed by the on-chain message id, which is already
- *      unique per outbox — no separate counter needed. `relayer` has no
- *      event param, so it's read from the transaction sender.
+ *      creates a Message keyed by the on-chain message id.
  */
 indexer.onEvent({ contract: "VeaOutbox", event: "MessageRelayed" }, async ({ event, context }) => {
   const outbox = event.srcAddress;
