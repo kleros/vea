@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: relayer-envio-inbox
+field_selection:
+  transaction_fields:
+    - hash
+    - from
+contracts:
+  - name: VeaInboxArbToEth
+    handler: src/EventHandlers.ts
+    events:
+      - event: MessageSent(bytes _nodeData)
+      - event: SnapshotSaved(bytes32 _snapshot, uint256 _epoch, uint64 _count)
+      - event: SnapshotSent(uint256 indexed _epochSent, bytes32 _ticketId)
+chains:
+  - id: 421614
+    start_block: 189388217
+    contracts:
+      - name: VeaInboxArbToEth
+        address:
+          - 0x8B925669606026CcCfAFD72840F5b0CAeDA80078 # ArbToEth Testnet
+          - 0x45138BC4E364A16919C4571699171d774A7590BD # ArbToEth Devnet
+          - 0x2E973e20B24088bc74755a7A5cd1A37Dcb53E061 # ArbToGnosis Devnet
+          - 0x162f826E18380567CE0548395a3Ad2A54EA87B96 # ArbToGnosis Testnet
