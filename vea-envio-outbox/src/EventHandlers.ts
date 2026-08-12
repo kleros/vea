@@ -62,8 +62,7 @@ indexer.onEvent({ contract: "VeaOutbox", event: "Challenged" }, async ({ event, 
 /**
  * @dev Handles the VerificationStarted event. Looks up the currently active
  *      claim for this epoch via CurrentClaim, then records the start of its
- *      verification window. `startCaller` has no event param, so it's read
- *      from the transaction sender.
+ *      verification window.
  */
 indexer.onEvent({ contract: "VeaOutbox", event: "VerificationStarted" }, async ({ event, context }) => {
   const outbox = event.srcAddress;
