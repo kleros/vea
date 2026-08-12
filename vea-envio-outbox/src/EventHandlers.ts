@@ -35,7 +35,7 @@ indexer.onEvent({ contract: "VeaOutbox", event: "Claimed" }, async ({ event, con
 
 /**
  * @dev Handles the Challenged event emitted by VeaOutbox. Looks up the
- *      currently active claim for this epoch via CurrentClaim (O(1)), marks
+ *      currently active claim for this epoch via CurrentClaim, marks
  *      it challenged, and records a Challenge row against it.
  */
 indexer.onEvent({ contract: "VeaOutbox", event: "Challenged" }, async ({ event, context }) => {
