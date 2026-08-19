@@ -1,3 +1,4 @@
+import { VEA_ROUTES } from "./config";
 import type { VeaClaim, VeaEpochRow, VeaMessageRow, VeaRoute, VeaSnapshot } from "./types";
 import { deriveStatus } from "./status";
 
@@ -298,4 +299,83 @@ export async function fetchEpochDetail(route: VeaRoute, epoch: number): Promise<
   });
 
   return { row: toRow(route, epoch, snapshot, claim), messages };
+}
+
+export interface EpochLocation {
+  route: VeaRoute;
+  epoch: number;
+}
+
+/**
+ * Searches every known route's inbox Snapshot and outbox Claim for this exact
+ * transaction hash (the SnapshotSaved or Claimed tx — the two "creation"
+ * events, mirroring the Hashi search bar's dispatch-tx-only scope, not every
+ * downstream event). Case-insensitive: tx hashes are stored lowercase, as
+ * emitted by the indexer, same convention as `lib/envioClient.ts`.
+ */
+export async function findEpochByTxHash(txHash: string): Promise<EpochLocation | null> {
+  const normalized = txHash.toLowerCase();
+
+  const snapshotMatches = VEA_ROUTES.map(async (route) => {
+    const query = `
+      query FindSnapshotByTx($inbox: String!, $tx: String!) {
+        Snapshot(where: { inbox_id: { _eq: $inbox }, txHash: { _eq: $tx } }, limit: 1) { epoch }
+      }
+    `;
+    const data = await gql<{ Snapshot: { epoch: string | null }[] }>(INBOX_URL, query, {
+      inbox: route.inboxAddress,
+      tx: normalized,
+    });
+    const epoch = data?.Snapshot[0]?.epoch;
+    return epoch !== undefined && epoch !== null ? { route, epoch: Number(epoch) } : null;
+  });
+
+  const claimMatches = VEA_ROUTES.map(async (route) => {
+    const query = `
+      query FindClaimByTx($outbox: String!, $tx: String!) {
+        Claim(where: { outbox_id: { _eq: $outbox }, txHash: { _eq: $tx } }, limit: 1) { epoch }
+      }
+    `;
+    const data = await gql<{ Claim: { epoch: string | null }[] }>(OUTBOX_URL, query, {
+      outbox: route.outboxAddress,
+      tx: normalized,
+    });
+    const epoch = data?.Claim[0]?.epoch;
+    return epoch !== undefined && epoch !== null ? { route, epoch: Number(epoch) } : null;
+  });
+
+  const results = await Promise.all([...snapshotMatches, ...claimMatches]);
+  return results.find((r): r is EpochLocation => r !== null) ?? null;
+}
+
+/**
+ * Searches every known route's inbox for a saved Snapshot at this epoch
+ * number. Epoch numbers are only unique per-outbox (see `fetchEpochs`), so a
+ * bare number can legitimately match more than one route — when it does,
+ * this returns whichever match has the most recent snapshot timestamp, since
+ * that's the one a user is most likely looking for.
+ */
+export async function findEpochByNumber(epoch: number): Promise<EpochLocation | null> {
+  const query = `
+    query FindSnapshotByEpoch($inbox: String!, $epoch: numeric!) {
+      Snapshot(where: { inbox_id: { _eq: $inbox }, epoch: { _eq: $epoch }, saved: { _eq: true } }, limit: 1) {
+        epoch
+        timestamp
+      }
+    }
+  `;
+  const results = await Promise.all(
+    VEA_ROUTES.map(async (route) => {
+      const data = await gql<{ Snapshot: { epoch: string; timestamp: string | null }[] }>(INBOX_URL, query, {
+        inbox: route.inboxAddress,
+        epoch: String(epoch),
+      });
+      const match = data?.Snapshot[0];
+      return match ? { route, epoch: Number(match.epoch), timestamp: Number(match.timestamp ?? 0) } : null;
+    })
+  );
+
+  const matches = results.filter((r): r is EpochLocation & { timestamp: number } => r !== null);
+  if (matches.length === 0) return null;
+  return matches.reduce((latest, current) => (current.timestamp > latest.timestamp ? current : latest));
 }

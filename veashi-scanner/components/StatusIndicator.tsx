@@ -49,7 +49,6 @@ export default function StatusIndicator({ current, required, size = "md" }: Stat
           animated
           aria-label={`${current} of ${required}`}
         />
-        {/* Optional center label if CircularProgress doesn't show one */}
       </div>
 
       <div className="flex flex-col gap-1 items-start">

@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Pagination from "@/components/Pagination";
 import VeaFilterBar from "@/components/vea/VeaFilterBar";
 import VeaEpochsTable from "@/components/vea/VeaEpochsTable";
+import VeaSearchBar from "@/components/vea/VeaSearchBar";
 import { getMatchingVeaRoutes } from "@/lib/vea/config";
 import { useVeaEpochs } from "@/hooks/useVeaEpochs";
 import { NO_CHAIN, type ChainFilter } from "@/lib/types";
@@ -51,6 +52,14 @@ export default function VeaPage() {
     setCurrentPage(1);
   };
 
+  const hasActiveFilter = sourceChain !== NO_CHAIN || destChain !== NO_CHAIN;
+
+  const clearFilters = () => {
+    setSourceChain(NO_CHAIN);
+    setDestChain(NO_CHAIN);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -66,6 +75,10 @@ export default function VeaPage() {
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "0.05s" }}>
+          <VeaSearchBar />
+        </div>
+
+        <div className="animate-fade-in" style={{ animationDelay: "0.08s" }}>
           <VeaFilterBar
             network={network}
             onNetworkChange={handleNetworkChange}
@@ -73,6 +86,8 @@ export default function VeaPage() {
             destChain={destChain}
             onSourceChange={handleSourceChange}
             onDestChange={handleDestChange}
+            hasActiveFilter={hasActiveFilter}
+            onClearFilters={clearFilters}
           />
         </div>
 
@@ -83,7 +98,7 @@ export default function VeaPage() {
         )}
 
         <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <VeaEpochsTable rows={paginatedRows} isLoading={isLoading} />
+          <VeaEpochsTable rows={paginatedRows} isLoading={isLoading} onClearFilters={clearFilters} />
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
