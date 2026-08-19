@@ -12951,7 +12951,7 @@ __metadata:
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:20.8.8"
     envio: "npm:3.2.1"
-    ethers: "npm:^6.13.5"
+    ethers: "npm:^6.16.0"
     jest: "npm:^29.7.0"
     ts-jest: "npm:^29.2.5"
     typescript: "npm:5.2.2"

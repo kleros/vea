@@ -21,6 +21,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "installConfig": {
+    "hoistingLimits": "workspaces"
+  },
   "volta": {
     "node": "22.14.0",
     "yarn": "4.6.0"
