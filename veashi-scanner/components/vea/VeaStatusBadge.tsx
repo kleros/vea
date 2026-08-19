@@ -1,12 +1,14 @@
 import type { VeaStatus } from "@/lib/vea/types";
 
 const STATUS_STYLES: Record<VeaStatus, { bg: string; text: string }> = {
+  Pending: { bg: "bg-(--klerosUIComponentsWarningLight)", text: "text-(--klerosUIComponentsWarning)" },
   Saved: { bg: "bg-(--klerosUIComponentsWarningLight)", text: "text-(--klerosUIComponentsWarning)" },
   Claimed: { bg: "bg-(--surface)", text: "text-(--text-secondary)" },
   Challenged: { bg: "bg-(--klerosUIComponentsErrorLight)", text: "text-(--klerosUIComponentsError)" },
   Verifying: { bg: "bg-purple-700/20", text: "text-purple-400" },
   Verified: { bg: "bg-(--klerosUIComponentsSuccessLight)", text: "text-(--klerosUIComponentsSuccess)" },
   Resolved: { bg: "bg-pink-600/20", text: "text-pink-400" },
+  Unknown: { bg: "bg-(--surface)", text: "text-(--text-muted)" },
 };
 
 interface VeaStatusBadgeProps {

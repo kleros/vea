@@ -16,16 +16,23 @@ export function useVeaEpochs(routes: VeaRoute[]) {
     // fetch is in flight.
     setRows([]);
 
-    fetchEpochs(routes).then((result) => {
-      if (cancelled) return;
-      if (result === null) {
+    fetchEpochs(routes)
+      .then((result) => {
+        if (cancelled) return;
+        if (result === null) {
+          setError("Could not reach the Vea indexer.");
+          setRows([]);
+        } else {
+          setRows(result);
+        }
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
         setError("Could not reach the Vea indexer.");
         setRows([]);
-      } else {
-        setRows(result);
-      }
-      setIsLoading(false);
-    });
+        setIsLoading(false);
+      });
 
     return () => {
       cancelled = true;

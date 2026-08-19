@@ -59,7 +59,15 @@ export interface VeaClaim {
   verification: VeaVerification[];
 }
 
-export type VeaStatus = "Saved" | "Claimed" | "Challenged" | "Verifying" | "Verified" | "Resolved";
+export type VeaStatus =
+  | "Pending"
+  | "Saved"
+  | "Claimed"
+  | "Challenged"
+  | "Verifying"
+  | "Verified"
+  | "Resolved"
+  | "Unknown";
 
 export interface VeaEpochRow {
   route: VeaRoute;

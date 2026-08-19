@@ -13,18 +13,26 @@ export function useVeaEpoch(route: VeaRoute, epoch: number) {
     setIsLoading(true);
     setError(null);
 
-    fetchEpochDetail(route, epoch).then((result) => {
-      if (cancelled) return;
-      if (result === null) {
+    fetchEpochDetail(route, epoch)
+      .then((result) => {
+        if (cancelled) return;
+        if (result === null) {
+          setError("Epoch not found.");
+          setRow(null);
+          setMessages([]);
+        } else {
+          setRow(result.row);
+          setMessages(result.messages);
+        }
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
         setError("Epoch not found.");
         setRow(null);
         setMessages([]);
-      } else {
-        setRow(result.row);
-        setMessages(result.messages);
-      }
-      setIsLoading(false);
-    });
+        setIsLoading(false);
+      });
 
     return () => {
       cancelled = true;

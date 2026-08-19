@@ -4,7 +4,7 @@ import ChainBadge from "@/components/ChainBadge";
 import { getChainName } from "@/lib/chains";
 import { ChainItem, DropdownSelectProps, NO_CHAIN, ChainFilter } from "@/lib/types";
 
-const DropdownSelect = RawDropdownSelect as unknown as FC<DropdownSelectProps>;
+const DropdownSelect: FC<DropdownSelectProps> = RawDropdownSelect;
 
 interface ChainSelectProps {
   label: string;

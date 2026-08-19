@@ -96,6 +96,14 @@ function EpochRow({ row, index, onClick }: Readonly<{ row: VeaEpochRow; index: n
   return (
     <tr
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          onClick();
+        }
+      }}
+      tabIndex={0}
+      role="link"
+      aria-label={`View epoch ${row.epoch} details`}
       className="hover-lift hover:bg-(--surface-elevated) cursor-pointer transition-all animate-fade-in"
       style={{ animationDelay: `${index * 0.05}s` }}
     >

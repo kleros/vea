@@ -4,7 +4,7 @@ import { Searchbar, Button } from "@kleros/ui-components-library";
 import { findEpochByNumber, findEpochByTxHash } from "@/lib/vea/client";
 
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
-const EPOCH_REGEX = /^[0-9]+$/;
+const EPOCH_REGEX = /^\d{1,15}$/;
 
 export default function VeaSearchBar() {
   const [search, setSearch] = useState("");

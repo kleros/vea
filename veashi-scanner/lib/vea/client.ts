@@ -7,6 +7,11 @@ const OUTBOX_URL = import.meta.env.VITE_VEA_OUTBOX_ENVIO_URL ?? "http://localhos
 
 const FETCH_TIMEOUT_MS = 5_000;
 
+// Envio's HyperIndex GraphQL API caps unpaginated/unbatched queries at this
+// default row limit — used both as the page size for GetMessages and the
+// batch size for GetRelayed's `_in` filter.
+const GQL_PAGE_SIZE = 1000;
+
 async function gql<T>(url: string, query: string, variables: Record<string, unknown>): Promise<T | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -209,17 +214,31 @@ export async function fetchEpochs(routes: VeaRoute[]): Promise<VeaEpochRow[] | n
     )
   );
   const claimByKey = new Map<string, VeaClaim>();
+  const failedOutboxes = new Set<string>();
   outboxEntries.forEach(([outboxAddress], i) => {
-    for (const rawClaim of claimResults[i]?.Claim ?? []) {
+    const result = claimResults[i];
+    if (result === null) {
+      failedOutboxes.add(outboxAddress);
+      return;
+    }
+    for (const rawClaim of result.Claim) {
       const claim = toClaim(rawClaim);
       claimByKey.set(`${outboxAddress}_${claim.epoch}`, claim);
     }
   });
 
   return entries
-    .map(({ route, epoch, snapshot }) =>
-      toRow(route, epoch, snapshot, claimByKey.get(`${route.outboxAddress}_${epoch}`) ?? null)
-    )
+    .map(({ route, epoch, snapshot }) => {
+      const claim = claimByKey.get(`${route.outboxAddress}_${epoch}`) ?? null;
+      const row = toRow(route, epoch, snapshot, claim);
+      // A failed claim query is indistinguishable from "no claims yet" at the
+      // data level, but deriveStatus would otherwise mislabel it "Saved" —
+      // surface it as Unknown instead of implying the epoch is unclaimed.
+      if (claim === null && failedOutboxes.has(route.outboxAddress)) {
+        return { ...row, status: "Unknown" as const };
+      }
+      return row;
+    })
     .sort((a, b) => (b.snapshot?.timestamp ?? 0) - (a.snapshot?.timestamp ?? 0));
 }
 
@@ -260,27 +279,47 @@ export async function fetchEpochDetail(route: VeaRoute, epoch: number): Promise<
   const claim = claimData?.Claim[0] ? toClaim(claimData.Claim[0]) : null;
 
   const messagesQuery = `
-    query GetMessages($snapshot: String!) {
-      Message(where: { snapshot_id: { _eq: $snapshot } }, order_by: { timestamp: asc }) {
+    query GetMessages($snapshot: String!, $limit: Int!, $offset: Int!) {
+      Message(
+        where: { snapshot_id: { _eq: $snapshot } }
+        order_by: { timestamp: asc }
+        limit: $limit
+        offset: $offset
+      ) {
         id txHash timestamp from to
       }
     }
   `;
-  const messagesData = await gql<{
-    Message: { id: string; txHash: string; timestamp: string; from: string; to: string }[];
-  }>(INBOX_URL, messagesQuery, { snapshot: snapshot.id });
-  const inboxMessages = messagesData?.Message ?? [];
+  type RawMessage = { id: string; txHash: string; timestamp: string; from: string; to: string };
+  const inboxMessages: RawMessage[] = [];
+  for (let offset = 0; ; offset += GQL_PAGE_SIZE) {
+    const page = await gql<{ Message: RawMessage[] }>(INBOX_URL, messagesQuery, {
+      snapshot: snapshot.id,
+      limit: GQL_PAGE_SIZE,
+      offset,
+    });
+    const rows = page?.Message ?? [];
+    inboxMessages.push(...rows);
+    if (rows.length < GQL_PAGE_SIZE) break;
+  }
 
   const outboxIds = inboxMessages.map((m) => `${route.outboxAddress}-${m.id.split("-")[1]}`);
-  const relayedData =
-    outboxIds.length > 0
-      ? await gql<{ Message: { id: string; txHash: string; relayer: string }[] }>(
-          OUTBOX_URL,
-          `query GetRelayed($ids: [String!]!) { Message(where: { id: { _in: $ids } }) { id txHash relayer } }`,
-          { ids: outboxIds }
-        )
-      : null;
-  const relayedById = new Map((relayedData?.Message ?? []).map((m) => [m.id, m]));
+  const relayedById = new Map<string, { id: string; txHash: string; relayer: string }>();
+  const relayedQuery = `
+    query GetRelayed($ids: [String!]!) { Message(where: { id: { _in: $ids } }) { id txHash relayer } }
+  `;
+  const relayedBatches = await Promise.all(
+    Array.from({ length: Math.ceil(outboxIds.length / GQL_PAGE_SIZE) }, (_, i) =>
+      gql<{ Message: { id: string; txHash: string; relayer: string }[] }>(OUTBOX_URL, relayedQuery, {
+        ids: outboxIds.slice(i * GQL_PAGE_SIZE, (i + 1) * GQL_PAGE_SIZE),
+      })
+    )
+  );
+  for (const batch of relayedBatches) {
+    for (const m of batch?.Message ?? []) {
+      relayedById.set(m.id, m);
+    }
+  }
 
   const messages: VeaMessageRow[] = inboxMessages.map((m) => {
     const nonce = m.id.split("-")[1];

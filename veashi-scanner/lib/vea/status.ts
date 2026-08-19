@@ -6,7 +6,7 @@ import type { VeaClaim, VeaSnapshot, VeaStatus } from "./types";
  * separately from Verified (unlike the legacy veascan-web subgraph, which
  * only exposed the finished verifiedTimestamp).
  */
-export function deriveStatus(_snapshot: VeaSnapshot | null, claim: VeaClaim | null): VeaStatus {
+export function deriveStatus(snapshot: VeaSnapshot | null, claim: VeaClaim | null): VeaStatus {
   if (claim) {
     const verification = claim.verification[0];
     const verifying = verification?.startTimestamp !== undefined && verification?.verifiedTimestamp === undefined;
@@ -17,6 +17,8 @@ export function deriveStatus(_snapshot: VeaSnapshot | null, claim: VeaClaim | nu
     if (claim.verified) return "Verified";
     return "Claimed";
   }
+
+  if (snapshot && (!snapshot.saved || snapshot.resolving)) return "Pending";
 
   return "Saved";
 }
