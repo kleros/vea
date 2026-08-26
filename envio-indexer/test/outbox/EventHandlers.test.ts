@@ -222,7 +222,7 @@ describe("handleVerificationStarted and handleVerified", () => {
 });
 
 describe("handleMessageRelayed", () => {
-  it("creates a Message keyed by outbox and msgId", async () => {
+  it("creates a MessageExecution keyed by outbox and msgId", async () => {
     const indexer = createTestIndexer();
     const RELAYER = ("0x" + "2e1a".repeat(10)) as `0x${string}`;
     const RELAY_TX_HASH = "0x" + "2e1b".repeat(16);
@@ -243,7 +243,7 @@ describe("handleMessageRelayed", () => {
       },
     });
 
-    const message = await indexer.Message.getOrThrow(`${OUTBOX}-42`);
+    const message = await indexer.MessageExecution.getOrThrow(`${OUTBOX}-42`);
     expect(message.outbox_id).toBe(OUTBOX);
     expect(message.relayer).toBe(RELAYER);
     expect(message.txHash).toBe(RELAY_TX_HASH);

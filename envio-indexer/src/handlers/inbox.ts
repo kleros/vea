@@ -1,7 +1,7 @@
 import { indexer } from "envio";
-import { decodeNodeData } from "./utils/decoder";
-import { leafHash, hashPair } from "./utils/merkle";
-import { getOrCreateRef, getCurrentSnapshot, openNewSnapshot } from "./utils/snapshot";
+import { decodeNodeData } from "../utils/decoder";
+import { leafHash, hashPair } from "../utils/merkle";
+import { getOrCreateRef, getCurrentSnapshot, openNewSnapshot } from "../utils/snapshot";
 
 /**
  * @dev Handles the MessageSent event emitted by VeaInboxArbToEth.

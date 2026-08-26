@@ -1,15 +1,16 @@
 {
-  "name": "veashi-envio-yaho",
+  "name": "envio-indexer",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "clean": "tsc --clean",
+    "clean": "tsc --build --clean",
     "build": "tsc --build",
     "watch": "tsc --watch",
     "codegen": "envio codegen",
     "dev": "envio dev",
     "start": "envio start",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+    "pretest": "tsc --build",
+    "test": "tsc --build && NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -19,7 +20,7 @@
     "typescript": "5.2.2"
   },
   "dependencies": {
-    "envio": "3.0.0",
+    "envio": "3.2.1",
     "ethers": "^6.16.0"
   }
 }

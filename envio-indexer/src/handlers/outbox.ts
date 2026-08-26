@@ -1,5 +1,5 @@
 import { indexer } from "envio";
-import { getOrCreateVerification } from "./utils/verification";
+import { getOrCreateVerification } from "../utils/verification";
 
 /**
  * @dev Handles the Claimed event emitted by VeaOutbox. Upserts the Outbox entity, creates a
@@ -106,7 +106,7 @@ indexer.onEvent({ contract: "VeaOutbox", event: "Verified" }, async ({ event, co
 
 /**
  * @dev Handles the MessageRelayed event. Upserts the Outbox entity and
- *      creates a Message keyed by the on-chain message id.
+ *      creates a MessageExecution keyed by the on-chain message id.
  */
 indexer.onEvent({ contract: "VeaOutbox", event: "MessageRelayed" }, async ({ event, context }) => {
   const outbox = event.srcAddress;
@@ -115,7 +115,7 @@ indexer.onEvent({ contract: "VeaOutbox", event: "MessageRelayed" }, async ({ eve
   const existingOutbox = await context.Outbox.get(outbox);
   if (!existingOutbox) context.Outbox.set({ id: outbox });
 
-  context.Message.set({
+  context.MessageExecution.set({
     id: `${outbox}-${msgId}`,
     outbox_id: outbox,
     timestamp: BigInt(event.block.timestamp),

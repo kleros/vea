@@ -1,5 +1,5 @@
-import { decodeNodeData } from "../src/utils/decoder";
-import { leafHash, hashPair, concatAndSort } from "../src/utils/merkle";
+import { decodeNodeData } from "../../src/utils/decoder";
+import { leafHash, hashPair, concatAndSort } from "../../src/utils/merkle";
 
 // 8-byte nonce (1, big-endian) + 20-byte to + 20-byte msgSender + 4-byte data
 const mockNodeData =
