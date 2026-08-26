@@ -3,22 +3,41 @@ name: envio-indexer
 field_selection:
   transaction_fields:
     - hash
-    - from
 contracts:
   - name: VeaInboxArbToEth
     handler: src/handlers/inbox.ts
     events:
       - event: MessageSent(bytes _nodeData)
       - event: SnapshotSaved(bytes32 _snapshot, uint256 _epoch, uint64 _count)
+        field_selection:
+          transaction_fields:
+            - hash
+            - from
       - event: SnapshotSent(uint256 indexed _epochSent, bytes32 _ticketId)
+        field_selection:
+          transaction_fields:
+            - hash
+            - from
   - name: VeaOutbox
     handler: src/handlers/outbox.ts
     events:
       - event: Claimed(address indexed _claimer, uint256 indexed _epoch, bytes32 _stateRoot)
       - event: Challenged(uint256 indexed _epoch, address indexed _challenger)
       - event: VerificationStarted(uint256 indexed _epoch)
+        field_selection:
+          transaction_fields:
+            - hash
+            - from
       - event: Verified(uint256 _epoch)
+        field_selection:
+          transaction_fields:
+            - hash
+            - from
       - event: MessageRelayed(uint64 _msgId)
+        field_selection:
+          transaction_fields:
+            - hash
+            - from
   - name: Yaho
     abi_file_path: ./abis/Yaho.json
     handler: src/handlers/yaho.ts
@@ -57,6 +76,7 @@ chains:
     start_block: 12699901
     rpc:
       url: https://mainnet.storyrpc.io
+      for: sync
     contracts:
       - name: Yaho
         address:
