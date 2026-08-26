@@ -1520,65 +1520,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@envio-dev/hypersync-client-darwin-arm64@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@envio-dev/hypersync-client-darwin-arm64@npm:1.3.0"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@envio-dev/hypersync-client-darwin-x64@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@envio-dev/hypersync-client-darwin-x64@npm:1.3.0"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@envio-dev/hypersync-client-linux-arm64-gnu@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@envio-dev/hypersync-client-linux-arm64-gnu@npm:1.3.0"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@envio-dev/hypersync-client-linux-x64-gnu@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@envio-dev/hypersync-client-linux-x64-gnu@npm:1.3.0"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@envio-dev/hypersync-client-linux-x64-musl@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@envio-dev/hypersync-client-linux-x64-musl@npm:1.3.0"
-  conditions: os=linux & cpu=x64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@envio-dev/hypersync-client@npm:1.3.0":
-  version: 1.3.0
-  resolution: "@envio-dev/hypersync-client@npm:1.3.0"
-  dependencies:
-    "@envio-dev/hypersync-client-darwin-arm64": "npm:1.3.0"
-    "@envio-dev/hypersync-client-darwin-x64": "npm:1.3.0"
-    "@envio-dev/hypersync-client-linux-arm64-gnu": "npm:1.3.0"
-    "@envio-dev/hypersync-client-linux-x64-gnu": "npm:1.3.0"
-    "@envio-dev/hypersync-client-linux-x64-musl": "npm:1.3.0"
-  dependenciesMeta:
-    "@envio-dev/hypersync-client-darwin-arm64":
-      optional: true
-    "@envio-dev/hypersync-client-darwin-x64":
-      optional: true
-    "@envio-dev/hypersync-client-linux-arm64-gnu":
-      optional: true
-    "@envio-dev/hypersync-client-linux-x64-gnu":
-      optional: true
-    "@envio-dev/hypersync-client-linux-x64-musl":
-      optional: true
-  checksum: 10/c01caa5904f87f8e7e5c7ad0ef315145902009c146e07fe87bc6bc4f747c06b325951d166ea8a45dc1f36ed21a907b94279dbe15f1e9bd1b07f3300a6c30fc78
-  languageName: node
-  linkType: hard
-
 "@esbuild/aix-ppc64@npm:0.25.12":
   version: 0.25.12
   resolution: "@esbuild/aix-ppc64@npm:0.25.12"
@@ -12874,24 +12815,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"envio-darwin-arm64@npm:3.0.0":
-  version: 3.0.0
-  resolution: "envio-darwin-arm64@npm:3.0.0"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
 "envio-darwin-arm64@npm:3.2.1":
   version: 3.2.1
   resolution: "envio-darwin-arm64@npm:3.2.1"
   conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"envio-darwin-x64@npm:3.0.0":
-  version: 3.0.0
-  resolution: "envio-darwin-x64@npm:3.0.0"
-  conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
@@ -12902,24 +12829,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"envio-linux-arm64@npm:3.0.0":
-  version: 3.0.0
-  resolution: "envio-linux-arm64@npm:3.0.0"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
+"envio-indexer@workspace:envio-indexer":
+  version: 0.0.0-use.local
+  resolution: "envio-indexer@workspace:envio-indexer"
+  dependencies:
+    "@types/jest": "npm:^29.5.14"
+    "@types/node": "npm:20.8.8"
+    envio: "npm:3.2.1"
+    ethers: "npm:^6.16.0"
+    jest: "npm:^29.7.0"
+    ts-jest: "npm:^29.2.5"
+    typescript: "npm:5.2.2"
+  languageName: unknown
+  linkType: soft
 
 "envio-linux-arm64@npm:3.2.1":
   version: 3.2.1
   resolution: "envio-linux-arm64@npm:3.2.1"
   conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"envio-linux-x64-musl@npm:3.0.0":
-  version: 3.0.0
-  resolution: "envio-linux-x64-musl@npm:3.0.0"
-  conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
@@ -12930,86 +12857,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"envio-linux-x64@npm:3.0.0":
-  version: 3.0.0
-  resolution: "envio-linux-x64@npm:3.0.0"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
 "envio-linux-x64@npm:3.2.1":
   version: 3.2.1
   resolution: "envio-linux-x64@npm:3.2.1"
   conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"envio-outbox@workspace:vea-envio-outbox":
-  version: 0.0.0-use.local
-  resolution: "envio-outbox@workspace:vea-envio-outbox"
-  dependencies:
-    "@types/jest": "npm:^29.5.14"
-    "@types/node": "npm:20.8.8"
-    envio: "npm:3.2.1"
-    ethers: "npm:^6.13.5"
-    jest: "npm:^29.7.0"
-    ts-jest: "npm:^29.2.5"
-    typescript: "npm:5.2.2"
-  languageName: unknown
-  linkType: soft
-
-"envio@npm:3.0.0":
-  version: 3.0.0
-  resolution: "envio@npm:3.0.0"
-  dependencies:
-    "@clickhouse/client": "npm:1.17.0"
-    "@elastic/ecs-pino-format": "npm:1.4.0"
-    "@envio-dev/hyperfuel-client": "npm:1.2.2"
-    "@envio-dev/hypersync-client": "npm:1.3.0"
-    "@fuel-ts/crypto": "npm:0.96.1"
-    "@fuel-ts/errors": "npm:0.96.1"
-    "@fuel-ts/hasher": "npm:0.96.1"
-    "@fuel-ts/math": "npm:0.96.1"
-    "@fuel-ts/utils": "npm:0.96.1"
-    "@rescript/react": "npm:0.14.1"
-    "@rescript/runtime": "npm:12.2.0"
-    bignumber.js: "npm:9.3.1"
-    date-fns: "npm:3.3.1"
-    dotenv: "npm:16.4.5"
-    envio-darwin-arm64: "npm:3.0.0"
-    envio-darwin-x64: "npm:3.0.0"
-    envio-linux-arm64: "npm:3.0.0"
-    envio-linux-x64: "npm:3.0.0"
-    envio-linux-x64-musl: "npm:3.0.0"
-    eventsource: "npm:4.1.0"
-    express: "npm:4.19.2"
-    ink: "npm:6.8.0"
-    ink-big-text: "npm:2.0.0"
-    ink-spinner: "npm:5.0.0"
-    js-sdsl: "npm:4.4.2"
-    pino: "npm:10.3.1"
-    pino-pretty: "npm:13.1.3"
-    postgres: "npm:3.4.8"
-    prom-client: "npm:15.1.3"
-    react: "npm:19.2.5"
-    rescript-schema: "npm:9.5.1"
-    tsx: "npm:4.21.0"
-    viem: "npm:2.46.2"
-    yargs: "npm:17.7.2"
-  dependenciesMeta:
-    envio-darwin-arm64:
-      optional: true
-    envio-darwin-x64:
-      optional: true
-    envio-linux-arm64:
-      optional: true
-    envio-linux-x64:
-      optional: true
-    envio-linux-x64-musl:
-      optional: true
-  bin:
-    envio: bin.mjs
-  checksum: 10/09a47a3b4d0831a8281b17fadc05e5662e699e1e3897fa0629bb004187e8a88137c68e27a90ee42042a3472a20f9beeebcbfefb9bbba10eb0f97b480b38e2bcc
   languageName: node
   linkType: hard
 
@@ -22732,20 +22583,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"relayer-envio-inbox@workspace:vea-envio-inbox":
-  version: 0.0.0-use.local
-  resolution: "relayer-envio-inbox@workspace:vea-envio-inbox"
-  dependencies:
-    "@types/jest": "npm:^29.5.14"
-    "@types/node": "npm:20.8.8"
-    envio: "npm:3.2.1"
-    ethers: "npm:^6.13.5"
-    jest: "npm:^29.7.0"
-    ts-jest: "npm:^29.2.5"
-    typescript: "npm:5.2.2"
-  languageName: unknown
-  linkType: soft
-
 "remark-parse@npm:^11.0.0":
   version: 11.0.0
   resolution: "remark-parse@npm:11.0.0"
@@ -26102,20 +25939,6 @@ __metadata:
   dependencies:
     solidity-bytes-utils: "npm:^0.8.4"
     solidity-rlp: "npm:^2.0.8"
-  languageName: unknown
-  linkType: soft
-
-"veashi-envio-yaho@workspace:veashi-envio-yaho":
-  version: 0.0.0-use.local
-  resolution: "veashi-envio-yaho@workspace:veashi-envio-yaho"
-  dependencies:
-    "@types/jest": "npm:^29.5.14"
-    "@types/node": "npm:20.8.8"
-    envio: "npm:3.0.0"
-    ethers: "npm:^6.16.0"
-    jest: "npm:^29.7.0"
-    ts-jest: "npm:^29.2.5"
-    typescript: "npm:5.2.2"
   languageName: unknown
   linkType: soft
 

@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: envio-indexer
+field_selection:
+  transaction_fields:
+    - hash
+    - from
+contracts:
+  - name: VeaInboxArbToEth
+    handler: src/handlers/inbox.ts
+    events:
+      - event: MessageSent(bytes _nodeData)
+      - event: SnapshotSaved(bytes32 _snapshot, uint256 _epoch, uint64 _count)
+      - event: SnapshotSent(uint256 indexed _epochSent, bytes32 _ticketId)
+  - name: VeaOutbox
+    handler: src/handlers/outbox.ts
+    events:
+      - event: Claimed(address indexed _claimer, uint256 indexed _epoch, bytes32 _stateRoot)
+      - event: Challenged(uint256 indexed _epoch, address indexed _challenger)
+      - event: VerificationStarted(uint256 indexed _epoch)
+      - event: Verified(uint256 _epoch)
+      - event: MessageRelayed(uint64 _msgId)
+  - name: Yaho
+    abi_file_path: ./abis/Yaho.json
+    handler: src/handlers/yaho.ts
+    events:
+      - event: MessageDispatched
+chains:
+  - id: 421614
+    # Earlier of inbox's start block (189388217) and yaho's (92669889) — see
+    # Global Constraints in the plan for why this differs from either source.
+    start_block: 92669889
+    contracts:
+      - name: VeaInboxArbToEth
+        address:
+          - 0x8B925669606026CcCfAFD72840F5b0CAeDA80078 # ArbToEth Testnet
+          - 0x45138BC4E364A16919C4571699171d774A7590BD # ArbToEth Devnet
+          - 0x2E973e20B24088bc74755a7A5cd1A37Dcb53E061 # ArbToGnosis Devnet
+          - 0x162f826E18380567CE0548395a3Ad2A54EA87B96 # ArbToGnosis Testnet
+      - name: Yaho
+        address:
+          - 0xDbdF80c87f414fac8342e04D870764197bD3bAC7
+  - id: 11155111
+    start_block: 9100938
+    contracts:
+      - name: VeaOutbox
+        address:
+          - 0xf720FA4575FB2FE96c7f05B1b5abc2d281cDa09a # ArbToEth Testnet
+          - 0x60af9Fc1dd7d5bce69a66A8AEf456952b03A39C7 # ArbToEth Devnet
+  - id: 10200
+    start_block: 17544965
+    contracts:
+      - name: VeaOutbox
+        address:
+          - 0x879A9F4476D4445A1deCf40175a700C4c829824D # ArbToGnosis Devnet
+          - 0x15aC29269b044E1d9042F597513B27Ffa4A7f257 # ArbToGnosis Testnet
+  - id: 1514
+    start_block: 12699901
+    rpc:
+      url: https://mainnet.storyrpc.io
+    contracts:
+      - name: Yaho
+        address:
+          - 0x0313f25f51f8846fdDFaBCb7F0672e4D3E1C0E76
+  - id: 42161
+    start_block: 427763138
+    contracts:
+      - name: Yaho
+        address:
+          - 0xD0375320591ff87797CEb03CBeE80C82fD61BC77

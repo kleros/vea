@@ -20,15 +20,13 @@
     "relayer-subgraph-inbox",
     "validator-cli",
     "relayer-cli",
-    "vea-envio-inbox",
-    "vea-envio-outbox",
     "veascan-web",
     "veascan-subgraph-inbox",
     "veascan-subgraph-outbox",
     "veashi-contracts",
     "veashi-sdk",
     "veashi-scanner",
-    "veashi-envio-yaho"
+    "envio-indexer"
   ],
   "packageManager": "yarn@4.6.0",
   "volta": {

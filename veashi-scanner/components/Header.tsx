@@ -49,6 +49,12 @@ export default function Header() {
             >
               Routes
             </Link>
+            <Link
+              to="/vea"
+              className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              Vea
+            </Link>
             <a
               href="https://github.com/kleros/vea"
               target="_blank"

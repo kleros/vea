@@ -1,0 +1,160 @@
+# Shared by both entity families below.
+type Inbox {
+  id: ID!
+}
+
+# --- relayer-facing (used by relayer-cli) ---
+
+type Sender {
+  id: ID!
+}
+
+type Receiver {
+  id: ID!
+}
+
+type MerkleNode {
+  id: ID!
+  hash: String!
+}
+
+type MessageSent {
+  id: ID!
+  inbox: Inbox!
+  nonce: BigInt!
+  to: Receiver!
+  msgSender: Sender!
+  data: String!
+  node: MerkleNode!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type SnapshotSaved {
+  id: ID!
+  inbox: Inbox!
+  caller: String
+  txHash: String
+  stateRoot: String!
+  epoch: BigInt!
+  count: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+# --- validator/explorer-facing (used by validator-cli) ---
+
+type Snapshot {
+  id: ID!
+  inbox: Inbox!
+  epoch: BigInt
+  caller: String
+  txHash: String
+  timestamp: BigInt
+  stateRoot: String
+  messages: [Message!]! @derivedFrom(field: "snapshot")
+  numberMessages: BigInt!
+  saved: Boolean!
+  resolving: Boolean!
+  fallback: [Fallback!]! @derivedFrom(field: "snapshot")
+}
+
+type Message {
+  id: ID!
+  inbox: Inbox!
+  txHash: String!
+  timestamp: BigInt!
+  from: String!
+  to: String!
+  snapshot: Snapshot!
+  data: String!
+}
+
+type Fallback {
+  id: ID!
+  snapshot: Snapshot!
+  executor: String!
+  timestamp: BigInt
+  txHash: String!
+  ticketId: String!
+}
+
+type Ref {
+  id: ID!
+  inbox: Inbox!
+  currentSnapshotIndex: BigInt!
+}
+
+# --- outbox (used by relayer-cli / validator-cli) ---
+
+type Outbox {
+  id: ID!
+}
+
+type Claim {
+  id: ID!
+  outbox: Outbox!
+  epoch: BigInt!
+  stateRoot: String!
+  bridger: String!
+  timestamp: BigInt!
+  txHash: String!
+  challenged: Boolean!
+  verified: Boolean!
+  honest: Boolean!
+  challenge: [Challenge!]! @derivedFrom(field: "claim")
+  verification: [Verification!]! @derivedFrom(field: "claim")
+}
+
+type Challenge {
+  id: ID!
+  claim: Claim!
+  txHash: String!
+  timestamp: BigInt!
+  challenger: String!
+  honest: Boolean!
+}
+
+type Verification {
+  id: ID!
+  claim: Claim!
+  startTimestamp: BigInt
+  startCaller: String
+  startTxHash: String
+  verifiedTimestamp: BigInt
+  verifiedCaller: String
+  verifiedTxHash: String
+}
+
+type MessageExecution {
+  id: ID!
+  outbox: Outbox!
+  timestamp: BigInt!
+  txHash: String!
+  relayer: String!
+}
+
+type CurrentClaim {
+  id: ID!
+  claim: Claim!
+}
+
+# --- yaho / hashi (used by veashi-scanner) ---
+
+type MessageDispatched {
+  id: ID!
+  messageId: String!
+  txHash: String!
+  sourceChainId: BigInt!
+  yaho: String!
+  nonce: BigInt!
+  targetChainId: BigInt!
+  threshold: BigInt!
+  sender: String!
+  receiver: String!
+  data: String!
+  reporters: String!
+  adapters: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}

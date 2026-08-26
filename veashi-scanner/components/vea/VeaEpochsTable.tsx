@@ -2,21 +2,22 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@kleros/ui-components-library";
 import ChainBadge from "@/components/ChainBadge";
 import TableStatus from "@/components/TableStatus";
+import VeaStatusBadge from "@/components/vea/VeaStatusBadge";
 import { useRelativeTimeTick } from "@/hooks/useRelativeTimeTick";
-import { Message } from "@/lib/types";
 import { formatRelativeTime } from "@/lib/utils";
+import type { VeaEpochRow } from "@/lib/vea/types";
 
 interface Props {
-  messages: Message[];
+  rows: VeaEpochRow[];
   isLoading?: boolean;
   onClearFilters: () => void;
 }
 
-export default function MessagesTable({ messages, isLoading, onClearFilters }: Readonly<Props>) {
+export default function VeaEpochsTable({ rows, isLoading, onClearFilters }: Readonly<Props>) {
   const navigate = useNavigate();
   useRelativeTimeTick();
 
-  if (messages.length === 0 && isLoading) {
+  if (rows.length === 0 && isLoading) {
     return (
       <TableStatus
         icon={
@@ -29,12 +30,12 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: R
             />
           </svg>
         }
-        message="Loading messages…"
+        message="Loading epochs…"
       />
     );
   }
 
-  if (messages.length === 0) {
+  if (rows.length === 0) {
     return (
       <TableStatus
         icon={
@@ -52,7 +53,7 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: R
             />
           </svg>
         }
-        message="No messages match the selected filters."
+        message="No epochs found for the selected chains and network."
         action={<Button variant="secondary" small onPress={onClearFilters} className="mt-4" text="Clear Filters" />}
       />
     );
@@ -64,7 +65,7 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: R
         <table className="w-full">
           <thead>
             <tr className="border-b border-(--border) bg-(--surface)">
-              {["Source Chain", "Destination Chain", "Transaction Hash", "Block", "Timestamp"].map((col) => (
+              {["Route", "Epoch", "Status", "State Root", "Timestamp"].map((col) => (
                 <th
                   key={col}
                   className="px-6 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wider"
@@ -75,12 +76,12 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: R
             </tr>
           </thead>
           <tbody className="divide-y divide-(--border)">
-            {messages.map((message, index) => (
-              <MessageRow
-                key={message.messageId ?? `${message.sourceChain}-${message.txHash}`}
-                message={message}
+            {rows.map((row, index) => (
+              <EpochRow
+                key={`${row.route.bridgeKey}-${row.route.network}-${row.epoch}`}
+                row={row}
                 index={index}
-                onClick={() => navigate(`/tx/${message.sourceChain}/${message.txHash}`)}
+                onClick={() => navigate(`/vea/${row.route.bridgeKey}/${row.route.network}/${row.epoch}`)}
               />
             ))}
           </tbody>
@@ -90,40 +91,48 @@ export default function MessagesTable({ messages, isLoading, onClearFilters }: R
   );
 }
 
-// ─── Private sub-components ───────────────────────────────────────────────────
-
-function MessageRow({ message, index, onClick }: Readonly<{ message: Message; index: number; onClick: () => void }>) {
+function EpochRow({ row, index, onClick }: Readonly<{ row: VeaEpochRow; index: number; onClick: () => void }>) {
+  const stateRoot = row.snapshot?.stateRoot ?? row.claim?.stateRoot;
   return (
     <tr
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          onClick();
+        }
+      }}
+      tabIndex={0}
+      role="link"
+      aria-label={`View epoch ${row.epoch} details`}
       className="hover-lift hover:bg-(--surface-elevated) cursor-pointer transition-all animate-fade-in"
       style={{ animationDelay: `${index * 0.05}s` }}
     >
       <td className="px-6 py-3">
-        <ChainBadge chainId={message.sourceChain} />
-      </td>
-      <td className="px-6 py-3">
         <div className="flex items-center gap-2">
+          <ChainBadge chainId={row.route.sourceChainId} />
           <svg className="w-4 h-4 text-purple-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
-          <ChainBadge chainId={message.destinationChain} />
+          <ChainBadge chainId={row.route.destinationChainId} />
         </div>
       </td>
       <td className="px-6 py-3">
-        <span className="font-mono text-sm">
-          {message.txHash.slice(0, 10)}…{message.txHash.slice(-8)}
-        </span>
+        <span className="font-mono text-sm text-(--text-secondary)">#{row.epoch}</span>
       </td>
       <td className="px-6 py-3">
-        <span className="font-mono text-sm text-(--text-secondary)">#{message.blockNumber.toLocaleString()}</span>
+        <VeaStatusBadge status={row.status} />
+      </td>
+      <td className="px-6 py-3">
+        <span className="font-mono text-sm">
+          {stateRoot ? `${stateRoot.slice(0, 10)}…${stateRoot.slice(-8)}` : "—"}
+        </span>
       </td>
       <td className="px-6 py-3">
         <span
           className="text-sm text-(--text-secondary)"
-          title={message.blockTimestamp ? new Date(message.blockTimestamp * 1000).toLocaleString() : undefined}
+          title={row.snapshot?.timestamp ? new Date(row.snapshot.timestamp * 1000).toLocaleString() : undefined}
         >
-          {formatRelativeTime(message.blockTimestamp)}
+          {formatRelativeTime(row.snapshot?.timestamp)}
         </span>
       </td>
     </tr>
