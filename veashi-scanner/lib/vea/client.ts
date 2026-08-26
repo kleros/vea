@@ -2,8 +2,7 @@ import { VEA_ROUTES } from "./config";
 import type { VeaClaim, VeaEpochRow, VeaMessageRow, VeaRoute, VeaSnapshot } from "./types";
 import { deriveStatus } from "./status";
 
-const INBOX_URL = import.meta.env.VITE_VEA_INBOX_ENVIO_URL ?? "http://localhost:8080/v1/graphql";
-const OUTBOX_URL = import.meta.env.VITE_VEA_OUTBOX_ENVIO_URL ?? "http://localhost:8081/v1/graphql";
+const ENVIO_URL = import.meta.env.VITE_ENVIO_URL ?? "http://localhost:8080/v1/graphql";
 
 const FETCH_TIMEOUT_MS = 5_000;
 
@@ -11,6 +10,16 @@ const FETCH_TIMEOUT_MS = 5_000;
 // default row limit — used both as the page size for GetMessages and the
 // batch size for GetRelayed's `_in` filter.
 const GQL_PAGE_SIZE = 1000;
+
+/** Thrown when a request needed to assemble a full result fails partway
+ *  through, so callers can tell "the indexer is unreachable" apart from
+ *  "the data is genuinely empty" instead of silently returning partial data. */
+export class VeaIndexerError extends Error {
+  constructor(message = "Could not reach the Vea indexer.") {
+    super(message);
+    this.name = "VeaIndexerError";
+  }
+}
 
 async function gql<T>(url: string, query: string, variables: Record<string, unknown>): Promise<T | null> {
   const controller = new AbortController();
@@ -164,7 +173,7 @@ async function fetchRouteSnapshots(route: VeaRoute): Promise<VeaSnapshot[] | nul
       ) { ${SNAPSHOT_FIELDS} }
     }
   `;
-  const data = await gql<{ Snapshot: RawSnapshot[] }>(INBOX_URL, query, {
+  const data = await gql<{ Snapshot: RawSnapshot[] }>(ENVIO_URL, query, {
     inbox: route.inboxAddress,
     limit: SNAPSHOT_WINDOW,
   });
@@ -210,7 +219,7 @@ export async function fetchEpochs(routes: VeaRoute[]): Promise<VeaEpochRow[] | n
   const outboxEntries = [...epochsByOutbox.entries()];
   const claimResults = await Promise.all(
     outboxEntries.map(([outboxAddress, epochs]) =>
-      gql<{ Claim: RawClaim[] }>(OUTBOX_URL, claimQuery, { outbox: outboxAddress, epochs: [...epochs].map(String) })
+      gql<{ Claim: RawClaim[] }>(ENVIO_URL, claimQuery, { outbox: outboxAddress, epochs: [...epochs].map(String) })
     )
   );
   const claimByKey = new Map<string, VeaClaim>();
@@ -260,7 +269,7 @@ export async function fetchEpochDetail(route: VeaRoute, epoch: number): Promise<
       Snapshot(where: { inbox_id: { _eq: $inbox }, epoch: { _eq: $epoch } }, limit: 1) { ${SNAPSHOT_FIELDS} }
     }
   `;
-  const snapshotData = await gql<{ Snapshot: RawSnapshot[] }>(INBOX_URL, snapshotQuery, {
+  const snapshotData = await gql<{ Snapshot: RawSnapshot[] }>(ENVIO_URL, snapshotQuery, {
     inbox: route.inboxAddress,
     epoch: String(epoch),
   });
@@ -272,7 +281,7 @@ export async function fetchEpochDetail(route: VeaRoute, epoch: number): Promise<
       Claim(where: { outbox_id: { _eq: $outbox }, epoch: { _eq: $epoch } }, limit: 1) { ${CLAIM_FIELDS} }
     }
   `;
-  const claimData = await gql<{ Claim: RawClaim[] }>(OUTBOX_URL, claimQuery, {
+  const claimData = await gql<{ Claim: RawClaim[] }>(ENVIO_URL, claimQuery, {
     outbox: route.outboxAddress,
     epoch: String(epoch),
   });
@@ -293,30 +302,31 @@ export async function fetchEpochDetail(route: VeaRoute, epoch: number): Promise<
   type RawMessage = { id: string; txHash: string; timestamp: string; from: string; to: string };
   const inboxMessages: RawMessage[] = [];
   for (let offset = 0; ; offset += GQL_PAGE_SIZE) {
-    const page = await gql<{ Message: RawMessage[] }>(INBOX_URL, messagesQuery, {
+    const page = await gql<{ Message: RawMessage[] }>(ENVIO_URL, messagesQuery, {
       snapshot: snapshot.id,
       limit: GQL_PAGE_SIZE,
       offset,
     });
-    const rows = page?.Message ?? [];
-    inboxMessages.push(...rows);
-    if (rows.length < GQL_PAGE_SIZE) break;
+    if (page === null) throw new VeaIndexerError();
+    inboxMessages.push(...page.Message);
+    if (page.Message.length < GQL_PAGE_SIZE) break;
   }
 
   const outboxIds = inboxMessages.map((m) => `${route.outboxAddress}-${m.id.split("-")[1]}`);
   const relayedById = new Map<string, { id: string; txHash: string; relayer: string }>();
   const relayedQuery = `
-    query GetRelayed($ids: [String!]!) { Message(where: { id: { _in: $ids } }) { id txHash relayer } }
+    query GetRelayed($ids: [String!]!) { MessageExecution(where: { id: { _in: $ids } }) { id txHash relayer } }
   `;
   const relayedBatches = await Promise.all(
     Array.from({ length: Math.ceil(outboxIds.length / GQL_PAGE_SIZE) }, (_, i) =>
-      gql<{ Message: { id: string; txHash: string; relayer: string }[] }>(OUTBOX_URL, relayedQuery, {
+      gql<{ MessageExecution: { id: string; txHash: string; relayer: string }[] }>(ENVIO_URL, relayedQuery, {
         ids: outboxIds.slice(i * GQL_PAGE_SIZE, (i + 1) * GQL_PAGE_SIZE),
       })
     )
   );
   for (const batch of relayedBatches) {
-    for (const m of batch?.Message ?? []) {
+    if (batch === null) throw new VeaIndexerError();
+    for (const m of batch.MessageExecution) {
       relayedById.set(m.id, m);
     }
   }
@@ -361,7 +371,7 @@ export async function findEpochByTxHash(txHash: string): Promise<EpochLocation |
         Snapshot(where: { inbox_id: { _eq: $inbox }, txHash: { _eq: $tx } }, limit: 1) { epoch }
       }
     `;
-    const data = await gql<{ Snapshot: { epoch: string | null }[] }>(INBOX_URL, query, {
+    const data = await gql<{ Snapshot: { epoch: string | null }[] }>(ENVIO_URL, query, {
       inbox: route.inboxAddress,
       tx: normalized,
     });
@@ -375,7 +385,7 @@ export async function findEpochByTxHash(txHash: string): Promise<EpochLocation |
         Claim(where: { outbox_id: { _eq: $outbox }, txHash: { _eq: $tx } }, limit: 1) { epoch }
       }
     `;
-    const data = await gql<{ Claim: { epoch: string | null }[] }>(OUTBOX_URL, query, {
+    const data = await gql<{ Claim: { epoch: string | null }[] }>(ENVIO_URL, query, {
       outbox: route.outboxAddress,
       tx: normalized,
     });
@@ -405,7 +415,7 @@ export async function findEpochByNumber(epoch: number): Promise<EpochLocation | 
   `;
   const results = await Promise.all(
     VEA_ROUTES.map(async (route) => {
-      const data = await gql<{ Snapshot: { epoch: string; timestamp: string | null }[] }>(INBOX_URL, query, {
+      const data = await gql<{ Snapshot: { epoch: string; timestamp: string | null }[] }>(ENVIO_URL, query, {
         inbox: route.inboxAddress,
         epoch: String(epoch),
       });
