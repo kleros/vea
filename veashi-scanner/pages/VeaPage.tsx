@@ -64,7 +64,7 @@ export default function VeaPage() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="max-w-2/3 mx-auto p-6 space-y-6">
+      <main className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="animate-fade-in">
           <h2 className="text-2xl font-bold bg-linear-to-r from-white to-(--text-secondary) bg-clip-text text-transparent">
             Vea Epochs

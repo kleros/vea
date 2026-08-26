@@ -79,7 +79,7 @@ export default function Home() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="max-w-2/3 mx-auto p-6 space-y-6">
+      <main className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="animate-fade-in flex items-center justify-between gap-4">
           <div className="flex-1">
             <SearchBar />
