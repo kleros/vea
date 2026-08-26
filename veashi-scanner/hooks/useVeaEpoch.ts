@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchEpochDetail } from "@/lib/vea/client";
+import { fetchEpochDetail, VeaIndexerError } from "@/lib/vea/client";
 import type { VeaEpochRow, VeaMessageRow, VeaRoute } from "@/lib/vea/types";
 
 export function useVeaEpoch(route: VeaRoute, epoch: number) {
@@ -26,9 +26,9 @@ export function useVeaEpoch(route: VeaRoute, epoch: number) {
         }
         setIsLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
-        setError("Epoch not found.");
+        setError(err instanceof VeaIndexerError ? err.message : "Epoch not found.");
         setRow(null);
         setMessages([]);
         setIsLoading(false);
