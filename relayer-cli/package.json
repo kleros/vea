@@ -13,6 +13,7 @@
     "start-relayer": "ts-node ./src/relayer.ts"
   },
   "dependencies": {
+    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.0.4",
     "@typechain/ethers-v6": "^0.5.1",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.5",

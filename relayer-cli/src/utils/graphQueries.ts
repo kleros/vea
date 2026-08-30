@@ -2,24 +2,8 @@ import request from "graphql-request";
 import { VeaOutboxArbToEth, VeaOutboxArbToGnosis } from "../../../contracts/typechain-types";
 import { DataError } from "./errors";
 
-async function getVeaMsgTrnx(nonce: number, inboxAddress: string, chainId: number, network: string): Promise<string[]> {
-  try {
-    const subgraph = process.env.RELAYER_SUBGRAPH!;
-    const query = `{messageSents(first: 1, where: {nonce: ${nonce}, inbox: "${inboxAddress}"}) {
-    id
-    transactionHash
-  }}`;
-    const result = (await request(subgraph, query)) as {
-      messageSents: { id: string; transactionHash: string }[];
-    };
-    return result.messageSents.map((trnx) => trnx.transactionHash);
-  } catch (e) {
-    throw new DataError("Failed to fetch message transaction (subgraph)", chainId, network, { cause: e });
-  }
-}
-
 interface SnapshotResponse {
-  snapshotSaveds: Array<{ count: string }>;
+  SnapshotSaved: Array<{ count: string }>;
 }
 /**
  * Get the count of the veaOutbox
@@ -32,21 +16,21 @@ const getCount = async (
   chainId: number,
   network: string
 ): Promise<number> => {
-  const subgraph = process.env.RELAYER_SUBGRAPH!;
+  const subgraph = process.env.ENVIO_URL!;
   const stateRoot = await veaOutbox.stateRoot();
   try {
     const result = (await request(
       subgraph,
       `{
-      snapshotSaveds(first: 1, where: { stateRoot: "${stateRoot}" }) {
+      SnapshotSaved(limit: 1, where: { stateRoot: { _eq: "${stateRoot}" } }) {
         count
       }
     }`
     )) as SnapshotResponse;
 
-    if (result["snapshotSaveds"].length == 0) return 0;
+    if (result["SnapshotSaved"].length == 0) return 0;
 
-    return Number(result["snapshotSaveds"][0].count);
+    return Number(result["SnapshotSaved"][0].count);
   } catch (e) {
     throw new DataError("Failed to fetch count(subgraph)", chainId, network, { cause: e });
   }
@@ -57,7 +41,7 @@ interface MessageSent {
 }
 
 interface MessageSentsResponse {
-  messageSents: MessageSent[];
+  MessageSent: MessageSent[];
 }
 
 /**
@@ -68,30 +52,29 @@ interface MessageSentsResponse {
  * @returns The nonces of the messages sent by the sender
  */
 const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSender: string, network: string) => {
-  const subgraph = process.env.RELAYER_SUBGRAPH!;
+  const subgraph = process.env.ENVIO_URL!;
   try {
     const result = (await request(
       subgraph,
       `{
-        messageSents(
-          first: 1000, 
+        MessageSent(
+          limit: 1000,
           where: {
-            inbox: "${inbox}",
-            nonce_gte: ${nonce}, 
-            msgSender_: {id: "${msgSender.toLowerCase()}"}
-          }, 
-          orderBy: nonce, 
-          orderDirection: asc
+            inbox: { id: { _eq: "${inbox}" } },
+            nonce: { _gte: ${nonce} },
+            msgSender: { id: { _eq: "${msgSender.toLowerCase()}" } }
+          },
+          order_by: { nonce: asc }
         ) {
           nonce
         }
       }`
     )) as MessageSentsResponse;
 
-    return result[`messageSents`].map((a: { nonce: string | number }) => Number(a.nonce));
+    return result[`MessageSent`].map((a: { nonce: string | number }) => Number(a.nonce));
   } catch (e) {
     throw new DataError("Failed to fetch nonce(subgraph)", chainId, network, { cause: e });
   }
 };
 
-export { getVeaMsgTrnx, getCount, getNonceFrom };
+export { getCount, getNonceFrom };

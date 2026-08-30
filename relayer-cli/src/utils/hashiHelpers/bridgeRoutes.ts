@@ -1,3 +1,5 @@
+import { getYaho, getYaru, getHashi } from "@kleros/veashi-sdk";
+
 interface IHashiBridge {
   sourceChainId: number;
   targetChainId: number;
@@ -8,59 +10,40 @@ interface IHashiBridge {
   hashiAddress: string; // Hashi (Hashi) contract address
 }
 
-// Hashi executors
-const hashiBridges: { [chainPair: string]: IHashiBridge } = {
-  "421614-11155111": {
-    sourceChainId: 421614,
-    targetChainId: 11155111,
-    sourceRPC: process.env.RPC_ARBITRUM_SEPOLIA
-      ? process.env.RPC_ARBITRUM_SEPOLIA.split(",").map((s) => s.trim())
-      : process.env.RPC_ARBITRUM_SEPOLIA!,
-    targetRPC: process.env.RPC_SEPOLIA
-      ? process.env.RPC_SEPOLIA.split(",").map((s) => s.trim())
-      : process.env.RPC_SEPOLIA!,
-    yahoAddress: "0xDbdF80c87f414fac8342e04D870764197bD3bAC7", // Hashi (Yaho) contract address on Arbitrum Sepolia
-    yaruAddress: "0x231e48AAEaAC6398978a1dBA4Cd38fcA208Ec391", // Hashi (Yaru) contract address on Sepolia
-    hashiAddress: "0x78E4ae687De18B3B71Ccd0e8a3A76Fed49a02A02", // Hashi (Hashi) contract address on Sepolia
-  },
-  "421614-10200": {
-    sourceChainId: 421614,
-    targetChainId: 10200,
-    targetRPC: process.env.RPC_CHIADO
-      ? process.env.RPC_CHIADO.split(",").map((s) => s.trim())
-      : process.env.RPC_CHIADO!,
-    sourceRPC: process.env.RPC_ARBITRUM_SEPOLIA
-      ? process.env.RPC_ARBITRUM_SEPOLIA.split(",").map((s) => s.trim())
-      : process.env.RPC_ARBITRUM_SEPOLIA!,
-    yahoAddress: "0xDbdF80c87f414fac8342e04D870764197bD3bAC7", // Hashi (Yaho) contract address on Arbitrum Sepolia
-    yaruAddress: "0x639c26C9F45C634dD14C599cBAa27363D4665C53", // Hashi (Yaru) contract address on Chiado
-    hashiAddress: "0x78E4ae687De18B3B71Ccd0e8a3A76Fed49a02A02", // Hashi (Hashi) contract address on Chiado
-  },
-  "1514-42161": {
-    sourceChainId: 1514,
-    targetChainId: 42161,
-    sourceRPC: process.env.RPC_STORY ? process.env.RPC_STORY.split(",").map((s) => s.trim()) : process.env.RPC_STORY!,
-    targetRPC: process.env.RPC_ARBITRUM_ONE
-      ? process.env.RPC_ARBITRUM_ONE.split(",").map((s) => s.trim())
-      : process.env.RPC_ARBITRUM_ONE!,
-    yahoAddress: "0x0313f25f51f8846fdDFaBCb7F0672e4D3E1C0E76", // Hashi (Yaho) contract address on Story
-    yaruAddress: "0x43017e1d9f66f7E7Be4055CFf6a490F57aF9b8De", // Hashi (Yaru) contract address on Arbitrum One
-    hashiAddress: "0x84757602e211E2B2afFB6b1a171f9B05E9Ef0a66", // Hashi (Hashi) contract address on Arbitrum One
-  },
-  "42161-1514": {
-    sourceChainId: 42161,
-    targetChainId: 1514,
-    sourceRPC: process.env.RPC_ARBITRUM_ONE
-      ? process.env.RPC_ARBITRUM_ONE.split(",").map((s) => s.trim())
-      : process.env.RPC_ARBITRUM_ONE!,
-    targetRPC: process.env.RPC_STORY ? process.env.RPC_STORY.split(",").map((s) => s.trim()) : process.env.RPC_STORY!,
-    yahoAddress: "0xD0375320591ff87797CEb03CBeE80C82fD61BC77", // Hashi (Yaho) contract address on Arbitrum One
-    yaruAddress: "0x5f629f27BA26E17e7E309D886A8490d9e0124bd1", // Hashi (Yaru) contract address on Story
-    hashiAddress: "0xDdb3cBE1EBdF9095618913C90383AD33d5170C32", // Hashi (Hashi) contract address on Story
-  },
+// The SDK owns the Yaho/Yaru/Hashi addresses for every route; the RPC wiring is
+// the only piece that is local to the relayer, so it is the only thing mapped here.
+const rpcEnvByChainId: { [chainId: number]: string } = {
+  1: "RPC_ETH",
+  1514: "RPC_STORY",
+  8453: "RPC_BASE",
+  10200: "RPC_CHIADO",
+  42161: "RPC_ARBITRUM_ONE",
+  84532: "RPC_BASE_SEPOLIA",
+  421614: "RPC_ARBITRUM_SEPOLIA",
+  11155111: "RPC_SEPOLIA",
+};
+
+const getRpc = (chainId: number): string | string[] => {
+  const value = process.env[rpcEnvByChainId[chainId]];
+  return value ? value.split(",").map((s) => s.trim()) : value!;
 };
 
 export const getHashiBridgeConfig = (sourceChainId: number, targetChainId: number): IHashiBridge | undefined => {
-  const key = `${sourceChainId}-${targetChainId}`;
-  return hashiBridges[key];
+  const yahoAddress = getYaho(sourceChainId, targetChainId);
+  const yaruAddress = getYaru(sourceChainId, targetChainId);
+  const hashiAddress = getHashi(sourceChainId, targetChainId);
+
+  // Unknown route, or a route the SDK has no Hashi deployment for.
+  if (!yahoAddress || !yaruAddress || !hashiAddress) return undefined;
+  if (!rpcEnvByChainId[sourceChainId] || !rpcEnvByChainId[targetChainId]) return undefined;
+
+  return {
+    sourceChainId,
+    targetChainId,
+    sourceRPC: getRpc(sourceChainId),
+    targetRPC: getRpc(targetChainId),
+    yahoAddress,
+    yaruAddress,
+    hashiAddress,
+  };
 };

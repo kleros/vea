@@ -18,7 +18,7 @@ Hashi pairs are configured separately (see `HASHI_CHAINS` below).
 | Variable                               | Description                                                                     |
 | -------------------------------------- | ------------------------------------------------------------------------------- |
 | `PRIVATE_KEY`                          | Wallet private key used to sign relay transactions                              |
-| `RELAYER_SUBGRAPH`                     | The Graph endpoint for the VeaInbox subgraph                                    |
+| `ENVIO_URL`                            | Envio (vea-envio-inbox) GraphQL endpoint for the VeaInbox indexer               |
 | `STATE_DIR`                            | Absolute path to the directory where state files are stored (must end with `/`) |
 | `TRANSACTION_BATCHER_CONTRACT_SEPOLIA` | TransactionBatcher address on Sepolia                                           |
 | `TRANSACTION_BATCHER_CONTRACT_CHIADO`  | TransactionBatcher address on Chiado                                            |

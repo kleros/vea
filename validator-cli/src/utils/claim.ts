@@ -84,16 +84,16 @@ const getClaim = async ({
       throw new ClaimNotFoundError(epoch);
     }
 
-    claim.stateRoot = claimFromGraph.stateroot;
+    claim.stateRoot = claimFromGraph.stateRoot;
     claim.claimer = claimFromGraph.bridger;
     claim.timestampClaimed = claimFromGraph.timestamp;
-    if (claimFromGraph.verification?.startTimestamp) {
-      claim.timestampVerification = claimFromGraph.verification.startTimestamp;
-      const startVerificationTxHash = claimFromGraph.verification.startTxHash;
+    if (claimFromGraph.verification?.[0]?.startTimestamp) {
+      claim.timestampVerification = claimFromGraph.verification[0].startTimestamp;
+      const startVerificationTxHash = claimFromGraph.verification[0].startTxHash;
       const txReceipt = await veaOutboxProvider.getTransactionReceipt(startVerificationTxHash);
       claim.blocknumberVerification = txReceipt.blockNumber;
     }
-    if (claimFromGraph.challenge) claim.challenger = claimFromGraph.challenge.challenger;
+    if (claimFromGraph.challenge?.[0]) claim.challenger = claimFromGraph.challenge[0].challenger;
   }
   const isValid = verifyClaimHash({ claim, claimHash });
   if (isValid) {
@@ -106,16 +106,16 @@ const getClaim = async ({
       throw new ClaimNotFoundError(epoch);
     }
     claim.honest = ClaimHonestState.NONE;
-    claim.stateRoot = claimFromGraph.stateroot;
+    claim.stateRoot = claimFromGraph.stateRoot;
     claim.claimer = claimFromGraph.bridger;
     claim.timestampClaimed = claimFromGraph.timestamp;
-    if (claimFromGraph.verification?.startTimestamp) {
-      claim.timestampVerification = claimFromGraph.verification.startTimestamp;
-      const startVerificationTxHash = claimFromGraph.verification.startTxHash;
+    if (claimFromGraph.verification?.[0]?.startTimestamp) {
+      claim.timestampVerification = claimFromGraph.verification[0].startTimestamp;
+      const startVerificationTxHash = claimFromGraph.verification[0].startTxHash;
       const txReceipt = await veaOutboxProvider.getTransactionReceipt(startVerificationTxHash);
       claim.blocknumberVerification = txReceipt.blockNumber;
     }
-    if (claimFromGraph.challenge) claim.challenger = claimFromGraph.challenge.challenger;
+    if (claimFromGraph.challenge?.[0]) claim.challenger = claimFromGraph.challenge[0].challenger;
     const isValidFromGraph = verifyClaimHash({ claim, claimHash });
     if (isValidFromGraph) {
       return claim;
