@@ -68,7 +68,7 @@ export type Network = "mainnet" | "testnet";
 export type ChainItem = {
   id: string | number;
   text: string;
-  itemValue: ChainFilter;
+  itemValue?: ChainFilter;
 };
 
 export type DropdownSelectProps = AriaSelectProps<ChainItem> & {

@@ -1,15 +1,17 @@
 import { indexer } from "envio";
-import { decodeNodeData } from "./utils/decoder";
-import { leafHash, hashPair } from "./utils/merkle";
+import { decodeNodeData } from "../utils/decoder";
+import { leafHash, hashPair } from "../utils/merkle";
+import { getOrCreateRef, getCurrentSnapshot, openNewSnapshot } from "../utils/snapshot";
 
 /**
  * @dev Handles the MessageSent event emitted by VeaInboxArbToEth.
- *      Decodes the node data to extract message fields, stores a leaf-level
+ *      Decsodes the node data to extract mesage fields, stores a leaf-level
  *      MerkleNode, upserts the Inbox/Sender/Receiver lookup entities, and
  *      persists the MessageSent record.  After persisting, it walks up the
  *      Merkle tree and computes every internal node whose value changed as a
  *      result of this new leaf, identified by the XOR-difference bitmap
- *      between the old and new message counts.
+ *      between the old and new message counts.  It also updates the
+ *      validator/explorer-facing Snapshot/Message bookkeeping.
  */
 indexer.onEvent({ contract: "VeaInboxArbToEth", event: "MessageSent" }, async ({ event, context }) => {
   const { nonce, to, msgSender, data } = decodeNodeData(event.params._nodeData);
@@ -30,14 +32,29 @@ indexer.onEvent({ contract: "VeaInboxArbToEth", event: "MessageSent" }, async ({
 
   context.MessageSent.set({
     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
-    inbox,
+    inbox_id: inbox,
     nonce,
-    to,
-    msgSender,
+    to_id: to,
+    msgSender_id: msgSender,
     data,
-    node: nodeId,
+    node_id: nodeId,
     blockNumber: BigInt(event.block.number),
     blockTimestamp: BigInt(event.block.timestamp),
+  });
+
+  // --- validator/explore ---
+  const snapshot = await getCurrentSnapshot(inbox, context);
+  context.Snapshot.set({ ...snapshot, numberMessages: snapshot.numberMessages + 1n });
+
+  context.Message.set({
+    id: `${inbox}-${nonce}`,
+    inbox_id: inbox,
+    txHash: event.transaction.hash,
+    timestamp: BigInt(event.block.timestamp),
+    from: msgSender,
+    to,
+    snapshot_id: snapshot.id,
+    data,
   });
 
   // @dev hashBitMap isolates the bits that flipped between oldCount and newCount;
@@ -80,23 +97,46 @@ indexer.onEvent({ contract: "VeaInboxArbToEth", event: "MessageSent" }, async ({
  *      materialised during message ingestion by iterating over the set bits
  *      of `count` (each set bit marks a complete subtree at that height)
  *      and combining them right-to-left to produce the missing upper nodes.
+ *
+ *      It also finalizes the current in-progress Snapshot with the real state root, epoch,
+ *      caller, and txHash from the event, then opens a new in-progress
+ *      Snapshot for subsequent messages to accumulate into.
  */
 indexer.onEvent({ contract: "VeaInboxArbToEth", event: "SnapshotSaved" }, async ({ event, context }) => {
   const inbox = event.srcAddress;
   const epoch = event.params._epoch;
   const count = event.params._count;
+  const stateRoot = event.params._snapshot;
+  const caller = event.transaction.from;
+  const txHash = event.transaction.hash;
 
   const existingInbox = await context.Inbox.get(inbox);
   if (!existingInbox) context.Inbox.set({ id: inbox });
 
   context.SnapshotSaved.set({
     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
-    stateRoot: event.params._snapshot,
+    inbox_id: inbox,
+    caller,
+    txHash,
+    stateRoot,
     epoch,
     count,
     blockNumber: BigInt(event.block.number),
     blockTimestamp: BigInt(event.block.timestamp),
   });
+
+  // --- validator/explorer ---
+  const currentSnapshot = await getCurrentSnapshot(inbox, context);
+  context.Snapshot.set({
+    ...currentSnapshot,
+    saved: true,
+    stateRoot,
+    caller,
+    txHash,
+    epoch,
+    timestamp: BigInt(event.block.timestamp),
+  });
+  await openNewSnapshot(inbox, context);
 
   // @dev size is shifted right each iteration; each set bit represents a perfect
   //      subtree of height `height` whose rightmost leaf index is `oldCount`.
@@ -145,21 +185,58 @@ indexer.onEvent({ contract: "VeaInboxArbToEth", event: "SnapshotSaved" }, async 
 
 /**
  * @dev Handles the SnapshotSent event emitted by VeaInboxArbToEth.
- *      Upserts the Inbox entity and persists the SnapshotSent record,
- *      capturing the epoch and the cross-chain ticket ID assigned by the
- *      bridge when the snapshot was dispatched to the outbox chain.
+ *      Upserts the Inbox entity, then ports veascan's fallback-matching
+ *      logic: search backward through snapshots for one whose epoch matches
+ *      the sent epoch; if found, mark it as resolving. If none is found,
+ *      finalize the current in-progress snapshot as the fallback target and
+ *      open a new one. Either way, a Fallback record is created pointing at
+ *      the matched/finalized snapshot, capturing the epoch and the
+ *      cross-chain ticket ID assigned by the bridge when the snapshot was
+ *      dispatched to the outbox chain.
  */
 indexer.onEvent({ contract: "VeaInboxArbToEth", event: "SnapshotSent" }, async ({ event, context }) => {
   const inbox = event.srcAddress;
+  const epochSent = event.params._epochSent;
+  const ticketId = event.params._ticketId;
 
   const existingInbox = await context.Inbox.get(inbox);
   if (!existingInbox) context.Inbox.set({ id: inbox });
+  const executor = event.transaction.from!;
+  const txHash = event.transaction.hash;
+  const timestamp = BigInt(event.block.timestamp);
 
-  context.SnapshotSent.set({
+  const ref = await getOrCreateRef(inbox, context);
+  let matchedSnapshotId: string | undefined;
+
+  for (let i = ref.currentSnapshotIndex; i >= 0n; i--) {
+    const snapshotId = `${inbox}-${i}`;
+    const candidate = await context.Snapshot.get(snapshotId);
+    if (candidate && candidate.epoch === epochSent) {
+      context.Snapshot.set({ ...candidate, resolving: true });
+      matchedSnapshotId = snapshotId;
+      break;
+    }
+  }
+
+  if (!matchedSnapshotId) {
+    const currentSnapshot = await getCurrentSnapshot(inbox, context);
+    context.Snapshot.set({
+      ...currentSnapshot,
+      saved: false,
+      resolving: true,
+      epoch: epochSent,
+      timestamp,
+    });
+    matchedSnapshotId = currentSnapshot.id;
+    await openNewSnapshot(inbox, context);
+  }
+
+  context.Fallback.set({
     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
-    epochSent: event.params._epochSent,
-    ticketId: event.params._ticketId,
-    blockNumber: BigInt(event.block.number),
-    blockTimestamp: BigInt(event.block.timestamp),
+    snapshot_id: matchedSnapshotId,
+    executor,
+    timestamp,
+    txHash,
+    ticketId,
   });
 });

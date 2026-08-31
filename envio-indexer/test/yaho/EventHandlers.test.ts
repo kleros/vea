@@ -1,5 +1,5 @@
 import { createTestIndexer, TestHelpers } from "envio";
-import "../src/EventHandlers";
+import "../../src/handlers/yaho";
 
 const { mockAddresses } = TestHelpers.Addresses;
 
