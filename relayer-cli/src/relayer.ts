@@ -72,7 +72,7 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
  */
 async function processNetworkConfig(networkConfig: RelayerNetworkConfig, emitter: EventEmitter): Promise<number> {
   const { sourceChainId, targetChainId, network, senders, isHashi } = networkConfig;
-  const logNetwork = sourceChainId ? `${sourceChainId}->${targetChainId} Hashi` : network;
+  const logNetwork = isHashi ? `${sourceChainId}->${targetChainId} Hashi` : network;
   emitter.emit(BotEvents.STARTED, targetChainId, logNetwork);
   const maxBatchSize = 10; // 10 messages per batch
   try {
