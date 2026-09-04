@@ -2,34 +2,37 @@ import { claimLock, getLockFilePath, LockfileExistsError, releaseLock } from "./
 
 describe("Lock", () => {
   describe("getLockFilePath", () => {
-    it("should return the lock file path for a given network and chain id", () => {
+    it("should return the lock file path for a given network and chain ids", () => {
       const network = "mainnet";
-      const chainId = 1;
+      const sourceChainId = 1;
+      const targetChainId = 2;
 
-      const result = getLockFilePath(network, chainId);
-      expect(result).toBe("./state/mainnet_1.pid");
+      const result = getLockFilePath(network, sourceChainId, targetChainId);
+      expect(result).toBe("./state/mainnet_1_2.pid");
     });
 
     it("should ensure the network name is lowercase", () => {
       const network = "MAINNET";
-      const chainId = 1;
+      const sourceChainId = 1;
+      const targetChainId = 2;
 
-      const result = getLockFilePath(network, chainId);
-      expect(result).toBe("./state/mainnet_1.pid");
+      const result = getLockFilePath(network, sourceChainId, targetChainId);
+      expect(result).toBe("./state/mainnet_1_2.pid");
     });
   });
 
   describe("claimLock", () => {
     const network = "mainnet";
-    const chainId = 1;
-    const expectedLockFilePath = getLockFilePath(network, chainId);
+    const sourceChainId = 1;
+    const targetChainId = 2;
+    const expectedLockFilePath = getLockFilePath(network, sourceChainId, targetChainId);
 
     it("should throw an error if the lockfile already exists", () => {
       const deps = {
         fileExistsFn: jest.fn().mockReturnValue(true),
       };
 
-      expect(() => claimLock(network, chainId, deps)).toThrow(LockfileExistsError);
+      expect(() => claimLock(network, sourceChainId, targetChainId, deps)).toThrow(LockfileExistsError);
     });
 
     it("should write a file with the PID if none exists", () => {
@@ -38,7 +41,7 @@ describe("Lock", () => {
         writeFileFn: jest.fn(),
       };
 
-      claimLock(network, chainId, deps);
+      claimLock(network, sourceChainId, targetChainId, deps);
 
       expect(deps.fileExistsFn).toHaveBeenCalledTimes(1);
       expect(deps.writeFileFn).toHaveBeenCalledTimes(1);
@@ -51,8 +54,9 @@ describe("Lock", () => {
 
   describe("releaseLock", () => {
     const network = "mainnet";
-    const chainId = 1;
-    const expectedLockFilePath = getLockFilePath(network, chainId);
+    const sourceChainId = 1;
+    const targetChainId = 2;
+    const expectedLockFilePath = getLockFilePath(network, sourceChainId, targetChainId);
 
     it("should remove the lockfile if it exists", () => {
       const deps = {
@@ -60,7 +64,7 @@ describe("Lock", () => {
         unlinkFileFn: jest.fn(),
       };
 
-      releaseLock(network, chainId, deps);
+      releaseLock(network, sourceChainId, targetChainId, deps);
 
       expect(deps.fileExistsFn).toHaveBeenCalledTimes(1);
       expect(deps.unlinkFileFn).toHaveBeenCalledTimes(1);
@@ -75,7 +79,7 @@ describe("Lock", () => {
         unlinkFileFn: jest.fn(),
       };
 
-      releaseLock(network, chainId, deps);
+      releaseLock(network, sourceChainId, targetChainId, deps);
 
       expect(deps.fileExistsFn).toHaveBeenCalledTimes(1);
       expect(deps.unlinkFileFn).not.toHaveBeenCalled();

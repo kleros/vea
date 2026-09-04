@@ -16,6 +16,7 @@ import { BotEvents } from "./utils/botEvents";
 import { getEpochPeriod, Network } from "./consts/bridgeRoutes";
 import { runHashiExecutor } from "./utils/hashi";
 import { sendHeartbeat } from "./utils/heartbeat";
+import { releaseLock, LockfileExistsError } from "./utils/lock";
 
 interface RelayerConfig {
   networkConfigs: RelayerNetworkConfig[];
@@ -44,7 +45,14 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
       if (executeTimes[i] > Date.now()) {
         continue;
       }
-      executeTimes[i] = await processNetworkConfig(networkConfigs[i], emitter);
+      try {
+        executeTimes[i] = await processNetworkConfig(networkConfigs[i], emitter);
+      } catch (e) {
+        // One failing route must not block or kill the others; retry it next cycle
+        const { sourceChainId, targetChainId, network } = networkConfigs[i];
+        emitter.emit(BotEvents.ROUTE_FAILED, sourceChainId, targetChainId, network, e);
+        executeTimes[i] = Date.now() + HASHI_CYCLE_TIME_MS;
+      }
       executeTime = Math.min(executeTime, executeTimes[i]);
     }
     const delayMs = executeTime - Date.now();
@@ -63,39 +71,44 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
  * @returns The new delay
  */
 async function processNetworkConfig(networkConfig: RelayerNetworkConfig, emitter: EventEmitter): Promise<number> {
-  const { chainId, network, senders, sourceChainId } = networkConfig;
-  const logNetwork = sourceChainId ? `${sourceChainId}->${chainId} Hashi` : network;
-  emitter.emit(BotEvents.STARTED, chainId, logNetwork);
+  const { sourceChainId, targetChainId, network, senders, isHashi } = networkConfig;
+  const logNetwork = sourceChainId ? `${sourceChainId}->${targetChainId} Hashi` : network;
+  emitter.emit(BotEvents.STARTED, targetChainId, logNetwork);
   const maxBatchSize = 10; // 10 messages per batch
   try {
-    if (sourceChainId) {
+    if (isHashi) {
       await runHashiExecutor({
         sourceChainId,
-        targetChainId: chainId,
+        targetChainId,
         network,
         emitter,
       });
       return Date.now() + HASHI_CYCLE_TIME_MS;
     }
 
-    let { nonce } = await initializeNonces(chainId, network, emitter);
+    let { nonce } = await initializeNonces(sourceChainId, targetChainId, network, emitter);
     const toRelayAll = senders[0] === ethers.ZeroAddress;
     nonce = toRelayAll
-      ? await relayBatch({ chainId, network, nonce, maxBatchSize, emitter })
-      : await relayAllFrom(chainId, network, nonce, senders, emitter);
+      ? await relayBatch({ targetChainId, network, nonce, maxBatchSize, emitter })
+      : await relayAllFrom(targetChainId, network, nonce, senders, emitter);
 
-    await updateStateFile(chainId, Math.floor(Date.now() / 1000), nonce, network, emitter);
+    await updateStateFile(sourceChainId, targetChainId, Math.floor(Date.now() / 1000), nonce, network, emitter);
 
     if (network === Network.DEVNET) {
       return Date.now() + 1000 * 60 * 2; // 2 min for devnet
     } else {
       const currentTS = Math.floor(Date.now() / 1000);
-      const epochPeriod = getEpochPeriod(chainId);
+      const epochPeriod = getEpochPeriod(targetChainId);
       const timeLeft = (epochPeriod - (currentTS % epochPeriod)) * 1000 + 100 * 1000;
       return Date.now() + timeLeft;
     }
   } catch (e) {
-    emitter.emit(BotEvents.ERROR_CONTEXT, chainId, network);
+    emitter.emit(BotEvents.ERROR_CONTEXT, sourceChainId + "->" + targetChainId, network);
+    // Release this run's lock so the next cycle can retry; a LockfileExistsError means another process holds it
+    if (!(e instanceof LockfileExistsError)) {
+      releaseLock(isHashi ? "hashi" : network, sourceChainId, targetChainId);
+      emitter.emit(BotEvents.LOCK_RELEASED);
+    }
     throw e;
   }
 }
