@@ -6,9 +6,20 @@ A collection of bots for the Vea challenger and bridger ecosystem.
 
 # docker
 
-`docker compose build validator`
+Create the env file first — both compose files declare it as required, so they
+fail immediately without it:
+
+`cp .env.dist .env`
+
+Run the image published to GHCR (from the repo root):
 
 `docker compose up validator`
+
+Or build it from this working tree instead:
+
+`docker compose -f docker-compose.build.yml build validator`
+
+`docker compose -f docker-compose.build.yml up validator`
 
 By default, the validator performs two core functions:
 
@@ -17,17 +28,25 @@ By default, the validator performs two core functions:
 
 # flags
 
-Update Dockerfile for passing different flags
+Flags are passed as the container's command. When running the published image,
+set them on the `validator` service in the root `docker-compose.yml`:
+
+`command: yarn start --saveSnapshot --path=challenger`
+
+When building from source you can change `CMD` in `validator-cli/Dockerfile`
+instead. Outside Docker, append them to `yarn start`.
 
 `--saveSnapshot`
 
 Enables snapshot saving on the inbox when the bot observes a valid state.
 
-`--path=challenger | bridger | both`
+`--path=claimer | challenger | both`
 
+- claimer: Only submit snapshots — this is the "Bridger" role described above
 - challenger: Only challenge invalid claims
-- bridger: Only submit snapshots
-- both: Default mode, acts as both challenger and bridger
+- both: Default mode, acts as both claimer and challenger
+
+The accepted value is `claimer`, not `bridger`; `--path=bridger` throws `InvalidBotPathError`.
 
 # testing
 

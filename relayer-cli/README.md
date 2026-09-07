@@ -63,16 +63,31 @@ yarn build
 Run relayer:
 
 ```bash
-cp .env.example .env   # fill in your values
+cp .env.dist .env      # fill in your values
 yarn start-relayer
 ```
 
 ## Docker
 
+Create the env file first (`cp .env.dist .env`) — both compose files declare it
+as required, so they fail immediately without it.
+
+Run the image published to GHCR (from the repo root):
+
 ```bash
-docker compose build relayer
 docker compose up relayer
 ```
+
+Or build it from this working tree instead:
+
+```bash
+docker compose -f docker-compose.build.yml build relayer
+docker compose -f docker-compose.build.yml up relayer
+```
+
+Both compose files set `STATE_DIR` to the in-container state directory and
+persist it in the `relayer-state` volume; the `STATE_DIR` value in `.env` is
+used only when running the relayer outside Docker.
 
 ## Tests
 
