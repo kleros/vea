@@ -6,13 +6,18 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# Declare default permissions as read only.
 permissions:
   contents: read
-  packages: write
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      # Needed for actions/checkout to fetch code.
+      contents: read
+      # Needed to push the built images to GitHub Container Registry.
+      packages: write
     strategy:
       fail-fast: false
       matrix:
