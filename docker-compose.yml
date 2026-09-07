@@ -1,9 +1,10 @@
+# Operator compose: runs the images published to GitHub Container Registry by
+# .github/workflows/publish-docker.yml.
+# To build from source instead, use docker-compose.build.yml.
 services:
   validator:
-    build:
-      context: .
-      dockerfile: ./validator-cli/Dockerfile
-    command: yarn start --saveSnapshot 
+    image: ghcr.io/kleros/vea/validator-cli:latest
+    command: yarn start --saveSnapshot
     env_file:
       - path: ./validator-cli/.env
         required: true
@@ -12,14 +13,23 @@ services:
       - vea-network
 
   relayer:
-    build:
-      context: .
-      dockerfile: ./relayer-cli/Dockerfile
+    image: ghcr.io/kleros/vea/relayer-cli:latest
     env_file:
       - path: ./relayer-cli/.env
         required: true
+    # Overrides STATE_DIR from .env, which defaults to a host path that does not
+    # exist in the image. Must stay in sync with the volume below: the relayer
+    # also writes its lock files to ./state relative to WORKDIR.
+    environment:
+      STATE_DIR: /home/node/monorepo/relayer-cli/state/
+    volumes:
+      - relayer-state:/home/node/monorepo/relayer-cli/state
     restart: unless-stopped
     networks:
       - vea-network
+
 networks:
   vea-network:
+
+volumes:
+  relayer-state:
