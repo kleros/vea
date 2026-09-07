@@ -69,8 +69,12 @@ yarn start-relayer
 
 ## Docker
 
-Create the env file first (`cp .env.dist .env`) — both compose files declare it
-as required, so they fail immediately without it.
+Create the env file first — both compose files declare it as required, so they
+fail immediately without it. From the repo root:
+
+```bash
+cp relayer-cli/.env.dist relayer-cli/.env
+```
 
 Run the image published to GHCR (from the repo root):
 

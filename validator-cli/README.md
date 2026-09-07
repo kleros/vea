@@ -7,9 +7,9 @@ A collection of bots for the Vea challenger and bridger ecosystem.
 # docker
 
 Create the env file first — both compose files declare it as required, so they
-fail immediately without it:
+fail immediately without it. From the repo root:
 
-`cp .env.dist .env`
+`cp validator-cli/.env.dist validator-cli/.env`
 
 Run the image published to GHCR (from the repo root):
 
@@ -28,13 +28,16 @@ By default, the validator performs two core functions:
 
 # flags
 
-Flags are passed as the container's command. When running the published image,
-set them on the `validator` service in the root `docker-compose.yml`:
+Flags are passed as the container's command. Set them on the `validator` service
+in whichever compose file you use — `docker-compose.yml` for the published image,
+`docker-compose.build.yml` when building from source:
 
 `command: yarn start --saveSnapshot --path=challenger`
 
-When building from source you can change `CMD` in `validator-cli/Dockerfile`
-instead. Outside Docker, append them to `yarn start`.
+Both compose files set `command:`, which replaces the image's `CMD`, so editing
+`CMD` in `validator-cli/Dockerfile` has no effect when starting via compose; it
+applies only to a direct `docker run`. Outside Docker, append the flags to
+`yarn start`.
 
 `--saveSnapshot`
 

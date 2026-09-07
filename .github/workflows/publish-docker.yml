@@ -12,6 +12,10 @@ permissions:
 
 jobs:
   build-and-push:
+    # workflow_dispatch has no native ref filter, so a manual run from any branch
+    # would build that branch and move :latest. The push triggers above are
+    # already ref-filtered; this restricts manual runs to the same deploy branch.
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     permissions:
       # Needed for actions/checkout to fetch code.
@@ -39,6 +43,11 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here uses git after checkout, and GHCR auth comes from
+          # docker/login-action below. Keeping the token out of .git/config also
+          # keeps it out of the Docker build context, which is the whole repo.
+          persist-credentials: false
 
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
