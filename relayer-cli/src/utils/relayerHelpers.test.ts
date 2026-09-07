@@ -4,7 +4,8 @@ import { initialize, updateStateFile, cleanupAllLockFiles, setupExitHandlers, Sh
 
 describe("relayerHelpers", () => {
   const emitter = new EventEmitter();
-  const chainId = 1;
+  const sourceChainId = 1;
+  const targetChainId = 2;
   const network = "testing";
   const claimLock = jest.fn();
   const mockUpdateStateFile = jest.fn();
@@ -27,29 +28,38 @@ describe("relayerHelpers", () => {
       fileSystem.existsSync.mockReturnValue(false);
       fileSystem.readFileSync.mockReturnValue('{"nonce":0}');
       const { nonce } = await initialize(
-        chainId,
+        sourceChainId,
+        targetChainId,
         network,
         emitter as any,
         claimLock,
         mockUpdateStateFile,
         fileSystem as any
       );
-      expect(claimLock).toHaveBeenCalledWith(network, chainId);
-      expect(mockUpdateStateFile).toHaveBeenCalledWith(chainId, expect.any(Number), 0, network, emitter);
+      expect(claimLock).toHaveBeenCalledWith(network, sourceChainId, targetChainId);
+      expect(mockUpdateStateFile).toHaveBeenCalledWith(
+        sourceChainId,
+        targetChainId,
+        expect.any(Number),
+        0,
+        network,
+        emitter
+      );
       expect(nonce).toBe(0);
     });
     it("should claimLock and return nonce from existing state file", async () => {
       fileSystem.existsSync.mockReturnValue(true);
       fileSystem.readFileSync.mockReturnValue('{"nonce":10}');
       const { nonce } = await initialize(
-        chainId,
+        sourceChainId,
+        targetChainId,
         network,
         emitter as any,
         claimLock,
         mockUpdateStateFile,
         fileSystem as any
       );
-      expect(claimLock).toHaveBeenCalledWith(network, chainId);
+      expect(claimLock).toHaveBeenCalledWith(network, sourceChainId, targetChainId);
       expect(mockUpdateStateFile).not.toHaveBeenCalled();
       expect(nonce).toBe(10);
     });
@@ -58,20 +68,29 @@ describe("relayerHelpers", () => {
   describe("updateStateFile", () => {
     it("should write a state file with the provided nonce", async () => {
       const createdTimestamp = 123456;
-      const fileDirectory = process.env.STATE_DIR + network + "_" + chainId + ".json";
-      await updateStateFile(chainId, createdTimestamp, 10, network, emitter as any, fileSystem as any, releaseLock);
+      const fileDirectory = process.env.STATE_DIR + network + "_" + sourceChainId + "_" + targetChainId + ".json";
+      await updateStateFile(
+        sourceChainId,
+        targetChainId,
+        createdTimestamp,
+        10,
+        network,
+        emitter as any,
+        fileSystem as any,
+        releaseLock
+      );
       expect(fileSystem.writeFileSync).toHaveBeenCalledWith(
         fileDirectory,
         JSON.stringify({ ts: createdTimestamp, nonce: 10 }),
         { encoding: "utf8" }
       );
-      expect(releaseLock).toHaveBeenCalledWith(network, chainId);
+      expect(releaseLock).toHaveBeenCalledWith(network, sourceChainId, targetChainId);
     });
   });
 
   describe("cleanupAllLockFiles", () => {
     const stateDir = process.env.STATE_DIR || "";
-    const pidFileName = `${network}_${chainId}.pid`;
+    const pidFileName = `${network}_${sourceChainId}_${targetChainId}.pid`;
     const pidFilePath = path.join(stateDir, pidFileName);
 
     it("should return early if state directory does not exist", async () => {

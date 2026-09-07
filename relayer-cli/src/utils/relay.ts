@@ -44,7 +44,7 @@ const relay = async (chainId: number, nonce: number, network: Network, emitter: 
 };
 
 interface RelayBatchDeps {
-  chainId: number;
+  targetChainId: number;
   network: Network;
   nonce: number;
   maxBatchSize: number;
@@ -59,7 +59,7 @@ interface RelayBatchDeps {
 
 /**
  * Relay a batch of messages from the veaOutbox
- * @param chainId The chain id of the veaOutbox chain
+ * @param targetChainId The chain id of the veaOutbox chain
  * @param network The network to relay messages on
  * @param nonce The nonce of the message
  * @param maxBatchSize The maximum number of messages to relay in a single batch
@@ -67,7 +67,7 @@ interface RelayBatchDeps {
  * @returns The nonce of the last message relayed
  */
 const relayBatch = async ({
-  chainId,
+  targetChainId: chainId,
   network,
   nonce,
   maxBatchSize,

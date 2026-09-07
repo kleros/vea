@@ -5080,6 +5080,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@kleros/vea-relayer-cli@workspace:relayer-cli"
   dependencies:
+    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.0.4"
     "@typechain/ethers-v6": "npm:^0.5.1"
     "@types/jest": "npm:^29.5.14"
     dotenv: "npm:^16.4.5"

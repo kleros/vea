@@ -27,5 +27,9 @@ export enum BotEvents {
   HASHI_BATCH_TXN = "hashi_batch_txn",
   HASHI_NOT_CONFIGURED = "hashi_not_configured",
   HASHI_MESSAGE_FAILING = "hashi_message_failing",
+  HASHI_BATCH_FAILED = "hashi_batch_failed",
   INDEXING = "indexing",
+  ENVIO_INDEXING = "envio_indexing",
+  ENVIO_FAILED = "envio_failed",
+  ROUTE_FAILED = "route_failed",
 }

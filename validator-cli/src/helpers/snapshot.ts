@@ -92,7 +92,7 @@ export const isSnapshotNeeded = async ({
     lastSavedSnapshot = lastSavedStateRoot;
     lastSavedCount = messageIndex;
     const lastClaimData = await fetchLastClaimedEpoch(veaOutbox.target, chainId);
-    lastClaimedStateroot = lastClaimData ? lastClaimData.stateroot : null;
+    lastClaimedStateroot = lastClaimData ? lastClaimData.stateRoot : null;
   }
   const epochNow = Math.floor(Date.now() / (1000 * epochPeriod));
   const currentSnapshot = await veaInbox.snapshots(epochNow);

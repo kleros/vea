@@ -7,32 +7,18 @@ interface ClaimData {
   epoch?: number;
   id: string;
   bridger: string;
-  stateroot: string;
+  stateRoot: string;
   timestamp: number;
   challenged: boolean;
   txHash: string;
   verification?: {
     startTimestamp: number;
     startTxHash: string;
-  };
+  }[];
   challenge?: {
     challenger: string;
-  };
+  }[];
 }
-
-const getOutboxSubgraphUrl = (chainId: number): string => {
-  if (chainId === 11155111) {
-    return process.env.VEAOUTBOX_SUBGRAPH_SEPOLIA || "";
-  } else if (chainId === 10200) {
-    return process.env.VEAOUTBOX_SUBGRAPH_CHIADO || "";
-  }
-};
-const getInboxSubgraphUrl = (chainId: number): string => {
-  // using destination chainId's for inbox
-  if (chainId === 11155111 || chainId === 10200) {
-    return process.env.VEAINBOX_SUBGRAPH_ARBSEPOLIA || "";
-  }
-};
 
 /**
  * Fetches the claim data for a given epoch (used for claimer - happy path)
@@ -41,15 +27,15 @@ const getInboxSubgraphUrl = (chainId: number): string => {
  * */
 const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number): Promise<ClaimData | undefined> => {
   try {
-    const subgraph = getOutboxSubgraphUrl(chainId);
+    const subgraph = process.env.ENVIO_URL!;
 
     const result = await request(
       `${subgraph}`,
       `{
-                        claims(where: {epoch: ${epoch}, outbox: "${outbox}"}) {
+                        Claim(where: {epoch: {_eq: ${epoch}}, outbox: {id: {_eq: "${outbox}"}}}) {
                         id
                         bridger
-                        stateroot
+                        stateRoot
                         timestamp
                         txHash
                         verification {
@@ -62,7 +48,7 @@ const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number):
                       }
           }`
     );
-    return result[`claims`][0];
+    return result[`Claim`][0];
   } catch (e) {
     console.log(e);
     throw new ClaimNotFoundError(epoch);
@@ -81,13 +67,13 @@ const getClaimsForEpochs = async (
   chainId: number
 ): Promise<Map<number, ClaimStruct | null>> => {
   try {
-    const subgraph = getOutboxSubgraphUrl(chainId);
+    const subgraph = process.env.ENVIO_URL!;
     const epochsString = epochs.join(", ");
     const query = `{
-      claims(where: {epoch_in: [${epochsString}], outbox: "${outbox}"}) {
+      Claim(where: {epoch: {_in: [${epochsString}]}, outbox: {id: {_eq: "${outbox}"}}}) {
         id
         bridger
-        stateroot
+        stateRoot
         timestamp
         txHash
         verification {
@@ -101,22 +87,22 @@ const getClaimsForEpochs = async (
       }
     }`;
 
-    const result: { claims: ClaimData[] } = await request(subgraph, query);
+    const result: { Claim: ClaimData[] } = await request(subgraph, query);
     // Map returned claims to corresponding epochs (some epochs may not have claims)
     const claimsByEpoch = new Map<number, ClaimStruct | null>();
-    for (const claim of result.claims) {
-      if (claim.stateroot === ethers.ZeroHash) {
+    for (const claim of result.Claim) {
+      if (claim.stateRoot === ethers.ZeroHash) {
         claimsByEpoch.set(claim.epoch, null);
         continue;
       }
       claimsByEpoch.set(claim.epoch, {
-        stateRoot: claim.stateroot,
+        stateRoot: claim.stateRoot,
         claimer: claim.bridger,
         timestampClaimed: claim.timestamp,
-        timestampVerification: claim.verification?.startTimestamp || 0,
+        timestampVerification: claim.verification?.[0]?.startTimestamp || 0,
         blocknumberVerification: 0, // This would require additional data to fill accurately
         honest: 0, // Placeholder, as this data isn't available in the current query
-        challenger: claim.challenge?.challenger || ethers.ZeroAddress,
+        challenger: claim.challenge?.[0]?.challenger || ethers.ZeroAddress,
       });
     }
     return claimsByEpoch;
@@ -131,23 +117,23 @@ const getClaimsForEpochs = async (
  * @returns ClaimData
  */
 const getLastClaimedEpoch = async (outbox: string, chainId: number): Promise<ClaimData> => {
-  const subgraph = getOutboxSubgraphUrl(chainId);
+  const subgraph = process.env.ENVIO_URL!;
   try {
     const result = await request(
       `${subgraph}`,
       `{
-          claims(first:1, orderBy:timestamp, orderDirection:desc, where: {outbox: "${outbox}"}) {
+          Claim(limit:1, order_by:{timestamp:desc}, where: {outbox: {id: {_eq: "${outbox}"}}}) {
                         id
                         bridger
-                        stateroot
+                        stateRoot
                         timestamp
                         challenged
                         txHash
                         }
-          
+
         }`
     );
-    return result[`claims`][0];
+    return result[`Claim`][0];
   } catch (e) {
     console.log(e);
     throw new ClaimNotFoundError(-1);
@@ -166,17 +152,17 @@ type VerificationData = {
  */
 const getVerificationForClaim = async (claimId: string, chainId: number): Promise<VerificationData | undefined> => {
   try {
-    const subgraph = getOutboxSubgraphUrl(chainId);
+    const subgraph = process.env.ENVIO_URL!;
     const result = await request(
       `${subgraph}`,
       `{
-          verifications(where: {claim: "${claimId}"}) {
+          Verification(where: {claim: {id: {_eq: "${claimId}"}}}) {
             startTimestamp
             startTxHash
           }
         }`
     );
-    return result[`verifications`][0];
+    return result[`Verification`][0];
   } catch (e) {
     console.log(e);
     return undefined;
@@ -190,16 +176,16 @@ const getVerificationForClaim = async (claimId: string, chainId: number): Promis
  * */
 const getChallengerForClaim = async (claimId: string, chainId: number): Promise<{ challenger: string } | undefined> => {
   try {
-    const subgraph = getOutboxSubgraphUrl(chainId);
+    const subgraph = process.env.ENVIO_URL!;
     const result = await request(
       `${subgraph}`,
       `{
-          challenges(where: {claim: "${claimId}"}) {
+          Challenge(where: {claim: {id: {_eq: "${claimId}"}}}) {
             challenger
           }
         }`
     );
-    return result[`challenges`][0];
+    return result[`Challenge`][0];
   } catch (e) {
     console.log(e);
     return undefined;
@@ -207,7 +193,7 @@ const getChallengerForClaim = async (claimId: string, chainId: number): Promise<
 };
 
 type SenSnapshotResponse = {
-  snapshots: {
+  Snapshot: {
     fallback: { txHash: string }[];
   }[];
 };
@@ -223,19 +209,19 @@ const getSnapshotSentForEpoch = async (
   chainId: number
 ): Promise<{ txHash: string } | undefined> => {
   try {
-    const subgraph = getInboxSubgraphUrl(chainId);
+    const subgraph = process.env.ENVIO_URL!;
 
     const result: SenSnapshotResponse = await request(
       `${subgraph}`,
       `{
-          snapshots(where: {epoch: ${epoch}, inbox_: { id: "${veaInbox}" }}) {
-            fallback(orderBy: timestamp, orderDirection: desc){
+          Snapshot(where: {epoch: {_eq: ${epoch}}, inbox: { id: { _eq: "${veaInbox}" } }}) {
+            fallback(order_by: {timestamp: desc}){
               txHash
             }
           }
         }`
     );
-    return result.snapshots[0].fallback[0];
+    return result.Snapshot[0].fallback[0];
   } catch (e) {
     console.log(e);
     return undefined;
@@ -243,7 +229,7 @@ const getSnapshotSentForEpoch = async (
 };
 
 type LastMessageSavedResponse = {
-  messages: {
+  Message: {
     id: string;
     snapshot: {
       stateRoot: string;
@@ -260,12 +246,12 @@ const getLastMessageSaved = async (
   veaInbox: string,
   chainId: number
 ): Promise<{ id: string; stateRoot: string } | null> => {
-  const subgraph = getInboxSubgraphUrl(chainId);
+  const subgraph = process.env.ENVIO_URL!;
   try {
     const result: LastMessageSavedResponse = await request(
       `${subgraph}`,
       `{
-      messages(first:1, orderBy:timestamp,orderDirection:desc, where:{inbox:"${veaInbox.toLowerCase()}"}) {
+      Message(limit:1, order_by:{timestamp:desc}, where:{inbox:{id:{_eq:"${veaInbox}"}}}) {
         id
         snapshot{
           stateRoot
@@ -273,8 +259,8 @@ const getLastMessageSaved = async (
       }
     }`
     );
-    if (result.messages.length < 1) return null;
-    return { id: result.messages[0].id, stateRoot: result.messages[0].snapshot.stateRoot };
+    if (result.Message.length < 1) return null;
+    return { id: result.Message[0].id, stateRoot: result.Message[0].snapshot.stateRoot };
   } catch (e) {
     console.log(e);
     throw new NoMessageSavedError(veaInbox);

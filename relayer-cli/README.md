@@ -18,7 +18,7 @@ Hashi pairs are configured separately (see `HASHI_CHAINS` below).
 | Variable                               | Description                                                                     |
 | -------------------------------------- | ------------------------------------------------------------------------------- |
 | `PRIVATE_KEY`                          | Wallet private key used to sign relay transactions                              |
-| `RELAYER_SUBGRAPH`                     | The Graph endpoint for the VeaInbox subgraph                                    |
+| `ENVIO_URL`                            | GraphQL endpoint of the merged Envio indexer (envio-indexer)                    |
 | `STATE_DIR`                            | Absolute path to the directory where state files are stored (must end with `/`) |
 | `TRANSACTION_BATCHER_CONTRACT_SEPOLIA` | TransactionBatcher address on Sepolia                                           |
 | `TRANSACTION_BATCHER_CONTRACT_CHIADO`  | TransactionBatcher address on Chiado                                            |
@@ -28,10 +28,10 @@ Hashi pairs are configured separately (see `HASHI_CHAINS` below).
 
 ### Chain selection
 
-| Variable           | Description                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `VEAOUTBOX_CHAINS` | Comma-separated target chain IDs to relay messages on (e.g. `11155111,10200`)                                 |
-| `HASHI_CHAINS`     | Comma-separated `sourceChainId-targetChainId` pairs for Hashi execution (e.g. `421614-11155111,421614-10200`) |
+| Variable       | Description                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| `VEA_CHAINS`   | Comma-separated `sourceChainId-targetChainId` pairs to relay messages on (e.g. `421614-11155111,421614-10200`) |
+| `HASHI_CHAINS` | Comma-separated `sourceChainId-targetChainId` pairs for Hashi execution (e.g. `421614-11155111,421614-10200`)  |
 
 ### Sender filtering
 
