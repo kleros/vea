@@ -1,5 +1,6 @@
 import type { Message } from "@/lib/types";
 import { Copiable } from "@kleros/ui-components-library";
+import { getExplorerTxUrl } from "@/lib/explorer";
 import SectionCard from "./SectionCard";
 
 export default function TxHeaderCard({
@@ -11,6 +12,8 @@ export default function TxHeaderCard({
   source: "cache" | "chain" | null;
   txHash: string;
 }>) {
+  const explorerUrl = getExplorerTxUrl(message.sourceChain, txHash);
+
   return (
     <SectionCard delay="0.05s">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -18,9 +21,20 @@ export default function TxHeaderCard({
           <p className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) mb-1.5">
             Source Transaction
           </p>
-          <Copiable copiableContent={txHash} info="Copy transaction hash">
-            <span className="font-mono text-sm break-all">{txHash}</span>
-          </Copiable>
+          {explorerUrl ? (
+            <a
+              href={explorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-sm break-all text-purple-400 hover:text-purple-300"
+            >
+              {txHash}
+            </a>
+          ) : (
+            <Copiable copiableContent={txHash} info="Copy transaction hash">
+              <span className="font-mono text-sm break-all">{txHash}</span>
+            </Copiable>
+          )}
         </div>
         {source && (
           <span

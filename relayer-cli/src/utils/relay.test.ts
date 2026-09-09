@@ -16,7 +16,7 @@ describe("relay", () => {
     let mockEmitter = new MockEmitter();
     const veaOutboxAddress = "0x123";
     const network = "testing" as any;
-    const chainId = 1;
+    const targetChainId = 1;
     const nonce = 0;
     const maxBatchSize = 10;
 
@@ -80,7 +80,7 @@ describe("relay", () => {
     it("should not relay any messages if there are no messages to relay", async () => {
       fetchCount.mockResolvedValue(0);
       const updatedNonce = await relayBatch({
-        chainId,
+        targetChainId,
         network,
         nonce,
         maxBatchSize,
@@ -99,7 +99,7 @@ describe("relay", () => {
     it("should relay a single message", async () => {
       fetchCount.mockResolvedValue(1);
       const updatedNonce = await relayBatch({
-        chainId,
+        targetChainId,
         network,
         nonce,
         maxBatchSize,
@@ -120,7 +120,7 @@ describe("relay", () => {
     it("should relay multiple messages in a single batch", async () => {
       fetchCount.mockResolvedValue(7);
       const updatedNonce = await relayBatch({
-        chainId,
+        targetChainId,
         network,
         nonce,
         maxBatchSize,
@@ -143,7 +143,7 @@ describe("relay", () => {
     it("should relay multiple messages in multiple batches", async () => {
       fetchCount.mockResolvedValue(15);
       const updatedNonce = await relayBatch({
-        chainId,
+        targetChainId,
         network,
         nonce,
         maxBatchSize,
@@ -178,7 +178,7 @@ describe("relay", () => {
 
       veaOutboxMock.isMsgRelayed = jest.fn().mockImplementation((n) => Promise.resolve(n === 1));
       const updatedNonce = await relayBatch({
-        chainId,
+        targetChainId,
         network,
         nonce,
         maxBatchSize,

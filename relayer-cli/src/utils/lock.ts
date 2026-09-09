@@ -4,14 +4,15 @@ import fs from "fs";
  * Returns the lock file path for a given network and chain id
  *
  * @param network - The network name
- * @param chainId - The numerical identifier of the chain
+ * @param sourceChainId - The numerical identifier of the source chain
+ * @param targetChainId - The numerical identifier of the destination chain
  * @returns The lock file path
  *
  * @example
- * getLockFilePath('goerli', 1); // './state/goerli_1.pid'
+ * getLockFilePath('goerli', 1, 2); // './state/goerli_1_2.pid'
  */
-export function getLockFilePath(network: string, chainId: number) {
-  return `./state/${network.toLowerCase()}_${chainId}.pid`;
+export function getLockFilePath(network: string, sourceChainId: number, targetChainId: number) {
+  return `./state/${network.toLowerCase()}_${sourceChainId}_${targetChainId}.pid`;
 }
 
 export class LockfileExistsError extends Error {
@@ -33,7 +34,8 @@ type ClaimLockDependencies = {
  * If the lock file exists, thrown an error. If it does not exists, creates it with the current process id.
  *
  * @param network - The network name
- * @param chain - The chain id
+ * @param sourceChainId - The numerical identifier of the source chain
+ * @param targetChainId - The numerical identifier of the destination chain
  * @param dependencies - FS methods to be used
  *
  * @example
@@ -41,13 +43,14 @@ type ClaimLockDependencies = {
  */
 export function claimLock(
   network: string,
-  chain: number,
+  sourceChainId: number,
+  targetChainId: number,
   dependencies: ClaimLockDependencies = {
     fileExistsFn: fs.existsSync,
     writeFileFn: fs.writeFileSync,
   }
 ) {
-  const path = getLockFilePath(network, chain);
+  const path = getLockFilePath(network, sourceChainId, targetChainId);
   const { fileExistsFn, writeFileFn } = dependencies;
 
   if (fileExistsFn(path)) throw new LockfileExistsError(path);
@@ -63,7 +66,8 @@ type ReleaseLockDependencies = {
  * Ensures the lock file is removed
  *
  * @param network - The network name
- * @param chainId - The numerical identifier of the chain
+ * @param sourceChainId - The numerical identifier of the source chain
+ * @param targetChainId - The numerical identifier of the destination chain
  * @param dependencies - FS methods to be used
  *
  * @example
@@ -71,14 +75,15 @@ type ReleaseLockDependencies = {
  */
 export function releaseLock(
   network: string,
-  chain: number,
+  sourceChainId: number,
+  targetChainId: number,
   dependencies: ReleaseLockDependencies = {
     fileExistsFn: fs.existsSync,
     unlinkFileFn: fs.unlinkSync,
   }
 ) {
   const { fileExistsFn, unlinkFileFn } = dependencies;
-  const path = getLockFilePath(network, chain);
+  const path = getLockFilePath(network, sourceChainId, targetChainId);
 
   if (!fileExistsFn(path)) return;
   unlinkFileFn(path);

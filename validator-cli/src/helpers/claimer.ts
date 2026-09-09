@@ -140,7 +140,7 @@ async function makeClaim(
     lastClaimedStateroot = lastClaimLogs[lastClaimLogs.length - 1].data;
   } catch {
     const claimData = await fetchLatestClaimedEpoch(veaOutbox.target, chainId);
-    lastClaimedStateroot = claimData ? claimData.stateroot : ethers.ZeroHash;
+    lastClaimedStateroot = claimData ? claimData.stateRoot : ethers.ZeroHash;
   }
   if (lastClaimedStateroot == null) {
     return null;

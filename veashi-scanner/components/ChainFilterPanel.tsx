@@ -1,11 +1,10 @@
-import { useMemo, FC } from "react";
-import { Button, DropdownSelect as RawDropdownSelect, NumberField } from "@kleros/ui-components-library";
+import { useMemo } from "react";
+import { NumberField } from "@kleros/ui-components-library";
 import { getAllSourceChains, getDestinationChains } from "@kleros/veashi-sdk";
-import ChainBadge from "@/components/ChainBadge";
-import { getChainName, matchesNetwork } from "@/lib/chains";
-import { ChainItem, DropdownSelectProps, NO_CHAIN, ChainFilter, BlockRange, Network } from "@/lib/types";
-
-const DropdownSelect = RawDropdownSelect as unknown as FC<DropdownSelectProps>;
+import ChainSelect from "@/components/ChainSelect";
+import FilterPanelHeader from "@/components/FilterPanelHeader";
+import { matchesNetwork } from "@/lib/chains";
+import { NO_CHAIN, ChainFilter, BlockRange, Network } from "@/lib/types";
 
 interface Props {
   sourceChain: ChainFilter;
@@ -57,7 +56,7 @@ export default function ChainFilterPanel({
 
   return (
     <div className="glass border border-(--border) overflow-hidden">
-      <PanelHeader hasActiveFilter={hasActiveFilter} onClearFilters={onClearFilters} />
+      <FilterPanelHeader title="Filter Messages" hasActiveFilter={hasActiveFilter} onClearFilters={onClearFilters} />
 
       <div className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -95,91 +94,6 @@ export default function ChainFilterPanel({
 }
 
 // ─── Sub-components (private) ─────────────────────────────────────────────────
-
-function PanelHeader({
-  hasActiveFilter,
-  onClearFilters,
-}: Readonly<{ hasActiveFilter: boolean; onClearFilters: () => void }>) {
-  return (
-    <div className="px-5 py-3 border-b border-(--border) flex items-center justify-between bg-(--surface)">
-      <div className="flex items-center gap-2">
-        <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
-          />
-        </svg>
-        <span className="text-sm font-semibold text-(--text-secondary)">Filter Messages</span>
-        {hasActiveFilter && (
-          <span className="px-2 py-0.5 text-xs rounded-full bg-purple-700 text-white font-medium">Active</span>
-        )}
-      </div>
-      {hasActiveFilter && <Button variant="secondary" small onPress={onClearFilters} text="Clear filters" />}
-    </div>
-  );
-}
-
-function ChainSelect({
-  label,
-  value,
-  options,
-  onChange,
-  disabled = false,
-  hideLabel = false,
-  hideBadge = false,
-  className = "",
-}: Readonly<{
-  label: string;
-  value: ChainFilter;
-  options: number[];
-  onChange: (chain: ChainFilter) => void;
-  disabled?: boolean;
-  hideLabel?: boolean;
-  hideBadge?: boolean;
-  className?: string;
-}>) {
-  const items: ChainItem[] = [
-    {
-      id: NO_CHAIN,
-      text: disabled ? "Select Source First" : "All Chains",
-      itemValue: NO_CHAIN,
-    },
-    ...options.map<ChainItem>((chainId) => ({
-      id: chainId,
-      text: getChainName(chainId),
-      itemValue: chainId,
-    })),
-  ];
-
-  return (
-    <div className={className}>
-      {!hideLabel && (
-        <label className="text-xs font-semibold uppercase tracking-wider text-(--klerosUIComponentsSecondaryText) mb-2 block">
-          {label}
-        </label>
-      )}
-
-      <DropdownSelect
-        items={items}
-        selectedKey={value}
-        isDisabled={disabled}
-        placeholder="All Chains"
-        callback={(item) => {
-          onChange(item.id === NO_CHAIN ? NO_CHAIN : Number(item.id));
-        }}
-        className="w-full"
-      />
-
-      {!hideBadge && value !== NO_CHAIN && !disabled && (
-        <div className="mt-2">
-          <ChainBadge chainId={value as number} />
-        </div>
-      )}
-    </div>
-  );
-}
 
 function BlockRangeSection({
   blockRange,

@@ -13,7 +13,7 @@ interface MessageSentData {
 }
 
 interface MessageSentsDataResponse {
-  messageSents: MessageSentData[];
+  MessageSent: MessageSentData[];
 }
 /**
  * Get the message data to relay from the subgraph
@@ -29,12 +29,12 @@ const getMessageDataToRelay = async (
   requestGraph: typeof request = request
 ) => {
   try {
-    const subgraph = process.env.RELAYER_SUBGRAPH!;
+    const subgraph = process.env.ENVIO_URL!;
 
     const result = (await requestGraph(
       subgraph,
       `{
-                messageSents(first: 5, where: {nonce: ${nonce}, inbox: "${inbox}"}) {
+                MessageSent(limit: 5, where: {nonce: {_eq: ${nonce}}, inbox: {id: {_eq: "${inbox}"}}}) {
                 nonce
                 to {
                     id
@@ -47,7 +47,7 @@ const getMessageDataToRelay = async (
             }`
     )) as MessageSentsDataResponse;
 
-    return [result[`messageSents`][0].to.id, result[`messageSents`][0].msgSender.id, result[`messageSents`][0].data];
+    return [result[`MessageSent`][0].to.id, result[`MessageSent`][0].msgSender.id, result[`MessageSent`][0].data];
   } catch (e) {
     throw new DataError("Failed to fetch message data (subgraph)", chainId, network, { cause: e });
   }
@@ -81,10 +81,10 @@ const getProofAtCount = async (
   // Build a query that filters each node by both its id and the inbox address.
   let query = "{";
   for (let i = 0; i < proofIndices.length; i++) {
-    const layerId = inboxAddress.toLocaleLowerCase() + "-" + proofIndices[i];
+    const layerId = inboxAddress + "-" + proofIndices[i];
     query += `
-      layer${i}: nodes(first: 1, where: {
-        id: "${layerId}"
+      layer${i}: MerkleNode(limit: 1, where: {
+        id: { _eq: "${layerId}" }
       }) {
         hash
       }
@@ -93,7 +93,7 @@ const getProofAtCount = async (
   query += "}";
 
   try {
-    const subgraph = process.env.RELAYER_SUBGRAPH!;
+    const subgraph = process.env.ENVIO_URL!;
     const result = (await requestGraph(subgraph, query)) as ProofAtCountResponse;
     const proof: string[] = [];
     for (let i = 0; i < proofIndices.length; i++) {

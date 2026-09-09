@@ -146,7 +146,7 @@ describe("snapshotClaim", () => {
 
       const claimFromGraph = {
         id: "1",
-        stateroot: mockClaim.stateRoot,
+        stateRoot: mockClaim.stateRoot,
         bridger: mockClaim.claimer,
         timestamp: mockClaim.timestampClaimed,
         verification: null,

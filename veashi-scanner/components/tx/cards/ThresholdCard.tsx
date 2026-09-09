@@ -15,16 +15,11 @@ export default function ThresholdCard({
 }>) {
   const required = message.thresholdRequired;
   const verifiedCount = statuses ? Object.values(statuses).filter((s) => s === Status.CONFIRMED).length : 0;
-  const current = isLoading ? message.thresholdCurrent ?? 0 : verifiedCount;
+  const achieved = isLoading ? message.thresholdCurrent ?? 0 : verifiedCount;
 
-  const pct = required > 0 ? Math.round((current / required) * 100) : 0;
-  const { label, dotClass, barClass } = getStatusMeta(current, required);
-
-  // With no confirmations yet, "Pending" reads as a confirmed real state —
-  // but if the last poll errored, we don't actually know that yet. Only
-  // override when current is 0: once we have at least one real confirmation,
-  // that data is accurate (merged, never downgraded), so show it as-is.
-  const unknownDueToError = !isLoading && !!error && current === 0;
+  const pct = required > 0 ? Math.round((achieved / required) * 100) : 0;
+  const { label, dotClass, barClass } = getStatusMeta(achieved, required);
+  const unknownDueToError = !isLoading && !!error && achieved === 0;
 
   const displayLabel = isLoading ? "Verifying..." : unknownDueToError ? "Checking…" : label;
   const displayDotClass = isLoading
@@ -34,11 +29,17 @@ export default function ThresholdCard({
     : dotClass;
 
   return (
-    <SectionCard icon="threshold" label="Threshold" delay="0.1s">
+    <SectionCard icon="threshold" label="Consensus" delay="0.1s">
       <div className="mt-4">
-        <div className="flex items-baseline gap-1 mb-1">
-          <span className="text-3xl font-bold font-mono">{current}</span>
-          <span className="text-(--text-muted) text-lg font-mono">/{required}</span>
+        <div className="grid grid-cols-2 gap-4 mb-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) mb-1">Required</p>
+            <p className="text-2xl font-bold font-mono">{required}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) mb-1">Achieved</p>
+            <p className="text-2xl font-bold font-mono">{achieved}</p>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 mb-3">
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${displayDotClass}`} />

@@ -143,7 +143,7 @@ describe("claimer", () => {
       veaInbox.snapshots = jest.fn().mockResolvedValue(ethers.ZeroHash);
       mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
         challenged: false,
-        stateroot: "0x1111",
+        stateRoot: "0x1111",
       });
       mockDeps.claim = null;
       mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
@@ -154,7 +154,7 @@ describe("claimer", () => {
       veaInbox.snapshots = jest.fn().mockResolvedValue(mockClaim.stateRoot);
       mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
         challenged: false,
-        stateroot: "0x1111",
+        stateRoot: "0x1111",
       });
       mockDeps.claim = null;
       mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
@@ -169,7 +169,7 @@ describe("claimer", () => {
         veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
         mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
           challenged: false,
-          stateroot: mockClaim.stateRoot,
+          stateRoot: mockClaim.stateRoot,
         });
         mockDeps.transactionHandler = mockTransactionHandler;
         mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
@@ -187,7 +187,7 @@ describe("claimer", () => {
         veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
         mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
           challenged: false,
-          stateroot: mockClaim.stateRoot,
+          stateRoot: mockClaim.stateRoot,
         });
         mockDeps.transactionHandler = mockTransactionHandler;
         mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
