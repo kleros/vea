@@ -2,21 +2,19 @@ import { getBridgeConfig, Network } from "./consts/bridgeRoutes";
 import { getVeaInbox, getVeaOutbox } from "./utils/ethers";
 import { FallbackRpcProvider } from "./utils/fallbackProvider";
 import { FallbackProviderV5 } from "./utils/fallbackProviderV5";
-import { getBlockFromEpoch, setEpochRange } from "./utils/epochHandler";
+import { setEpochRange } from "./utils/epochHandler";
 import { defaultEmitter } from "./utils/emitter";
 import { BotEvents } from "./utils/botEvents";
 import { initialize as initializeLogger } from "./utils/logger";
 import { ShutdownSignal } from "./utils/shutdown";
 import { getBotPath, BotPaths, getNetworkConfig, NetworkConfig } from "./utils/botConfig";
 import { getClaim } from "./utils/claim";
-import { MissingEnvError } from "./utils/errors";
 import { CheckAndClaimParams, checkAndClaim } from "./helpers/claimer";
 import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./helpers/validator";
 import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
-import { sendHeartbeat } from "./utils/heartbeat";
+import { validateEnvironment } from "./utils/envValidation";
 
-const RPC_BLOCK_LIMIT = 1000; // RPC_BLOCK_LIMIT is the limit of blocks that can be queried at once
 const CYCLE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
 
 /**
@@ -32,10 +30,12 @@ export const watch = async (
   emitter: typeof defaultEmitter = defaultEmitter
 ) => {
   initializeLogger(emitter);
-  const privKey = process.env.PRIVATE_KEY;
-  const heartbeatURL = process.env.HEARTBEAT_URL;
-  if (!privKey) throw new MissingEnvError("PRIVATE_KEY");
-  await sendHeartbeat("started", heartbeatURL);
+  // Validate the whole environment before anything else, including before the
+  // first heartbeat: a bot that reports "started" and then dies on a missing
+  // variable looks alive to whatever is watching it.
+  const validatedEnv = await validateEnvironment();
+  emitter.emit(BotEvents.ENV_VALIDATED, validatedEnv.signerAddress, validatedEnv.chainIds, validatedEnv.networks);
+  for (const warning of validatedEnv.warnings) emitter.emit(BotEvents.ENV_WARNING, warning);
   const cliCommand = process.argv;
   const { path, toSaveSnapshot } = getBotPath({ cliCommand });
   const networkConfigs = getNetworkConfig();
@@ -43,13 +43,11 @@ export const watch = async (
   const transactionHandlers: { [key: string]: any } = {};
   const toWatch: { [key: string]: { count: number; epochs: number[] } } = {};
   while (!shutDownSignal.getIsShutdownSignal()) {
-    await sendHeartbeat("running", heartbeatURL);
     for (const networkConfig of networkConfigs) {
       await processNetwork(path, toSaveSnapshot, networkConfig, transactionHandlers, toWatch, emitter);
     }
     await wait(CYCLE_DELAY_MS);
   }
-  await sendHeartbeat("stopped", heartbeatURL);
 };
 
 async function processNetwork(
@@ -186,6 +184,8 @@ async function processEpochsForNetwork({
       chainId,
       veaInbox,
       veaOutbox,
+      veaInboxProvider,
+      veaOutboxProvider,
       network,
       epochPeriod: routeConfig[network].epochPeriod,
       count: toWatch[networkKey].count,
@@ -200,20 +200,13 @@ async function processEpochsForNetwork({
 
   while (i >= 0) {
     const epoch = toWatch[networkKey].epochs[i];
-    const epochBlock = await getBlockFromEpoch(epoch, routeConfig[network].epochPeriod, veaOutboxProvider);
-    const latestBlock = await veaOutboxProvider.getBlock("finalized");
-    let toBlock: number | string = "finalized";
-    if (latestBlock.number - epochBlock > RPC_BLOCK_LIMIT) {
-      toBlock = epochBlock + RPC_BLOCK_LIMIT;
-    }
     const claim = await getClaim({
       network,
       chainId,
       veaOutbox,
       veaOutboxProvider,
       epoch,
-      fromBlock: epochBlock,
-      toBlock,
+      epochPeriod: routeConfig[network].epochPeriod,
       emitter,
     });
 

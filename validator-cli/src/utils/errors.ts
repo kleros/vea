@@ -65,6 +65,18 @@ class MissingEnvError extends Error {
   }
 }
 
+class EnvValidationError extends Error {
+  readonly problems: string[];
+  constructor(problems: string[]) {
+    super();
+    this.name = "EnvValidationError";
+    this.problems = problems;
+    this.message = `Environment validation failed with ${problems.length} problem(s):\n${problems
+      .map((problem) => `  - ${problem}`)
+      .join("\n")}`;
+  }
+}
+
 class NoMessageSavedError extends Error {
   constructor(veaInbox: string) {
     super();
@@ -83,4 +95,5 @@ export {
   MissingEnvError,
   InvalidChainIdError,
   NoMessageSavedError,
+  EnvValidationError,
 };

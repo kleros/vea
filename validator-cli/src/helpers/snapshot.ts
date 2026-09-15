@@ -1,4 +1,8 @@
 import { ZeroHash } from "ethers";
+import { JsonRpcProvider } from "@ethersproject/providers";
+import { getLookbackFloorBlock } from "../utils/epochHandler";
+import { findLatestLog } from "../utils/logScanner";
+import { NoMessageSavedError } from "../utils/errors";
 import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
 import { getLastMessageSaved, getLastClaimedEpoch } from "../utils/graphQueries";
 import { defaultEmitter } from "../utils/emitter";
@@ -8,6 +12,8 @@ interface SnapshotCheckParams {
   chainId: number;
   veaInbox: any;
   veaOutbox: any;
+  veaInboxProvider: JsonRpcProvider;
+  veaOutboxProvider: JsonRpcProvider;
   count: number;
   fetchLastSavedMessage?: typeof getLastMessageSaved;
   fetchLastClaimedEpoch?: typeof getLastClaimedEpoch;
@@ -17,19 +23,23 @@ export interface SaveSnapshotParams {
   chainId: number;
   veaInbox: any;
   veaOutbox: any;
+  veaInboxProvider: JsonRpcProvider;
+  veaOutboxProvider: JsonRpcProvider;
   network: Network;
   epochPeriod: number;
   count: number;
   transactionHandler: any;
   emitter?: typeof defaultEmitter;
   toSaveSnapshot?: typeof isSnapshotNeeded;
-  now: number;
+  now?: number;
 }
 
 export const saveSnapshot = async ({
   chainId,
   veaInbox,
   veaOutbox,
+  veaInboxProvider,
+  veaOutboxProvider,
   network,
   epochPeriod,
   count,
@@ -51,6 +61,8 @@ export const saveSnapshot = async ({
     chainId,
     veaInbox,
     veaOutbox,
+    veaInboxProvider,
+    veaOutboxProvider,
     count,
   });
   if (!snapshotNeeded) return { transactionHandler, latestCount };
@@ -58,11 +70,40 @@ export const saveSnapshot = async ({
   return { transactionHandler, latestCount };
 };
 
+/**
+ * Find the most recent matching log within the window that can still affect a
+ * decision, expressed in the block numbers of that contract's own chain.
+ *
+ * @returns The newest matching log, or null if there is none in the window
+ */
+const findLatestLogWithinLookback = async (
+  {
+    contract,
+    provider,
+    chainId,
+    epochPeriod,
+  }: { contract: any; provider: JsonRpcProvider; chainId: number; epochPeriod: number },
+  buildFilter: () => any
+): Promise<any | null> => {
+  const [floorBlock, headBlock] = await Promise.all([
+    getLookbackFloorBlock({ provider, chainId, epochPeriod }),
+    provider.getBlock("finalized"),
+  ]);
+  return findLatestLog({
+    contract,
+    filter: buildFilter(),
+    fromBlock: floorBlock,
+    toBlock: headBlock.number,
+  });
+};
+
 export const isSnapshotNeeded = async ({
   epochPeriod,
   chainId,
   veaInbox,
   veaOutbox,
+  veaInboxProvider,
+  veaOutboxProvider,
   count,
   fetchLastSavedMessage = getLastMessageSaved,
   fetchLastClaimedEpoch = getLastClaimedEpoch,
@@ -77,11 +118,18 @@ export const isSnapshotNeeded = async ({
   let lastClaimedStateroot: string | null;
 
   try {
-    const saveSnapshotLogs = await veaInbox.queryFilter(veaInbox.filters.SnapshotSaved());
-    lastSavedCount = Number(saveSnapshotLogs[saveSnapshotLogs.length - 1].args[2]);
-    lastSavedSnapshot = saveSnapshotLogs[saveSnapshotLogs.length - 1].args[0];
-    const lastClaimLogs = await veaOutbox.queryFilter(veaOutbox.filters.Claimed());
-    lastClaimedStateroot = lastClaimLogs[lastClaimLogs.length - 1].data;
+    const [saveSnapshotLog, lastClaimLog] = await Promise.all([
+      findLatestLogWithinLookback({ contract: veaInbox, provider: veaInboxProvider, chainId, epochPeriod }, () =>
+        veaInbox.filters.SnapshotSaved()
+      ),
+      findLatestLogWithinLookback({ contract: veaOutbox, provider: veaOutboxProvider, chainId, epochPeriod }, () =>
+        veaOutbox.filters.Claimed()
+      ),
+    ]);
+    if (!saveSnapshotLog || !lastClaimLog) throw new NoMessageSavedError(String(veaInbox.target));
+    lastSavedCount = Number(saveSnapshotLog.args[2]);
+    lastSavedSnapshot = saveSnapshotLog.args[0];
+    lastClaimedStateroot = lastClaimLog.data;
   } catch {
     const snapshotRes = await fetchLastSavedMessage(veaInbox.target, chainId);
     if (!snapshotRes) {

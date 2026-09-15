@@ -4,10 +4,9 @@ import { ITransactionHandler, getTransactionHandler } from "../utils/transaction
 import { getClaim, getClaimResolveState } from "../utils/claim";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
-import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
+import { getBlocksAndCheckFinality, resolveSettledReadBlocks } from "../utils/arbToEthState";
 import { Network } from "../consts/bridgeRoutes";
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { getBlockFromEpoch } from "../utils/epochHandler";
 
 export interface ChallengeAndResolveClaimParams {
   chainId: number;
@@ -24,8 +23,8 @@ export interface ChallengeAndResolveClaimParams {
   fetchClaim?: typeof getClaim;
   fetchClaimResolveState?: typeof getClaimResolveState;
   fetchBlocksAndCheckFinality?: typeof getBlocksAndCheckFinality;
+  fetchSettledReadBlocks?: typeof resolveSettledReadBlocks;
   fetchTransactionHandler?: typeof getTransactionHandler;
-  fetchBlockFromEpoch?: typeof getBlockFromEpoch;
 }
 
 export async function challengeAndResolveClaim({
@@ -42,20 +41,25 @@ export async function challengeAndResolveClaim({
   veaRouterProvider,
   fetchClaimResolveState = getClaimResolveState,
   fetchBlocksAndCheckFinality = getBlocksAndCheckFinality,
+  fetchSettledReadBlocks = resolveSettledReadBlocks,
   fetchTransactionHandler = getTransactionHandler,
-  fetchBlockFromEpoch = getBlockFromEpoch,
 }: ChallengeAndResolveClaimParams): Promise<ITransactionHandler | null> {
   if (!claim) {
     emitter.emit(BotEvents.NO_CLAIM, epoch);
     return null;
   }
   const queryRpc = veaRouterProvider ?? veaOutboxProvider;
-  const res = await fetchBlocksAndCheckFinality(queryRpc, veaInboxProvider, epoch, epochPeriod, emitter);
-  const [arbitrumBlock, , finalityIssueFlagArb, finalityIssueFlagEth] = res;
-  if (res === undefined || finalityIssueFlagArb || finalityIssueFlagEth) {
-    emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
-    return null;
-  }
+  // Resolve the blocks this epoch can be read as settled at before reading
+  // anything: a challenge stakes a deposit on the value we are about to read.
+  const settledBlocks = await fetchSettledReadBlocks({
+    inboxProvider: veaInboxProvider,
+    outboxProvider: queryRpc,
+    epoch,
+    epochPeriod,
+    emitter,
+    fetchBlocksAndCheckFinality,
+  });
+  if (!settledBlocks) return null;
   const ethBlockTag = "finalized";
 
   if (!transactionHandler) {
@@ -90,7 +94,7 @@ export async function challengeAndResolveClaim({
     epoch,
     claim,
     transactionHandler,
-    arbitrumBlockNumber: arbitrumBlock.number,
+    arbitrumBlockNumber: settledBlocks.inboxBlock,
   });
   if (!toRelay && !challenged) {
     return null;
@@ -109,7 +113,6 @@ export async function challengeAndResolveClaim({
     ethBlockTag,
     transactionHandler,
     fetchClaimResolveState,
-    fetchBlockFromEpoch,
   });
 
   return transactionHandler;
@@ -157,7 +160,6 @@ interface ResolveFlowParams {
   ethBlockTag: "latest" | "finalized";
   transactionHandler: ITransactionHandler;
   fetchClaimResolveState: typeof getClaimResolveState;
-  fetchBlockFromEpoch: typeof getBlockFromEpoch;
 }
 async function handleResolveFlow({
   chainId,
@@ -171,9 +173,7 @@ async function handleResolveFlow({
   ethBlockTag,
   transactionHandler,
   fetchClaimResolveState,
-  fetchBlockFromEpoch,
 }: ResolveFlowParams): Promise<void> {
-  const blockNumberOutboxLowerBound = await fetchBlockFromEpoch(epoch, epochPeriod, queryRpc);
   const claimResolveState = await fetchClaimResolveState({
     chainId,
     veaInbox,
@@ -181,8 +181,8 @@ async function handleResolveFlow({
     veaOutbox,
     veaOutboxProvider: queryRpc,
     epoch,
-    fromBlock: blockNumberOutboxLowerBound,
-    toBlock: ethBlockTag,
+    epochPeriod,
+    headBlockTag: ethBlockTag,
   });
 
   if (!claimResolveState.sendSnapshot.status) {

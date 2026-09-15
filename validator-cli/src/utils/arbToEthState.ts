@@ -7,10 +7,84 @@ import { getArbitrumNetwork } from "@arbitrum/sdk";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
+import { findFirstLog } from "./logScanner";
 
 // https://github.com/prysmaticlabs/prysm/blob/493905ee9e33a64293b66823e69704f012b39627/config/params/mainnet_config.go#L103
 const slotsPerEpochEth = 32;
 const secondsPerSlotEth = 12;
+
+export interface SettledReadBlocks {
+  inboxBlock: number;
+  outboxBlock: number;
+}
+
+export interface ResolveSettledReadBlocksParams {
+  inboxProvider: JsonRpcProvider;
+  outboxProvider: JsonRpcProvider;
+  epoch: number;
+  epochPeriod: number;
+  emitter?: typeof defaultEmitter;
+  fetchBlocksAndCheckFinality?: typeof getBlocksAndCheckFinality;
+}
+
+/**
+ * Resolve the blocks at which this epoch's state can be read as settled.
+ *
+ * Two conditions have to hold before a read can be staked on:
+ *
+ *  - the block cannot be reorged away, so we anchor to the `finalized` head on
+ *    both chains;
+ *  - the block must sit at or after `(epoch + 1) * epochPeriod`, because
+ *    `snapshots[epoch]` is still being written during epoch E.
+ *
+ * When either fails the epoch is simply not decidable yet: callers skip it and
+ * try again next cycle rather than acting on unsettled state.
+ *
+ * @returns The blocks to pin reads to, or null if the epoch is not yet decidable
+ */
+export const resolveSettledReadBlocks = async ({
+  inboxProvider,
+  outboxProvider,
+  epoch,
+  epochPeriod,
+  emitter = defaultEmitter,
+  fetchBlocksAndCheckFinality = getBlocksAndCheckFinality,
+}: ResolveSettledReadBlocksParams): Promise<SettledReadBlocks | null> => {
+  const finality = await fetchBlocksAndCheckFinality(outboxProvider, inboxProvider, epoch, epochPeriod, emitter);
+  // Checked before destructuring: this returns undefined on an unresolvable
+  // chain state, and destructuring that throws past every caller's guard.
+  if (!finality) {
+    emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
+    return null;
+  }
+  const [inboxFinalized, outboxFinalized, finalityIssueFlagArb, finalityIssueFlagEth] = finality;
+  if (finalityIssueFlagArb || finalityIssueFlagEth) {
+    emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
+    return null;
+  }
+
+  const epochBoundary = (epoch + 1) * epochPeriod;
+  if (inboxFinalized.timestamp < epochBoundary) {
+    emitter.emit(BotEvents.EPOCH_NOT_SETTLED, epoch, inboxFinalized.timestamp, epochBoundary);
+    return null;
+  }
+
+  return { inboxBlock: inboxFinalized.number, outboxBlock: outboxFinalized.number };
+};
+
+/**
+ * The sequencer's maximum backdating window, in seconds.
+ *
+ * `maxTimeVariation()` returns four values -- [delayBlocks, futureBlocks,
+ * delaySeconds, futureSeconds] -- so coercing the whole result yields NaN, which
+ * then silently poisons every block range derived from it.
+ *
+ * @returns delaySeconds from the sequencer inbox
+ */
+const getSequencerDelaySeconds = async (sequencer: SequencerInbox): Promise<number> => {
+  const { delaySeconds } = await sequencer.maxTimeVariation();
+  return Number(delaySeconds);
+};
 
 /**
  * This function checks the finality of the blocks on Arbitrum and Ethereum.
@@ -34,7 +108,7 @@ const getBlocksAndCheckFinality = async (
 
   const l2Network = await getArbitrumNetwork(ArbProvider);
   const sequencer = SequencerInbox__factory.connect(l2Network.ethBridge.sequencerInbox, EthProvider);
-  const maxDelaySeconds = Number(await sequencer.maxTimeVariation());
+  const maxDelaySeconds = await getSequencerDelaySeconds(sequencer);
   const blockFinalizedArb = (await ArbProvider.getBlock("finalized")) as Block;
   const blockFinalizedEth = (await EthProvider.getBlock("finalized")) as Block;
   if (
@@ -145,11 +219,10 @@ const getBlocksAndCheckFinality = async (
     );
     finalityIssueFlagArb = true;
   }
-  // if L1 is experiencing finalization problems, we use the latest L2 block
-  // we could
-  const blockArbitrum = finalityIssueFlagArb || finalityIssueFlagEth ? blockFinalizedArb : blockLatestArb;
-
-  return [blockArbitrum, blockFinalizedEth, finalityIssueFlagArb, finalityIssueFlagEth];
+  // Always the finalized block: it is the one proven above to sit in a batch
+  // delivered by a finalized L1 block. blockLatestArb carries the unfinalized
+  // tail, and callers stake deposits on whatever is returned here.
+  return [blockFinalizedArb, blockFinalizedEth, finalityIssueFlagArb, finalityIssueFlagEth];
 };
 
 /**
@@ -199,14 +272,17 @@ const ArbBlockToL1Block = async (
    * We use the batch number to query the L1 sequencerInbox's SequencerBatchDelivered event
    * then, we get its emitted transaction hash.
    */
-  const queryBatch = sequencer.filters.SequencerBatchDelivered(batch);
-
-  const emittedEvent = await sequencer.queryFilter(queryBatch, fromBlockEth, "latest");
-  if (emittedEvent.length == 0) {
+  const emittedEvent = await findFirstLog({
+    contract: sequencer,
+    filter: sequencer.filters.SequencerBatchDelivered(batch),
+    fromBlock: fromBlockEth,
+    toBlock: await sequencer.provider.getBlockNumber(),
+  });
+  if (!emittedEvent) {
     return undefined;
   }
 
-  const L1Block = (await emittedEvent[0].getBlock()) as Block;
+  const L1Block = (await emittedEvent.getBlock()) as Block;
   return [L1Block, L2BlockNumberFallback];
 };
 
@@ -243,4 +319,4 @@ const findLatestL2BatchAndBlock = async (
   return [result.batch.toNumber(), high];
 };
 
-export { getBlocksAndCheckFinality };
+export { getBlocksAndCheckFinality, getSequencerDelaySeconds };

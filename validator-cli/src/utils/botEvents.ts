@@ -1,6 +1,8 @@
 export enum BotEvents {
   // Bridger state
   STARTED = "started",
+  ENV_VALIDATED = "env_validated",
+  ENV_WARNING = "env_warning",
   WATCHING = "watching",
   CHECKING = "checking",
   WAITING = "waiting",
@@ -47,8 +49,11 @@ export enum BotEvents {
 
   // Error state
   NO_CLAIM_FETCHED = "no_claim_fetched",
+  CLAIMED_LOG_NOT_FOUND = "claimed_log_not_found",
+  CLAIM_LOG_SCAN_FAILED = "claim_log_scan_failed",
   CLAIM_MISMATCH = "claim_mismatch",
   FINALITY_ISSUE = "finality_issue",
+  EPOCH_NOT_SETTLED = "epoch_not_settled",
   FINALITY_ERROR = "finality_error",
 
   // RPC fallback state

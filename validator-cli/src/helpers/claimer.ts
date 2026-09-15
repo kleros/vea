@@ -2,12 +2,14 @@ import { EventEmitter } from "events";
 import { ethers } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { getClaim, ClaimHonestState } from "../utils/claim";
-import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
+import { getBlocksAndCheckFinality, resolveSettledReadBlocks } from "../utils/arbToEthState";
 import { getLastClaimedEpoch } from "../utils/graphQueries";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { ITransactionHandler, IDevnetTransactionHandler, getTransactionHandler } from "../utils/transactionHandlers";
 import { Network } from "../consts/bridgeRoutes";
+import { getLookbackFloorBlock } from "../utils/epochHandler";
+import { findLatestLog } from "../utils/logScanner";
 interface CheckAndClaimParams {
   chainId: number;
   network: Network;
@@ -25,6 +27,7 @@ interface CheckAndClaimParams {
   fetchLatestClaimedEpoch?: typeof getLastClaimedEpoch;
   fetchTransactionHandler?: typeof getTransactionHandler;
   fetchBlocksAndCheckFinality?: typeof getBlocksAndCheckFinality;
+  fetchSettledReadBlocks?: typeof resolveSettledReadBlocks;
   now?: number;
 }
 
@@ -44,6 +47,7 @@ async function checkAndClaim({
   fetchLatestClaimedEpoch = getLastClaimedEpoch,
   fetchTransactionHandler = getTransactionHandler,
   fetchBlocksAndCheckFinality = getBlocksAndCheckFinality,
+  fetchSettledReadBlocks = resolveSettledReadBlocks,
   now = Date.now(),
 }: CheckAndClaimParams) {
   let outboxStateRoot = await veaOutbox.stateRoot();
@@ -80,13 +84,13 @@ async function checkAndClaim({
       epoch,
       epochPeriod,
       transactionHandler,
-      outboxStateRoot,
       veaInbox,
       veaOutbox,
       queryRpc,
       emitter,
       fetchLatestClaimedEpoch,
-      fetchBlocksAndCheckFinality
+      fetchBlocksAndCheckFinality,
+      fetchSettledReadBlocks
     );
   } else if (claim != null) {
     return verifyClaim(transactionHandler, claim, veaOutboxProvider);
@@ -122,22 +126,44 @@ async function makeClaim(
   epoch: number,
   epochPeriod: number,
   transactionHandler: ITransactionHandler,
-  outboxStateRoot: string,
   veaInbox: any,
   veaOutbox: any,
   queryRpc: JsonRpcProvider,
   emitter: EventEmitter,
   fetchLatestClaimedEpoch: typeof getLastClaimedEpoch = getLastClaimedEpoch,
-  fetchBlocksAndCheckFinality: typeof getBlocksAndCheckFinality
+  fetchBlocksAndCheckFinality: typeof getBlocksAndCheckFinality,
+  fetchSettledReadBlocks: typeof resolveSettledReadBlocks = resolveSettledReadBlocks
 ): Promise<ITransactionHandler | null> {
-  const savedSnapshot = await veaInbox.snapshots(epoch);
+  // Claiming stakes a deposit on the snapshot we are about to read, so resolve
+  // the settled blocks first and read only at them.
+  const settledBlocks = await fetchSettledReadBlocks({
+    inboxProvider: transactionHandler.veaInboxProvider,
+    outboxProvider: queryRpc,
+    epoch,
+    epochPeriod,
+    emitter: emitter as any,
+    fetchBlocksAndCheckFinality,
+  });
+  if (!settledBlocks) return null;
+
+  const savedSnapshot = await veaInbox.snapshots(epoch, { blockTag: settledBlocks.inboxBlock });
   if (savedSnapshot == ethers.ZeroHash) {
     return null;
   }
-  let lastClaimedStateroot = null;
+  const outboxStateRoot = await veaOutbox.stateRoot({ blockTag: settledBlocks.outboxBlock });
+  let lastClaimedStateroot: string | null = null;
   try {
-    const lastClaimLogs = await veaOutbox.queryFilter(veaOutbox.filters.Claimed());
-    lastClaimedStateroot = lastClaimLogs[lastClaimLogs.length - 1].data;
+    const [floorBlock, headBlock] = await Promise.all([
+      getLookbackFloorBlock({ provider: queryRpc, chainId, epochPeriod }),
+      queryRpc.getBlock("finalized"),
+    ]);
+    const lastClaimLog = await findLatestLog({
+      contract: veaOutbox,
+      filter: veaOutbox.filters.Claimed(),
+      fromBlock: floorBlock,
+      toBlock: headBlock.number,
+    });
+    lastClaimedStateroot = lastClaimLog?.data ?? null;
   } catch {
     const claimData = await fetchLatestClaimedEpoch(veaOutbox.target, chainId);
     lastClaimedStateroot = claimData ? claimData.stateRoot : ethers.ZeroHash;
@@ -147,18 +173,6 @@ async function makeClaim(
   }
   const newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != lastClaimedStateroot;
   if (newMessagesToBridge) {
-    const res = await fetchBlocksAndCheckFinality(
-      queryRpc,
-      transactionHandler.veaInboxProvider,
-      epoch,
-      epochPeriod,
-      emitter
-    );
-    const [, , finalityIssueFlagArb, finalityIssueFlagEth] = res;
-    if (res === undefined || finalityIssueFlagArb || finalityIssueFlagEth) {
-      emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
-      return null;
-    }
     await transactionHandler.makeClaim(savedSnapshot);
     return transactionHandler;
   }

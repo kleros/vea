@@ -10,6 +10,16 @@ describe("snapshot", () => {
   let count: number = 1;
   let epochPeriod = 1200;
   const chainId = 11155111;
+  let veaInboxProvider: any;
+  let veaOutboxProvider: any;
+  const SEC_PER_BLOCK = 12;
+  const HEAD_BLOCK = 1_000_000;
+  const makeProvider = () => ({
+    getBlock: jest.fn(async (tag: any) => {
+      const number = typeof tag === "number" ? tag : HEAD_BLOCK;
+      return { number, timestamp: number * SEC_PER_BLOCK };
+    }),
+  });
   let fetchLastSavedMessage: jest.Mock;
   let fetchLastClaimedEpoch: jest.Mock;
   let fetchClaimForEpoch: jest.Mock;
@@ -30,6 +40,8 @@ describe("snapshot", () => {
         Claimed: jest.fn(),
       },
     };
+    veaInboxProvider = makeProvider();
+    veaOutboxProvider = makeProvider();
     fetchLastClaimedEpoch = jest.fn().mockResolvedValue({ epoch: 1 });
     fetchClaimForEpoch = jest.fn().mockResolvedValue({
       stateRoot: "0xabcde",
@@ -48,6 +60,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -71,6 +85,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -94,6 +110,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -117,6 +135,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -127,6 +147,47 @@ describe("snapshot", () => {
         latestCount: currentCount,
       });
     });
+    it("scans bounded windows for the last saved snapshot and the last claim", async () => {
+      veaInbox.count.mockResolvedValue(2);
+      const inboxRanges: Array<[number, number]> = [];
+      const outboxRanges: Array<[number, number]> = [];
+      veaInbox.queryFilter = jest.fn(async (_f: any, from: number, to: number) => {
+        inboxRanges.push([from, to]);
+        return [{ args: ["0x1", "0x2", 1], blockNumber: HEAD_BLOCK - 10, index: 0 }];
+      });
+      veaOutbox.queryFilter = jest.fn(async (_f: any, from: number, to: number) => {
+        outboxRanges.push([from, to]);
+        return [{ args: [null, 1, null], data: "0xabc", blockNumber: HEAD_BLOCK - 10, index: 0 }];
+      });
+      veaInbox.snapshots.mockResolvedValue(ethers.ZeroHash);
+      veaOutbox.stateRoot.mockResolvedValue("0xstate");
+      const params = {
+        network,
+        epochPeriod,
+        chainId,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        count: -1,
+        fetchLastSavedMessage: jest.fn(),
+        fetchLastClaimedEpoch,
+        fetchClaimForEpoch,
+      } as any;
+
+      await isSnapshotNeeded(params);
+
+      for (const ranges of [inboxRanges, outboxRanges]) {
+        expect(ranges.length).toBeGreaterThan(0);
+        // ethers defaults an omitted range to fromBlock 0.
+        expect(Math.min(...ranges.map((r) => r[0]))).toBeGreaterThan(0);
+        for (const [from, to] of ranges) {
+          expect(to - from).toBeLessThan(10_000);
+          expect(to).toBeLessThanOrEqual(HEAD_BLOCK);
+        }
+      }
+    });
+
     it("should fallback to fetchLastSavedMessage if queryFilter fails", async () => {
       count = 1;
       let currentCount = 2;
@@ -139,6 +200,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -163,6 +226,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -189,6 +254,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         network,
         epochPeriod,
         count,
@@ -217,6 +284,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         network,
         epochPeriod,
         count,
@@ -244,6 +313,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         network,
         epochPeriod,
         count: -1,
@@ -273,6 +344,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         network: Network.DEVNET,
         epochPeriod,
         count,

@@ -19,9 +19,16 @@ export interface Bridge {
   inboxRPC: string[];
   outboxRPC: string[];
   routerRPC?: string[];
+  inboxChainId: number;
+  routerChainId?: number;
+  rpcEnvVars: { inbox: string; outbox: string; router?: string };
   routeConfig: { [key in Network]: RouteConfigs };
   depositToken?: string;
+  depositTokenEnvVar?: string;
 }
+
+const ARBITRUM_SEPOLIA_CHAIN_ID = 421614;
+const SEPOLIA_CHAIN_ID = 11155111;
 
 /**
  * Parse a comma-separated list of RPC URLs from an environment variable into an ordered array.
@@ -84,6 +91,8 @@ const bridges: { [chainId: number]: Bridge } = {
     sequencerDelayLimit: 86400,
     inboxRPC: splitRpcUrls(process.env.RPC_ARB),
     outboxRPC: splitRpcUrls(process.env.RPC_ETH),
+    inboxChainId: ARBITRUM_SEPOLIA_CHAIN_ID,
+    rpcEnvVars: { inbox: "RPC_ARB", outbox: "RPC_ETH" },
     routeConfig: arbToEthConfigs,
   },
   10200: {
@@ -93,8 +102,12 @@ const bridges: { [chainId: number]: Bridge } = {
     inboxRPC: splitRpcUrls(process.env.RPC_ARB),
     outboxRPC: splitRpcUrls(process.env.RPC_GNOSIS),
     routerRPC: splitRpcUrls(process.env.RPC_ETH),
+    inboxChainId: ARBITRUM_SEPOLIA_CHAIN_ID,
+    routerChainId: SEPOLIA_CHAIN_ID,
+    rpcEnvVars: { inbox: "RPC_ARB", outbox: "RPC_GNOSIS", router: "RPC_ETH" },
     routeConfig: arbToGnosisConfigs,
     depositToken: process.env.GNOSIS_WETH,
+    depositTokenEnvVar: "GNOSIS_WETH",
   },
 };
 

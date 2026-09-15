@@ -65,6 +65,7 @@ describe("claimer", () => {
       transactionHandler: null,
       emitter,
       fetchLatestClaimedEpoch: mockGetLatestClaimedEpoch,
+      fetchSettledReadBlocks: jest.fn().mockResolvedValue({ inboxBlock: 4242, outboxBlock: 555 }),
       now: 110000, // (epoch+ 1) * epochPeriod * 1000 for claimable epoch
     };
 
@@ -198,6 +199,78 @@ describe("claimer", () => {
         const result = await checkAndClaim(mockDeps);
         expect(result.transactions.claimTxn).toBe(mockTransactions.claimTxn);
       });
+      it("scans a bounded window for the most recent claim instead of the whole chain", async () => {
+        const SEC_PER_BLOCK = 12;
+        const HEAD_BLOCK = 1_000_000;
+        const queriedRanges: Array<[number, number]> = [];
+        veaOutbox.queryFilter = jest.fn(async (_filter: any, from: number, to: number) => {
+          queriedRanges.push([from, to]);
+          return [];
+        });
+        veaOutbox.filters = { Claimed: jest.fn(() => ({ event: "Claimed" })) };
+        veaOutboxProvider.getBlock = jest.fn(async (tag: any) => {
+          const number = typeof tag === "number" ? tag : HEAD_BLOCK;
+          return { number, timestamp: number * SEC_PER_BLOCK };
+        });
+        veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
+        mockDeps.transactionHandler = mockTransactionHandler;
+        mockDeps.fetchLatestClaimedEpoch = jest.fn().mockResolvedValue({
+          challenged: false,
+          stateRoot: mockClaim.stateRoot,
+        });
+        mockDeps.claim = null;
+        mockDeps.veaInbox = veaInbox;
+        mockDeps.veaOutbox = veaOutbox;
+        mockDeps.veaOutboxProvider = veaOutboxProvider;
+        mockDeps.fetchBlocksAndCheckFinality = jest.fn().mockResolvedValue([0, 0, false, false]);
+        mockDeps.chainId = 11155111;
+
+        await checkAndClaim(mockDeps);
+
+        expect(queriedRanges.length).toBeGreaterThan(0);
+        // ethers defaults an omitted range to fromBlock 0, which every provider
+        // rejects on a chain of this size.
+        expect(Math.min(...queriedRanges.map((r) => r[0]))).toBeGreaterThan(0);
+        for (const [from, to] of queriedRanges) {
+          expect(to - from).toBeLessThan(10_000);
+          expect(to).toBeLessThanOrEqual(HEAD_BLOCK);
+        }
+      });
+
+      it("pins the claim decision reads to settled blocks", async () => {
+        veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
+        veaOutbox.stateRoot = jest.fn().mockResolvedValue("0xstateroot");
+        veaOutbox.queryFilter = jest.fn(async () => []);
+        veaOutbox.filters = { Claimed: jest.fn(() => ({})) };
+        mockDeps.transactionHandler = mockTransactionHandler;
+        mockDeps.claim = null;
+        mockDeps.veaInbox = veaInbox;
+        mockDeps.veaOutbox = veaOutbox;
+        mockDeps.chainId = 11155111;
+        mockDeps.fetchLatestClaimedEpoch = jest.fn().mockResolvedValue({ stateRoot: "0xold" });
+        mockDeps.fetchSettledReadBlocks = jest.fn().mockResolvedValue({ inboxBlock: 4242, outboxBlock: 555 });
+
+        await checkAndClaim(mockDeps);
+
+        // A claim stakes a deposit on these values, so both must come from a
+        // block that can no longer be reorged.
+        expect(veaInbox.snapshots).toHaveBeenCalledWith(mockDeps.epoch, { blockTag: 4242 });
+        expect(veaOutbox.stateRoot).toHaveBeenCalledWith({ blockTag: 555 });
+      });
+
+      it("does not claim while the epoch is not yet settled", async () => {
+        veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
+        mockDeps.transactionHandler = mockTransactionHandler;
+        mockDeps.claim = null;
+        mockDeps.veaInbox = veaInbox;
+        mockDeps.fetchSettledReadBlocks = jest.fn().mockResolvedValue(null);
+
+        const result = await checkAndClaim(mockDeps);
+
+        expect(result).toBeNull();
+        expect(mockTransactionHandler.makeClaim).not.toHaveBeenCalled();
+      });
+
       it("should withdraw claim deposit if claimer is honest", async () => {
         mockDeps.transactionHandler = mockTransactionHandler;
         mockClaim.honest = ClaimHonestState.CLAIMER;

@@ -11,7 +11,8 @@ describe("validator", () => {
   let mockClaim: any;
   let mockGetClaimState: any;
   let mockGetBlockFinality: any;
-  let mockGetBlockFromEpoch: any;
+  let mockResolveSettledReadBlocks: any;
+  const SETTLED_INBOX_BLOCK = 306763304;
   let mockDeps: any;
   beforeEach(() => {
     veaInbox = {
@@ -39,8 +40,8 @@ describe("validator", () => {
       honest: 0,
       challenger: ethers.ZeroAddress,
     };
-    mockGetBlockFromEpoch = jest.fn().mockResolvedValue({ number: 0, timestamp: 100 });
     mockGetBlockFinality = jest.fn().mockResolvedValue([{ number: 0 }, { number: 0, timestamp: 100 }, false]);
+    mockResolveSettledReadBlocks = jest.fn().mockResolvedValue({ inboxBlock: SETTLED_INBOX_BLOCK, outboxBlock: 555 });
     mockDeps = {
       chainId: 11155111,
       claim: mockClaim,
@@ -54,12 +55,33 @@ describe("validator", () => {
       emitter,
       fetchClaimResolveState: mockGetClaimState,
       fetchBlocksAndCheckFinality: mockGetBlockFinality,
-      fetchBlockFromEpoch: mockGetBlockFromEpoch,
+      fetchSettledReadBlocks: mockResolveSettledReadBlocks,
     };
   });
   afterEach(() => {
     jest.clearAllMocks();
   });
+  describe("settled reads", () => {
+    it("pins the snapshot read to the settled inbox block", async () => {
+      veaInbox.snapshots = jest.fn().mockResolvedValue(mockClaim.stateRoot);
+
+      await challengeAndResolveClaim(mockDeps);
+
+      expect(veaInbox.snapshots).toHaveBeenCalledWith(mockDeps.epoch, { blockTag: SETTLED_INBOX_BLOCK });
+    });
+
+    it("does nothing when the epoch is not yet settled", async () => {
+      mockDeps.fetchSettledReadBlocks = jest.fn().mockResolvedValue(null);
+      veaInbox.snapshots = jest.fn().mockResolvedValue("0x321");
+
+      const result = await challengeAndResolveClaim(mockDeps);
+
+      expect(result).toBeNull();
+      // No read, so nothing can be staked on unsettled state.
+      expect(veaInbox.snapshots).not.toHaveBeenCalled();
+    });
+  });
+
   describe("challengeAndResolveClaim", () => {
     it("should return null if no claim is made", async () => {
       mockDeps.claim = null;

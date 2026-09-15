@@ -172,8 +172,31 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   });
 
   // error logs
+  emitter.on(BotEvents.EPOCH_NOT_SETTLED, (epoch: number, finalizedTimestamp: number, epochBoundary: number) => {
+    logger.debug({ epoch, finalizedTimestamp, epochBoundary }, `epoch_not_settled`);
+  });
+
+  emitter.on(BotEvents.ENV_VALIDATED, (signerAddress: string, chainIds: number[], networks: string[]) => {
+    logger.info({ signerAddress, chainIds, networks }, `env_validated`);
+  });
+
+  emitter.on(BotEvents.ENV_WARNING, (warning: string) => {
+    logger.warn({ warning }, `env_warning`);
+  });
+
   emitter.on(BotEvents.NO_CLAIM_FETCHED, (epoch: number, fromBlock?: number, toBlock?: number) => {
     logger.error({ epoch, fromBlock, toBlock }, `no_claim_fetched`);
+  });
+
+  // The outbox reports a claim for this epoch, but the log scan of the window in
+  // which it must have been made came back empty. Either the scan window is
+  // wrong or the endpoint is not serving the logs it should.
+  emitter.on(BotEvents.CLAIMED_LOG_NOT_FOUND, (epoch: number, fromBlock: number, toBlock: number) => {
+    logger.error({ epoch, fromBlock, toBlock }, `claimed_log_not_found`);
+  });
+
+  emitter.on(BotEvents.CLAIM_LOG_SCAN_FAILED, (epoch: number, reason?: string) => {
+    logger.warn({ epoch, reason }, `claim_log_scan_failed`);
   });
   emitter.on(BotEvents.CLAIM_MISMATCH, (epoch: number) => {
     logger.error({ epoch }, `claim_mismatch`);
