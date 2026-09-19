@@ -1,9 +1,14 @@
-# Operator compose: runs the images published to GitHub Container Registry by
-# .github/workflows/publish-docker.yml.
-# To build from source instead, use docker-compose.build.yml.
+# Developer compose: builds the bot images from source in this working tree.
+# Operators running published images should use docker-compose.yml instead.
+#
+#   docker compose -f docker-compose.build.yml build validator
+#   docker compose -f docker-compose.build.yml up validator
 services:
   validator:
-    image: ghcr.io/kleros/vea/validator-cli:latest
+    build:
+      context: .
+      dockerfile: ./validator-cli/Dockerfile
+      target: validator
     command: yarn start --saveSnapshot
     env_file:
       - path: ./validator-cli/.env
@@ -13,7 +18,10 @@ services:
       - vea-network
 
   relayer:
-    image: ghcr.io/kleros/vea/relayer-cli:latest
+    build:
+      context: .
+      dockerfile: ./relayer-cli/Dockerfile
+      target: relayer
     env_file:
       - path: ./relayer-cli/.env
         required: true
