@@ -5080,7 +5080,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@kleros/vea-relayer-cli@workspace:relayer-cli"
   dependencies:
-    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.0.4"
+    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.1.0"
     "@typechain/ethers-v6": "npm:^0.5.1"
     "@types/jest": "npm:^29.5.14"
     dotenv: "npm:^16.4.5"
@@ -5228,13 +5228,6 @@ __metadata:
     vite: "npm:^6.4.3"
   languageName: unknown
   linkType: soft
-
-"@kleros/veashi-sdk@npm:@kleros/veashi-sdk@0.0.4":
-  version: 0.0.4
-  resolution: "@kleros/veashi-sdk@npm:0.0.4"
-  checksum: 10/0042ccd609117a15552419b6ce2991d2e9740b99cc7aa2905e786e3f3d1c5631cda8eeb39ca547405d4947f5a115ed338bbf7f6ed346b488cb169ec02942155d
-  languageName: node
-  linkType: hard
 
 "@kleros/veashi-sdk@npm:@kleros/veashi-sdk@0.1.0":
   version: 0.1.0

@@ -15,11 +15,15 @@ interface IHashiBridge {
 const rpcEnvByChainId: { [chainId: number]: string } = {
   1: "RPC_ETH",
   1514: "RPC_STORY",
+  4217: "RPC_TEMPO",
+  4663: "RPC_ROBINHOOD",
+  5042: "RPC_ARC",
   8453: "RPC_BASE",
   10200: "RPC_CHIADO",
   42161: "RPC_ARBITRUM_ONE",
   84532: "RPC_BASE_SEPOLIA",
   421614: "RPC_ARBITRUM_SEPOLIA",
+  5042002: "RPC_ARC_TESTNET",
   11155111: "RPC_SEPOLIA",
 };
 
