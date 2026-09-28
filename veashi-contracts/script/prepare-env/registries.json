@@ -1,0 +1,25 @@
+{
+  "_comment": "Official, machine-readable address registries the verifier fetches in code. The agent receives a per-route extract of them and may only WebFetch the agentFetchDomains (sources with no machine-readable registry). The file's hash is part of the input version.",
+  "layerzero": {
+    "url": "https://metadata.layerzero-api.com/v1/metadata",
+    "docs": "https://docs.layerzero.network/v2/deployments/deployed-contracts"
+  },
+  "ccip": {
+    "selectors": "https://raw.githubusercontent.com/smartcontractkit/chain-selectors/main/selectors.yml",
+    "mainnet": "https://raw.githubusercontent.com/smartcontractkit/documentation/main/src/config/data/ccip/v1_2_0/mainnet/chains.json",
+    "testnet": "https://raw.githubusercontent.com/smartcontractkit/documentation/main/src/config/data/ccip/v1_2_0/testnet/chains.json",
+    "docs": "https://docs.chain.link/ccip/directory"
+  },
+  "axelar": {
+    "mainnet": "https://raw.githubusercontent.com/axelarnetwork/axelar-contract-deployments/main/axelar-chains-config/info/mainnet.json",
+    "testnet": "https://raw.githubusercontent.com/axelarnetwork/axelar-contract-deployments/main/axelar-chains-config/info/testnet.json",
+    "docs": "https://docs.axelar.dev/resources/contract-addresses/mainnet"
+  },
+  "debridge": {
+    "chains": "https://dln.debridge.finance/v1.0/supported-chains-info",
+    "docs": "https://docs.debridge.com/dmp-details/dmp/deployed-contracts"
+  },
+  "agentFetchDomains": [
+    "docs.debridge.com"
+  ]
+}

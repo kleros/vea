@@ -2,7 +2,9 @@
   "name": "veashi-contracts",
   "packageManager": "yarn@4.6.0",
   "scripts": {
-    "deploy": "./script/deploy-route.sh --reporter-chain $SOURCE_RPC --adapter-chain $DESTINATION_RPC"
+    "deploy": "./script/deploy-route.sh --reporter-chain $SOURCE_RPC --adapter-chain $DESTINATION_RPC",
+    "prepare-env": "node script/prepare-env/prepare-env.mjs",
+    "test:prepare-env": "node --test 'script/prepare-env/test/*.test.mjs'"
   },
   "dependencies": {
     "solidity-bytes-utils": "^0.8.4",
