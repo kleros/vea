@@ -1,0 +1,88 @@
+name: Publish Docker Images
+
+on:
+  push:
+    branches: [dev]
+    tags: ["v*"]
+  workflow_dispatch:
+
+# Declare default permissions as read only.
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    # workflow_dispatch has no native ref filter, so a manual run from any branch
+    # would build that branch and move :latest. The push triggers above are
+    # already ref-filtered; this restricts manual runs to the same deploy branch.
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed for actions/checkout to fetch code.
+      contents: read
+      # Needed to push the built images to GitHub Container Registry.
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: validator-cli
+            dockerfile: ./validator-cli/Dockerfile
+            target: validator
+            title: vea-validator-cli
+            description: "Validator bot for the Vea cross-chain bridge: saves snapshots, challenges invalid claims and advances verification"
+          - image: relayer-cli
+            dockerfile: ./relayer-cli/Dockerfile
+            target: relayer
+            title: vea-relayer-cli
+            description: "Relayer bot for the Vea cross-chain bridge: relays messages from VeaInbox to VeaOutbox and executes Hashi messages"
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here uses git after checkout, and GHCR auth comes from
+          # docker/login-action below. Keeping the token out of .git/config also
+          # keeps it out of the Docker build context, which is the whole repo.
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.image }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.title }}
+            org.opencontainers.image.description=${{ matrix.description }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.licenses=MIT
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-,format=short
+
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Per-image cache scope: both matrix legs would otherwise share the
+          # default "buildkit" scope and evict each other every run.
+          cache-from: type=gha,scope=${{ matrix.image }}
+          # mode=max also exports the builder stage, where yarn install and the
+          # contracts build happen. The default (mode=min) would only cache the
+          # final stage's layers, which is not where the slow work is.
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
