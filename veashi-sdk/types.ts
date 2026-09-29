@@ -46,3 +46,21 @@ export type FlatRouteFile = {
   yaru?: string;
   hashi?: string;
 };
+
+export type VeaDeployment = {
+  address: `0x${string}`;
+  contract: string;
+  network: string;
+};
+
+export type VeaRouteFile = {
+  inbox: VeaDeployment;
+  outbox: VeaDeployment;
+  router?: VeaDeployment;
+};
+
+export type VeaRouteAddresses = {
+  inbox: `0x${string}`;
+  outbox: `0x${string}`;
+  router?: `0x${string}`;
+};
