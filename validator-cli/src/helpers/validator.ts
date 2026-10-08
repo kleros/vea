@@ -27,7 +27,7 @@ export interface ChallengeAndResolveClaimParams {
   fetchBlocksAndCheckFinality?: typeof getBlocksAndCheckFinality;
   fetchSettledReadBlocks?: typeof resolveSettledReadBlocks;
   fetchTransactionHandler?: typeof getTransactionHandler;
-  /** Frozen interface (validator-v1-fixes seed): report what this cycle concluded for the epoch; see utils/epochOutcome.ts. */
+  /** Report what this cycle concluded for the epoch; see utils/epochOutcome.ts. */
   reportOutcome?: ReportOutcome;
 }
 
@@ -80,14 +80,7 @@ export async function challengeAndResolveClaim({
   // before the settled-read gate, so a deposit is recovered even when inbox or L1 reads fail.
   if (claim.honest !== 0) {
     emitter.emit(BotEvents.CLAIM_ALREADY_RESOLVED, epoch);
-    if (claim.honest === 2 && isOurAddress(transactionHandler, claim.challenger)) {
-      // Withdrawing deletes the claim hash; the epoch is done once getClaim finds no claim.
-      await transactionHandler.withdrawChallengeDeposit();
-      report(EpochOutcome.PENDING);
-      return transactionHandler;
-    }
-    report(EpochOutcome.DONE);
-    return null;
+    return withdrawIfOurs(transactionHandler, claim, report);
   }
 
   const shutdownOutcome = await handleBridgeShutdown({
@@ -120,21 +113,16 @@ export async function challengeAndResolveClaim({
     return null;
   }
 
-  let challengeState: { challenged: boolean; toRelay: boolean };
-  try {
-    challengeState = await challengeAndCheckRelay({
-      veaInbox,
-      epoch,
-      claim,
-      transactionHandler,
-      arbitrumBlockNumber: settledBlocks.inboxBlock,
-    });
-  } catch (err) {
-    if (err instanceof CannotFundError) {
-      report(EpochOutcome.UNDECIDABLE);
-      return transactionHandler;
-    }
-    throw err;
+  const challengeState = await challengeOrCannotFund({
+    veaInbox,
+    epoch,
+    claim,
+    transactionHandler,
+    arbitrumBlockNumber: settledBlocks.inboxBlock,
+  });
+  if (!challengeState) {
+    report(EpochOutcome.UNDECIDABLE);
+    return transactionHandler;
   }
   const { challenged, toRelay } = challengeState;
   if (!toRelay && !challenged) {
@@ -162,6 +150,37 @@ export async function challengeAndResolveClaim({
   report(EpochOutcome.PENDING);
   return transactionHandler;
 }
+
+/**
+ * A resolved claim: withdraw the challenge deposit when the challenger won and it is ours
+ * (withdrawing deletes the claim hash, so the epoch is done once getClaim finds no claim);
+ * otherwise nothing is left for us.
+ */
+const withdrawIfOurs = async (
+  transactionHandler: ITransactionHandler,
+  claim: ClaimStruct,
+  report: (outcome: EpochOutcome) => void
+): Promise<ITransactionHandler | null> => {
+  if (claim.honest === 2 && isOurAddress(transactionHandler, claim.challenger)) {
+    await transactionHandler.withdrawChallengeDeposit();
+    report(EpochOutcome.PENDING);
+    return transactionHandler;
+  }
+  report(EpochOutcome.DONE);
+  return null;
+};
+
+/** `challengeAndCheckRelay`, with a funding shortfall returned as null rather than thrown. */
+const challengeOrCannotFund = async (
+  params: ChallengeAndCheckRelayParams
+): Promise<{ challenged: boolean; toRelay: boolean } | null> => {
+  try {
+    return await challengeAndCheckRelay(params);
+  } catch (err) {
+    if (err instanceof CannotFundError) return null;
+    throw err;
+  }
+};
 
 interface NoClaimOutcomeParams {
   veaOutbox: any;

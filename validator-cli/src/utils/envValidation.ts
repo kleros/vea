@@ -400,7 +400,6 @@ const checkDeployments = async (
   readOutboxHashClaim: ReadOutboxHashClaim
 ): Promise<void> => {
   const roleToContract: Record<string, string> = { inbox: "veaInbox", outbox: "veaOutbox", router: "veaRouter" };
-  const expectedHash = hashClaim(PARITY_PROBE_CLAIM as any);
   for (const network of networks) {
     const route = bridge.routeConfig[network];
     if (!route) {
@@ -411,33 +410,38 @@ const checkDeployments = async (
       const contract = route[roleToContract[endpoint.role]];
       if (!contract?.address) continue;
       const where = `Chain ${chainId} ${network} ${endpoint.role} at ${contract.address}`;
-      if (endpoint.role === "outbox") {
-        try {
-          const reported = await readOutboxHashClaim(
-            contract.address,
-            contract.abi,
-            PARITY_PROBE_CLAIM,
-            endpoint.provider
-          );
-          if (String(reported).toLowerCase() !== expectedHash.toLowerCase()) {
-            problems.push(
-              `${where} failed the hashClaim parity check: the contract returned ${reported}, the validator computes ${expectedHash}. Wrong address, ABI or chain.`
-            );
-          }
-        } catch (error) {
-          problems.push(`${where} failed the hashClaim parity check: ${(error as Error)?.message}`);
-        }
-        continue;
-      }
-      try {
-        const code = await endpoint.provider.getCode(contract.address);
-        if (!code || code === "0x") {
-          problems.push(`Chain ${chainId} ${network} ${endpoint.role} has no contract code at ${contract.address}.`);
-        }
-      } catch (error) {
-        problems.push(`${where} code check failed: ${(error as Error)?.message}`);
-      }
+      const problem =
+        endpoint.role === "outbox"
+          ? await outboxParityProblem(contract, endpoint.provider, readOutboxHashClaim)
+          : await contractCodeProblem(contract.address, endpoint.provider);
+      if (problem) problems.push(`${where} ${problem}`);
     }
+  }
+};
+
+/** Why the outbox at `contract.address` fails the hashClaim parity check, or null when it passes. */
+const outboxParityProblem = async (
+  contract: { address: string; abi: any },
+  provider: PreflightProvider,
+  readOutboxHashClaim: ReadOutboxHashClaim
+): Promise<string | null> => {
+  const expectedHash = hashClaim(PARITY_PROBE_CLAIM as any);
+  try {
+    const reported = await readOutboxHashClaim(contract.address, contract.abi, PARITY_PROBE_CLAIM, provider);
+    if (String(reported).toLowerCase() === expectedHash.toLowerCase()) return null;
+    return `failed the hashClaim parity check: the contract returned ${reported}, the validator computes ${expectedHash}. Wrong address, ABI or chain.`;
+  } catch (error) {
+    return `failed the hashClaim parity check: ${(error as Error)?.message}`;
+  }
+};
+
+/** Why `address` holds no contract, or null when code is deployed there. */
+const contractCodeProblem = async (address: string, provider: PreflightProvider): Promise<string | null> => {
+  try {
+    const code = await provider.getCode(address);
+    return !code || code === "0x" ? "has no contract code." : null;
+  } catch (error) {
+    return `code check failed: ${(error as Error)?.message}`;
   }
 };
 
@@ -610,20 +614,21 @@ const validateRoutes = (chainIds: number[], problems: string[], fetchBridgeConfi
     ];
     if (rpcEnvVars.router) endpoints.push([rpcEnvVars.router, bridge.routerRPC]);
 
-    for (const [envVar, urls] of endpoints) {
-      if (!urls || urls.length === 0) {
-        problems.push(`${envVar} is empty but chain ${chainId} needs it.`);
-        continue;
-      }
-      for (const [index, url] of urls.entries()) {
-        if (!isHttpUrl(url)) {
-          problems.push(`${envVar} endpoint ${index + 1} (${describeUrl(url)}) is not an http(s) URL.`);
-        }
-      }
-    }
+    for (const [envVar, urls] of endpoints) validateRpcList(envVar, urls, chainId, problems);
 
     if (bridge.depositTokenEnvVar && !bridge.depositToken) {
       problems.push(`${bridge.depositTokenEnvVar} is not set but chain ${chainId} takes its deposit in that token.`);
     }
+  }
+};
+
+/** One RPC list must be non-empty and hold only http(s) URLs. */
+const validateRpcList = (envVar: string, urls: string[] | undefined, chainId: number, problems: string[]): void => {
+  if (!urls || urls.length === 0) {
+    problems.push(`${envVar} is empty but chain ${chainId} needs it.`);
+    return;
+  }
+  for (const [index, url] of urls.entries()) {
+    if (!isHttpUrl(url)) problems.push(`${envVar} endpoint ${index + 1} (${describeUrl(url)}) is not an http(s) URL.`);
   }
 };

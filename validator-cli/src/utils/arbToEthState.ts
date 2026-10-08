@@ -152,8 +152,8 @@ export interface OutboxReadBlockParams {
 }
 
 // Outbox chains (by `getNetwork().chainId`) whose finality stall has been alerted and not yet
-// cleared. Run-001 #13: one `OUTBOX_FINALITY_STALLED` per stall and chain, one
-// `OUTBOX_FINALITY_RECOVERED` when it clears, however many reads happen in between.
+// cleared: one `OUTBOX_FINALITY_STALLED` per stall and chain, one `OUTBOX_FINALITY_RECOVERED`
+// when it clears, however many reads happen in between.
 const stalledOutboxChains = new Set<number>();
 
 /** Test-only: forget every chain marked stalled, so each test starts with no stall alerted. */
@@ -180,10 +180,10 @@ const outboxChainIdOf = async (outboxProvider: JsonRpcProvider): Promise<number 
  * The outbox-chain block every outbox read is pinned to (`claimHashes`, `stateRoot`, the
  * `Claimed` / `Challenged` / `VerificationStarted` scans).
  *
- * Frozen interface (validator-v1-fixes seed). It is the outbox chain's `finalized` block,
- * except while that chain's finality has stalled (its `finalized` block is more than
- * `FINALITY_STALL_SECS` behind `latest` by block timestamps): then decision [O4] reads at
- * `latest` minus 64 blocks, so claims made during the stall stay visible. Callers read the
+ * It is the outbox chain's `finalized` block, except while that chain's finality has stalled
+ * (its `finalized` block is more than `FINALITY_STALL_SECS` behind `latest` by block
+ * timestamps): then it reads at `latest` minus 64 blocks, so claims made during the stall
+ * stay visible. Callers read the
  * outbox head through this function, never through `getBlock("finalized")` directly, so
  * the stall rule lives in one place.
  *
@@ -207,32 +207,47 @@ export const getOutboxReadBlock = async ({
   // finalized, finalized is both the newer and the safer block.
   if (stalledBySecs > FINALITY_STALL_SECS && latest.number - OUTBOX_STALL_DEPTH_BLOCKS > finalized.number) {
     const block = await outboxProvider.getBlock(latest.number - OUTBOX_STALL_DEPTH_BLOCKS);
-    const chainId = await outboxChainIdOf(outboxProvider);
-    if (chainId === undefined || !stalledOutboxChains.has(chainId)) {
-      if (chainId !== undefined) stalledOutboxChains.add(chainId);
-      emitter.emit(BotEvents.ALERT, {
-        level: "warn",
-        code: "OUTBOX_FINALITY_STALLED",
-        ...(chainId !== undefined ? { chainId } : {}),
-        details: { finalizedBlock: finalized.number, stalledBySecs, readBlock: block.number },
-      });
-    }
+    await alertStallStarted(outboxProvider, emitter, {
+      finalizedBlock: finalized.number,
+      stalledBySecs,
+      readBlock: block.number,
+    });
     return { number: block.number, timestamp: block.timestamp };
   }
   // Recovered only once finalized is back within the stall bound; the edge case above (a lag in
   // seconds but fewer than 64 blocks) neither starts nor clears a stall.
   if (stalledBySecs <= FINALITY_STALL_SECS && stalledOutboxChains.size > 0) {
-    const chainId = await outboxChainIdOf(outboxProvider);
-    if (chainId !== undefined && stalledOutboxChains.delete(chainId)) {
-      emitter.emit(BotEvents.ALERT, {
-        level: "warn",
-        code: "OUTBOX_FINALITY_RECOVERED",
-        chainId,
-        details: { finalizedBlock: finalized.number, stalledBySecs },
-      });
-    }
+    await alertStallCleared(outboxProvider, emitter, { finalizedBlock: finalized.number, stalledBySecs });
   }
   return { number: finalized.number, timestamp: finalized.timestamp };
+};
+
+/** `OUTBOX_FINALITY_STALLED` once per chain per stall (every read, when the chain id is unknown). */
+const alertStallStarted = async (
+  outboxProvider: JsonRpcProvider,
+  emitter: typeof defaultEmitter,
+  details: Record<string, number>
+): Promise<void> => {
+  const chainId = await outboxChainIdOf(outboxProvider);
+  if (chainId !== undefined && stalledOutboxChains.has(chainId)) return;
+  if (chainId !== undefined) stalledOutboxChains.add(chainId);
+  emitter.emit(BotEvents.ALERT, {
+    level: "warn",
+    code: "OUTBOX_FINALITY_STALLED",
+    ...(chainId !== undefined ? { chainId } : {}),
+    details,
+  });
+};
+
+/** `OUTBOX_FINALITY_RECOVERED` once, for a chain that was marked stalled. */
+const alertStallCleared = async (
+  outboxProvider: JsonRpcProvider,
+  emitter: typeof defaultEmitter,
+  details: Record<string, number>
+): Promise<void> => {
+  const chainId = await outboxChainIdOf(outboxProvider);
+  if (chainId === undefined || !stalledOutboxChains.delete(chainId)) return;
+  emitter.emit(BotEvents.ALERT, { level: "warn", code: "OUTBOX_FINALITY_RECOVERED", chainId, details });
 };
 
 /**

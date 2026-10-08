@@ -208,8 +208,9 @@ const connectRoute = (chainId: number, network: Network, emitter: typeof default
 };
 
 /**
- * [L5] window: every E with floor((now - B) / P) - 2 <= E <= floor(now / P) - 1,
- * where B = epochPeriod + sequencerDelayLimit + minChallengePeriod.
+ * The epochs a claim can still be challenged in: every E with
+ * floor((now - B) / P) - 2 <= E <= floor(now / P) - 1, where B is the challenge budget
+ * (epochPeriod + sequencerDelayLimit + minChallengePeriod).
  */
 const watchWindow = (now: number, epochPeriod: number, sequencerDelayLimit: number, minChallengePeriod: number) => {
   const budget = epochPeriod + sequencerDelayLimit + minChallengePeriod;
@@ -256,36 +257,21 @@ async function processRoute({
   route.connections ??= connectRoute(chainId, network, emitter);
   const connections = route.connections;
 
-  // Every "now" of this cycle is the outbox chain's latest block time (PRD 4.2), never the host clock.
+  // Every "now" of this cycle is the outbox chain's latest block time, never the host clock.
   const now = (await connections.veaOutboxProvider.getBlock("latest")).timestamp;
   route.firstCycleTime ??= now;
   const currentEpoch = Math.floor(now / epochPeriod);
 
-  let toWatch: number[];
-  let windowLow: number | undefined;
-  if (network == Network.DEVNET) {
-    // [L8] devnet: only the current epoch, as before; older ones leave at rollover.
-    for (const epoch of [...route.epochs.keys()]) {
-      if (epoch != currentEpoch) dropEpoch(state, route, epoch, "devnet_rollover", emitter);
-    }
-    toWatch = [currentEpoch];
-  } else {
-    if (!route.coldStartDone) {
-      // A restarted bot picks up disputes it started earlier: the cold-start range is the
-      // route's initial set of older epochs, each kept until examined under the [L8] rule.
-      const epochRange = setEpochRange({ chainId, currentTimestamp: now, epochPeriod, now: now * 1000 });
-      for (const epoch of epochRange) {
-        if (!route.epochs.has(epoch)) route.epochs.set(epoch, { nullStreak: 0, done: false, undecidableStreak: 0 });
-      }
-      route.coldStartDone = true;
-    }
-    const window = watchWindow(now, epochPeriod, sequencerDelayLimit, minChallengePeriod);
-    windowLow = window.low;
-    const epochs = new Set<number>(route.epochs.keys());
-    for (let epoch = window.low; epoch <= window.high; epoch++) epochs.add(epoch);
-    // Newest first: the claimable epoch is the most time-sensitive.
-    toWatch = [...epochs].filter((epoch) => epoch <= window.high).sort((a, b) => b - a);
-  }
+  const { toWatch, windowLow } = collectEpochsToWatch({
+    route,
+    state,
+    now,
+    currentEpoch,
+    epochPeriod,
+    sequencerDelayLimit,
+    minChallengePeriod,
+    emitter,
+  });
 
   if (toSaveSnapshot) await processSnapshot({ route, state, connections, epochPeriod, now, currentEpoch, emitter });
 
@@ -296,19 +282,71 @@ async function processRoute({
   }
 
   if (windowLow !== undefined) {
-    // [L8] testnet exit rule, for epochs older than the window only.
-    for (const [epoch, track] of [...route.epochs]) {
-      if (epoch >= windowLow) continue;
-      if (track.done) dropEpoch(state, route, epoch, "done", emitter);
-      else if (track.nullStreak >= NULL_CYCLES_TO_LEAVE) dropEpoch(state, route, epoch, "no_claim", emitter);
-    }
+    pruneAgedEpochs(state, route, windowLow, emitter);
     checkLiveness(route, now, emitter);
   }
 }
 
+interface CollectEpochsParams {
+  route: RouteState;
+  state: WatcherState;
+  now: number;
+  currentEpoch: number;
+  epochPeriod: number;
+  sequencerDelayLimit: number;
+  minChallengePeriod: number;
+  emitter: typeof defaultEmitter;
+}
+
 /**
- * [G4] as refined by [L4] and [L6]: one LIVENESS_ALARM per 24 h of outbox chain time while the
- * newest fetched `timestampClaimed` (or, with none fetched, the first cycle's time) is 24 h old.
+ * Which epochs this cycle examines, newest first. Devnet watches only the current epoch and
+ * drops older ones at rollover. Testnet watches the challenge-budget window plus every older
+ * epoch still tracked; on a route's first cycle the cold-start range is added so a restarted
+ * bot picks up disputes it started earlier.
+ */
+const collectEpochsToWatch = ({
+  route,
+  state,
+  now,
+  currentEpoch,
+  epochPeriod,
+  sequencerDelayLimit,
+  minChallengePeriod,
+  emitter,
+}: CollectEpochsParams): { toWatch: number[]; windowLow?: number } => {
+  if (route.network == Network.DEVNET) {
+    for (const epoch of [...route.epochs.keys()]) {
+      if (epoch != currentEpoch) dropEpoch(state, route, epoch, "devnet_rollover", emitter);
+    }
+    return { toWatch: [currentEpoch] };
+  }
+  if (!route.coldStartDone) {
+    const epochRange = setEpochRange({ chainId: route.chainId, currentTimestamp: now, epochPeriod, now: now * 1000 });
+    for (const epoch of epochRange) {
+      if (!route.epochs.has(epoch)) route.epochs.set(epoch, { nullStreak: 0, done: false, undecidableStreak: 0 });
+    }
+    route.coldStartDone = true;
+  }
+  const window = watchWindow(now, epochPeriod, sequencerDelayLimit, minChallengePeriod);
+  const epochs = new Set<number>(route.epochs.keys());
+  for (let epoch = window.low; epoch <= window.high; epoch++) epochs.add(epoch);
+  // Newest first: the claimable epoch is the most time-sensitive.
+  const toWatch = [...epochs].filter((epoch) => epoch <= window.high).sort((a, b) => b - a);
+  return { toWatch, windowLow: window.low };
+};
+
+/** Testnet exit rule for epochs older than the window: gone once done, or after two cycles without a claim. */
+const pruneAgedEpochs = (state: WatcherState, route: RouteState, windowLow: number, emitter: typeof defaultEmitter) => {
+  for (const [epoch, track] of [...route.epochs]) {
+    if (epoch >= windowLow) continue;
+    if (track.done) dropEpoch(state, route, epoch, "done", emitter);
+    else if (track.nullStreak >= NULL_CYCLES_TO_LEAVE) dropEpoch(state, route, epoch, "no_claim", emitter);
+  }
+};
+
+/**
+ * One LIVENESS_ALARM per 24 h of outbox chain time while the newest fetched `timestampClaimed`
+ * (or, with none fetched, the first cycle's time) is 24 h old.
  */
 const checkLiveness = (route: RouteState, now: number, emitter: typeof defaultEmitter) => {
   const baseline = route.newestClaimTimestamp ?? route.firstCycleTime;
@@ -378,8 +416,8 @@ async function processSnapshot({
 }
 
 /**
- * [L10]: the claim/challenge handler is built here, once per epoch, with every provider
- * (the router included), and passed into both helpers.
+ * The claim/challenge handler is built here, once per epoch, with every provider (the router
+ * included), and passed into both helpers.
  */
 const buildHandler = (
   route: RouteState,
@@ -413,89 +451,112 @@ interface ProcessEpochParams {
   emitter: typeof defaultEmitter;
 }
 
+/** What one cycle's work on an epoch produced, before the keep/exit bookkeeping. */
+interface EpochCycleResult {
+  claim: Awaited<ReturnType<typeof getClaim>>;
+  outcome: EpochOutcome | undefined;
+  failures: string[];
+  handlerReturned: boolean;
+}
+
 async function processEpoch({ path, route, state, connections, epochPeriod, epoch, now, emitter }: ProcessEpochParams) {
   const { chainId, network } = route;
-  const { veaInbox, veaOutbox, veaInboxProvider, veaOutboxProvider, veaRouterProvider } = connections;
   let track = route.epochs.get(epoch);
   if (!track) {
     track = { nullStreak: 0, done: false, undecidableStreak: 0 };
     route.epochs.set(epoch, track);
   }
-  const key = claimHandlerKey(chainId, network, epoch);
-  const failures: string[] = [];
-  let outcome: EpochOutcome | undefined;
-  const reportOutcome = (reported: EpochOutcome) => {
-    outcome = mergeOutcomes(outcome, reported);
-  };
-  let claim: Awaited<ReturnType<typeof getClaim>> = null;
-  let claimFetched = false;
-  let handlerReturned = false;
 
-  try {
-    claim = await getClaim({ network, chainId, veaOutbox, veaOutboxProvider, epoch, epochPeriod, emitter });
-    claimFetched = true;
-  } catch (error) {
-    failures.push(`getClaim: ${errorMessage(error)}`);
-  }
-  if (claim) {
-    const claimed = Number(claim.timestampClaimed);
+  const result = await runEpochHelpers({ path, route, state, connections, epochPeriod, epoch, now, emitter });
+  if (result.claim) {
+    const claimed = Number(result.claim.timestampClaimed);
     if (claimed > 0 && claimed > (route.newestClaimTimestamp ?? 0)) route.newestClaimTimestamp = claimed;
   }
+  for (const message of result.failures) emitter.emit(BotEvents.EPOCH_FAILED, { chainId, network, epoch, message });
 
-  if (claimFetched) {
-    const transactionHandler = () =>
-      (state.transactionHandlers[key] ??= buildHandler(route, connections, epoch, emitter));
-    // Each helper is isolated, so a challenger throw does not stop the claimer's work on the same epoch.
-    if (path > BotPaths.CLAIMER && claim != null) {
-      try {
-        const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {
-          chainId,
-          claim,
-          epoch,
-          epochPeriod,
-          veaInbox,
-          veaInboxProvider,
-          veaOutboxProvider,
-          veaRouterProvider,
-          veaOutbox,
-          transactionHandler: transactionHandler(),
-          emitter,
-          reportOutcome,
-        };
-        if (await challengeAndResolveClaim(checkAndChallengeResolveDeps)) handlerReturned = true;
-      } catch (error) {
-        failures.push(`challengeAndResolveClaim: ${errorMessage(error)}`);
-      }
-    }
-    if (path == BotPaths.CLAIMER || path == BotPaths.BOTH) {
-      try {
-        // No `now` here ([L9]): checkAndClaim takes milliseconds and defaults to chain time itself.
-        const checkAndClaimParams: CheckAndClaimParams = {
-          network,
-          chainId,
-          claim,
-          epoch,
-          epochPeriod,
-          veaInbox,
-          veaInboxProvider,
-          veaOutboxProvider,
-          veaRouterProvider,
-          veaOutbox,
-          transactionHandler: transactionHandler(),
-          emitter,
-          reportOutcome,
-        };
-        if (await checkAndClaim(checkAndClaimParams)) handlerReturned = true;
-      } catch (error) {
-        failures.push(`checkAndClaim: ${errorMessage(error)}`);
-      }
-    }
+  updateKeepState(track, result);
+  trackUndecidable(track, result, { route, epoch, epochPeriod, now, emitter });
+}
+
+/**
+ * Fetch the claim and run the challenger and claimer on it. Each step is isolated: a throw in
+ * one is recorded as a failure and does not stop the others on the same epoch.
+ */
+async function runEpochHelpers({
+  path,
+  route,
+  state,
+  connections,
+  epochPeriod,
+  epoch,
+  emitter,
+}: ProcessEpochParams): Promise<EpochCycleResult> {
+  const { chainId, network } = route;
+  const { veaInbox, veaOutbox, veaInboxProvider, veaOutboxProvider, veaRouterProvider } = connections;
+  const result: EpochCycleResult = { claim: null, outcome: undefined, failures: [], handlerReturned: false };
+  const reportOutcome = (reported: EpochOutcome) => {
+    result.outcome = mergeOutcomes(result.outcome, reported);
+  };
+
+  try {
+    result.claim = await getClaim({ network, chainId, veaOutbox, veaOutboxProvider, epoch, epochPeriod, emitter });
+  } catch (error) {
+    result.failures.push(`getClaim: ${errorMessage(error)}`);
+    return result;
   }
 
-  const failed = failures.length > 0;
-  for (const message of failures) emitter.emit(BotEvents.EPOCH_FAILED, { chainId, network, epoch, message });
+  const key = claimHandlerKey(chainId, network, epoch);
+  const transactionHandler = () =>
+    (state.transactionHandlers[key] ??= buildHandler(route, connections, epoch, emitter));
+  const shared = {
+    chainId,
+    epoch,
+    epochPeriod,
+    veaInbox,
+    veaInboxProvider,
+    veaOutboxProvider,
+    veaRouterProvider,
+    veaOutbox,
+    emitter,
+    reportOutcome,
+  };
 
-  // [L8] keep and exit state.
+  if (path > BotPaths.CLAIMER && result.claim != null) {
+    try {
+      const deps: ChallengeAndResolveClaimParams = {
+        ...shared,
+        claim: result.claim,
+        transactionHandler: transactionHandler(),
+      };
+      if (await challengeAndResolveClaim(deps)) result.handlerReturned = true;
+    } catch (error) {
+      result.failures.push(`challengeAndResolveClaim: ${errorMessage(error)}`);
+    }
+  }
+  if (path == BotPaths.CLAIMER || path == BotPaths.BOTH) {
+    try {
+      // No `now` here: checkAndClaim takes milliseconds and defaults to chain time itself.
+      const params: CheckAndClaimParams = {
+        ...shared,
+        network,
+        claim: result.claim,
+        transactionHandler: transactionHandler(),
+      };
+      if (await checkAndClaim(params)) result.handlerReturned = true;
+    } catch (error) {
+      result.failures.push(`checkAndClaim: ${errorMessage(error)}`);
+    }
+  }
+  return result;
+}
+
+/**
+ * Keep-and-exit bookkeeping: an epoch stays while it has a claim, a pending or undecidable
+ * outcome, a failure this cycle, or a returned handler with no report; it is done only on an
+ * explicit DONE with no failure.
+ */
+const updateKeepState = (track: EpochTrack, { claim, outcome, failures, handlerReturned }: EpochCycleResult) => {
+  const failed = failures.length > 0;
   const keep =
     failed ||
     claim != null ||
@@ -504,26 +565,41 @@ async function processEpoch({ path, route, state, connections, epochPeriod, epoc
     (outcome === undefined && handlerReturned);
   track.nullStreak = keep ? 0 : track.nullStreak + 1;
   track.done = !failed && outcome === EpochOutcome.DONE;
+};
 
-  // [L3] undecidable streak, from (E+1)·P + 3600 s of chain time.
-  if (now >= (epoch + 1) * epochPeriod + UNDECIDABLE_GRACE_SECS) {
-    if (failed || outcome === EpochOutcome.UNDECIDABLE) {
-      track.undecidableStreak++;
-      if (track.undecidableStreak % UNDECIDABLE_CYCLES_TO_ALERT == 0) {
-        emitter.emit(BotEvents.ALERT, {
-          level: "error",
-          code: "epoch_undecidable",
-          chainId,
-          network,
-          epoch,
-          details: { consecutiveCycles: track.undecidableStreak },
-        });
-      }
-    } else {
-      track.undecidableStreak = 0;
-    }
-  }
+interface TrackUndecidableContext {
+  route: RouteState;
+  epoch: number;
+  epochPeriod: number;
+  now: number;
+  emitter: typeof defaultEmitter;
 }
+
+/**
+ * Count consecutive undecidable (or failed) cycles once the epoch is an hour past its end, so
+ * normal settlement lag never alerts, and raise `epoch_undecidable` every 15 of them.
+ */
+const trackUndecidable = (
+  track: EpochTrack,
+  { outcome, failures }: EpochCycleResult,
+  { route, epoch, epochPeriod, now, emitter }: TrackUndecidableContext
+) => {
+  if (now < (epoch + 1) * epochPeriod + UNDECIDABLE_GRACE_SECS) return;
+  if (failures.length === 0 && outcome !== EpochOutcome.UNDECIDABLE) {
+    track.undecidableStreak = 0;
+    return;
+  }
+  track.undecidableStreak++;
+  if (track.undecidableStreak % UNDECIDABLE_CYCLES_TO_ALERT != 0) return;
+  emitter.emit(BotEvents.ALERT, {
+    level: "error",
+    code: "epoch_undecidable",
+    chainId: route.chainId,
+    network: route.network,
+    epoch,
+    details: { consecutiveCycles: track.undecidableStreak },
+  });
+};
 
 if (require.main === module) {
   const shutDownSignal = new ShutdownSignal(false);
