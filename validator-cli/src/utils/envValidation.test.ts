@@ -1,6 +1,8 @@
-import { validateEnvironment, defaultCreateProvider } from "./envValidation";
+import { validateEnvironment, defaultCreateProvider, PARITY_PROBE_CLAIM } from "./envValidation";
+import { hashClaim } from "./claim";
 import { EnvValidationError } from "./errors";
 import { Network } from "../consts/bridgeRoutes";
+import { ethers } from "ethers";
 
 // A funded, well-formed baseline that every test mutates one field of, so each
 // test states exactly the one thing it is about.
@@ -59,6 +61,7 @@ const deps = (overrides: any = {}) => ({
   fetchBridgeConfig: jest.fn(bridgeFor) as any,
   createProvider: jest.fn((_urls: string[], chainId: number) => healthyProvider(chainId)) as any,
   readDepositTokenBalance: jest.fn(async () => ({ balance: 10n, allowance: 10n })),
+  readOutboxHashClaim: jest.fn(async () => hashClaim(PARITY_PROBE_CLAIM as any)),
   ...overrides,
 });
 
@@ -225,7 +228,7 @@ describe("envValidation", () => {
       expect(result.signerAddress).toEqual(SIGNER);
     });
 
-    it("rejects an address with no contract code deployed at it", async () => {
+    it("rejects an inbox address with no contract code deployed at it", async () => {
       const createProvider = jest.fn((_urls: string[], chainId: number) => ({
         ...healthyProvider(chainId),
         getCode: jest.fn(async () => "0x"),
@@ -233,10 +236,10 @@ describe("envValidation", () => {
 
       const problems = await problemsFrom(deps({ createProvider }));
 
-      expect(problems.some((p) => p.includes("no contract code"))).toBe(true);
+      expect(problems.some((p) => p.includes("inbox") && p.includes("no contract code"))).toBe(true);
     });
 
-    it("rejects a signer with no native balance for gas", async () => {
+    it("refuses to start when the signer has no native balance for gas (operator decision after run 004)", async () => {
       const createProvider = jest.fn((_urls: string[], chainId: number) => ({
         ...healthyProvider(chainId),
         getBalance: jest.fn(async () => 0n),
@@ -293,6 +296,7 @@ describe("envValidation", () => {
           env: { ...validEnv(), VEAOUTBOX_CHAINS: `${SEPOLIA},${CHIADO}`, RPC_GNOSIS: "https://gno.example/rpc" },
           fetchBridgeConfig,
           createProvider,
+          readOutboxHashClaim: jest.fn(async () => ethers.ZeroHash),
         })
       );
 
@@ -319,6 +323,7 @@ describe("envValidation", () => {
         fetchBridgeConfig: getBridgeConfig,
         createProvider: (_urls: string[], chainId: number) => healthyProvider(chainId),
         readDepositTokenBalance: async () => ({ balance: 10n ** 18n, allowance: 10n ** 18n }),
+        readOutboxHashClaim: async () => hashClaim(PARITY_PROBE_CLAIM as any),
       });
 
       expect(result.chainIds).toEqual([SEPOLIA, CHIADO]);

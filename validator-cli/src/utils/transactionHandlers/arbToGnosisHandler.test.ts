@@ -1,4 +1,4 @@
-import { ArbToGnosisTransactionHandler } from "./arbToGnosisHandler";
+import { ArbToGnosisTransactionHandler, resetNonceStuckAlerts } from "./arbToGnosisHandler";
 import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
 import { getWETH } from "../ethers";
 import { messageExecutor } from "../arbMsgExecutor";
@@ -16,6 +16,8 @@ jest.mock("../ethers", () => ({
 jest.mock("../arbMsgExecutor", () => ({ messageExecutor: jest.fn() }));
 
 describe("ArbToGnosisTransactionHandler", () => {
+  afterEach(() => jest.useRealTimers());
+
   const mockEmitter = new MockEmitter();
   const chainId = 11155111;
   const epoch = 42;
@@ -40,6 +42,9 @@ describe("ArbToGnosisTransactionHandler", () => {
   let weth: any;
 
   beforeEach(() => {
+    // Pin the clock: nothing here may depend on how fast the machine runs.
+    jest.useFakeTimers({ now: 1_700_000_000_000, doNotFake: ["nextTick", "queueMicrotask"] });
+    resetNonceStuckAlerts();
     // Mock bridge config
     (getBridgeConfig as jest.Mock).mockReturnValue({
       depositToken,
@@ -51,8 +56,18 @@ describe("ArbToGnosisTransactionHandler", () => {
 
     // Providers
     inboxProvider = { getTransactionReceipt: jest.fn(), getBlock: jest.fn() };
-    outboxProvider = { getTransactionReceipt: jest.fn(), getBlock: jest.fn() };
-    routerProvider = { getTransactionReceipt: jest.fn(), getBlock: jest.fn() };
+    outboxProvider = {
+      getTransactionReceipt: jest.fn(),
+      getBlock: jest.fn(),
+      getBalance: jest.fn().mockResolvedValue(BigInt(10) ** BigInt(18)),
+      getFeeData: jest.fn().mockResolvedValue({ maxFeePerGas: BigInt(1), gasPrice: BigInt(1) }),
+      getTransactionCount: jest.fn().mockResolvedValue(7),
+    };
+    routerProvider = {
+      getTransactionReceipt: jest.fn(),
+      getBlock: jest.fn(),
+      getBalance: jest.fn().mockResolvedValue(BigInt(10) ** BigInt(18)),
+    };
 
     // Stub veaInbox/veaOutbox contract methods
     veaInbox = {
@@ -97,8 +112,12 @@ describe("ArbToGnosisTransactionHandler", () => {
     // Instantiate with no claim by default
     transactionHandler = new ArbToGnosisTransactionHandler(transactionHandlerParams);
     weth = {
+      balanceOf: jest.fn().mockResolvedValue(deposit),
       allowance: jest.fn().mockResolvedValue(BigInt(0)),
-      approve: jest.fn().mockResolvedValue({ wait: jest.fn().mockResolvedValue({}) }),
+      approve: jest.fn().mockImplementation(async () => {
+        weth.allowance.mockResolvedValue(deposit * BigInt(10));
+        return { wait: jest.fn().mockResolvedValue({}) };
+      }),
     };
     (getWETH as jest.Mock).mockReturnValue(weth);
   });

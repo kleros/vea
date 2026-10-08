@@ -35,6 +35,23 @@ export interface ITransactionHandler {
   sendSnapshot(): Promise<void>;
   resolveChallengedClaim(sendSnapshotTxn: string): Promise<void>;
   routeSnapshot?(): Promise<void>;
+  /* Optional so hand-written handler mocks stay valid; every concrete handler implements them. */
+  isBridgeShutdown?(): Promise<boolean>;
+  getSignerAddress?(): string | undefined;
+  withdrawClaimerEscapeHatch?(): Promise<void>;
+  withdrawChallengerEscapeHatch?(): Promise<void>;
+}
+
+/**
+ * Thrown by a handler that declined to send because the bot cannot pay for the transaction
+ * (deposit, WETH allowance or gas). `CANNOT_FUND` has already been emitted when it is thrown.
+ */
+export class CannotFundError extends Error {
+  constructor(action: string) {
+    super();
+    this.name = "CannotFundError";
+    this.message = `Cannot fund ${action}`;
+  }
 }
 
 export enum ContractType {
@@ -67,6 +84,8 @@ export type Transactions = {
   sendSnapshotTxn: Transaction | null;
   executeSnapshotTxn: Transaction | null;
   devnetAdvanceStateTxn?: Transaction | null;
+  claimerEscapeHatchTxn?: Transaction | null;
+  challengerEscapeHatchTxn?: Transaction | null;
 };
 
 export const MAX_PENDING_TIME = 5 * 60 * 1000; // 5 minutes
@@ -122,6 +141,8 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
     saveSnapshotTxn: null,
     sendSnapshotTxn: null,
     executeSnapshotTxn: null,
+    claimerEscapeHatchTxn: null,
+    challengerEscapeHatchTxn: null,
   };
 
   constructor({
@@ -304,6 +325,109 @@ export abstract class BaseTransactionHandler<Inbox, Outbox> implements ITransact
       hash: tx.hash,
       broadcastedTimestamp: now,
     };
+  }
+
+  /** The address the outbox contract is connected with: our claimer / challenger address. */
+  public getSignerAddress(): string | undefined {
+    return (this.veaOutbox as any)?.runner?.address;
+  }
+
+  /**
+   * The contract's own timeout rule (`OnlyBridgeShutdown`):
+   * `block.timestamp / epochPeriod - latestVerifiedEpoch > timeoutEpochs`, evaluated at the
+   * outbox chain's latest block, which is the earliest block a transaction can land in.
+   * Shutdown is permanent: `latestVerifiedEpoch` only moves through calls the shutdown blocks.
+   */
+  public async isBridgeShutdown(): Promise<boolean> {
+    const outbox = this.veaOutbox as any;
+    // Both are immutable in the outbox contracts.
+    this.timeoutParams ??= await Promise.all([outbox.timeoutEpochs(), outbox.epochPeriod()]).then(
+      ([timeoutEpochs, epochPeriod]) => ({ timeoutEpochs: BigInt(timeoutEpochs), epochPeriod: BigInt(epochPeriod) })
+    );
+    // The head and `latestVerifiedEpoch` come from the same provider at the same block, so a
+    // failover between the two reads cannot pair one endpoint's head with another's state.
+    const latestBlock = await this.veaOutboxProvider.getBlock("latest");
+    const latestVerifiedEpoch = await this.readOutboxAt("latestVerifiedEpoch", latestBlock.number);
+    const { timeoutEpochs, epochPeriod } = this.timeoutParams;
+    const epochNow = BigInt(latestBlock.timestamp) / epochPeriod;
+    return epochNow - BigInt(latestVerifiedEpoch) > timeoutEpochs;
+  }
+  private timeoutParams?: { timeoutEpochs: bigint; epochPeriod: bigint };
+
+  /** Read an argument-less outbox view through `veaOutboxProvider`, pinned to `blockNumber`. */
+  private async readOutboxAt(method: string, blockNumber: number): Promise<bigint> {
+    const outbox = this.veaOutbox as any;
+    const address = typeof outbox.target === "string" ? outbox.target : undefined;
+    if (!outbox.interface || !address) {
+      // A contract without an ABI interface (a hand-written stub): still pin the block.
+      return BigInt(await outbox[method]({ blockTag: blockNumber }));
+    }
+    const data = outbox.interface.encodeFunctionData(method, []);
+    const result = await this.veaOutboxProvider.call({ to: address, data }, blockNumber);
+    return BigInt(outbox.interface.decodeFunctionResult(method, result)[0]);
+  }
+
+  public async withdrawClaimerEscapeHatch(): Promise<void> {
+    await this.withdrawEscapeHatch("claimer");
+  }
+
+  public async withdrawChallengerEscapeHatch(): Promise<void> {
+    await this.withdrawEscapeHatch("challenger");
+  }
+
+  private async withdrawEscapeHatch(party: "claimer" | "challenger"): Promise<void> {
+    if (!this.claim) throw new ClaimNotSetError();
+    const txnKey = party === "claimer" ? "claimerEscapeHatchTxn" : "challengerEscapeHatchTxn";
+    const now = Date.now();
+    const toSubmit = await this.toSubmitTransaction(this.transactions[txnKey] ?? null, ContractType.OUTBOX, now);
+    if (!toSubmit) return;
+
+    const routeRef = { chainId: this.chainId, network: this.network, epoch: this.epoch, party };
+    this.emitter.emit(BotEvents.ESCAPE_HATCH, { ...routeRef, action: "withdrawing" });
+    const method = party === "claimer" ? "withdrawClaimerEscapeHatch" : "withdrawChallengerEscapeHatch";
+    const tx = await (this.veaOutbox as any)[method](this.epoch, this.claim);
+    this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, `Withdraw ${party} escape hatch`);
+    this.transactions[txnKey] = { hash: tx.hash, broadcastedTimestamp: now };
+  }
+
+  /**
+   * Check, before sending, that the signer can pay `value` plus `gasLimit` at the fee it will
+   * pay, on the chain `provider` serves (the outbox chain by default). Emits `CANNOT_FUND` and
+   * throws `CannotFundError` when it cannot.
+   */
+  protected async ensureNativeFunds(
+    action: string,
+    {
+      value = BigInt(0),
+      gasLimit = BigInt(0),
+      maxFeePerGas,
+    }: { value?: bigint; gasLimit?: bigint; maxFeePerGas?: bigint },
+    provider: JsonRpcProvider = this.veaOutboxProvider
+  ): Promise<void> {
+    const address = this.getSignerAddress();
+    if (!address) return;
+    let feePerGas = maxFeePerGas;
+    if (feePerGas === undefined && gasLimit > BigInt(0)) {
+      const feeData = await provider.getFeeData();
+      const fee = feeData.maxFeePerGas ?? feeData.gasPrice;
+      feePerGas = fee == null ? BigInt(0) : BigInt(fee.toString());
+    }
+    const required = value + gasLimit * (feePerGas ?? BigInt(0));
+    const available = BigInt((await provider.getBalance(address)).toString());
+    // A send needs gas even when nothing else is known about its price.
+    if (available < required || available === BigInt(0)) this.cannotFund(action, required, available);
+  }
+
+  protected cannotFund(action: string, required: bigint, available: bigint): never {
+    this.emitter.emit(BotEvents.CANNOT_FUND, {
+      chainId: this.chainId,
+      network: this.network,
+      epoch: this.epoch,
+      action,
+      required: required.toString(),
+      available: available.toString(),
+    });
+    throw new CannotFundError(action);
   }
 
   public abstract makeClaim(stateRoot: string): Promise<void>;

@@ -7,6 +7,7 @@ import { toBigInt, Wallet } from "ethers";
 import {
   BaseTransactionHandler,
   BaseTransactionHandlerConstructor,
+  CannotFundError,
   ContractType,
   Transaction,
   Transactions,
@@ -17,23 +18,109 @@ import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
 import { getWETH } from "../ethers";
 import { messageExecutor } from "../arbMsgExecutor";
 
+/** The longest a WETH approval's receipt is awaited before the cycle moves on. */
+export const APPROVAL_RECEIPT_TIMEOUT_MS = 3 * 60 * 1000;
+
+/** Routes and epochs (`${chainId}_${network}_${epoch}`) whose `NONCE_STUCK` alert is out. */
+const nonceStuckAlerted = new Set<string>();
+
+/** Test-only: forget which `NONCE_STUCK` alerts were emitted. */
+export const resetNonceStuckAlerts = (): void => nonceStuckAlerted.clear();
+
+/** Resolve true once `tx` is mined, false when `timeoutMs` passes first. A revert still throws. */
+const waitWithBound = async (
+  tx: { wait: (confirms?: number, timeout?: number) => Promise<unknown> },
+  timeoutMs: number
+): Promise<boolean> => {
+  let timer: NodeJS.Timeout | undefined;
+  const timedOut = new Promise<false>((resolve) => {
+    timer = setTimeout(() => resolve(false), timeoutMs);
+  });
+  // ethers rejects with code TIMEOUT once its own bound passes; treat that like ours.
+  const mined = tx.wait(1, timeoutMs).then(
+    () => true as const,
+    (err: any) => {
+      if (err?.code === "TIMEOUT") return false as const;
+      throw err;
+    }
+  );
+  try {
+    return await Promise.race([mined, timedOut]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInboxArbToGnosis, VeaOutboxArbToGnosis> {
   constructor(opts: BaseTransactionHandlerConstructor) {
     super(opts);
   }
 
-  public async approveWeth(): Promise<void> {
+  /**
+   * Make sure the outbox may pull the deposit: returns true when the WETH allowance covers it,
+   * false when an approval is still outstanding (the caller sends nothing this cycle).
+   * Never blocks the bot on a stuck approval:
+   *   - an allowance that already covers the deposit sends nothing;
+   *   - while the signer's `pending` nonce is above its `latest` nonce (an earlier approval, or
+   *     any other transaction of ours, is still unmined) no second approval is sent and
+   *     `ALERT` `NONCE_STUCK` is emitted once per route and epoch while that lasts;
+   *   - the approval's receipt is awaited for at most `APPROVAL_RECEIPT_TIMEOUT_MS`.
+   * Replacing a stuck transaction with a gas-bumped one is not done (deferred).
+   */
+  public async approveWeth(action = "approval"): Promise<boolean> {
     const { depositToken, routeConfig } = getBridgeConfig(this.chainId);
     const { veaOutbox, deposit } = routeConfig[this.network];
     const signer = this.veaOutbox.runner as Wallet;
-
     const weth = getWETH(depositToken, signer);
-    const currentAllowance: bigint = await weth.allowance(signer.address, veaOutbox.address);
-    if (currentAllowance < deposit) {
-      const approvalAmount = deposit * BigInt(10); // Approving for 10 claims
-      const approveTx = await weth.approve(veaOutbox.address, approvalAmount);
-      await approveTx.wait();
+    if (toBigInt(await weth.allowance(signer.address, veaOutbox.address)) >= deposit) return true;
+
+    const routeEpoch = `${this.chainId}_${this.network}_${this.epoch}`;
+    const [pendingNonce, latestNonce] = await Promise.all([
+      this.veaOutboxProvider.getTransactionCount(signer.address, "pending"),
+      this.veaOutboxProvider.getTransactionCount(signer.address, "latest"),
+    ]);
+    if (pendingNonce > latestNonce) {
+      if (!nonceStuckAlerted.has(routeEpoch)) {
+        nonceStuckAlerted.add(routeEpoch);
+        this.emitter.emit(BotEvents.ALERT, {
+          level: "warn",
+          code: "NONCE_STUCK",
+          chainId: this.chainId,
+          network: this.network,
+          epoch: this.epoch,
+          details: { action, pendingNonce, latestNonce },
+        });
+      }
+      return false;
     }
+    nonceStuckAlerted.delete(routeEpoch);
+
+    await this.ensureNativeFunds(`${action} (WETH approval gas)`, {});
+    const approveTx = await weth.approve(veaOutbox.address, deposit * BigInt(10)); // Approving for 10 claims
+    this.emitter.emit(BotEvents.TXN_MADE, approveTx.hash, this.epoch, "Approve WETH");
+    if (!(await waitWithBound(approveTx, APPROVAL_RECEIPT_TIMEOUT_MS))) {
+      this.emitter.emit(BotEvents.TXN_PENDING, approveTx.hash);
+      return false;
+    }
+    const allowance = toBigInt(await weth.allowance(signer.address, veaOutbox.address));
+    if (allowance < deposit) this.cannotFund(`${action} (WETH allowance)`, deposit, allowance);
+    return true;
+  }
+
+  /**
+   * The Gnosis outbox takes its deposit in WETH through `transferFrom`: check the WETH balance,
+   * then the allowance (approving when short; gas is paid in xDAI). Emits `CANNOT_FUND` and
+   * throws `CannotFundError` when the deposit cannot be paid; returns false while an approval
+   * is outstanding.
+   */
+  public async ensureWethFunds(action: string): Promise<boolean> {
+    const { depositToken, routeConfig } = getBridgeConfig(this.chainId);
+    const { deposit } = routeConfig[this.network];
+    const signer = this.veaOutbox.runner as Wallet;
+    const weth = getWETH(depositToken, signer);
+    const balance = toBigInt(await weth.balanceOf(signer.address));
+    if (balance < deposit) this.cannotFund(`${action} (WETH balance)`, deposit, balance);
+    return this.approveWeth(action);
   }
 
   public async makeClaim(stateRoot: string): Promise<void> {
@@ -42,10 +129,11 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     const toSubmit = await this.toSubmitTransaction(this.transactions.claimTxn, ContractType.OUTBOX, now);
     if (!toSubmit) return;
 
-    // Approves WETH for the claim if not already approved
-    await this.approveWeth();
+    // Checks the WETH deposit and approves it if not already approved
+    if (!(await this.ensureWethFunds("claim"))) return;
 
     const gasEstimate = await this.veaOutbox["claim(uint256,bytes32)"].estimateGas(this.epoch, stateRoot);
+    await this.ensureNativeFunds("claim", { gasLimit: toBigInt(gasEstimate) });
     const tx = await this.veaOutbox.claim(this.epoch, stateRoot, { gasLimit: gasEstimate });
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Claim");
     this.transactions.claimTxn = { hash: tx.hash, broadcastedTimestamp: now };
@@ -58,6 +146,8 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     const toSubmit = await this.toSubmitTransaction(this.transactions.challengeTxn, ContractType.OUTBOX, now);
     if (!toSubmit) return;
 
+    // `challenge` pulls the deposit with transferFrom, so it needs the allowance as much as a claim does.
+    if (!(await this.ensureWethFunds("challenge"))) return;
     const gasEstimate = await this.veaOutbox[
       "challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
     ].estimateGas(this.epoch, this.claim);
@@ -70,6 +160,10 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     if (maxPriorityFeePerGasMEV > maxFeePerGasProfitable) {
       maxPriorityFeePerGasMEV = maxFeePerGasProfitable;
     }
+    await this.ensureNativeFunds("challenge", {
+      gasLimit: toBigInt(gasEstimate),
+      maxFeePerGas: maxFeePerGasProfitable,
+    });
     const tx = await this.veaOutbox.challenge(this.epoch, this.claim, {
       maxFeePerGas: maxFeePerGasProfitable,
       maxPriorityFeePerGas: maxPriorityFeePerGasMEV,
@@ -98,6 +192,23 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     const now = Date.now();
     const toSubmit = await this.toSubmitTransaction(this.transactions.executeSnapshotTxn, ContractType.ROUTER, now);
     if (!toSubmit) return;
+    if (!this.veaRouterProvider) throw new Error("No router provider: cannot execute the snapshot on L1");
+    // The L1 execution is paid by our address on the router's chain (Sepolia). The balance check
+    // only raises CANNOT_FUND early: a real shortfall stops here, but a balance read that fails
+    // or is unavailable must not block the execution, which reverts on its own if unfunded.
+    try {
+      await this.ensureNativeFunds("execute snapshot (router)", {}, this.veaRouterProvider);
+    } catch (error) {
+      if (error instanceof CannotFundError) throw error;
+      this.emitter.emit(BotEvents.ALERT, {
+        level: "warn",
+        code: "ROUTER_BALANCE_UNKNOWN",
+        chainId: this.chainId,
+        network: this.network,
+        epoch: this.epoch,
+        details: { message: (error as Error)?.message },
+      });
+    }
     const msgExecuteTrnx = await messageExecutor(sendSnapshotTxn, this.veaInboxProvider, this.veaRouterProvider);
     this.emitter.emit(BotEvents.TXN_MADE, msgExecuteTrnx.hash, this.epoch, "Execute Snapshot");
     this.transactions.executeSnapshotTxn = {
@@ -134,7 +245,7 @@ export class ArbToGnosisDevnetTransactionHandler extends ArbToGnosisTransactionH
     const now = Date.now();
     const toSubmit = await this.toSubmitTransaction(this.transactions.devnetAdvanceStateTxn, ContractType.OUTBOX, now);
     if (!toSubmit) return;
-    await this.approveWeth();
+    if (!(await this.approveWeth("devnet advance state"))) return;
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[Network.DEVNET];
     const tx = await this.veaOutboxDevnet.devnetAdvanceState(this.epoch, stateRoot, {

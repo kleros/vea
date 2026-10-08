@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BotEvents } from "./botEvents";
+import { redactRpcError, redactUrl } from "./fallbackProvider";
 
 type RPCEndpoint = { url: string; label?: string };
 
@@ -24,7 +25,7 @@ export class FallbackProviderV5 extends JsonRpcProvider {
   }
 
   private label(i: number) {
-    return this.endpoints[i].label ?? this.endpoints[i].url;
+    return redactUrl(this.endpoints[i].label ?? this.endpoints[i].url);
   }
 
   // Overrides the low-level transport so ALL RPC calls go through the fallback logic.
@@ -45,7 +46,7 @@ export class FallbackProviderV5 extends JsonRpcProvider {
           method,
           from: this.label(this.activeIndex),
           to: this.label(i),
-          err,
+          err: redactRpcError(err),
         });
       }
     }

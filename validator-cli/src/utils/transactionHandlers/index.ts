@@ -1,4 +1,4 @@
-import { ITransactionHandler, BaseTransactionHandler } from "./baseTransactionHandler";
+import { ITransactionHandler, BaseTransactionHandler, CannotFundError } from "./baseTransactionHandler";
 import { ArbToEthTransactionHandler, ArbToEthDevnetTransactionHandler } from "./arbToEthHandler";
 import { ArbToGnosisTransactionHandler, ArbToGnosisDevnetTransactionHandler } from "./arbToGnosisHandler";
 import { InvalidNetworkError, NotDefinedError } from "../../utils/errors";
@@ -9,6 +9,7 @@ export {
   ArbToGnosisTransactionHandler,
   ArbToGnosisDevnetTransactionHandler,
   BaseTransactionHandler,
+  CannotFundError,
   ITransactionHandler,
 };
 

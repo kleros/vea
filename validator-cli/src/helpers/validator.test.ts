@@ -24,9 +24,16 @@ describe("validator", () => {
     veaOutbox = {
       claimHashes: jest.fn(),
       queryFilter: jest.fn(),
+      // Bridge running: epoch 0 now, nothing timed out.
+      latestVerifiedEpoch: jest.fn().mockResolvedValue(BigInt(0)),
+      timeoutEpochs: jest.fn().mockResolvedValue(BigInt(10)),
+      epochPeriod: jest.fn().mockResolvedValue(BigInt(10)),
       provider: {
         getBlock: jest.fn(),
       },
+    };
+    veaOutboxProvider = {
+      getBlock: jest.fn().mockResolvedValue({ number: 555, timestamp: 5 }),
     };
     emitter = {
       emit: jest.fn(),
@@ -176,6 +183,8 @@ describe("validator", () => {
         transactions: {
           withdrawChallengeDepositTxn: "0x0",
         },
+        // The challenger is our signer: only our own deposit is withdrawn.
+        getSignerAddress: () => mockClaim.challenger,
       };
       mockDeps.transactionHandler = mockTransactionHandler;
       mockDeps.fetchClaimResolveState = mockGetClaimState;

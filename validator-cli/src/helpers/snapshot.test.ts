@@ -54,6 +54,7 @@ describe("snapshot", () => {
       veaInbox.count.mockResolvedValue(currentCount);
       fetchLastSavedMessage = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", currentCount] }]);
+      veaOutbox.queryFilter.mockResolvedValue([{ data: "0x1", blockNumber: 1 }]);
       const params = {
         network,
         epochPeriod,
@@ -71,6 +72,48 @@ describe("snapshot", () => {
         snapshotNeeded: false,
         latestCount: currentCount,
       });
+    });
+
+    it("bootstraps the first snapshot: no SnapshotSaved on chain and none in the indexer, but messages in the inbox", async () => {
+      count = -1;
+      veaInbox.count.mockResolvedValue(3);
+      veaInbox.queryFilter.mockResolvedValue([]);
+      fetchLastSavedMessage = jest.fn().mockResolvedValue(null);
+      const params = {
+        network,
+        epochPeriod,
+        chainId,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        count,
+        fetchLastSavedMessage,
+        fetchLastClaimedEpoch,
+        fetchClaimForEpoch,
+      } as any;
+      await expect(isSnapshotNeeded(params)).resolves.toEqual({ snapshotNeeded: true, latestCount: 3 });
+    });
+
+    it("saves nothing when no snapshot exists anywhere and the inbox is empty", async () => {
+      count = -1;
+      veaInbox.count.mockResolvedValue(0);
+      veaInbox.queryFilter.mockResolvedValue([]);
+      fetchLastSavedMessage = jest.fn().mockResolvedValue(null);
+      const params = {
+        network,
+        epochPeriod,
+        chainId,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        count,
+        fetchLastSavedMessage,
+        fetchLastClaimedEpoch,
+        fetchClaimForEpoch,
+      } as any;
+      await expect(isSnapshotNeeded(params)).resolves.toEqual({ snapshotNeeded: false, latestCount: 0 });
     });
 
     it("should return false when count is equal to current count", async () => {

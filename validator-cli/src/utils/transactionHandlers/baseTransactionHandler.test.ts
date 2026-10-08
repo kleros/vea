@@ -49,6 +49,9 @@ describe("BaseTransactionHandler", () => {
   };
   const mockEmitter = new MockEmitter();
 
+  // Pin the clock: nothing here may depend on how fast the machine runs.
+  beforeAll(() => jest.useFakeTimers({ now: 1_700_000_000_000, doNotFake: ["nextTick", "queueMicrotask"] }));
+  afterAll(() => jest.useRealTimers());
   beforeEach(() => {
     veaOutbox = {
       withdrawChallengeDeposit: jest.fn(),

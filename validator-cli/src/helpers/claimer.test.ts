@@ -120,6 +120,8 @@ describe("claimer", () => {
           mockTransactionHandler.transactions.devnetAdvanceStateTxn = mockTransactions.devnetAdvanceStateTxn;
           return Promise.resolve();
         }),
+        // The claim under test is ours: the claimer only advances its own claims.
+        getSignerAddress: jest.fn(() => mockClaim.claimer),
         transactions: {
           claimTxn: "0x0",
           withdrawClaimDepositTxn: "0x0",

@@ -5,6 +5,38 @@ import { BotEvents } from "./botEvents";
 type RPCEndpoint = { url: string; label?: string };
 
 /**
+ * Reduce an endpoint URL to `scheme://host` (host keeps a port if it has one).
+ * RPC providers put API keys in the userinfo, the path or the query, and log
+ * lines are shipped off-box (Logtail), so nothing past the host is ever logged.
+ */
+export const redactUrl = (value: string): string => {
+  try {
+    const url = new URL(value);
+    if (!url.host) return "<redacted-url>";
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return "<redacted-url>";
+  }
+};
+
+// Anything that looks like `scheme://...`, up to whitespace, a quote or an angle
+// bracket (ethers quotes the URLs it puts into error messages). Over-matching a
+// trailing comma or bracket only drops it from the log line, never leaks.
+const URL_IN_TEXT = /\b[a-z][a-z0-9+.-]*:\/\/[^\s"'`<>]+/gi;
+
+/** Replace every URL embedded in free text (error messages, mostly) with its redacted form. */
+export const redactUrlsInText = (text: string): string => text.replace(URL_IN_TEXT, (match) => redactUrl(match));
+
+/**
+ * A loggable view of an RPC error. The raw error is not logged: ethers puts the
+ * request URL (with its key) into the message and into `info`/`url` fields.
+ */
+export const redactRpcError = (err: any): { message: string; code?: string } => {
+  const message = redactUrlsInText(String(err?.shortMessage ?? err?.message ?? err));
+  return err?.code !== undefined ? { message, code: String(err.code) } : { message };
+};
+
+/**
  * ethers v6 JSON-RPC provider that transparently fails over to the next endpoint when a request fails.
  */
 export class FallbackRpcProvider extends JsonRpcProvider {
@@ -30,7 +62,7 @@ export class FallbackRpcProvider extends JsonRpcProvider {
   }
 
   private label(i: number) {
-    return this.endpoints[i].label ?? this.endpoints[i].url;
+    return redactUrl(this.endpoints[i].label ?? this.endpoints[i].url);
   }
 
   // Overrides the low-level transport so ALL RPC calls (including internal ones like eth_chainId) go through fallback logic.
@@ -52,7 +84,7 @@ export class FallbackRpcProvider extends JsonRpcProvider {
           method,
           from: this.label(this.activeIndex),
           to: this.label(i),
-          err,
+          err: redactRpcError(err),
         });
       }
     }

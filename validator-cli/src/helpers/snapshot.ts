@@ -15,6 +15,8 @@ interface SnapshotCheckParams {
   veaInboxProvider: JsonRpcProvider;
   veaOutboxProvider: JsonRpcProvider;
   count: number;
+  /** Seconds. Defaults to the outbox chain's latest block timestamp, never the host clock. */
+  now?: number;
   fetchLastSavedMessage?: typeof getLastMessageSaved;
   fetchLastClaimedEpoch?: typeof getLastClaimedEpoch;
 }
@@ -31,6 +33,7 @@ export interface SaveSnapshotParams {
   transactionHandler: any;
   emitter?: typeof defaultEmitter;
   toSaveSnapshot?: typeof isSnapshotNeeded;
+  /** Seconds. Defaults to the outbox chain's latest block timestamp, as the watcher passes it; never the host clock. */
   now?: number;
 }
 
@@ -46,8 +49,9 @@ export const saveSnapshot = async ({
   transactionHandler,
   emitter = defaultEmitter,
   toSaveSnapshot = isSnapshotNeeded,
-  now = Math.floor(Date.now() / 1000),
+  now,
 }: SaveSnapshotParams): Promise<any> => {
+  now ??= await chainNow(veaOutboxProvider);
   const timeElapsed = now % epochPeriod;
   const timeLeftForEpoch = epochPeriod - timeElapsed;
 
@@ -64,11 +68,15 @@ export const saveSnapshot = async ({
     veaInboxProvider,
     veaOutboxProvider,
     count,
+    now,
   });
   if (!snapshotNeeded) return { transactionHandler, latestCount };
   await transactionHandler.saveSnapshot();
   return { transactionHandler, latestCount };
 };
+
+/** The outbox chain's latest block timestamp in seconds: the same clock the watcher's cycle uses. */
+const chainNow = async (provider: JsonRpcProvider): Promise<number> => (await provider.getBlock("latest")).timestamp;
 
 /**
  * Find the most recent matching log within the window that can still affect a
@@ -105,6 +113,7 @@ export const isSnapshotNeeded = async ({
   veaInboxProvider,
   veaOutboxProvider,
   count,
+  now,
   fetchLastSavedMessage = getLastMessageSaved,
   fetchLastClaimedEpoch = getLastClaimedEpoch,
 }: SnapshotCheckParams): Promise<{ snapshotNeeded: boolean; latestCount: number }> => {
@@ -133,7 +142,10 @@ export const isSnapshotNeeded = async ({
   } catch {
     const snapshotRes = await fetchLastSavedMessage(veaInbox.target, chainId);
     if (!snapshotRes) {
-      return { snapshotNeeded: false, latestCount: currentCount };
+      // No snapshot was ever saved (neither on chain within the lookback nor in the indexer):
+      // messages in the inbox are waiting for their first one. An extra save, if the indexer was
+      // down rather than empty, rewrites the current epoch's snapshot with the same root.
+      return { snapshotNeeded: currentCount > 0, latestCount: currentCount };
     }
     const { id: lastSavedMessageId, stateRoot: lastSavedStateRoot } = snapshotRes;
     const messageIndex = extractMessageIndex(lastSavedMessageId);
@@ -142,7 +154,7 @@ export const isSnapshotNeeded = async ({
     const lastClaimData = await fetchLastClaimedEpoch(veaOutbox.target, chainId);
     lastClaimedStateroot = lastClaimData ? lastClaimData.stateRoot : null;
   }
-  const epochNow = Math.floor(Date.now() / (1000 * epochPeriod));
+  const epochNow = Math.floor((now ?? (await chainNow(veaOutboxProvider))) / epochPeriod);
   const currentSnapshot = await veaInbox.snapshots(epochNow);
   const currentStateRoot = await veaOutbox.stateRoot();
   if (currentCount > lastSavedCount) {

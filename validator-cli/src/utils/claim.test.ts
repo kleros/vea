@@ -1,6 +1,6 @@
 import { ethers, getAddress } from "ethers";
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { getClaim, hashClaim, getClaimResolveState, ClaimResolveStateParams } from "./claim";
+import { getClaim, hashClaim, getClaimResolveState, ClaimResolveStateParams, createClaimResolveCache } from "./claim";
 import { ClaimNotFoundError } from "./errors";
 import { MockEmitter } from "./emitter";
 import { Network } from "../consts/bridgeRoutes";
@@ -362,7 +362,21 @@ describe("snapshotClaim", () => {
 
     let veaInbox: any;
     let veaOutbox: any;
-    let fetchSentSnapshotData: any;
+    let sentClaim: ClaimStruct;
+    const INBOX = "0x00000000000000000000000000000000000a11ce";
+    // The ArbSys `L2ToL1Tx` log of a `sendSnapshot` on 11155111: the inbox forwards
+    // `resolveDisputedClaim(epoch, stateRoot, claim)` to the outbox.
+    const sendSnapshotReceipt = (blockNumber: number, claim: ClaimStruct) => {
+      const arbSys = new ethers.Interface([
+        "event L2ToL1Tx(address caller, address indexed destination, uint256 indexed hash, uint256 indexed position, uint256 arbBlockNum, uint256 ethBlockNum, uint256 timestamp, uint256 callvalue, bytes data)",
+      ]);
+      const outbox = new ethers.Interface([
+        "function resolveDisputedClaim(uint256 _epoch, bytes32 _stateRoot, (bytes32 stateRoot, address claimer, uint32 timestampClaimed, uint32 timestampVerification, uint32 blocknumberVerification, uint8 honest, address challenger) _claim)",
+      ]);
+      const forwarded = outbox.encodeFunctionData("resolveDisputedClaim", [epoch, ethers.ZeroHash, claim]);
+      const log = arbSys.encodeEventLog("L2ToL1Tx", [INBOX, ethers.ZeroAddress, 1, 1, 0, 0, 0, 0, forwarded]);
+      return { blockNumber, logs: [{ address: "0x0000000000000000000000000000000000000064", ...log }] };
+    };
     let queriedRanges: Array<[number, number]>;
     let mockClaimResolveStateParams: any;
 
@@ -390,13 +404,17 @@ describe("snapshotClaim", () => {
         filters: {
           SnapshotSent: jest.fn(() => ({ event: "SnapshotSent" })),
         },
-        getAddress: jest.fn(),
+        getAddress: jest.fn(async () => INBOX),
       };
       veaOutbox = {
         claimHashes: jest.fn().mockResolvedValue(hashedMockClaim),
+        queryFilter: jest.fn(async () => []),
+        filters: {
+          FailedResolution: jest.fn(() => ({ event: "FailedResolution" })),
+        },
         getAddress: jest.fn(),
       };
-      fetchSentSnapshotData = jest.fn().mockResolvedValue(hashedMockClaim);
+      sentClaim = mockClaim;
       mockClaimResolveStateParams = {
         chainId: 11155111,
         veaInbox,
@@ -406,6 +424,7 @@ describe("snapshotClaim", () => {
             const number = typeof tag === "number" ? tag : INBOX_HEAD_BLOCK;
             return { number, timestamp: number * INBOX_SEC_PER_BLOCK };
           }),
+          getTransactionReceipt: jest.fn(async () => sendSnapshotReceipt(earliestSendBlock + 100, sentClaim)),
         } as any,
         veaOutboxProvider: {
           getBlock: jest.fn().mockResolvedValue({ timestamp: mockClaim.timestampClaimed, number: 1234 }),
@@ -413,7 +432,7 @@ describe("snapshotClaim", () => {
         epoch,
         epochPeriod,
         fetchMessageStatus: jest.fn(),
-        fetchSentSnapshotData,
+        cache: createClaimResolveCache(),
       };
     });
 
@@ -473,7 +492,7 @@ describe("snapshotClaim", () => {
 
     it("should return false state if incorrect snapshot sent", async () => {
       serveSnapshotSent([{ blockNumber: earliestSendBlock + 100, index: 0, transactionHash: "0x1234" }]);
-      mockClaimResolveStateParams.fetchSentSnapshotData = jest.fn().mockResolvedValue("0xincorrecthash");
+      sentClaim = { ...mockClaim, stateRoot: ethers.ZeroHash };
 
       const claimResolveState = await getClaimResolveState(mockClaimResolveStateParams);
 

@@ -1,7 +1,13 @@
-import { getSequencerDelaySeconds, resolveSettledReadBlocks } from "./arbToEthState";
+import { getSequencerDelaySeconds, resetOutboxStallAlerts, resolveSettledReadBlocks } from "./arbToEthState";
 import { BotEvents } from "./botEvents";
 
+// No test here reads a clock or sleeps; the timeout only lifts Jest's 5 s default, which a
+// loaded verification machine can exceed (run 001), so the result never depends on speed.
+jest.setTimeout(60_000);
+
 describe("arbToEthState", () => {
+  beforeEach(() => resetOutboxStallAlerts());
+
   describe("getSequencerDelaySeconds", () => {
     it("reads delaySeconds out of the maxTimeVariation tuple", async () => {
       // maxTimeVariation returns [delayBlocks, futureBlocks, delaySeconds, futureSeconds]
@@ -66,7 +72,7 @@ describe("arbToEthState", () => {
       expect(blocks!.inboxBlock).not.toBe(LATEST_INBOX.number);
     });
 
-    it("uses the blocks the finality check validated, without re-fetching them", async () => {
+    it("uses the inbox block the finality check validated, and reads the outbox head only through getOutboxReadBlock", async () => {
       const { inboxProvider, outboxProvider } = makeProviders();
 
       const blocks = await resolveSettledReadBlocks({
@@ -82,7 +88,9 @@ describe("arbToEthState", () => {
       // moves between the two calls, and the fallback provider may answer from a
       // different endpoint entirely.
       expect(inboxProvider.getBlock).not.toHaveBeenCalled();
-      expect(outboxProvider.getBlock).not.toHaveBeenCalled();
+      // The outbox head goes through getOutboxReadBlock (latest + finalized, for the [O4]
+      // stall rule), never through a block number taken from another chain.
+      expect(outboxProvider.getBlock.mock.calls.map((c: any[]) => c[0]).sort()).toEqual(["finalized", "latest"]);
       expect(blocks).toEqual({ inboxBlock: FINALIZED_INBOX.number, outboxBlock: FINALIZED_OUTBOX.number });
     });
 
