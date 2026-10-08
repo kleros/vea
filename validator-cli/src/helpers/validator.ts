@@ -268,9 +268,9 @@ async function handleResolveFlow({
   transactionHandler,
   fetchClaimResolveState,
 }: ResolveFlowParams): Promise<void> {
-  // The lookup searches the inbox up to its latest block, so our own send is adopted
-  // by the next cycle: re-send only while no ticket is adopted. A ticket whose resolution
-  // could fail no longer hashes to claimHashes[E] and is not adopted, so it is re-sent too.
+  // Only our own sendSnapshot transactions are followed, and the lookup reaches the inbox's
+  // latest block, so a send is seen by the next cycle: re-send only while none of ours carries
+  // the current claim struct.
   const claimResolveState = await fetchClaimResolveState({
     chainId,
     veaInbox,
@@ -278,6 +278,7 @@ async function handleResolveFlow({
     veaOutbox,
     veaOutboxProvider,
     l1Provider: queryRpc,
+    signerAddress: transactionHandler.getSignerAddress?.(),
     epoch,
     epochPeriod,
   });

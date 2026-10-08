@@ -320,24 +320,24 @@ interface SnapshotSentCursor {
 }
 
 /**
- * What a `SnapshotSent` transaction's receipt says about the L2 -> L1 message the bot would
- * execute: the decoded epoch, the AMB gas limit (10200 only) and the hash of the claim struct.
- * Null when its first message is not a valid ticket for this route. Receipts are immutable, so
- * this never changes; whether the ticket is adopted is decided against `claimHashes` per call.
+ * The claim hash a `sendSnapshot` transaction of ours carries, decoded from its calldata; null
+ * when the transaction is not a direct `sendSnapshot` call by our signer to the inbox. A
+ * transaction's calldata never changes, so this is cached by hash; a missing transaction (a
+ * lagging endpoint) is not cached and is looked up again next cycle.
  */
-type TicketFacts = { epoch: bigint; gasLimit: bigint | null; claimHash: string } | null;
+type OwnSendFacts = { claimHash: string } | null;
 
 export interface ClaimResolveCache {
   snapshotSent: Map<string, SnapshotSentCursor>;
-  tickets: Map<string, TicketFacts>;
+  ownSends: Map<string, OwnSendFacts>;
 }
 
 export const createClaimResolveCache = (): ClaimResolveCache => ({
   snapshotSent: new Map(),
-  tickets: new Map(),
+  ownSends: new Map(),
 });
 
-// Production passes no cache: this one lives, unbounded, for the whole process.
+// Production passes no cache: this one lives for the whole process.
 const defaultClaimResolveCache = createClaimResolveCache();
 
 export interface ClaimResolveStateParams {
@@ -346,18 +346,18 @@ export interface ClaimResolveStateParams {
   veaInbox: any;
   veaInboxProvider: JsonRpcProvider;
   veaOutbox: any;
-  /** The provider of the outbox's own chain. Every outbox read is pinned to its read block. */
+  /** The outbox chain: `claimHashes` is read at its blocks. */
   veaOutboxProvider: JsonRpcProvider;
   /**
-   * The provider of Arbitrum's L1 (Ethereum; on
-   * chain 10200 the Sepolia router provider), used for the L2 -> L1 message status. When
-   * omitted, `veaOutboxProvider` is used, which is correct only when the outbox chain is L1.
+   * The provider of Arbitrum's L1 (Ethereum; on chain 10200 the Sepolia router provider),
+   * used for the L2 -> L1 message status. When omitted, `veaOutboxProvider` is used, which is
+   * correct only when the outbox chain is L1.
    */
   l1Provider?: JsonRpcProvider;
+  /** Our signer: only `sendSnapshot` transactions sent by it are followed. */
+  signerAddress?: string;
   epoch: number;
   epochPeriod: number;
-  /** Ignored: the `SnapshotSent` lookup always reaches the inbox `latest` block. */
-  headBlockTag?: "latest" | "finalized";
   emitter?: typeof defaultEmitter;
   fetchMessageStatus?: typeof getMessageStatus;
   fetchSnapshotSentFromGraph?: typeof getSnapshotSentForEpoch;
@@ -368,6 +368,9 @@ const logIndexOf = (log: any): number => log.index ?? log.logIndex ?? 0;
 
 const bySendOrder = (a: SnapshotSentRef, b: SnapshotSentRef): number =>
   a.blockNumber - b.blockNumber || a.index - b.index;
+
+const sameAddress = (a: unknown, b: unknown): boolean =>
+  typeof a === "string" && typeof b === "string" && a.toLowerCase() === b.toLowerCase();
 
 /**
  * Every `SnapshotSent` for the epoch up to the inbox `latest` block. The final part is kept in
@@ -433,107 +436,58 @@ const findSnapshotSents = async ({
   return [...logs, ...unsettled].sort(bySendOrder);
 };
 
-const ARB_SYS_ADDRESS = "0x0000000000000000000000000000000000000064";
-const arbSysInterface = new ethers.Interface([
-  "event L2ToL1Tx(address caller, address indexed destination, uint256 indexed hash, uint256 indexed position, uint256 arbBlockNum, uint256 ethBlockNum, uint256 timestamp, uint256 callvalue, bytes data)",
-  "event L2ToL1Transaction(address caller, address indexed destination, uint256 indexed uniqueId, uint256 indexed batchNumber, uint256 indexInBatch, uint256 arbBlockNum, uint256 ethBlockNum, uint256 timestamp, uint256 callvalue, bytes data)",
-]);
-const L2_TO_L1_TX_TOPIC = arbSysInterface.getEvent("L2ToL1Tx")!.topicHash;
-const L2_TO_L1_TRANSACTION_TOPIC = arbSysInterface.getEvent("L2ToL1Transaction")!.topicHash;
-
-const CLAIM_TUPLE =
-  "(bytes32 stateRoot, address claimer, uint32 timestampClaimed, uint32 timestampVerification, uint32 blocknumberVerification, uint8 honest, address challenger)";
-/** The call each route's inbox forwards to L1: `resolveDisputedClaim` on the outbox, `route` on the router. */
-const ticketCalls: { [chainId: number]: ethers.Interface } = {
-  11155111: new ethers.Interface([
-    `function resolveDisputedClaim(uint256 _epoch, bytes32 _stateRoot, ${CLAIM_TUPLE} _claim)`,
-  ]),
-  10200: new ethers.Interface([
-    `function route(uint256 _epoch, bytes32 _stateRoot, uint256 _gasLimit, ${CLAIM_TUPLE} _claim)`,
-  ]),
-};
-
-/** The AMB gas the bot itself sends with on 10200 (`arbToGnosisHandler.ts`); less may fail on Gnosis. */
-const MIN_ROUTE_GAS_LIMIT = BigInt(3_000_000);
-
 /**
- * Decode the ticket a receipt carries. Only the first L2 -> L1 message counts, in the order the
- * Arbitrum SDK lists them (classic `L2ToL1Transaction` logs before `L2ToL1Tx`), because that is
- * the message `getMessageStatus` and `messageExecutor` act on. It must be an `L2ToL1Tx` emitted
- * by ArbSys with the inbox as caller; ArbSys then guarantees the inbox's immutable destination.
+ * The claim hash carried by one of our own `sendSnapshot` transactions, or null when the
+ * transaction was not sent by our signer directly to the inbox. The calldata of a direct call by
+ * our own key is trustworthy, so it is decoded with the inbox's own interface; nothing sent by
+ * anyone else is ever followed, which is what keeps a dispute from being stalled by
+ * permissionless junk tickets.
+ *
+ * @returns The facts, or undefined when the transaction is not known to the endpoint yet
  */
-const decodeTicket = (logs: readonly any[], chainId: number, inboxAddress: string): TicketFacts => {
-  const call = ticketCalls[chainId];
-  if (!call) return null;
-  const topicOf = (log: any) => log?.topics?.[0];
-  const first =
-    logs.find((log) => topicOf(log) === L2_TO_L1_TRANSACTION_TOPIC) ??
-    logs.find((log) => topicOf(log) === L2_TO_L1_TX_TOPIC);
-  if (!first || topicOf(first) !== L2_TO_L1_TX_TOPIC) return null;
-  if (String(first.address).toLowerCase() !== ARB_SYS_ADDRESS) return null;
-  try {
-    const message = arbSysInterface.parseLog({ topics: first.topics, data: first.data });
-    if (!message || String(message.args.caller).toLowerCase() !== inboxAddress.toLowerCase()) return null;
-    const parsed = call.parseTransaction({ data: message.args.data });
-    if (!parsed) return null;
-    return {
-      epoch: BigInt(parsed.args._epoch),
-      gasLimit: chainId === 10200 ? BigInt(parsed.args._gasLimit) : null,
-      claimHash: hashClaim(parsed.args._claim as unknown as ClaimStruct),
-    };
-  } catch {
-    return null;
-  }
-};
-
-/**
- * The ticket facts of one `SnapshotSent` transaction, fetching its receipt at most once per
- * process. A missing receipt (a lagging endpoint) is not cached: the ticket stays unknown for
- * this call and is tried again next cycle.
- */
-const getTicketFacts = async ({
+const getOwnSendFacts = async ({
   transactionHash,
-  chainId,
+  veaInbox,
   inboxAddress,
+  signerAddress,
   veaInboxProvider,
   cache,
 }: {
   transactionHash: string;
-  chainId: number;
+  veaInbox: any;
   inboxAddress: string;
+  signerAddress: string;
   veaInboxProvider: JsonRpcProvider;
   cache: ClaimResolveCache;
-}): Promise<TicketFacts | undefined> => {
-  const key = `${chainId}_${inboxAddress.toLowerCase()}_${transactionHash.toLowerCase()}`;
-  if (cache.tickets.has(key)) return cache.tickets.get(key) ?? null;
-  const receipt: any = await veaInboxProvider.getTransactionReceipt(transactionHash);
-  if (!receipt) return undefined;
-  const facts = receipt.status === 0 ? null : decodeTicket(receipt.logs ?? [], chainId, inboxAddress);
-  cache.tickets.set(key, facts);
+}): Promise<OwnSendFacts | undefined> => {
+  if (cache.ownSends.has(transactionHash)) return cache.ownSends.get(transactionHash) ?? null;
+  const tx = await veaInboxProvider.getTransaction(transactionHash);
+  if (!tx) return undefined;
+  let facts: OwnSendFacts = null;
+  if (sameAddress(tx.from, signerAddress) && sameAddress(tx.to, inboxAddress)) {
+    try {
+      const parsed = veaInbox.interface.parseTransaction({ data: tx.data });
+      if (parsed?.name === "sendSnapshot") facts = { claimHash: hashClaim(parsed.args._claim as ClaimStruct) };
+    } catch {
+      facts = null;
+    }
+  }
+  cache.ownSends.set(transactionHash, facts);
   return facts;
 };
 
-const isAdoptable = (facts: TicketFacts, epoch: number, claimHash: string): boolean =>
-  facts !== null &&
-  facts.epoch === BigInt(epoch) &&
-  (facts.gasLimit === null || facts.gasLimit >= MIN_ROUTE_GAS_LIMIT) &&
-  facts.claimHash === claimHash;
-
 /**
- * Fetches the claim resolve state: the earliest `SnapshotSent` ticket for the epoch whose L2 -> L1
- * message would resolve the current claim, and that message's status on L1.
+ * Fetches the claim resolve state: whether one of our own `sendSnapshot` transactions carrying
+ * the current claim struct is in flight, and whether its L2 -> L1 message is ready to execute.
  *
- * `sendSnapshot` is permissionless, so a ticket is adopted only on what its receipt proves (see
- * `decodeTicket`): its first L2 -> L1 message is the inbox's own, for this epoch, carrying a
- * struct that hashes to `claimHashes[epoch]` at the outbox read block (and, on 10200, enough
- * AMB gas). A ticket that cannot resolve the claim is never adopted, so `failedResolution` is
- * never set: when no ticket qualifies, `sendSnapshot.status` is false and the snapshot is re-sent.
- *
- * Reads are pinned per chain: `SnapshotSent` on the inbox chain up to its `latest` block,
- * `claimHashes` at the outbox chain's read block, and the message status on `l1Provider`.
+ * Only our signer's sends count. `sendSnapshot` is permissionless and cheap, so following
+ * anyone else's ticket lets a third party stall the dispute with junk; sending our own costs
+ * one Arbitrum transaction per dispute. A send whose struct no longer hashes to
+ * `claimHashes[E]` (the claim changed after it) is not followed, so the caller re-sends.
+ * `claimHashes` is read at the outbox chain's read block, the message status on `l1Provider`.
  *
  * @returns ClaimResolveState
- **/
+ */
 const getClaimResolveState = async ({
   chainId,
   veaInbox,
@@ -541,6 +495,7 @@ const getClaimResolveState = async ({
   veaOutbox,
   veaOutboxProvider,
   l1Provider,
+  signerAddress,
   epoch,
   epochPeriod,
   emitter = defaultEmitter,
@@ -548,16 +503,12 @@ const getClaimResolveState = async ({
   fetchSnapshotSentFromGraph = getSnapshotSentForEpoch,
   cache = defaultClaimResolveCache,
 }: ClaimResolveStateParams): Promise<ClaimResolveState> => {
-  let claimResolveState: ClaimResolveState = {
-    sendSnapshot: {
-      status: false,
-      txHash: "",
-    },
-    execution: {
-      status: 0,
-      txHash: "",
-    },
+  const claimResolveState: ClaimResolveState = {
+    sendSnapshot: { status: false, txHash: "" },
+    execution: { status: 0, txHash: "" },
   };
+  // Without a signer nothing can be ours: the caller sends a snapshot.
+  if (!signerAddress) return claimResolveState;
   const { claimHash } = await readClaimHash({ veaOutbox, veaOutboxProvider, epoch, emitter });
   if (claimHash === ethers.ZeroHash) return claimResolveState;
 
@@ -577,27 +528,25 @@ const getClaimResolveState = async ({
   }
 
   for (const sent of snapshotSents) {
-    const facts = await getTicketFacts({
+    const facts = await getOwnSendFacts({
       transactionHash: sent.transactionHash,
-      chainId,
+      veaInbox,
       inboxAddress,
+      signerAddress,
       veaInboxProvider,
       cache,
     });
-    if (facts === undefined || !isAdoptable(facts, epoch, claimHash)) continue;
-    claimResolveState.sendSnapshot.status = true;
-    claimResolveState.sendSnapshot.txHash = sent.transactionHash;
+    if (!facts || facts.claimHash.toLowerCase() !== claimHash.toLowerCase()) continue;
+    claimResolveState.sendSnapshot = { status: true, txHash: sent.transactionHash };
     break;
   }
   if (!claimResolveState.sendSnapshot.status) return claimResolveState;
 
-  const status = await fetchMessageStatus(
+  claimResolveState.execution.status = await fetchMessageStatus(
     claimResolveState.sendSnapshot.txHash,
     veaInboxProvider,
     l1Provider ?? veaOutboxProvider
   );
-  claimResolveState.execution.status = status;
-
   return claimResolveState;
 };
 

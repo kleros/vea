@@ -359,55 +359,8 @@ const encodeEpoch = (epoch: number) => ethers.AbiCoder.defaultAbiCoder().encode(
 const txHashOf = (label: string) => ethers.id(label);
 
 const INBOX = "0x00000000000000000000000000000000000000a0";
-const ARB_SYS = "0x0000000000000000000000000000000000000064";
-const CLAIM_TUPLE =
-  "(bytes32 stateRoot, address claimer, uint32 timestampClaimed, uint32 timestampVerification, uint32 blocknumberVerification, uint8 honest, address challenger)";
-const arbSysInterface = new ethers.Interface([
-  "event L2ToL1Tx(address caller, address indexed destination, uint256 indexed hash, uint256 indexed position, uint256 arbBlockNum, uint256 ethBlockNum, uint256 timestamp, uint256 callvalue, bytes data)",
-]);
-const routerInterface = new ethers.Interface([
-  `function route(uint256 _epoch, bytes32 _stateRoot, uint256 _gasLimit, ${CLAIM_TUPLE} _claim)`,
-]);
-const ethOutboxInterface = new ethers.Interface([
-  `function resolveDisputedClaim(uint256 _epoch, bytes32 _stateRoot, ${CLAIM_TUPLE} _claim)`,
-]);
-
-/**
- * The ArbSys `L2ToL1Tx` log of a `sendSnapshot`: the inbox forwards `route(...)` to the router on
- * 10200 and `resolveDisputedClaim(...)` to the outbox on 11155111.
- */
-const l2ToL1TxLog = ({
-  chainId = CHAIN_ID,
-  epoch,
-  claim,
-  gasLimit = 3_000_000,
-  caller = INBOX,
-  address = ARB_SYS,
-}: {
-  chainId?: number;
-  epoch: number;
-  claim: ClaimStruct;
-  gasLimit?: number;
-  caller?: string;
-  address?: string;
-}) => {
-  const forwarded =
-    chainId === 10200
-      ? routerInterface.encodeFunctionData("route", [epoch, STATE_ROOT, gasLimit, claim])
-      : ethOutboxInterface.encodeFunctionData("resolveDisputedClaim", [epoch, STATE_ROOT, claim]);
-  const log = arbSysInterface.encodeEventLog("L2ToL1Tx", [
-    caller,
-    "0x00000000000000000000000000000000000000c0",
-    1,
-    1,
-    0,
-    0,
-    0,
-    0,
-    forwarded,
-  ]);
-  return { address, topics: log.topics, data: log.data };
-};
+const OUR_SIGNER = "0x00000000000000000000000000000000000000aa";
+const OTHER_SENDER = "0x000000000000000000000000000000000000beef";
 
 /** The block of `chain` whose timestamp is the last one at or before `timestamp`. */
 const blockAt = (chain: FakeChain, timestamp: number): number => {
@@ -563,7 +516,6 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
   /**
    * A dispute for `epoch`: the claim is challenged on the outbox, and a snapshot is sent on
    * Arbitrum Sepolia. Each send's receipt carries the ArbSys `L2ToL1Tx` the inbox emits, built by
-   * `l2ToL1TxLog`; `logs` replaces it to model wrapper transactions and forged messages.
    */
   const resolveEnv = (
     epoch: number,
@@ -586,19 +538,18 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
     const veaInbox = Object.assign(fakeContract(route.inbox, INBOX), {
       interface: chainId === 10200 ? gnosisInboxInterface : ethInboxInterface,
     });
-    const receipts: Record<string, { blockNumber: number; logs: any[] } | null> = {};
+    const transactions: Record<string, { from: string; to: string; data: string } | null> = {};
+    /** A `sendSnapshot(epoch, [gasLimit,] claim)` transaction on the inbox, by `from`. */
     const sendSnapshot = (
       timestamp: number,
       label: string,
       claimSent: ClaimStruct,
-      { logs, gasLimit, index = 0 }: { logs?: any[]; gasLimit?: number; index?: number } = {}
+      { from = OUR_SIGNER, to = INBOX, index = 0 }: { from?: string; to?: string; index?: number } = {}
     ) => {
       const blockNumber = blockAt(route.inbox, timestamp);
       const transactionHash = txHashOf(label);
-      receipts[transactionHash] = {
-        blockNumber,
-        logs: logs ?? [l2ToL1TxLog({ chainId, epoch, claim: claimSent, gasLimit })],
-      };
+      const args = chainId === 10200 ? [epoch, 3_000_000, claimSent] : [epoch, claimSent];
+      transactions[transactionHash] = { from, to, data: veaInbox.interface.encodeFunctionData("sendSnapshot", args) };
       veaInbox.logs.push({
         event: "SnapshotSent",
         epoch,
@@ -613,10 +564,7 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
     const sent = sentAt === undefined ? null : sendSnapshot(sentAt, "send-1", sentClaim ?? claim);
     const veaInboxProvider = {
       ...route.inbox.provider,
-      getTransaction: jest.fn(async () => {
-        throw new Error("the outer transaction is never trusted");
-      }),
-      getTransactionReceipt: jest.fn(async (hash: string) => receipts[hash] ?? null),
+      getTransaction: jest.fn(async (hash: string) => transactions[hash] ?? null),
     };
     const fetchMessageStatus = jest.fn(async (_hash: string, _child: any, _parent: any) => 1);
     const params: any = {
@@ -630,6 +578,7 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
       epoch,
       epochPeriod: EPOCH_PERIOD,
       emitter,
+      signerAddress: OUR_SIGNER,
       fetchMessageStatus,
       fetchSnapshotSentFromGraph: jest.fn(async () => undefined),
       cache: createClaimResolveCache(),
@@ -653,7 +602,7 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
       veaInboxProvider,
       claim,
       sent: sent!,
-      receipts,
+      transactions,
       sendSnapshot,
       failResolution,
       fetchMessageStatus,
@@ -679,144 +628,97 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
     });
   });
 
-  describe("a dispute ticket is adopted only by the first L2ToL1Tx of its receipt", () => {
-    it("adopts a third-party 10200 route(...) ticket carrying the current claim at gasLimit 3,000,000", async () => {
+  describe("only our own sendSnapshot carrying the current claim is followed", () => {
+    it("follows our send and asks the Sepolia provider for its message status", async () => {
       const epoch = currentEpoch() - 3;
       const env = resolveEnv(epoch, { sentAt: (epoch + 1) * EPOCH_PERIOD + 1800 });
 
       const state = await getClaimResolveState(env.params);
 
       expect(state.sendSnapshot).toEqual({ status: true, txHash: env.sent.transactionHash });
-      expect(env.veaInboxProvider.getTransaction).not.toHaveBeenCalled();
-    });
-
-    it("does not adopt a ticket carrying a different claim", async () => {
-      const epoch = currentEpoch() - 3;
-      const env = resolveEnv(epoch, {
-        sentAt: (epoch + 1) * EPOCH_PERIOD + 1800,
-        sentClaim: baseClaim({ stateRoot: WRONG_ROOT, challenger: CHALLENGER }),
-      });
-
-      const state = await getClaimResolveState(env.params);
-
-      expect(state.sendSnapshot.status).toBe(false);
-      expect(env.fetchMessageStatus).not.toHaveBeenCalled();
-    });
-
-    it("does not adopt a wrapper whose first message is wrong and second correct; returns the later correct ticket", async () => {
-      const epoch = currentEpoch() - 3;
-      const env = resolveEnv(epoch, {});
-      const wrong = baseClaim({ stateRoot: WRONG_ROOT, challenger: CHALLENGER });
-      env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1200, "wrapper", env.claim, {
-        logs: [l2ToL1TxLog({ epoch, claim: wrong }), l2ToL1TxLog({ epoch, claim: env.claim })],
-      });
-      const correct = env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1800, "correct", env.claim);
-
-      const state = await getClaimResolveState(env.params);
-
-      expect(state.sendSnapshot).toEqual({ status: true, txHash: correct.transactionHash });
-    });
-
-    it.each([
-      ["a caller other than the inbox", { caller: "0x000000000000000000000000000000000000beef" }],
-      ["an emitter other than ArbSys", { address: "0x000000000000000000000000000000000000beef" }],
-    ])("does not adopt a message from %s", async (_label, forged) => {
-      const epoch = currentEpoch() - 3;
-      const env = resolveEnv(epoch, {});
-      env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1800, "forged", env.claim, {
-        logs: [l2ToL1TxLog({ epoch, claim: env.claim, ...forged })],
-      });
-
-      const state = await getClaimResolveState(env.params);
-
-      expect(state.sendSnapshot.status).toBe(false);
-      expect(env.fetchMessageStatus).not.toHaveBeenCalled();
-    });
-
-    it("on 10200 an earlier ticket at gasLimit 100,000 is skipped for a later one at 3,000,000", async () => {
-      const epoch = currentEpoch() - 3;
-      const env = resolveEnv(epoch, {});
-      env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1200, "low-gas", env.claim, { gasLimit: 100_000 });
-      const enough = env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1800, "enough-gas", env.claim, {
-        gasLimit: 3_000_000,
-      });
-
-      const state = await getClaimResolveState(env.params);
-
-      expect(state.sendSnapshot).toEqual({ status: true, txHash: enough.transactionHash });
-    });
-
-    it("returns the earliest adopted ticket: an older executable one over a newer unexecuted one", async () => {
-      const epoch = currentEpoch() - 3;
-      const env = resolveEnv(epoch, {});
-      // The newer one is in the same block, at a lower log index than the older one would sort after.
-      const older = env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1200, "older", env.claim, { index: 3 });
-      env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1200, "newer", env.claim, { index: 7 });
-      env.fetchMessageStatus.mockImplementation(async (hash: string) => (hash === older.transactionHash ? 1 : 0));
-
-      const state = await getClaimResolveState(env.params);
-
-      expect(state.sendSnapshot).toEqual({ status: true, txHash: older.transactionHash });
       expect(state.execution.status).toBe(1);
-      expect(state.failedResolution).toBeUndefined();
+      const [, child, parent] = env.fetchMessageStatus.mock.calls[0];
+      expect(child).toBe(env.params.veaInboxProvider);
+      expect(parent).toBe(route.router.provider);
     });
 
-    it("adopts a ticket above the inbox finalized block even with headBlockTag 'finalized'", async () => {
+    it.each([[10200], [11155111]])("chain %s: decodes the claim with the inbox's own interface", async (chainId) => {
+      const epoch = currentEpoch() - 3;
+      const env = resolveEnv(epoch, { chainId, sentAt: (epoch + 1) * EPOCH_PERIOD + 1800 });
+      expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(true);
+    });
+
+    it("ignores a third party's send, even one carrying the current claim: junk sends cannot stall the dispute", async () => {
       const epoch = currentEpoch() - 3;
       const env = resolveEnv(epoch, {});
-      const fresh = env.sendSnapshot(route.inbox.block("latest").timestamp - 60, "fresh", env.claim);
-      expect(fresh.blockNumber).toBeGreaterThan(route.inbox.resolve("finalized"));
-
-      const state = await getClaimResolveState({ ...env.params, headBlockTag: "finalized" });
-
-      expect(state.sendSnapshot).toEqual({ status: true, txHash: fresh.transactionHash });
-    });
-
-    it("a null receipt is not cached: unknown on cycle 1, adopted on cycle 2", async () => {
-      const epoch = currentEpoch() - 3;
-      const env = resolveEnv(epoch, { sentAt: (epoch + 1) * EPOCH_PERIOD + 1800 });
-      const receipt = env.receipts[env.sent.transactionHash];
-      env.receipts[env.sent.transactionHash] = null;
-
+      env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1200, "theirs-correct", env.claim, { from: OTHER_SENDER });
+      env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1500, "theirs-wrong", baseClaim({ stateRoot: WRONG_ROOT }), {
+        from: OTHER_SENDER,
+      });
       expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(false);
-      env.receipts[env.sent.transactionHash] = receipt;
-      const state = await getClaimResolveState(env.params);
+      expect(env.fetchMessageStatus).not.toHaveBeenCalled();
 
-      expect(state.sendSnapshot).toEqual({ status: true, txHash: env.sent.transactionHash });
-      expect(env.veaInboxProvider.getTransactionReceipt).toHaveBeenCalledTimes(2);
+      // Ours lands later, at the inbox head: it is the one followed, whatever came before it.
+      const ours = env.sendSnapshot(route.inbox.block("latest").timestamp - 60, "ours", env.claim);
+      expect((await getClaimResolveState(env.params)).sendSnapshot).toEqual({
+        status: true,
+        txHash: ours.transactionHash,
+      });
     });
 
-    it("one cache across two calls: adoption flips with claimHashes without a second receipt fetch", async () => {
+    it("ignores our transaction when it was sent to another contract", async () => {
+      const epoch = currentEpoch() - 3;
+      const env = resolveEnv(epoch, {});
+      env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1800, "relay", env.claim, { to: OTHER_SENDER });
+      expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(false);
+    });
+
+    it("does not follow our send once the claim changed on the outbox (it must be re-sent)", async () => {
       const epoch = currentEpoch() - 3;
       const env = resolveEnv(epoch, { sentAt: (epoch + 1) * EPOCH_PERIOD + 1800 });
       expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(true);
 
-      // Verification started on the outbox: the claim struct changed, the sent one is stale.
       const changed = { ...env.claim, timestampVerification: 1, blocknumberVerification: 2 };
       route.outbox.advance(10);
       env.veaOutbox.hashHistory.push([route.outbox.resolve("latest") - 5, hashClaim(changed)]);
       mockReadBlock.override = async () => route.outbox.block("latest");
-      const second = await getClaimResolveState(env.params);
 
-      expect(second.sendSnapshot.status).toBe(false);
-      expect(env.veaInboxProvider.getTransactionReceipt).toHaveBeenCalledTimes(1);
+      expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(false);
+      // The transaction's calldata is cached; only the claim hash was re-read.
+      expect(env.veaInboxProvider.getTransaction).toHaveBeenCalledTimes(1);
     });
 
-    it("1,000 spam sends over two cycles fetch each receipt once", async () => {
+    it("follows the earliest of our matching sends", async () => {
       const epoch = currentEpoch() - 3;
       const env = resolveEnv(epoch, {});
-      const wrong = baseClaim({ stateRoot: WRONG_ROOT, challenger: CHALLENGER });
-      for (let i = 0; i < 1000; i++) {
-        env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 600 + Math.floor(i / 4), `spam-${i}`, wrong, { index: i % 4 });
-      }
+      const older = env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1200, "older", env.claim, { index: 3 });
+      env.sendSnapshot((epoch + 1) * EPOCH_PERIOD + 1200, "newer", env.claim, { index: 7 });
+      expect((await getClaimResolveState(env.params)).sendSnapshot.txHash).toBe(older.transactionHash);
+    });
 
-      expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(false);
-      route.inbox.advance(480);
-      expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(false);
+    it("sees a send above the inbox finalized block", async () => {
+      const epoch = currentEpoch() - 3;
+      const env = resolveEnv(epoch, {});
+      const fresh = env.sendSnapshot(route.inbox.block("latest").timestamp - 60, "fresh", env.claim);
+      expect(fresh.blockNumber).toBeGreaterThan(route.inbox.resolve("finalized"));
+      expect((await getClaimResolveState(env.params)).sendSnapshot.txHash).toBe(fresh.transactionHash);
+    });
 
-      const fetched = env.veaInboxProvider.getTransactionReceipt.mock.calls.map((call) => call[0]);
-      expect(fetched).toHaveLength(1000);
-      expect(new Set(fetched).size).toBe(1000);
+    it("a transaction the endpoint does not know yet is retried next cycle, not cached as unknown", async () => {
+      const epoch = currentEpoch() - 3;
+      const env = resolveEnv(epoch, { sentAt: (epoch + 1) * EPOCH_PERIOD + 1800 });
+      const tx = env.transactions[env.sent.transactionHash];
+      env.transactions[env.sent.transactionHash] = null;
+      expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(false);
+      env.transactions[env.sent.transactionHash] = tx;
+      expect((await getClaimResolveState(env.params)).sendSnapshot.status).toBe(true);
+      expect(env.veaInboxProvider.getTransaction).toHaveBeenCalledTimes(2);
+    });
+
+    it("with no signer nothing is followed", async () => {
+      const epoch = currentEpoch() - 3;
+      const env = resolveEnv(epoch, { sentAt: (epoch + 1) * EPOCH_PERIOD + 1800 });
+      expect((await getClaimResolveState({ ...env.params, signerAddress: undefined })).sendSnapshot.status).toBe(false);
     });
 
     it("every claimHashes read uses the outbox read block current at that read (no pinning across calls)", async () => {
@@ -845,10 +747,10 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
         throw new Error("inbox endpoint down");
       });
       env.params.fetchSnapshotSentFromGraph = jest.fn(async () => ({ txHash: env.sent.transactionHash }));
-
-      const state = await getClaimResolveState(env.params);
-
-      expect(state.sendSnapshot).toEqual({ status: true, txHash: env.sent.transactionHash });
+      expect((await getClaimResolveState(env.params)).sendSnapshot).toEqual({
+        status: true,
+        txHash: env.sent.transactionHash,
+      });
     });
   });
 
@@ -1148,8 +1050,8 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
       expect(env.veaOutbox.queryFilter).not.toHaveBeenCalled();
       expect(second.sendSnapshot).toEqual(first.sendSnapshot);
       expect(second.sendSnapshot.status).toBe(true);
-      // The adopted ticket's receipt facts are cached by txHash.
-      expect(env.veaInboxProvider.getTransactionReceipt).toHaveBeenCalledTimes(1);
+      // Our send's calldata is cached by txHash.
+      expect(env.veaInboxProvider.getTransaction).toHaveBeenCalledTimes(1);
     });
 
     it("picks up a snapshot sent after the previous cycle's scan", async () => {
