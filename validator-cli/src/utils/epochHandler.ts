@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { getBridgeConfig } from "../consts/bridgeRoutes";
-// Decision [L7]: the cold-start epoch sweep reaches back this far, so a restart still picks
+// The cold-start epoch sweep reaches back this far, so a restart still picks
 // up claims (and disputes this bot started) that were pending when the bot went down.
 const COLD_START_BACKLOG_SECS = 7 * 24 * 60 * 60;
 
@@ -28,7 +28,7 @@ const getChallengeBudget = (
  *
  * The range reaches back the larger of two lookbacks, so it covers both: the 7-day cold-start
  * backlog on top of the L2 sync period (`sequencerDelayLimit + epochPeriod`), and one
- * challenge budget (decision [L7]).
+ * challenge budget.
  *
  * @param currentTimestamp - The outbox chain's latest block timestamp, in seconds
  * @param chainId - The chain ID
@@ -53,7 +53,7 @@ const setEpochRange = ({
   // When we start the watcher, we need to go back far enough to check for claims which may have been pending L2 state finalization.
   const lookback = Math.max(L2SyncPeriod + COLD_START_BACKLOG_SECS, getChallengeBudget(bridgeConfig, epochPeriod));
   const veaEpochOutboxWatchLowerBound = Math.floor((currentTimestamp - lookback) / epochPeriod) - 2;
-  // Chain time (PRD 4.2): the outbox chain's latest timestamp, never the host clock.
+  // Chain time: the outbox chain's latest timestamp, never the host clock.
   const chainTime = Math.floor(now / 1000);
 
   let veaEpochOutboxClaimableNow = Math.floor(chainTime / epochPeriod) - 1;
@@ -70,7 +70,7 @@ const setEpochRange = ({
  * The newest epoch whose claim can still be challenged.
  *
  * @param now - Chain time in milliseconds (an outbox block timestamp * 1000); required, so the
- *   host clock never decides it (PRD 4.2)
+ *   host clock never decides it
  */
 const getLatestChallengeableEpoch = (epochPeriod: number, now: number): number => {
   return Math.floor(now / 1000 / epochPeriod) - 2;

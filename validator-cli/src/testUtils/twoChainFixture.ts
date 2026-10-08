@@ -1,5 +1,5 @@
 /**
- * Two-chain test fixture (validator-v1-fixes seed, frozen).
+ * Two-chain test fixture.
  *
  * The Arbitrum Sepolia -> Chiado route (outbox chain 10200) talks to three chains: the inbox
  * on Arbitrum Sepolia, the outbox on Chiado and the router on Sepolia, which is also

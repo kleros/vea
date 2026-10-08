@@ -270,7 +270,7 @@ export const configurableInitialize = (emitter: EventEmitter, sink: LogSink = ge
   });
 
   // RPC fallback logs
-  // validator-v1-fixes seed (frozen interface): one payload object per event, see botEvents.ts.
+  // One payload object per event, see botEvents.ts.
   emitter.on(BotEvents.EPOCH_FAILED, (payload: EpochFailedPayload) => logger.error(payload, "epoch_failed"));
   emitter.on(BotEvents.ROUTE_FAILED, (payload: RouteFailedPayload) => logger.error(payload, "route_failed"));
   emitter.on(BotEvents.HEARTBEAT_FAILED, (payload: HeartbeatFailedPayload) => logger.warn(payload, "heartbeat_failed"));

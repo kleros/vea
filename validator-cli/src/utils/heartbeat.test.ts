@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import https from "https";
-import { sendHeartbeat } from "../../utils/heartbeat";
-import { BotEvents } from "../../utils/botEvents";
+import { sendHeartbeat } from "./heartbeat";
+import { BotEvents } from "./botEvents";
 
 const URL_WITH_TOKEN = "https://uptime.example.com/api/v1/heartbeat/SECRET-TOKEN";
 
@@ -42,7 +42,7 @@ const capture = () => {
 
 afterEach(() => jest.restoreAllMocks());
 
-describe("sendHeartbeat (PRD 1.5)", () => {
+describe("sendHeartbeat", () => {
   it("sends a GET to the URL's host and path and emits nothing on success", async () => {
     const request = fakeRequest("ok");
     const { emitter, failed } = capture();
@@ -58,7 +58,7 @@ describe("sendHeartbeat (PRD 1.5)", () => {
     expect(failed).toEqual([]);
   });
 
-  it("#15: a running beat on ?status=up&msg=OK&ping= sends status=up&msg=running&ping=, keeping every token", async () => {
+  it("a running beat on ?status=up&msg=OK&ping= sends status=up&msg=running&ping=, keeping every token", async () => {
     const request = fakeRequest("ok");
     await sendHeartbeat(
       "running",
@@ -68,7 +68,7 @@ describe("sendHeartbeat (PRD 1.5)", () => {
     expect((request.mock.calls[0][0] as any).path).toBe("/api/push/TOKEN?status=up&msg=running&ping=");
   });
 
-  it("#15: a stop on ?status=up&msg=OK&ping= sends status=down&msg=stopped&ping=", async () => {
+  it("a stop on ?status=up&msg=OK&ping= sends status=down&msg=stopped&ping=", async () => {
     const request = fakeRequest("ok");
     await sendHeartbeat(
       "stopped",
@@ -78,7 +78,7 @@ describe("sendHeartbeat (PRD 1.5)", () => {
     expect((request.mock.calls[0][0] as any).path).toBe("/api/push/TOKEN?status=down&msg=stopped&ping=");
   });
 
-  it("#15: started is up, and other query tokens keep their order and values", async () => {
+  it("started is up, and other query tokens keep their order and values", async () => {
     const request = fakeRequest("ok");
     await sendHeartbeat(
       "started",

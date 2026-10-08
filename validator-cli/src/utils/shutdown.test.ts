@@ -1,8 +1,8 @@
 import { EventEmitter } from "events";
-import { ShutdownSignal, installShutdownHandlers } from "../../utils/shutdown";
-import { BotEvents } from "../../utils/botEvents";
+import { ShutdownSignal, installShutdownHandlers } from "./shutdown";
+import { BotEvents } from "./botEvents";
 
-describe("ShutdownSignal (PRD 4.7)", () => {
+describe("ShutdownSignal", () => {
   // Fake timers: these tests never depend on how fast the machine runs.
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());

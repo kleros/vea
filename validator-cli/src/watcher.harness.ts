@@ -5,18 +5,18 @@
  * RPC_ARB / RPC_ETH / RPC_GNOSIS set to the URLs below.
  */
 import { EventEmitter } from "events";
-import { watch, WatcherState } from "../../watcher";
-import { ShutdownSignal } from "../../utils/shutdown";
-import { createTwoChainRoute, TwoChainRoute } from "../../testUtils/twoChainFixture";
-import { validateEnvironment } from "../../utils/envValidation";
-import { sendHeartbeat } from "../../utils/heartbeat";
-import { getClaim } from "../../utils/claim";
-import { checkAndClaim } from "../../helpers/claimer";
-import { challengeAndResolveClaim } from "../../helpers/validator";
-import { saveSnapshot } from "../../helpers/snapshot";
-import { FallbackProviderV5 } from "../../utils/fallbackProviderV5";
-import { getTransactionHandler } from "../../utils/transactionHandlers";
-import { EpochOutcome } from "../../utils/epochOutcome";
+import { watch, WatcherState } from "./watcher";
+import { ShutdownSignal } from "./utils/shutdown";
+import { createTwoChainRoute, TwoChainRoute } from "./testUtils/twoChainFixture";
+import { validateEnvironment } from "./utils/envValidation";
+import { sendHeartbeat } from "./utils/heartbeat";
+import { getClaim } from "./utils/claim";
+import { checkAndClaim } from "./helpers/claimer";
+import { challengeAndResolveClaim } from "./helpers/validator";
+import { saveSnapshot } from "./helpers/snapshot";
+import { FallbackProviderV5 } from "./utils/fallbackProviderV5";
+import { getTransactionHandler } from "./utils/transactionHandlers";
+import { EpochOutcome } from "./utils/epochOutcome";
 
 export const RPC = { arb: "https://arb.rpc.test", eth: "https://eth.rpc.test", gnosis: "https://gnosis.rpc.test" };
 

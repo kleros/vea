@@ -56,7 +56,7 @@ const emptyClaim = (): ClaimStruct => ({
 /**
  * The challenger the stored claim names. `challenge()` has no `OnlyBridgeRunning` guard, so after
  * a challenger escape-hatch withdrawal zeroed the challenger the claim can be challenged again:
- * several challengers then exist and the stored claim names one of them (BR-9). Tried newest
+ * several challengers then exist and the stored claim names one of them. Tried newest
  * first; with none matching, the newest is returned and the hash check fails as before.
  */
 const pickChallenger = (claim: ClaimStruct, challengers: string[], claimHash: string): string => {
@@ -292,7 +292,7 @@ type ClaimResolveState = {
     txHash: string;
   };
   /**
-   * Frozen interface (validator-v1-fixes seed): set when the outbox emitted `FailedResolution`
+   * Set when the outbox emitted `FailedResolution`
    * for this epoch after the last snapshot was sent, so the sent snapshot must be re-sent with
    * the current claim struct. Absent means none was seen.
    */
@@ -311,7 +311,7 @@ interface SnapshotSentRef {
 
 /**
  * Every `SnapshotSent` of one epoch up to the last inbox block known to be final, so later
- * cycles only scan the blocks added since (PRD 4.10). Logs above `scannedTo` can still be
+ * cycles only scan the blocks added since. Logs above `scannedTo` can still be
  * reorged out and are re-read every cycle.
  */
 interface SnapshotSentCursor {
@@ -349,14 +349,14 @@ export interface ClaimResolveStateParams {
   /** The provider of the outbox's own chain. Every outbox read is pinned to its read block. */
   veaOutboxProvider: JsonRpcProvider;
   /**
-   * Frozen interface (validator-v1-fixes seed): the provider of Arbitrum's L1 (Ethereum; on
+   * The provider of Arbitrum's L1 (Ethereum; on
    * chain 10200 the Sepolia router provider), used for the L2 -> L1 message status. When
    * omitted, `veaOutboxProvider` is used, which is correct only when the outbox chain is L1.
    */
   l1Provider?: JsonRpcProvider;
   epoch: number;
   epochPeriod: number;
-  /** Ignored: the `SnapshotSent` lookup always reaches the inbox `latest` block ([L28] (b)). */
+  /** Ignored: the `SnapshotSent` lookup always reaches the inbox `latest` block. */
   headBlockTag?: "latest" | "finalized";
   emitter?: typeof defaultEmitter;
   fetchMessageStatus?: typeof getMessageStatus;

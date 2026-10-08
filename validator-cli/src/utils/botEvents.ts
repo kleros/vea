@@ -60,17 +60,17 @@ export enum BotEvents {
   RPC_FAILURE = "rpc_failure",
   RPC_RECOVERED = "rpc_recovered",
 
-  // validator-v1-fixes seed (frozen interface). Each takes ONE payload object, typed below.
+  // Each of the following takes ONE payload object, typed below.
   EPOCH_FAILED = "epoch_failed", // EpochFailedPayload: an epoch's work threw; the epoch stays watched
   ROUTE_FAILED = "route_failed", // RouteFailedPayload: a whole route's cycle threw; other routes continue
   HEARTBEAT_FAILED = "heartbeat_failed", // HeartbeatFailedPayload
   SHUTDOWN_REQUESTED = "shutdown_requested", // ShutdownRequestedPayload
   EPOCH_DROPPED = "epoch_dropped", // EpochDroppedPayload: the watcher stopped watching an epoch
-  FINALITY_FALLBACK = "finality_fallback", // FinalityFallbackPayload: decision [O4] read used
+  FINALITY_FALLBACK = "finality_fallback", // FinalityFallbackPayload: the stall fallback read was used
   FAILED_RESOLUTION = "failed_resolution", // FailedResolutionPayload: the outbox emitted FailedResolution
   ESCAPE_HATCH = "escape_hatch", // EscapeHatchPayload: an escape-hatch state was detected or withdrawn
   CANNOT_FUND = "cannot_fund", // CannotFundPayload: a deposit or gas cannot be paid right now
-  LIVENESS_ALARM = "liveness_alarm", // LivenessAlarmPayload: decision [G4]
+  LIVENESS_ALARM = "liveness_alarm", // LivenessAlarmPayload
   ALERT = "alert", // AlertPayload: any other condition an operator must see; `code` names it
 }
 

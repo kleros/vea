@@ -1,14 +1,14 @@
 import { EventEmitter } from "node:events";
-import { FallbackRpcProvider, redactUrl, redactUrlsInText } from "../../utils/fallbackProvider";
-import { FallbackProviderV5 } from "../../utils/fallbackProviderV5";
-import { BotEvents } from "../../utils/botEvents";
+import { FallbackRpcProvider, redactUrl, redactUrlsInText } from "./fallbackProvider";
+import { FallbackProviderV5 } from "./fallbackProviderV5";
+import { BotEvents } from "./botEvents";
 
 // The logger builds a pino transport at import; keep the test off worker threads.
 jest.mock("pino", () => {
   const fake: any = () => ({ child: () => ({ debug() {}, info() {}, warn() {}, error() {} }) });
   return { __esModule: true, default: fake };
 });
-import { configurableInitialize } from "../../utils/logger";
+import { configurableInitialize } from "./logger";
 
 // Keys in the userinfo, the path and the query: every place an RPC provider puts one.
 const KEY = "a1b2c3d4e5f6SECRETKEY";
@@ -29,7 +29,7 @@ const ethersLikeError = (url: string) =>
     url,
   });
 
-describe("ops: RPC URL redaction (PRD 4.5)", () => {
+describe("RPC URL redaction", () => {
   describe("redactUrl", () => {
     it("keeps only scheme://host, dropping userinfo, path and query", () => {
       expect(redactUrl(PRIMARY)).toBe("https://primary.example:8545");
@@ -129,7 +129,7 @@ describe("ops: RPC URL redaction (PRD 4.5)", () => {
   });
 });
 
-describe("ops: log levels (decision [G5])", () => {
+describe("log levels", () => {
   it("logs EPOCH_NOT_SETTLED and FINALITY_ISSUE at warn", () => {
     const sink = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
     const emitter = new EventEmitter();

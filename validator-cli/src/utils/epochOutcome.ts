@@ -1,7 +1,7 @@
 /**
  * What one cycle's work on an epoch concluded.
  *
- * Frozen interface (validator-v1-fixes seed): the helpers (`challengeAndResolveClaim`,
+ * The helpers (`challengeAndResolveClaim`,
  * `checkAndClaim`) report an outcome through their optional `reportOutcome` callback, and
  * the watcher decides from it whether the epoch stays watched. A helper that reports
  * nothing leaves the watcher's previous rule in force.

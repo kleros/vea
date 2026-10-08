@@ -19,25 +19,25 @@ import { EpochOutcome, mergeOutcomes } from "./utils/epochOutcome";
 
 const CYCLE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
 
-// [L8]: an epoch older than the watch window leaves after this many consecutive null cycles.
+// An epoch older than the watch window leaves after this many consecutive null cycles.
 const NULL_CYCLES_TO_LEAVE = 2;
-// [G5]/[L3]: alert after this many consecutive undecidable cycles, and again each further as many.
+// Alert after this many consecutive undecidable cycles, and again each further as many.
 const UNDECIDABLE_CYCLES_TO_ALERT = 15;
-// [L3]: undecidable cycles count only from (E+1)·P + this grace, past normal settlement lag.
+// Undecidable cycles count only from (E+1)·P + this grace, past normal settlement lag.
 const UNDECIDABLE_GRACE_SECS = 3600;
-// [G4]/[L4]/[L6]: a testnet route with no claim for this long (outbox chain time) raises LIVENESS_ALARM,
+// A testnet route with no claim for this long (outbox chain time) raises LIVENESS_ALARM,
 // at most once per this period.
 const LIVENESS_PERIOD_SECS = 24 * 60 * 60;
 
 /**
  * Per-epoch state. Reset rules:
- * - `nullStreak` ([L8]): +1 for an examined cycle in which `getClaim` returned null and no helper
+ * - `nullStreak`: +1 for an examined cycle in which `getClaim` returned null and no helper
  *   reported PENDING or UNDECIDABLE (nor returned a handler without reporting). Back to 0 on any
  *   other cycle: a claim, a throw, a PENDING/UNDECIDABLE report, or the route failing before the
  *   epoch was examined.
- * - `done` ([L8]): the last examined cycle's merged outcome was an explicit DONE. Cleared by any
+ * - `done`: the last examined cycle's merged outcome was an explicit DONE. Cleared by any
  *   other cycle, including a throw or a route failure before the epoch.
- * - `undecidableStreak` ([L3]): +1 for a cycle whose merged outcome is UNDECIDABLE or in which the
+ * - `undecidableStreak`: +1 for a cycle whose merged outcome is UNDECIDABLE or in which the
  *   epoch threw, counted only once outbox chain time is at or past (E+1)·P + 3600 s. Back to 0 on
  *   an examined cycle with any other outcome at or past that time. Cycles before that time, and
  *   cycles in which the route failed before the epoch (ROUTE_FAILED already alerts), leave it as is.
@@ -62,8 +62,8 @@ interface RouteConnections {
  * - `epochs`: on testnet every epoch examined or seeded by the cold start and not yet left;
  *   on devnet only the current epoch (older ones leave at rollover).
  * - `coldStartDone`: set once the cold-start range is seeded on the route's first cycle.
- * - `firstCycleTime`: outbox chain time of the route's first cycle (liveness baseline with no claim, [L6]).
- * - `newestClaimTimestamp`: the newest `timestampClaimed` fetched so far ([L4]); never decreases.
+ * - `firstCycleTime`: outbox chain time of the route's first cycle (liveness baseline with no claim).
+ * - `newestClaimTimestamp`: the newest `timestampClaimed` fetched so far; never decreases.
  * - `lastLivenessAlarm`: chain time of the last LIVENESS_ALARM; one alarm per 24 h at most.
  * - `snapshotCount`: the inbox count saveSnapshot last returned (-1 before the first).
  */
@@ -170,7 +170,7 @@ async function processNetwork(
       await processRoute({ path, toSaveSnapshot, route, state, examined, shutDownSignal, emitter });
     } catch (error) {
       emitter.emit(BotEvents.ROUTE_FAILED, { chainId, network, message: errorMessage(error) });
-      // [L8]: every epoch the failure kept from being examined stays watched for another cycle.
+      // Every epoch the failure kept from being examined stays watched for another cycle.
       for (const [epoch, track] of route.epochs) {
         if (examined.has(epoch)) continue;
         track.nullStreak = 0;

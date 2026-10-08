@@ -1,7 +1,7 @@
 import { scanLogs, findFirstLog, findLatestLog } from "./logScanner";
 
 // No test here reads a clock or sleeps; the timeout only lifts Jest's 5 s default, which a
-// loaded verification machine can exceed (run 001), so the result never depends on speed.
+// loaded machine can exceed, so the result never depends on speed.
 jest.setTimeout(60_000);
 
 /**

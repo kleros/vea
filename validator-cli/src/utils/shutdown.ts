@@ -41,7 +41,7 @@ export class ShutdownSignal {
 const SHUTDOWN_SIGNALS: NodeJS.Signals[] = ["SIGTERM", "SIGINT"];
 
 /**
- * Set `shutdownSignal` on SIGTERM and SIGINT (PRD 4.7), emitting `SHUTDOWN_REQUESTED`.
+ * Set `shutdownSignal` on SIGTERM and SIGINT, emitting `SHUTDOWN_REQUESTED`.
  *
  * @returns A function that removes the handlers again
  */

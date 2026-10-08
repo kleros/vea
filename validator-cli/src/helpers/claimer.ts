@@ -37,7 +37,7 @@ interface CheckAndClaimParams {
   fetchSettledReadBlocks?: typeof resolveSettledReadBlocks;
   /** Milliseconds. Defaults to the outbox chain's latest block timestamp, never the host clock. */
   now?: number;
-  /** Frozen interface (validator-v1-fixes seed): report what this cycle concluded for the epoch; see utils/epochOutcome.ts. */
+  /** Report what this cycle concluded for the epoch; see utils/epochOutcome.ts. */
   reportOutcome?: ReportOutcome;
 }
 
@@ -427,7 +427,7 @@ async function verifyClaim({
       return transactionHandler;
     }
   }
-  // The outbox read block (finalized, or latest minus 64 during a finality stall, [O4]).
+  // The outbox read block (finalized, or latest minus 64 during a finality stall).
   const readBlock = await getOutboxReadBlock({ outboxProvider: veaOutboxProvider, emitter: emitter as any });
   if (claim.timestampVerification == 0) {
     await transactionHandler.startVerification(readBlock.timestamp);

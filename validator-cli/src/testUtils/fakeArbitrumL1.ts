@@ -7,7 +7,7 @@
  * both check every block number against their own chain (the fixture throws
  * `WrongChainBlockError` otherwise).
  */
-import { FakeChain } from "../../testUtils/twoChainFixture";
+import { FakeChain } from "./twoChainFixture";
 
 export const BATCH_BLOCKS = 400; // 100 s of Arbitrum Sepolia blocks
 export const POST_DELAY_SECS = 30;

@@ -19,7 +19,7 @@ export interface SettledReadBlocks {
 }
 
 /**
- * Decision [O4]: the Arbitrum block a stalled-L1 decision is read at. It is the newest
+ * The Arbitrum block a stalled-L1 decision is read at. It is the newest
  * Arbitrum block whose L1 batch has at least `FALLBACK_L1_CONFIRMATIONS` confirmations.
  */
 export interface FinalityFallback {
@@ -32,11 +32,11 @@ export interface FinalityFallback {
 
 /**
  * [Arbitrum finalized block, L1 finalized block, finalityIssueFlagArb, finalityIssueFlagEth,
- * the [O4] fallback block (only computed while the L1 flag alone is set)]
+ * the stall fallback block (only computed while the L1 flag alone is set)]
  */
 export type FinalityCheck = [Block, Block, boolean, boolean, FinalityFallback?];
 
-// Decision [O4]: the L1 batch that posted a fallback block needs this many confirmations,
+// The L1 batch that posted a fallback block needs this many confirmations,
 // and an outbox chain whose finality has stalled is read this many blocks behind latest.
 export const FALLBACK_L1_CONFIRMATIONS = 64;
 export const OUTBOX_STALL_DEPTH_BLOCKS = 64;
@@ -51,7 +51,7 @@ export interface ResolveSettledReadBlocksParams {
   /** The outbox chain's provider: `outboxBlock` is that chain's block. */
   outboxProvider: JsonRpcProvider;
   /**
-   * Frozen interface (validator-v1-fixes seed): the provider of Arbitrum's L1 (Ethereum; on
+   * The provider of Arbitrum's L1 (Ethereum; on
    * chain 10200 the Sepolia router provider), which the finality check runs on. When given,
    * `outboxBlock` is read from `outboxProvider` itself. When omitted, `outboxProvider` serves
    * both, which is correct only when the outbox chain is Arbitrum's L1.
@@ -73,7 +73,7 @@ export interface ResolveSettledReadBlocksParams {
  *  - the block must sit at or after `(epoch + 1) * epochPeriod`, because
  *    `snapshots[epoch]` is still being written during epoch E.
  *
- * While L1 finality has stalled (and nothing else is wrong), decision [O4] applies instead:
+ * While L1 finality has stalled (and nothing else is wrong), the stall fallback applies instead:
  * the inbox is read at the newest Arbitrum block whose L1 batch has at least 64 L1
  * confirmations, once that block's timestamp is at or past
  * `(epoch + 1) * epochPeriod + sequencerDelayLimit`.
@@ -116,7 +116,7 @@ export const resolveSettledReadBlocks = async ({
 
   const epochBoundary = (epoch + 1) * epochPeriod;
   if (finalityIssueFlagEth) {
-    // Decision [O4]: L1 finality has stalled, so `finalized` stops moving. Decide from the
+    // L1 finality has stalled, so `finalized` stops moving. Decide from the
     // fallback block once no sequencer backdating can reach epoch E any more.
     if (!fallback || fallback.l1Confirmations < FALLBACK_L1_CONFIRMATIONS) {
       emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
@@ -296,7 +296,7 @@ const toNumber = (value: any): number | undefined => {
  * It returns the finalized block on Arbitrum and Ethereum and flags indicating finality issues.
  *
  * Every time judgement here is taken from chain blocks (Ethereum's `latest` timestamp), never
- * from the host clock (PRD 4.2).
+ * from the host clock.
  *
  * @param EthProvider Ethereum (Arbitrum's L1) provider
  * @param ArbProvider Arbitrum provider
@@ -304,7 +304,7 @@ const toNumber = (value: any): number | undefined => {
  * @param veaEpochPeriod epoch period of the claim to be fetched
  *
  * @returns [Arbitrum finalized block, Ethereum finalized block, finalityIssueFlagArb, finalityIssueFlagEth,
- *   decision [O4] fallback (only while the Ethereum flag alone is set)], or undefined when neither the
+ *   stall fallback (only while the Ethereum flag alone is set)], or undefined when neither the
  *   finalized nor the latest Arbitrum block can be found on L1
  * */
 const getBlocksAndCheckFinality = async (
@@ -468,7 +468,7 @@ interface FinalityFallbackParams {
 }
 
 /**
- * Decision [O4]: the newest Arbitrum block whose L1 batch has at least
+ * The newest Arbitrum block whose L1 batch has at least
  * `FALLBACK_L1_CONFIRMATIONS` L1 confirmations.
  *
  * The newest batch delivered at or before L1 block `latest - 64` is found on L1, then the last
@@ -564,7 +564,7 @@ const ArbBlockToL1Block = async (
 
   const batch = toNumber(result?.batch) ?? latestL2batchOnEth;
   // An undefined batch would make SequencerBatchDelivered(undefined) match any batch, and an
-  // unrelated batch would then pass as proof that this block was posted (PRD 2.4).
+  // unrelated batch would then pass as proof that this block was posted.
   if (batch === undefined) return undefined;
   const L2BlockNumberFallback = latestL2BlockNumberOnEth ?? L2Block.number;
   /**
