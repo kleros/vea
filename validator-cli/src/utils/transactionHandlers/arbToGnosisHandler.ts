@@ -246,11 +246,8 @@ export class ArbToGnosisDevnetTransactionHandler extends ArbToGnosisTransactionH
     const toSubmit = await this.toSubmitTransaction(this.transactions.devnetAdvanceStateTxn, ContractType.OUTBOX, now);
     if (!toSubmit) return;
     if (!(await this.approveWeth("devnet advance state"))) return;
-    const { routeConfig } = getBridgeConfig(this.chainId);
-    const { deposit } = routeConfig[Network.DEVNET];
-    const tx = await this.veaOutboxDevnet.devnetAdvanceState(this.epoch, stateRoot, {
-      value: deposit,
-    });
+    // The deposit is paid in WETH by `claim`; `devnetAdvanceState` ignores msg.value.
+    const tx = await this.veaOutboxDevnet.devnetAdvanceState(this.epoch, stateRoot);
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Advance Devnet State");
     this.transactions.devnetAdvanceStateTxn = { hash: tx.hash, broadcastedTimestamp: now };
   }

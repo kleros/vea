@@ -130,7 +130,7 @@ async function checkAndClaim({
     }
     if (epoch < claimAbleEpoch) {
       emitter.emit(BotEvents.CLAIM_EPOCH_PASSED, epoch);
-      report(await passedEpochOutcome({ epoch, epochPeriod, veaOutboxProvider, emitter }));
+      report(await passedEpochOutcome({ epoch, epochPeriod, veaOutbox, veaOutboxProvider, emitter }));
     } else {
       // The epoch has not ended on the outbox chain yet: nothing can be claimed for it.
       report(EpochOutcome.UNDECIDABLE);
@@ -147,23 +147,27 @@ async function checkAndClaim({
 
 /**
  * An unclaimed epoch whose claim window has passed on the latest block is done only once the
- * outbox read block is at or past `(E+2)·epochPeriod` too: until then a claim can still appear
- * at the block the claim was looked up at.
+ * outbox read block is at or past `(E+2)·epochPeriod` too and `claimHashes(E)` is zero at that
+ * same block: the claim was looked up at an earlier block, and one can land in between.
  */
 async function passedEpochOutcome({
   epoch,
   epochPeriod,
+  veaOutbox,
   veaOutboxProvider,
   emitter,
 }: {
   epoch: number;
   epochPeriod: number;
+  veaOutbox: any;
   veaOutboxProvider: JsonRpcProvider;
   emitter: EventEmitter;
 }): Promise<EpochOutcome> {
   try {
     const readBlock = await getOutboxReadBlock({ outboxProvider: veaOutboxProvider, emitter: emitter as any });
-    return readBlock.timestamp >= (epoch + 2) * epochPeriod ? EpochOutcome.DONE : EpochOutcome.PENDING;
+    if (readBlock.timestamp < (epoch + 2) * epochPeriod) return EpochOutcome.PENDING;
+    const claimHash = await veaOutbox.claimHashes(epoch, { blockTag: readBlock.number });
+    return claimHash == ethers.ZeroHash ? EpochOutcome.DONE : EpochOutcome.PENDING;
   } catch {
     return EpochOutcome.UNDECIDABLE;
   }

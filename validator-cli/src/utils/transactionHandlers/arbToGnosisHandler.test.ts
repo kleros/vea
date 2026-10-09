@@ -1,4 +1,8 @@
-import { ArbToGnosisTransactionHandler, resetNonceStuckAlerts } from "./arbToGnosisHandler";
+import {
+  ArbToGnosisDevnetTransactionHandler,
+  ArbToGnosisTransactionHandler,
+  resetNonceStuckAlerts,
+} from "./arbToGnosisHandler";
 import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
 import { getWETH } from "../ethers";
 import { messageExecutor } from "../arbMsgExecutor";
@@ -137,6 +141,16 @@ describe("ArbToGnosisTransactionHandler", () => {
       weth.allowance.mockResolvedValue(deposit);
       await transactionHandler.makeClaim("0xroot");
       expect(weth.approve).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("devnetAdvanceState()", () => {
+    it("pays the deposit in WETH only: no native value goes to the outbox", async () => {
+      veaOutbox.devnetAdvanceState = jest.fn().mockResolvedValue({ hash: "0xadvance" });
+      const devnetHandler = new ArbToGnosisDevnetTransactionHandler(transactionHandlerParams);
+      await devnetHandler.devnetAdvanceState("0xroot");
+      expect(weth.approve).toHaveBeenCalled();
+      expect(veaOutbox.devnetAdvanceState).toHaveBeenCalledWith(epoch, "0xroot");
     });
   });
 

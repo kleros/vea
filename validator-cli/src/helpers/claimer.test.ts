@@ -43,13 +43,14 @@ interface Setup {
 }
 
 /** A claimer wired to the two-chain fixture: every pinned read throws on another chain's block. */
-const setup = ({ claimedLogs = [] as any[] } = {}): Setup => {
+const setup = ({ claimedLogs = [] as any[], claimHash = ethers.ZeroHash } = {}): Setup => {
   const route = createTwoChainRoute({ now: NOW });
   const scannedRanges: Array<[number, number]> = [];
   const veaInbox = { snapshots: jest.fn(route.inbox.pinned(() => SAVED)) };
   const veaOutbox = {
     target: "0xoutbox",
     stateRoot: jest.fn(route.outbox.pinned(() => OUTBOX_ROOT)),
+    claimHashes: jest.fn(route.outbox.pinned(() => claimHash)),
     filters: { Claimed: jest.fn(() => ({ event: "Claimed" })) },
     queryFilter: jest.fn(async (_filter: any, from: number, to: number) => {
       route.outbox.assertOwnBlock(from);
@@ -236,6 +237,16 @@ describe("claimer", () => {
       s.params.now = (boundary + 200) * 1000;
       await checkAndClaim(s.params);
       expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+    });
+
+    it("stays PENDING when a claim shows up at the read block after the earlier lookup missed it", async () => {
+      const s = setup({ claimHash: "0x" + "ab".repeat(32) });
+      s.params.epoch = CLAIMABLE - 1;
+      const outbox = createTwoChainRoute({ now: boundary + 200 }).outbox;
+      s.params.veaOutboxProvider = outbox.provider;
+      s.params.now = (boundary + 200) * 1000;
+      await checkAndClaim(s.params);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
     });
   });
 
