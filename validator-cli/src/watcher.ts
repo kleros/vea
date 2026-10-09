@@ -338,7 +338,8 @@ interface CollectEpochsParams {
 
 /**
  * Which epochs this cycle examines. Devnet watches only the current epoch and drops older
- * ones at rollover. Testnet watches the whole challenge-budget window, newest first, then up to
+ * ones at rollover. Testnet watches the challenge-budget window, newest first and without the
+ * epochs already DONE, then up to
  * `backlogEpochsPerCycle` older epochs still tracked, resuming below where the last cycle
  * stopped. On a route's first cycle the cold-start range is added so a restarted bot picks up
  * disputes it started earlier.
@@ -368,9 +369,14 @@ const collectEpochsToWatch = ({
     route.coldStartDone = true;
   }
   const window = watchWindow(now, epochPeriod, sequencerDelayLimit, minChallengePeriod);
-  // Newest first: the claimable epoch is the most time-sensitive.
+  // Newest first: the claimable epoch is the most time-sensitive. A window epoch that reported
+  // DONE is skipped until it leaves the window: DONE is final (no claim can appear for an epoch
+  // once its claim period is past the read block, and a resolved claim leaves nothing for us).
+  // The claimable epoch is examined every cycle regardless.
   const inWindow: number[] = [];
-  for (let epoch = window.high; epoch >= window.low; epoch--) inWindow.push(epoch);
+  for (let epoch = window.high; epoch >= window.low; epoch--) {
+    if (epoch == window.high || !route.epochs.get(epoch)?.done) inWindow.push(epoch);
+  }
   const backlog = [...route.epochs.keys()].filter((epoch) => epoch < window.low).sort((a, b) => b - a);
   const cursor = route.backlogCursor;
   const below = cursor === undefined ? backlog : backlog.filter((epoch) => epoch < cursor);

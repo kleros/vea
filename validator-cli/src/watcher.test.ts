@@ -110,6 +110,27 @@ describe("watcher: which epochs are watched", () => {
     expect(Math.max(...backlogOf(3))).toBeLessThan(Math.min(...backlogOf(2)));
   });
 
+  it("skips a window epoch once it reported DONE, but examines the claimable epoch every cycle", async () => {
+    let low = 0;
+    let high = 0;
+    mocks.checkAndClaim.mockImplementation(
+      reporting(({ epoch }) => (epoch === low + 3 || epoch === high ? EpochOutcome.DONE : undefined))
+    );
+    const h = await runWatcher({
+      chains: `${GNOSIS}`,
+      networks: "testnet",
+      path: "claimer",
+      cycles: 3,
+      setup: (h) => ({ low, high } = windowOf(GNOSIS, h.now(GNOSIS))),
+    });
+    expect(h.epochsOf("checkAndClaim", 1)).toContain(low + 3);
+    for (const cycle of [2, 3]) {
+      expect(h.epochsOf("checkAndClaim", cycle)).not.toContain(low + 3);
+      expect(h.epochsOf("checkAndClaim", cycle)).toContain(low + 4);
+      expect(h.epochsOf("checkAndClaim", cycle)[0]).toBe(high);
+    }
+  });
+
   it("examines every epoch a failed route skipped once it recovers", async () => {
     const missed: number[] = [];
     const h = await runWatcher({
