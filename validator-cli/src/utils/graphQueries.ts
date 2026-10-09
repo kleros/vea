@@ -38,7 +38,7 @@ const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number):
                         stateRoot
                         timestamp
                         txHash
-                        verification {
+                        verification(order_by: {startTimestamp: desc}) {
                           startTimestamp
                           startTxHash
                         }
@@ -54,6 +54,16 @@ const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number):
     throw new ClaimNotFoundError(epoch);
   }
 };
+
+/**
+ * The start timestamp of the latest verification: `startVerification` can run again after a
+ * failed censorship test, and the restarted one supersedes the earlier one (as in `getClaimForEpoch`).
+ */
+const latestVerificationStart = (verifications: ClaimData["verification"]): number =>
+  (verifications ?? []).reduce(
+    (latest, verification) => Math.max(latest, Number(verification?.startTimestamp ?? 0) || 0),
+    0
+  );
 
 /** Fetches the claims data for a given list of epochs (used for claimer - happy path)
  * @param epochs
@@ -76,7 +86,7 @@ const getClaimsForEpochs = async (
         stateRoot
         timestamp
         txHash
-        verification {
+        verification(order_by: {startTimestamp: desc}) {
           startTimestamp
           startTxHash
         }
@@ -99,7 +109,7 @@ const getClaimsForEpochs = async (
         stateRoot: claim.stateRoot,
         claimer: claim.bridger,
         timestampClaimed: claim.timestamp,
-        timestampVerification: claim.verification?.[0]?.startTimestamp || 0,
+        timestampVerification: latestVerificationStart(claim.verification),
         blocknumberVerification: 0, // This would require additional data to fill accurately
         honest: 0, // Placeholder, as this data isn't available in the current query
         challenger: claim.challenge?.[0]?.challenger || ethers.ZeroAddress,

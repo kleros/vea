@@ -1,24 +1,38 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { getBridgeConfig } from "../consts/bridgeRoutes";
-// DONT DECLARE A NEW var here, i think this wont be needed after we update the lowerbound comment i made below
-// Extra backlog for the cold-start epoch sweep, so a restart still picks up
-// claims that were pending L2 finalization when the bot went down.
+// The cold-start epoch sweep reaches back this far, so a restart still picks
+// up claims (and disputes this bot started) that were pending when the bot went down.
 const COLD_START_BACKLOG_SECS = 7 * 24 * 60 * 60;
 
 interface EpochRangeParams {
   chainId: number;
   epochPeriod: number;
+  /** The outbox chain's latest block timestamp, in seconds: the range's chain time. */
   currentTimestamp: number;
+  /** Chain time in milliseconds (optional, defaults to `currentTimestamp * 1000`; never the host clock). */
   now?: number;
   fetchBridgeConfig?: typeof getBridgeConfig;
 }
 
 /**
+ * One challenge budget of a route: how long after its window opens a claim can still be
+ * challenged (`epochPeriod + sequencerDelayLimit + minChallengePeriod`).
+ */
+const getChallengeBudget = (
+  { sequencerDelayLimit, minChallengePeriod }: { sequencerDelayLimit: number; minChallengePeriod?: number },
+  epochPeriod: number
+): number => epochPeriod + sequencerDelayLimit + (minChallengePeriod ?? 0);
+
+/**
  * Sets the epoch range to check for claims.
  *
- * @param currentTimestamp - The current timestamp
+ * The range reaches back the larger of two lookbacks, so it covers both: the 7-day cold-start
+ * backlog on top of the L2 sync period (`sequencerDelayLimit + epochPeriod`), and one
+ * challenge budget.
+ *
+ * @param currentTimestamp - The outbox chain's latest block timestamp, in seconds
  * @param chainId - The chain ID
- * @param now - The current time in milliseconds (optional, defaults to Date.now())
+ * @param now - Chain time in milliseconds (optional, defaults to `currentTimestamp * 1000`)
  * @param fetchBridgeConfig - The function to fetch the bridge configuration (optional, defaults to getBridgeConfig)
  *
  * @returns The epoch range to check for claims
@@ -28,23 +42,23 @@ const setEpochRange = ({
   chainId,
   currentTimestamp,
   epochPeriod,
-  now = Date.now(),
+  now = currentTimestamp * 1000,
   fetchBridgeConfig = getBridgeConfig,
 }: EpochRangeParams): Array<number> => {
-  const { sequencerDelayLimit } = fetchBridgeConfig(chainId);
+  const bridgeConfig = fetchBridgeConfig(chainId);
+  const { sequencerDelayLimit } = bridgeConfig;
 
   // When Sequencer is malicious, even when L1 is finalized, L2 state might be unknown for up to  sequencerDelayLimit + epochPeriod.
   const L2SyncPeriod = sequencerDelayLimit + epochPeriod;
   // When we start the watcher, we need to go back far enough to check for claims which may have been pending L2 state finalization.
-  const veaEpochOutboxWatchLowerBound =
-    Math.floor((currentTimestamp - L2SyncPeriod - COLD_START_BACKLOG_SECS) / epochPeriod) - 2;
-  // ETH / Gnosis POS assumes synchronized clocks
-  // using local time as a proxy for true "latest" L1 time
-  const timeLocal = Math.floor(now / 1000);
+  const lookback = Math.max(L2SyncPeriod + COLD_START_BACKLOG_SECS, getChallengeBudget(bridgeConfig, epochPeriod));
+  const veaEpochOutboxWatchLowerBound = Math.floor((currentTimestamp - lookback) / epochPeriod) - 2;
+  // Chain time: the outbox chain's latest timestamp, never the host clock.
+  const chainTime = Math.floor(now / 1000);
 
-  let veaEpochOutboxClaimableNow = Math.floor(timeLocal / epochPeriod) - 1;
+  let veaEpochOutboxClaimableNow = Math.floor(chainTime / epochPeriod) - 1;
   // only past epochs are claimable, hence shift by one here
-  const length = veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound;
+  const length = Math.max(veaEpochOutboxClaimableNow - veaEpochOutboxWatchLowerBound, 0);
   const veaEpochOutboxCheckClaimsRangeArray: number[] = Array.from(
     { length },
     (_, i) => veaEpochOutboxWatchLowerBound + i + 1
@@ -52,7 +66,13 @@ const setEpochRange = ({
   return veaEpochOutboxCheckClaimsRangeArray;
 };
 
-const getLatestChallengeableEpoch = (epochPeriod: number, now: number = Date.now()): number => {
+/**
+ * The newest epoch whose claim can still be challenged.
+ *
+ * @param now - Chain time in milliseconds (an outbox block timestamp * 1000); required, so the
+ *   host clock never decides it
+ */
+const getLatestChallengeableEpoch = (epochPeriod: number, now: number): number => {
   return Math.floor(now / 1000 / epochPeriod) - 2;
 };
 
@@ -126,7 +146,7 @@ interface LookbackFloorParams {
   headBlockTag?: "latest" | "finalized";
   fetchBridgeConfig?: typeof getBridgeConfig;
 }
-// Logically the loop back should be limited to the sequencerDelayLimit + epochPeriod, but we add a backlog to account for the time it takes for the bot to start up and catch up with the chain. But i think thats too harsh and we should just use the sequencerDelayLimit + epochPeriod as the limit. Maybe 2 epoch periods?
+
 /**
  * The oldest block worth searching for a "latest event of its kind" lookup.
  *
@@ -171,5 +191,7 @@ export {
   getBlockFromEpoch,
   blockAtTimestamp,
   getLookbackFloorBlock,
+  getChallengeBudget,
+  COLD_START_BACKLOG_SECS,
   EpochRangeParams,
 };

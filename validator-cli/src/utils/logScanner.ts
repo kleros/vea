@@ -44,8 +44,7 @@ export const scanLogs = async ({
   let cursor = forward ? fromBlock : toBlock;
 
   while (forward ? cursor <= toBlock : cursor >= fromBlock) {
-    const lo = forward ? cursor : Math.max(cursor - size + 1, fromBlock);
-    const hi = forward ? Math.min(cursor + size - 1, toBlock) : cursor;
+    const [lo, hi] = chunkBounds(cursor, size, fromBlock, toBlock, forward);
     try {
       const chunk = await contract.queryFilter(filter, lo, hi);
       logs.push(...chunk);
@@ -59,6 +58,16 @@ export const scanLogs = async ({
 
   return logs.sort(logOrder);
 };
+
+/** The `[lo, hi]` block range of the chunk at `cursor`, clipped to `[fromBlock, toBlock]`. */
+const chunkBounds = (
+  cursor: number,
+  size: number,
+  fromBlock: number,
+  toBlock: number,
+  forward: boolean
+): [number, number] =>
+  forward ? [cursor, Math.min(cursor + size - 1, toBlock)] : [Math.max(cursor - size + 1, fromBlock), cursor];
 
 export type FindLogParams = Omit<ScanLogsParams, "direction" | "stopOnFirstHit">;
 

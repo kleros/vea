@@ -73,7 +73,7 @@ async function getMessageStatus(
   const messages = await messageReceipt.getChildToParentMessages(parentSigner);
   const childToParentMessage = messages[0];
   if (!childToParentMessage) {
-    console.error("No child-to-parent messages found");
+    throw new Error(`No child-to-parent messages found for hash: ${trnxHash}`);
   }
   const status = await childToParentMessage.status(childProvider);
   return status;

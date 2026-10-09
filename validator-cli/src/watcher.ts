@@ -6,7 +6,8 @@ import { setEpochRange } from "./utils/epochHandler";
 import { defaultEmitter } from "./utils/emitter";
 import { BotEvents } from "./utils/botEvents";
 import { initialize as initializeLogger } from "./utils/logger";
-import { ShutdownSignal } from "./utils/shutdown";
+import { ShutdownSignal, installShutdownHandlers } from "./utils/shutdown";
+import { sendHeartbeat } from "./utils/heartbeat";
 import { getBotPath, BotPaths, getNetworkConfig, NetworkConfig } from "./utils/botConfig";
 import { getClaim } from "./utils/claim";
 import { CheckAndClaimParams, checkAndClaim } from "./helpers/claimer";
@@ -14,20 +15,108 @@ import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./help
 import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
 import { validateEnvironment } from "./utils/envValidation";
+import { EpochOutcome, mergeOutcomes } from "./utils/epochOutcome";
 
 const CYCLE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
+
+// An epoch older than the watch window leaves after this many consecutive null cycles.
+const NULL_CYCLES_TO_LEAVE = 2;
+// Alert after this many consecutive undecidable cycles, and again each further as many.
+const UNDECIDABLE_CYCLES_TO_ALERT = 15;
+// Undecidable cycles count only from (E+1)·P + this grace, past normal settlement lag.
+const UNDECIDABLE_GRACE_SECS = 3600;
+// A testnet route with no claim for this long (outbox chain time) raises LIVENESS_ALARM,
+// at most once per this period.
+const LIVENESS_PERIOD_SECS = 24 * 60 * 60;
+
+/**
+ * Per-epoch state. Reset rules:
+ * - `nullStreak`: +1 for an examined cycle in which `getClaim` returned null and no helper
+ *   reported PENDING or UNDECIDABLE (nor returned a handler without reporting). Back to 0 on any
+ *   other cycle: a claim, a throw, a PENDING/UNDECIDABLE report, or the route failing before the
+ *   epoch was examined.
+ * - `done`: the last examined cycle's merged outcome was an explicit DONE. Cleared by any
+ *   other cycle, including a throw or a route failure before the epoch.
+ * - `undecidableStreak`: +1 for a cycle whose merged outcome is UNDECIDABLE or in which the
+ *   epoch threw, counted only once outbox chain time is at or past (E+1)·P + 3600 s. Back to 0 on
+ *   an examined cycle with any other outcome at or past that time. Cycles before that time, and
+ *   cycles in which the route failed before the epoch (ROUTE_FAILED already alerts), leave it as is.
+ */
+interface EpochTrack {
+  nullStreak: number;
+  done: boolean;
+  undecidableStreak: number;
+}
+
+/** Everything one cycle builds to talk to a route's chains. */
+interface RouteConnections {
+  veaInbox: any;
+  veaOutbox: any;
+  veaInboxProvider: any;
+  veaOutboxProvider: any;
+  veaRouterProvider: any;
+}
+
+/**
+ * Per-route state, keyed by `${chainId}_${network}`. Reset rules:
+ * - `epochs`: on testnet every epoch examined or seeded by the cold start and not yet left;
+ *   on devnet only the current epoch (older ones leave at rollover).
+ * - `coldStartDone`: set once the cold-start range is seeded on the route's first cycle.
+ * - `firstCycleTime`: outbox chain time of the route's first cycle (liveness baseline with no claim).
+ * - `newestClaimTimestamp`: the newest `timestampClaimed` fetched so far; never decreases.
+ * - `lastLivenessAlarm`: chain time of the last LIVENESS_ALARM; one alarm per 24 h at most.
+ * - `snapshotCount`: the inbox count saveSnapshot last returned (-1 before the first).
+ */
+interface RouteState {
+  chainId: number;
+  network: Network;
+  epochs: Map<number, EpochTrack>;
+  coldStartDone: boolean;
+  firstCycleTime?: number;
+  newestClaimTimestamp?: number;
+  lastLivenessAlarm?: number;
+  snapshotCount: number;
+  connections?: RouteConnections;
+}
+
+export interface WatcherState {
+  routes: { [routeKey: string]: RouteState };
+  /** Claim/challenge handlers under `${chainId}_${network}_${epoch}`, snapshot handlers under `snapshot_${chainId}_${network}_${epoch}`. */
+  transactionHandlers: { [key: string]: any };
+}
+
+export interface WatchOptions {
+  cycleDelayMs?: number;
+  /** The loop's state; a caller may pass its own to inspect it. */
+  state?: WatcherState;
+}
+
+export const claimHandlerKey = (chainId: number, network: Network, epoch: number) => `${chainId}_${network}_${epoch}`;
+export const snapshotHandlerKey = (chainId: number, network: Network, epoch: number) =>
+  `snapshot_${chainId}_${network}_${epoch}`;
+
+/**
+ * Error text for an event payload: URLs are cut out, since an RPC URL often embeds an API key.
+ */
+const errorMessage = (error: unknown): string =>
+  (error instanceof Error ? error.message : String(error)).replace(
+    /[a-z][a-z0-9+.-]{0,31}:\/\/[^\s"'<>,)]+/gi,
+    "<url>"
+  );
 
 /**
  * @file This file contains the logic for watching bridge and validating/resolving for claims.
  *
  * @param shutDownSignal - The signal to shut down the watcher
  * @param emitter - The emitter to emit events
+ * @param options - `cycleDelayMs`: the pause between cycles; `state`: the loop's state
  *
  */
 
 export const watch = async (
   shutDownSignal: ShutdownSignal = new ShutdownSignal(),
-  emitter: typeof defaultEmitter = defaultEmitter
+  emitter: typeof defaultEmitter = defaultEmitter,
+  { cycleDelayMs = CYCLE_DELAY_MS, state = { routes: {}, transactionHandlers: {} } }: WatchOptions = {}
 ) => {
   initializeLogger(emitter);
   // Validate the whole environment before anything else, including before the
@@ -39,14 +128,22 @@ export const watch = async (
   const cliCommand = process.argv;
   const { path, toSaveSnapshot } = getBotPath({ cliCommand });
   const networkConfigs = getNetworkConfig();
-  emitter.emit(BotEvents.STARTED, path, networkConfigs[0].networks);
-  const transactionHandlers: { [key: string]: any } = {};
-  const toWatch: { [key: string]: { count: number; epochs: number[] } } = {};
-  while (!shutDownSignal.getIsShutdownSignal()) {
-    for (const networkConfig of networkConfigs) {
-      await processNetwork(path, toSaveSnapshot, networkConfig, transactionHandlers, toWatch, emitter);
+  const heartbeatURL = process.env.HEARTBEAT_URL;
+  const removeShutdownHandlers = installShutdownHandlers(shutDownSignal, emitter);
+  try {
+    await sendHeartbeat("started", heartbeatURL, emitter);
+    emitter.emit(BotEvents.STARTED, path, networkConfigs[0]?.networks);
+    while (!shutDownSignal.getIsShutdownSignal()) {
+      await sendHeartbeat("running", heartbeatURL, emitter);
+      for (const networkConfig of networkConfigs) {
+        if (shutDownSignal.getIsShutdownSignal()) break;
+        await processNetwork(path, toSaveSnapshot, networkConfig, state, shutDownSignal, emitter);
+      }
+      await shutDownSignal.wait(cycleDelayMs);
     }
-    await wait(CYCLE_DELAY_MS);
+  } finally {
+    removeShutdownHandlers();
+    await sendHeartbeat("stopped", heartbeatURL, emitter);
   }
 };
 
@@ -54,86 +151,40 @@ async function processNetwork(
   path: number,
   toSaveSnapshot: boolean,
   networkConfig: NetworkConfig,
-  transactionHandlers: { [key: string]: any },
-  toWatch: { [key: string]: { count: number; epochs: number[] } },
+  state: WatcherState,
+  shutDownSignal: ShutdownSignal,
   emitter: typeof defaultEmitter
 ): Promise<void> {
   const { chainId, networks } = networkConfig;
-  const { routeConfig, inboxRPC, outboxRPC, routerRPC } = getBridgeConfig(chainId);
   for (const network of networks) {
-    emitter.emit(BotEvents.WATCHING, chainId, network);
-    const networkKey = `${chainId}_${network}`;
-    if (!toWatch[networkKey]) {
-      toWatch[networkKey] = { count: -1, epochs: [] };
-    }
-    const veaOutboxProvider = new FallbackProviderV5(outboxRPC, emitter);
-    let veaOutboxLatestBlock = await veaOutboxProvider.getBlock("latest");
-
-    // If the watcher has already started, only check the latest epoch
-    if (network == Network.DEVNET) {
-      toWatch[networkKey].epochs = [Math.floor(veaOutboxLatestBlock.timestamp / routeConfig[network].epochPeriod)];
-    } else if (toWatch[networkKey].epochs.length == 0) {
-      const epochRange = setEpochRange({
-        chainId,
-        currentTimestamp: veaOutboxLatestBlock.timestamp,
-        epochPeriod: routeConfig[network].epochPeriod,
-      });
-      toWatch[networkKey].epochs = epochRange;
-    }
-
-    await processEpochsForNetwork({
+    if (shutDownSignal.getIsShutdownSignal()) return;
+    const routeKey = `${chainId}_${network}`;
+    state.routes[routeKey] ??= {
       chainId,
-      path,
-      toSaveSnapshot,
-      networkKey,
       network,
-      routeConfig,
-      inboxRPC,
-      outboxRPC,
-      routerRPC,
-      toWatch,
-      transactionHandlers,
-      emitter,
-    });
-    const currentLatestBlock = await veaOutboxProvider.getBlock("latest");
-    const currentClaimableEpoch = Math.floor(currentLatestBlock.timestamp / routeConfig[network].epochPeriod) - 1;
-
-    const toWatchEpochs = toWatch[networkKey];
-    const lastEpochInToWatch = toWatchEpochs[toWatchEpochs.epochs.length - 1];
-    if (currentClaimableEpoch > lastEpochInToWatch) {
-      toWatch[networkKey].epochs.push(currentClaimableEpoch);
+      epochs: new Map(),
+      coldStartDone: false,
+      snapshotCount: -1,
+    };
+    const route = state.routes[routeKey];
+    const examined = new Set<number>();
+    try {
+      emitter.emit(BotEvents.WATCHING, chainId, network);
+      await processRoute({ path, toSaveSnapshot, route, state, examined, shutDownSignal, emitter });
+    } catch (error) {
+      emitter.emit(BotEvents.ROUTE_FAILED, { chainId, network, message: errorMessage(error) });
+      // Every epoch the failure kept from being examined stays watched for another cycle.
+      for (const [epoch, track] of route.epochs) {
+        if (examined.has(epoch)) continue;
+        track.nullStreak = 0;
+        track.done = false;
+      }
     }
   }
 }
 
-interface ProcessEpochParams {
-  chainId: number;
-  path: number;
-  toSaveSnapshot: boolean;
-  networkKey: string;
-  network: Network;
-  routeConfig: any;
-  inboxRPC: string[];
-  outboxRPC: string[];
-  routerRPC: string[] | undefined;
-  toWatch: { [key: string]: { count: number; epochs: number[] } };
-  transactionHandlers: { [key: string]: any };
-  emitter: typeof defaultEmitter;
-}
-async function processEpochsForNetwork({
-  chainId,
-  path,
-  toSaveSnapshot,
-  networkKey,
-  network,
-  routeConfig,
-  inboxRPC,
-  outboxRPC,
-  routerRPC,
-  toWatch,
-  transactionHandlers,
-  emitter,
-}: ProcessEpochParams) {
+const connectRoute = (chainId: number, network: Network, emitter: typeof defaultEmitter): RouteConnections => {
+  const { routeConfig, inboxRPC, outboxRPC, routerRPC } = getBridgeConfig(chainId);
   const privKey = process.env.PRIVATE_KEY;
   // v6 providers for the typechain contract connections (the inbox chainId is detected via the fallback transport).
   const veaInboxContractProvider = new FallbackRpcProvider(inboxRPC, emitter);
@@ -156,107 +207,410 @@ async function processEpochsForNetwork({
   const veaInboxProvider = new FallbackProviderV5(inboxRPC, emitter);
   const veaOutboxProvider = new FallbackProviderV5(outboxRPC, emitter);
   const veaRouterProvider = routerRPC && routerRPC.length > 0 ? new FallbackProviderV5(routerRPC, emitter) : undefined;
-  let i = toWatch[networkKey].epochs.length - 1;
-  let latestEpoch = toWatch[networkKey].epochs[i];
-  const currentEpoch = Math.floor(Date.now() / (1000 * routeConfig[network].epochPeriod));
-  if (latestEpoch != currentEpoch - 1 && network != Network.DEVNET) {
-    toWatch[networkKey].epochs.push(currentEpoch - 1);
-    latestEpoch = currentEpoch - 1;
-    i++;
+  return { veaInbox, veaOutbox, veaInboxProvider, veaOutboxProvider, veaRouterProvider };
+};
+
+/**
+ * The epochs a claim can still be challenged in: every E with
+ * floor((now - B) / P) - 2 <= E <= floor(now / P) - 1, where B is the challenge budget
+ * (epochPeriod + sequencerDelayLimit + minChallengePeriod).
+ */
+const watchWindow = (now: number, epochPeriod: number, sequencerDelayLimit: number, minChallengePeriod: number) => {
+  const budget = epochPeriod + sequencerDelayLimit + minChallengePeriod;
+  return {
+    low: Math.floor((now - budget) / epochPeriod) - 2,
+    high: Math.floor(now / epochPeriod) - 1,
+  };
+};
+
+const dropEpoch = (
+  state: WatcherState,
+  route: RouteState,
+  epoch: number,
+  reason: string,
+  emitter: typeof defaultEmitter
+) => {
+  route.epochs.delete(epoch);
+  delete state.transactionHandlers[claimHandlerKey(route.chainId, route.network, epoch)];
+  emitter.emit(BotEvents.EPOCH_DROPPED, { chainId: route.chainId, network: route.network, epoch, reason });
+};
+
+interface ProcessRouteParams {
+  path: number;
+  toSaveSnapshot: boolean;
+  route: RouteState;
+  state: WatcherState;
+  examined: Set<number>;
+  shutDownSignal: ShutdownSignal;
+  emitter: typeof defaultEmitter;
+}
+
+async function processRoute({
+  path,
+  toSaveSnapshot,
+  route,
+  state,
+  examined,
+  shutDownSignal,
+  emitter,
+}: ProcessRouteParams): Promise<void> {
+  const { chainId, network } = route;
+  const { routeConfig, sequencerDelayLimit, minChallengePeriod } = getBridgeConfig(chainId);
+  const epochPeriod: number = routeConfig[network].epochPeriod;
+  route.connections ??= connectRoute(chainId, network, emitter);
+  const connections = route.connections;
+
+  // Every "now" of this cycle is the outbox chain's latest block time, never the host clock.
+  const now = (await connections.veaOutboxProvider.getBlock("latest")).timestamp;
+  route.firstCycleTime ??= now;
+  const currentEpoch = Math.floor(now / epochPeriod);
+
+  const { toWatch, windowLow } = collectEpochsToWatch({
+    route,
+    state,
+    now,
+    currentEpoch,
+    epochPeriod,
+    sequencerDelayLimit,
+    minChallengePeriod,
+    emitter,
+  });
+
+  if (toSaveSnapshot) await processSnapshot({ route, state, connections, epochPeriod, now, currentEpoch, emitter });
+
+  for (const epoch of toWatch) {
+    if (shutDownSignal.getIsShutdownSignal()) return;
+    await processEpoch({ path, route, state, connections, epochPeriod, epoch, now, emitter });
+    examined.add(epoch);
   }
-  // Checks and saves the snapshot if needed
-  if (toSaveSnapshot) {
-    const TransactionHandler = getTransactionHandler(chainId, network) as any;
-    const txnHandlerKey = `${routeConfig[network].veaInbox.address}_${currentEpoch}`;
-    const transactionHandler =
-      transactionHandlers[currentEpoch] ||
-      new TransactionHandler({
-        network,
-        epoch: currentEpoch,
-        veaInbox,
-        veaOutbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        veaRouterProvider,
-        emitter,
-      });
-    const { updatedTransactionHandler, latestCount } = await saveSnapshot({
-      chainId,
-      veaInbox,
-      veaOutbox,
-      veaInboxProvider,
-      veaOutboxProvider,
-      network,
-      epochPeriod: routeConfig[network].epochPeriod,
-      count: toWatch[networkKey].count,
-      transactionHandler,
-    } as SaveSnapshotParams);
-    const count = toWatch[networkKey].count;
-    if (count == -1 || count != latestCount) {
-      transactionHandlers[txnHandlerKey] = updatedTransactionHandler;
-      toWatch[networkKey].count = latestCount;
-    }
-  }
 
-  while (i >= 0) {
-    const epoch = toWatch[networkKey].epochs[i];
-    const claim = await getClaim({
-      network,
-      chainId,
-      veaOutbox,
-      veaOutboxProvider,
-      epoch,
-      epochPeriod: routeConfig[network].epochPeriod,
-      emitter,
-    });
-
-    let updatedTransactions;
-    if (path > BotPaths.CLAIMER && claim != null) {
-      const checkAndChallengeResolveDeps: ChallengeAndResolveClaimParams = {
-        chainId,
-        claim,
-        epoch,
-        epochPeriod: routeConfig[network].epochPeriod,
-        veaInbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        veaRouterProvider,
-        veaOutbox,
-        transactionHandler: transactionHandlers[epoch],
-        emitter,
-      };
-      updatedTransactions = await challengeAndResolveClaim(checkAndChallengeResolveDeps);
-    }
-    if (path == BotPaths.CLAIMER || path == BotPaths.BOTH) {
-      const checkAndClaimParams: CheckAndClaimParams = {
-        network,
-        chainId,
-        claim,
-        epoch,
-        epochPeriod: routeConfig[network].epochPeriod,
-        veaInbox,
-        veaInboxProvider,
-        veaOutboxProvider,
-        veaOutbox,
-        transactionHandler: transactionHandlers[epoch],
-        emitter,
-      };
-      updatedTransactions = await checkAndClaim(checkAndClaimParams);
-    }
-
-    if (updatedTransactions) {
-      transactionHandlers[epoch] = updatedTransactions;
-    } else if (epoch != currentEpoch - 1 && epoch != latestEpoch) {
-      delete transactionHandlers[epoch];
-      toWatch[networkKey].epochs.splice(i, 1);
-    }
-    i--;
+  if (windowLow !== undefined) {
+    pruneAgedEpochs(state, route, windowLow, emitter);
+    checkLiveness(route, now, emitter);
   }
 }
 
-const wait = (ms: number): Promise<void> => new Promise((resolve: () => void) => setTimeout(resolve, ms));
+interface CollectEpochsParams {
+  route: RouteState;
+  state: WatcherState;
+  now: number;
+  currentEpoch: number;
+  epochPeriod: number;
+  sequencerDelayLimit: number;
+  minChallengePeriod: number;
+  emitter: typeof defaultEmitter;
+}
+
+/**
+ * Which epochs this cycle examines, newest first. Devnet watches only the current epoch and
+ * drops older ones at rollover. Testnet watches the challenge-budget window plus every older
+ * epoch still tracked; on a route's first cycle the cold-start range is added so a restarted
+ * bot picks up disputes it started earlier.
+ */
+const collectEpochsToWatch = ({
+  route,
+  state,
+  now,
+  currentEpoch,
+  epochPeriod,
+  sequencerDelayLimit,
+  minChallengePeriod,
+  emitter,
+}: CollectEpochsParams): { toWatch: number[]; windowLow?: number } => {
+  if (route.network == Network.DEVNET) {
+    for (const epoch of [...route.epochs.keys()]) {
+      if (epoch != currentEpoch) dropEpoch(state, route, epoch, "devnet_rollover", emitter);
+    }
+    return { toWatch: [currentEpoch] };
+  }
+  if (!route.coldStartDone) {
+    const epochRange = setEpochRange({ chainId: route.chainId, currentTimestamp: now, epochPeriod, now: now * 1000 });
+    for (const epoch of epochRange) {
+      if (!route.epochs.has(epoch)) route.epochs.set(epoch, { nullStreak: 0, done: false, undecidableStreak: 0 });
+    }
+    route.coldStartDone = true;
+  }
+  const window = watchWindow(now, epochPeriod, sequencerDelayLimit, minChallengePeriod);
+  const epochs = new Set<number>(route.epochs.keys());
+  for (let epoch = window.low; epoch <= window.high; epoch++) epochs.add(epoch);
+  // Newest first: the claimable epoch is the most time-sensitive.
+  const toWatch = [...epochs].filter((epoch) => epoch <= window.high).sort((a, b) => b - a);
+  return { toWatch, windowLow: window.low };
+};
+
+/** Testnet exit rule for epochs older than the window: gone once done, or after two cycles without a claim. */
+const pruneAgedEpochs = (state: WatcherState, route: RouteState, windowLow: number, emitter: typeof defaultEmitter) => {
+  for (const [epoch, track] of [...route.epochs]) {
+    if (epoch >= windowLow) continue;
+    if (track.done) dropEpoch(state, route, epoch, "done", emitter);
+    else if (track.nullStreak >= NULL_CYCLES_TO_LEAVE) dropEpoch(state, route, epoch, "no_claim", emitter);
+  }
+};
+
+/**
+ * One LIVENESS_ALARM per 24 h of outbox chain time while the newest fetched `timestampClaimed`
+ * (or, with none fetched, the first cycle's time) is 24 h old.
+ */
+const checkLiveness = (route: RouteState, now: number, emitter: typeof defaultEmitter) => {
+  const baseline = route.newestClaimTimestamp ?? route.firstCycleTime;
+  if (baseline === undefined || now - baseline < LIVENESS_PERIOD_SECS) return;
+  if (route.lastLivenessAlarm !== undefined && now - route.lastLivenessAlarm < LIVENESS_PERIOD_SECS) return;
+  route.lastLivenessAlarm = now;
+  emitter.emit(BotEvents.LIVENESS_ALARM, {
+    chainId: route.chainId,
+    network: route.network,
+    secondsSinceLastClaim: now - baseline,
+  });
+};
+
+interface ProcessSnapshotParams {
+  route: RouteState;
+  state: WatcherState;
+  connections: RouteConnections;
+  epochPeriod: number;
+  now: number;
+  currentEpoch: number;
+  emitter: typeof defaultEmitter;
+}
+
+async function processSnapshot({
+  route,
+  state,
+  connections,
+  epochPeriod,
+  now,
+  currentEpoch,
+  emitter,
+}: ProcessSnapshotParams) {
+  const { chainId, network } = route;
+  const key = snapshotHandlerKey(chainId, network, currentEpoch);
+  const prefix = `snapshot_${chainId}_${network}_`;
+  for (const stale of Object.keys(state.transactionHandlers)) {
+    if (stale.startsWith(prefix) && stale != key) delete state.transactionHandlers[stale];
+  }
+  try {
+    const transactionHandler =
+      state.transactionHandlers[key] ?? buildHandler(route, connections, currentEpoch, emitter);
+    state.transactionHandlers[key] = transactionHandler;
+    const params: SaveSnapshotParams = {
+      chainId,
+      veaInbox: connections.veaInbox,
+      veaOutbox: connections.veaOutbox,
+      veaInboxProvider: connections.veaInboxProvider,
+      veaOutboxProvider: connections.veaOutboxProvider,
+      network,
+      epochPeriod,
+      count: route.snapshotCount,
+      transactionHandler,
+      emitter,
+      now,
+    };
+    const { updatedTransactionHandler, latestCount } = await saveSnapshot(params);
+    if (updatedTransactionHandler) state.transactionHandlers[key] = updatedTransactionHandler;
+    route.snapshotCount = latestCount;
+  } catch (error) {
+    emitter.emit(BotEvents.EPOCH_FAILED, {
+      chainId,
+      network,
+      epoch: currentEpoch,
+      message: `saveSnapshot: ${errorMessage(error)}`,
+    });
+  }
+}
+
+/**
+ * The claim/challenge handler is built here, once per epoch, with every provider (the router
+ * included), and passed into both helpers.
+ */
+const buildHandler = (
+  route: RouteState,
+  connections: RouteConnections,
+  epoch: number,
+  emitter: typeof defaultEmitter
+) => {
+  const TransactionHandler = getTransactionHandler(route.chainId, route.network) as any;
+  return new TransactionHandler({
+    chainId: route.chainId,
+    network: route.network,
+    epoch,
+    veaInbox: connections.veaInbox,
+    veaOutbox: connections.veaOutbox,
+    veaInboxProvider: connections.veaInboxProvider,
+    veaOutboxProvider: connections.veaOutboxProvider,
+    veaRouterProvider: connections.veaRouterProvider,
+    emitter,
+    claim: null,
+  });
+};
+
+interface ProcessEpochParams {
+  path: number;
+  route: RouteState;
+  state: WatcherState;
+  connections: RouteConnections;
+  epochPeriod: number;
+  epoch: number;
+  now: number;
+  emitter: typeof defaultEmitter;
+}
+
+/** What one cycle's work on an epoch produced, before the keep/exit bookkeeping. */
+interface EpochCycleResult {
+  claim: Awaited<ReturnType<typeof getClaim>>;
+  outcome: EpochOutcome | undefined;
+  failures: string[];
+  handlerReturned: boolean;
+}
+
+async function processEpoch({ path, route, state, connections, epochPeriod, epoch, now, emitter }: ProcessEpochParams) {
+  const { chainId, network } = route;
+  let track = route.epochs.get(epoch);
+  if (!track) {
+    track = { nullStreak: 0, done: false, undecidableStreak: 0 };
+    route.epochs.set(epoch, track);
+  }
+
+  const result = await runEpochHelpers({ path, route, state, connections, epochPeriod, epoch, now, emitter });
+  if (result.claim) {
+    const claimed = Number(result.claim.timestampClaimed);
+    if (claimed > 0 && claimed > (route.newestClaimTimestamp ?? 0)) route.newestClaimTimestamp = claimed;
+  }
+  for (const message of result.failures) emitter.emit(BotEvents.EPOCH_FAILED, { chainId, network, epoch, message });
+
+  updateKeepState(track, result);
+  trackUndecidable(track, result, { route, epoch, epochPeriod, now, emitter });
+}
+
+/**
+ * Fetch the claim and run the challenger and claimer on it. Each step is isolated: a throw in
+ * one is recorded as a failure and does not stop the others on the same epoch.
+ */
+async function runEpochHelpers({
+  path,
+  route,
+  state,
+  connections,
+  epochPeriod,
+  epoch,
+  emitter,
+}: ProcessEpochParams): Promise<EpochCycleResult> {
+  const { chainId, network } = route;
+  const { veaInbox, veaOutbox, veaInboxProvider, veaOutboxProvider, veaRouterProvider } = connections;
+  const result: EpochCycleResult = { claim: null, outcome: undefined, failures: [], handlerReturned: false };
+  const reportOutcome = (reported: EpochOutcome) => {
+    result.outcome = mergeOutcomes(result.outcome, reported);
+  };
+
+  try {
+    result.claim = await getClaim({ network, chainId, veaOutbox, veaOutboxProvider, epoch, epochPeriod, emitter });
+  } catch (error) {
+    result.failures.push(`getClaim: ${errorMessage(error)}`);
+    return result;
+  }
+
+  const key = claimHandlerKey(chainId, network, epoch);
+  const transactionHandler = () =>
+    (state.transactionHandlers[key] ??= buildHandler(route, connections, epoch, emitter));
+  const shared = {
+    chainId,
+    epoch,
+    epochPeriod,
+    veaInbox,
+    veaInboxProvider,
+    veaOutboxProvider,
+    veaRouterProvider,
+    veaOutbox,
+    emitter,
+    reportOutcome,
+  };
+
+  if (path > BotPaths.CLAIMER && result.claim != null) {
+    try {
+      const deps: ChallengeAndResolveClaimParams = {
+        ...shared,
+        claim: result.claim,
+        transactionHandler: transactionHandler(),
+      };
+      if (await challengeAndResolveClaim(deps)) result.handlerReturned = true;
+    } catch (error) {
+      result.failures.push(`challengeAndResolveClaim: ${errorMessage(error)}`);
+    }
+  }
+  if (path == BotPaths.CLAIMER || path == BotPaths.BOTH) {
+    try {
+      // No `now` here: checkAndClaim takes milliseconds and defaults to chain time itself.
+      const params: CheckAndClaimParams = {
+        ...shared,
+        network,
+        claim: result.claim,
+        transactionHandler: transactionHandler(),
+      };
+      if (await checkAndClaim(params)) result.handlerReturned = true;
+    } catch (error) {
+      result.failures.push(`checkAndClaim: ${errorMessage(error)}`);
+    }
+  }
+  return result;
+}
+
+/**
+ * Keep-and-exit bookkeeping: an epoch stays while it has a claim, a pending or undecidable
+ * outcome, a failure this cycle, or a returned handler with no report; it is done only on an
+ * explicit DONE with no failure.
+ */
+const updateKeepState = (track: EpochTrack, { claim, outcome, failures, handlerReturned }: EpochCycleResult) => {
+  const failed = failures.length > 0;
+  const keep =
+    failed ||
+    claim != null ||
+    outcome === EpochOutcome.PENDING ||
+    outcome === EpochOutcome.UNDECIDABLE ||
+    (outcome === undefined && handlerReturned);
+  track.nullStreak = keep ? 0 : track.nullStreak + 1;
+  track.done = !failed && outcome === EpochOutcome.DONE;
+};
+
+interface TrackUndecidableContext {
+  route: RouteState;
+  epoch: number;
+  epochPeriod: number;
+  now: number;
+  emitter: typeof defaultEmitter;
+}
+
+/**
+ * Count consecutive undecidable (or failed) cycles once the epoch is an hour past its end, so
+ * normal settlement lag never alerts, and raise `epoch_undecidable` every 15 of them.
+ */
+const trackUndecidable = (
+  track: EpochTrack,
+  { outcome, failures }: EpochCycleResult,
+  { route, epoch, epochPeriod, now, emitter }: TrackUndecidableContext
+) => {
+  if (now < (epoch + 1) * epochPeriod + UNDECIDABLE_GRACE_SECS) return;
+  if (failures.length === 0 && outcome !== EpochOutcome.UNDECIDABLE) {
+    track.undecidableStreak = 0;
+    return;
+  }
+  track.undecidableStreak++;
+  if (track.undecidableStreak % UNDECIDABLE_CYCLES_TO_ALERT != 0) return;
+  emitter.emit(BotEvents.ALERT, {
+    level: "error",
+    code: "epoch_undecidable",
+    chainId: route.chainId,
+    network: route.network,
+    epoch,
+    details: { consecutiveCycles: track.undecidableStreak },
+  });
+};
 
 if (require.main === module) {
   const shutDownSignal = new ShutdownSignal(false);
-  watch(shutDownSignal);
+  watch(shutDownSignal).then(
+    () => process.exit(0),
+    (error) => {
+      console.error(errorMessage(error));
+      process.exit(1);
+    }
+  );
 }

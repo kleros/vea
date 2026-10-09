@@ -26,6 +26,41 @@ By default, the validator performs two core functions:
 - Bridger: Saves snapshots, submits stored snapshots to the fast bridge receiver.
 - Challenger: Challenges any detected invalid claims and relays the correct snapshot.
 
+# deposits and withdrawals
+
+Claim and challenge deposits must be withdrawn to an EOA. The outbox refunds a
+deposit (and pays a reward) to the address that made the claim or the challenge,
+and on the Sepolia route (`VeaOutboxArbToEth`) it does so with an unchecked
+`send`: if that address is a contract that cannot accept ETH with the 2300 gas
+`send` forwards, the withdrawal succeeds and the funds are lost. The bot claims
+and challenges from the address of `PRIVATE_KEY`, which is an EOA; do not make
+claims or challenges for this bot from a multisig or other contract wallet. The
+Chiado route pays in WETH with a checked `transfer`, but keep the same rule.
+
+# startup checks
+
+Before the first cycle the validator checks its whole configuration and refuses
+to start, listing every problem at once, when:
+
+- a variable is missing or malformed (`HEARTBEAT_URL`, when set, must be https);
+- any single URL of an RPC list answers with a chain id other than the route
+  expects (each URL is probed on its own, not only the one that answers first);
+- an RPC list has no URL left that answers at all;
+- the outbox at the configured address does not return, for a synthetic claim,
+  the same `hashClaim` the validator computes (wrong address, ABI or chain).
+
+A URL that does not answer at startup, the first of a list included, is a
+warning and an `alert` log with code `rpc_url_unreachable`, not a startup
+failure: it is removed from every list that holds it (`RPC_ETH` feeds both the
+Sepolia outbox and the Chiado router) and the bot runs on the others. A pruned
+URL comes back only after a restart, so restart the validator once the endpoint
+is up again to restore that fallback.
+
+A signer with no native balance on a route is a warning and an `alert` log with
+code `route_unfunded`, not a startup failure: the other routes keep running.
+RPC URLs are logged as `scheme://host` only; keys in the path, query or userinfo
+never reach the logs.
+
 # flags
 
 Flags are passed as the container's command. Set them on the `validator` service

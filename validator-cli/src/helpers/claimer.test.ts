@@ -1,296 +1,338 @@
 import { ethers } from "ethers";
 import { checkAndClaim, CheckAndClaimParams } from "./claimer";
+import { createTwoChainRoute, TwoChainRoute } from "../testUtils/twoChainFixture";
+import { getBridgeConfig, Network } from "../consts/bridgeRoutes";
+import { resolveSettledReadBlocks, FINALITY_STALL_SECS, OUTBOX_STALL_DEPTH_BLOCKS } from "../utils/arbToEthState";
+import { EpochOutcome } from "../utils/epochOutcome";
+import { BotEvents } from "../utils/botEvents";
+import { CannotFundError } from "../utils/transactionHandlers";
 import { ClaimHonestState } from "../utils/claim";
-import { Network } from "../consts/bridgeRoutes";
+import { resetBridgeShutdownAlerts } from "./escapeHatch";
+
+const CHAIN_ID = 10200;
+const P = getBridgeConfig(CHAIN_ID).routeConfig[Network.TESTNET].epochPeriod;
+// Half an epoch past a boundary, so the inbox `finalized` block (20 min behind) is already in the new epoch.
+const NOW = Math.floor(1_760_000_000 / P) * P + P / 2;
+const CLAIMABLE = Math.floor(NOW / P) - 1;
+const SAVED = "0x" + "11".repeat(32);
+const OUTBOX_ROOT = "0x" + "22".repeat(32);
+const OUR_ADDRESS = "0x00000000000000000000000000000000000000aa";
+const OTHER = "0x00000000000000000000000000000000000000c1";
+
+const makeClaimStruct = (overrides: Record<string, unknown> = {}): any => ({
+  stateRoot: SAVED,
+  claimer: OTHER,
+  timestampClaimed: NOW - P,
+  timestampVerification: 0,
+  blocknumberVerification: 0,
+  honest: ClaimHonestState.NONE,
+  challenger: ethers.ZeroAddress,
+  ...overrides,
+});
+
+interface Setup {
+  route: TwoChainRoute;
+  params: CheckAndClaimParams;
+  handler: any;
+  outcomes: EpochOutcome[];
+  emitter: { emit: jest.Mock };
+  veaOutbox: any;
+  veaInbox: any;
+  scannedRanges: Array<[number, number]>;
+  fetchLatestClaimedEpoch: jest.Mock;
+}
+
+/** A claimer wired to the two-chain fixture: every pinned read throws on another chain's block. */
+const setup = ({ claimedLogs = [] as any[] } = {}): Setup => {
+  const route = createTwoChainRoute({ now: NOW });
+  const scannedRanges: Array<[number, number]> = [];
+  const veaInbox = { snapshots: jest.fn(route.inbox.pinned(() => SAVED)) };
+  const veaOutbox = {
+    target: "0xoutbox",
+    stateRoot: jest.fn(route.outbox.pinned(() => OUTBOX_ROOT)),
+    filters: { Claimed: jest.fn(() => ({ event: "Claimed" })) },
+    queryFilter: jest.fn(async (_filter: any, from: number, to: number) => {
+      route.outbox.assertOwnBlock(from);
+      route.outbox.assertOwnBlock(to);
+      scannedRanges.push([from, to]);
+      return claimedLogs.filter((log) => log.blockNumber >= from && log.blockNumber <= to);
+    }),
+  };
+  const handler: any = {
+    veaInboxProvider: route.inbox.provider,
+    veaOutboxProvider: route.outbox.provider,
+    veaRouterProvider: route.router.provider,
+    network: Network.TESTNET,
+    transactions: {},
+    claim: null,
+    makeClaim: jest.fn().mockResolvedValue(undefined),
+    withdrawClaimDeposit: jest.fn().mockResolvedValue(undefined),
+    startVerification: jest.fn().mockResolvedValue(undefined),
+    verifySnapshot: jest.fn().mockResolvedValue(undefined),
+    devnetAdvanceState: jest.fn().mockResolvedValue(undefined),
+    isBridgeShutdown: jest.fn().mockResolvedValue(false),
+    getSignerAddress: jest.fn().mockReturnValue(OUR_ADDRESS),
+    withdrawClaimerEscapeHatch: jest.fn().mockResolvedValue(undefined),
+  };
+  const outcomes: EpochOutcome[] = [];
+  const emitter = { emit: jest.fn() };
+  const fetchLatestClaimedEpoch = jest.fn().mockResolvedValue(undefined);
+  const params: CheckAndClaimParams = {
+    chainId: CHAIN_ID,
+    network: Network.TESTNET,
+    claim: null,
+    epoch: CLAIMABLE,
+    epochPeriod: P,
+    veaInbox,
+    veaInboxProvider: route.inbox.provider,
+    veaOutbox,
+    veaOutboxProvider: route.outbox.provider,
+    veaRouterProvider: route.router.provider,
+    transactionHandler: handler,
+    emitter: emitter as any,
+    fetchLatestClaimedEpoch,
+    fetchSettledReadBlocks: jest.fn(async () => ({
+      inboxBlock: route.inbox.block("finalized").number,
+      outboxBlock: route.outbox.block("finalized").number,
+    })),
+    now: NOW * 1000,
+    reportOutcome: (outcome) => outcomes.push(outcome),
+  };
+  return { route, params, handler, outcomes, emitter, veaOutbox, veaInbox, scannedRanges, fetchLatestClaimedEpoch };
+};
+
+/** Replace the outbox provider's `finalized` block with one `lagSecs` behind latest. */
+const withFinalizedLag = (s: Setup, lagSecs: number) => {
+  const chain = s.route.outbox;
+  const lagBlocks = Math.ceil(lagSecs / chain.options.secondsPerBlock);
+  s.params.veaOutboxProvider = {
+    ...chain.provider,
+    getBlock: async (tag: any) => chain.block(tag === "finalized" ? chain.resolve("latest") - lagBlocks : tag),
+  };
+  return chain.block(chain.resolve("latest") - lagBlocks);
+};
 
 describe("claimer", () => {
-  const NETWORK = Network.DEVNET;
-  let veaOutbox: any;
-  let veaInbox: any;
-  let veaInboxProvider: any;
-  let veaOutboxProvider: any;
-  let emitter: any;
-  let mockClaim: any;
-  let mockGetLatestClaimedEpoch: any;
-  let mockGetTransactionHandler: any;
-  let mockDeps: CheckAndClaimParams;
+  beforeEach(() => resetBridgeShutdownAlerts());
 
-  let mockTransactionHandler: any;
-  const mockTransactions = {
-    claimTxn: "0x111",
-    withdrawClaimDepositTxn: "0x222",
-    startVerificationTxn: "0x333",
-    verifySnapshotTxn: "0x444",
-    devnetAdvanceStateTxn: "0x555",
-  };
-  beforeEach(() => {
-    mockClaim = {
-      stateRoot: "0x1234",
-      claimer: "0xFa00D29d378EDC57AA1006946F0fc6230a5E3288",
-      timestampClaimed: 1234,
-      timestampVerification: 0,
-      blocknumberVerification: 0,
-      honest: 0,
-      challenger: ethers.ZeroAddress,
-    };
-    veaInbox = {
-      snapshots: jest.fn().mockResolvedValue(mockClaim.stateRoot),
-    };
+  describe("making a claim", () => {
+    it("reads the snapshot at the settled inbox block and the outbox on its own chain", async () => {
+      const s = setup();
+      const fetchBlocksAndCheckFinality = jest.fn(async (l1: any, inbox: any) => {
+        // The finality check runs against Arbitrum's L1 (the Sepolia router), never against Chiado.
+        expect(l1).toBe(s.route.router.provider);
+        expect(inbox).toBe(s.route.inbox.provider);
+        return [s.route.inbox.block("finalized"), s.route.router.block("finalized"), false, false] as any;
+      });
+      s.params.fetchSettledReadBlocks = resolveSettledReadBlocks;
+      s.params.fetchBlocksAndCheckFinality = fetchBlocksAndCheckFinality;
 
-    veaOutbox = {
-      stateRoot: jest.fn().mockResolvedValue(mockClaim.stateRoot),
-    };
-    veaOutboxProvider = {
-      getBlock: jest.fn().mockResolvedValue({ number: 0, timestamp: 110 }),
-    };
-    emitter = {
-      emit: jest.fn(),
-    };
+      await checkAndClaim(s.params);
 
-    mockGetLatestClaimedEpoch = jest.fn();
-    mockGetTransactionHandler = jest.fn().mockReturnValue(function DummyTransactionHandler(params: any) {
-      // Return an object that matches our expected transaction handler.
-      return mockTransactionHandler;
+      // The fixture throws on a Sepolia block number, so reaching the claim proves every outbox
+      // read and Claimed chunk was pinned to Chiado blocks.
+      expect(Math.max(...s.scannedRanges.map((r) => r[1]))).toBe(s.route.outbox.block("finalized").number);
+      expect(s.handler.makeClaim).toHaveBeenCalledWith(SAVED);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
     });
-    mockDeps = {
-      chainId: 0,
-      claim: mockClaim,
-      network: NETWORK,
-      epoch: 10,
-      epochPeriod: 10,
-      veaInbox,
-      veaInboxProvider,
-      veaOutboxProvider,
-      veaOutbox,
-      transactionHandler: null,
-      emitter,
-      fetchLatestClaimedEpoch: mockGetLatestClaimedEpoch,
-      fetchSettledReadBlocks: jest.fn().mockResolvedValue({ inboxBlock: 4242, outboxBlock: 555 }),
-      now: 110000, // (epoch+ 1) * epochPeriod * 1000 for claimable epoch
-    };
 
-    mockTransactionHandler = {
-      withdrawClaimDeposit: jest.fn().mockImplementation(() => {
-        mockTransactionHandler.transactions.withdrawClaimDepositTxn = mockTransactions.withdrawClaimDepositTxn;
-        return Promise.resolve();
-      }),
-      makeClaim: jest.fn().mockImplementation(() => {
-        mockTransactionHandler.transactions.claimTxn = mockTransactions.claimTxn;
-        return Promise.resolve();
-      }),
-      startVerification: jest.fn().mockImplementation(() => {
-        mockTransactionHandler.transactions.startVerificationTxn = mockTransactions.startVerificationTxn;
-        return Promise.resolve();
-      }),
-      verifySnapshot: jest.fn().mockImplementation(() => {
-        mockTransactionHandler.transactions.verifySnapshotTxn = mockTransactions.verifySnapshotTxn;
-        return Promise.resolve();
-      }),
-      transactions: {
-        claimTxn: "0x0",
-        withdrawClaimDepositTxn: "0x0",
-        startVerificationTxn: "0x0",
-        verifySnapshotTxn: "0x0",
-      },
-    };
+    it("claims on savedSnapshot != outboxStateRoot alone when neither the logs nor the indexer hold a claim", async () => {
+      const s = setup();
+      await checkAndClaim(s.params);
+      expect(s.fetchLatestClaimedEpoch).toHaveBeenCalledWith("0xoutbox", CHAIN_ID);
+      expect(s.handler.makeClaim).toHaveBeenCalledWith(SAVED);
+    });
+
+    it("does not claim a snapshot the indexer says was already claimed", async () => {
+      const s = setup();
+      s.fetchLatestClaimedEpoch.mockResolvedValue({ stateRoot: SAVED });
+      await checkAndClaim(s.params);
+      expect(s.handler.makeClaim).not.toHaveBeenCalled();
+      expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+    });
+
+    it("does not claim when the outbox already holds the snapshot", async () => {
+      const s = setup();
+      s.veaOutbox.stateRoot = jest.fn(s.route.outbox.pinned(() => SAVED));
+      await checkAndClaim(s.params);
+      expect(s.handler.makeClaim).not.toHaveBeenCalled();
+      expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+    });
+
+    it("is DONE for an epoch with no snapshot, UNDECIDABLE while the epoch is not settled", async () => {
+      const s = setup();
+      s.veaInbox.snapshots = jest.fn(s.route.inbox.pinned(() => ethers.ZeroHash));
+      await checkAndClaim(s.params);
+      expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+
+      const t = setup();
+      t.params.fetchSettledReadBlocks = jest.fn().mockResolvedValue(null);
+      await checkAndClaim(t.params);
+      expect(t.outcomes).toEqual([EpochOutcome.UNDECIDABLE]);
+    });
+
+    it("reports UNDECIDABLE instead of claiming when the Claimed scan and the indexer both fail", async () => {
+      const s = setup();
+      s.veaOutbox.queryFilter = jest.fn().mockRejectedValue(new Error("rpc down"));
+      s.fetchLatestClaimedEpoch.mockResolvedValue(undefined);
+      await checkAndClaim(s.params);
+      expect(s.handler.makeClaim).not.toHaveBeenCalled();
+      expect(s.outcomes).toEqual([EpochOutcome.UNDECIDABLE]);
+    });
+
+    it("reports UNDECIDABLE when the claim cannot be funded", async () => {
+      const s = setup();
+      s.handler.makeClaim = jest.fn().mockRejectedValue(new CannotFundError("claim"));
+      expect(await checkAndClaim(s.params)).toBe(s.handler);
+      expect(s.outcomes).toEqual([EpochOutcome.UNDECIDABLE]);
+    });
+
+    it("takes the claimable epoch from chain time, not the host clock", async () => {
+      const s = setup();
+      delete s.params.now;
+      const T = s.route.outbox.block("latest").timestamp;
+      s.params.epoch = Math.floor(T / P) - 1;
+      const dateNow = jest.spyOn(Date, "now").mockReturnValue((T + 3600) * 1000);
+      try {
+        await checkAndClaim(s.params);
+      } finally {
+        dateNow.mockRestore();
+      }
+      expect(s.handler.makeClaim).toHaveBeenCalledWith(SAVED);
+    });
+
+    it("devnet: advances the state when the outbox is behind, DONE otherwise", async () => {
+      const s = setup();
+      s.params.network = Network.DEVNET;
+      s.veaOutbox.stateRoot = jest.fn().mockResolvedValue(OUTBOX_ROOT);
+      s.veaInbox.snapshots = jest.fn().mockResolvedValue(SAVED);
+      await checkAndClaim(s.params);
+      expect(s.handler.devnetAdvanceState).toHaveBeenCalledWith(SAVED);
+      s.veaOutbox.stateRoot = jest.fn().mockResolvedValue(SAVED);
+      await checkAndClaim(s.params);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING, EpochOutcome.DONE]);
+    });
   });
-  afterEach(() => {
-    jest.clearAllMocks();
+
+  describe("a passed epoch with no claim", () => {
+    const boundary = Math.floor(NOW / P) * P; // (E+2)·P for E = CLAIMABLE - 1
+
+    it("stays PENDING while the outbox read block is before (E+2)·P even though latest is past it", async () => {
+      const s = setup();
+      s.params.epoch = CLAIMABLE - 1;
+      const outbox = createTwoChainRoute({ now: boundary + 120 }).outbox;
+      expect(outbox.block("finalized").timestamp).toBeLessThan(boundary);
+      s.params.veaOutboxProvider = outbox.provider;
+      s.params.now = (boundary + 120) * 1000;
+      await checkAndClaim(s.params);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
+    });
+
+    it("is DONE once the read block is at or past (E+2)·P", async () => {
+      const s = setup();
+      s.params.epoch = CLAIMABLE - 1;
+      const outbox = createTwoChainRoute({ now: boundary + 200 }).outbox;
+      s.params.veaOutboxProvider = outbox.provider;
+      s.params.now = (boundary + 200) * 1000;
+      await checkAndClaim(s.params);
+      expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+    });
   });
-  describe("checkAndClaim", () => {
-    beforeEach(() => {
-      mockTransactionHandler = {
-        withdrawClaimDeposit: jest.fn().mockImplementation(() => {
-          mockTransactionHandler.transactions.withdrawClaimDepositTxn = mockTransactions.withdrawClaimDepositTxn;
-          return Promise.resolve();
-        }),
-        makeClaim: jest.fn().mockImplementation(() => {
-          mockTransactionHandler.transactions.claimTxn = mockTransactions.claimTxn;
-          return Promise.resolve();
-        }),
-        startVerification: jest.fn().mockImplementation(() => {
-          mockTransactionHandler.transactions.startVerificationTxn = mockTransactions.startVerificationTxn;
-          return Promise.resolve();
-        }),
-        verifySnapshot: jest.fn().mockImplementation(() => {
-          mockTransactionHandler.transactions.verifySnapshotTxn = mockTransactions.verifySnapshotTxn;
-          return Promise.resolve();
-        }),
-        devnetAdvanceState: jest.fn().mockImplementation(() => {
-          mockTransactionHandler.transactions.devnetAdvanceStateTxn = mockTransactions.devnetAdvanceStateTxn;
-          return Promise.resolve();
-        }),
-        transactions: {
-          claimTxn: "0x0",
-          withdrawClaimDepositTxn: "0x0",
-          startVerificationTxn: "0x0",
-          verifySnapshotTxn: "0x0",
-        },
-      };
-      mockGetTransactionHandler = jest.fn().mockReturnValue(function DummyTransactionHandler(param: any) {
-        return mockTransactionHandler;
-      });
-      mockDeps.fetchTransactionHandler = mockGetTransactionHandler;
+
+  describe("verifying a claim", () => {
+    it("verifies our own claim: startVerification, then verifySnapshot, at the outbox read block's time", async () => {
+      const s = setup();
+      // During a finality stall the read block is latest - 64, not finalized.
+      const finalized = withFinalizedLag(s, FINALITY_STALL_SECS + 600);
+      const readBlock = s.route.outbox.block(s.route.outbox.resolve("latest") - OUTBOX_STALL_DEPTH_BLOCKS);
+      expect(readBlock.timestamp).not.toBe(finalized.timestamp);
+
+      s.params.claim = makeClaimStruct({ claimer: OUR_ADDRESS });
+      await checkAndClaim(s.params);
+      expect(s.params.fetchSettledReadBlocks).not.toHaveBeenCalled();
+      expect(s.handler.startVerification).toHaveBeenCalledWith(readBlock.timestamp);
+
+      s.params.claim = makeClaimStruct({ claimer: OUR_ADDRESS, timestampVerification: NOW - 100 });
+      await checkAndClaim(s.params);
+      expect(s.handler.verifySnapshot).toHaveBeenCalledWith(readBlock.timestamp);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING, EpochOutcome.PENDING]);
     });
-    it("should return null if no claim is made for a passed epoch", async () => {
-      mockDeps.epoch = 7; // claimable epoch - 3
-      mockDeps.claim = null;
 
-      mockDeps.fetchTransactionHandler = mockGetTransactionHandler;
-      const result = await checkAndClaim(mockDeps);
-      expect(result).toBeNull();
+    it("verifies a third party's claim only once it matches snapshots[E] at the settled inbox block", async () => {
+      const s = setup();
+      s.params.claim = makeClaimStruct();
+      await checkAndClaim(s.params);
+      expect(s.veaInbox.snapshots).toHaveBeenCalledWith(CLAIMABLE, {
+        blockTag: s.route.inbox.block("finalized").number,
+      });
+      expect(s.handler.startVerification).toHaveBeenCalledTimes(1);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
     });
-    it("should return null if no snapshot is saved on the inbox for a claimable epoch", async () => {
-      veaInbox.snapshots = jest.fn().mockResolvedValue(ethers.ZeroHash);
-      mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
-        challenged: false,
-        stateRoot: "0x1111",
-      });
-      mockDeps.claim = null;
-      mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
-      const result = await checkAndClaim(mockDeps);
-      expect(result).toBeNull();
+
+    it("never verifies a third party's claim whose root differs from snapshots[E]; alerts instead", async () => {
+      const s = setup();
+      s.params.claim = makeClaimStruct({ stateRoot: "0x" + "ab".repeat(32) });
+      await checkAndClaim(s.params);
+      expect(s.handler.startVerification).not.toHaveBeenCalled();
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
+      expect(s.emitter.emit).toHaveBeenCalledWith(
+        BotEvents.ALERT,
+        expect.objectContaining({ level: "error", code: "claim_mismatch_unverified", epoch: CLAIMABLE })
+      );
     });
-    it("should return null if there are no new messages in the inbox", async () => {
-      veaInbox.snapshots = jest.fn().mockResolvedValue(mockClaim.stateRoot);
-      mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
-        challenged: false,
-        stateRoot: "0x1111",
-      });
-      mockDeps.claim = null;
-      mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
-      const result = await checkAndClaim(mockDeps);
-      expect(result).toBeNull();
+
+    it("compares roots as bytes: a mixed-case root equal to snapshots[E] is verified", async () => {
+      const s = setup();
+      const root = "0x" + "ab".repeat(32);
+      s.veaInbox.snapshots.mockImplementation(s.route.inbox.pinned(() => root));
+      s.params.claim = makeClaimStruct({ stateRoot: "0x" + root.slice(2).toUpperCase() });
+      await checkAndClaim(s.params);
+      expect(s.handler.startVerification).toHaveBeenCalledTimes(1);
     });
-    describe("devnet", () => {
-      beforeEach(() => {
-        mockDeps.network = Network.DEVNET;
-      });
-      it("should make a valid claim and advance state", async () => {
-        veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
-        mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
-          challenged: false,
-          stateRoot: mockClaim.stateRoot,
-        });
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
-        mockDeps.claim = null;
-        mockDeps.veaInbox = veaInbox;
-        const result = await checkAndClaim(mockDeps);
-        expect(result.transactions.devnetAdvanceStateTxn).toBe(mockTransactions.devnetAdvanceStateTxn);
-      });
+
+    it("is UNDECIDABLE for a third party's claim while the inbox read is not settled", async () => {
+      const s = setup();
+      (s.params.fetchSettledReadBlocks as jest.Mock).mockResolvedValue(null);
+      s.params.claim = makeClaimStruct();
+      await checkAndClaim(s.params);
+      expect(s.handler.startVerification).not.toHaveBeenCalled();
+      expect(s.outcomes).toEqual([EpochOutcome.UNDECIDABLE]);
     });
-    describe("testnet", () => {
-      beforeEach(() => {
-        mockDeps.network = Network.TESTNET;
-      });
-      it("should make a valid claim if no claim is made", async () => {
-        veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
-        mockGetLatestClaimedEpoch = jest.fn().mockResolvedValue({
-          challenged: false,
-          stateRoot: mockClaim.stateRoot,
-        });
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockDeps.fetchLatestClaimedEpoch = mockGetLatestClaimedEpoch;
-        mockDeps.claim = null;
-        mockDeps.veaInbox = veaInbox;
-        const fetchBlocksAndCheckFinality = jest.fn().mockResolvedValue([0, 0, false, false]);
-        mockDeps.fetchBlocksAndCheckFinality = fetchBlocksAndCheckFinality;
-        const result = await checkAndClaim(mockDeps);
-        expect(result.transactions.claimTxn).toBe(mockTransactions.claimTxn);
-      });
-      it("scans a bounded window for the most recent claim instead of the whole chain", async () => {
-        const SEC_PER_BLOCK = 12;
-        const HEAD_BLOCK = 1_000_000;
-        const queriedRanges: Array<[number, number]> = [];
-        veaOutbox.queryFilter = jest.fn(async (_filter: any, from: number, to: number) => {
-          queriedRanges.push([from, to]);
-          return [];
-        });
-        veaOutbox.filters = { Claimed: jest.fn(() => ({ event: "Claimed" })) };
-        veaOutboxProvider.getBlock = jest.fn(async (tag: any) => {
-          const number = typeof tag === "number" ? tag : HEAD_BLOCK;
-          return { number, timestamp: number * SEC_PER_BLOCK };
-        });
-        veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockDeps.fetchLatestClaimedEpoch = jest.fn().mockResolvedValue({
-          challenged: false,
-          stateRoot: mockClaim.stateRoot,
-        });
-        mockDeps.claim = null;
-        mockDeps.veaInbox = veaInbox;
-        mockDeps.veaOutbox = veaOutbox;
-        mockDeps.veaOutboxProvider = veaOutboxProvider;
-        mockDeps.fetchBlocksAndCheckFinality = jest.fn().mockResolvedValue([0, 0, false, false]);
-        mockDeps.chainId = 11155111;
 
-        await checkAndClaim(mockDeps);
+    it("leaves a disputed claim to the challenger (PENDING, no verification)", async () => {
+      const s = setup();
+      s.params.claim = makeClaimStruct({ claimer: OUR_ADDRESS, challenger: OTHER });
+      await checkAndClaim(s.params);
+      expect(s.handler.startVerification).not.toHaveBeenCalled();
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
+    });
+  });
 
-        expect(queriedRanges.length).toBeGreaterThan(0);
-        // ethers defaults an omitted range to fromBlock 0, which every provider
-        // rejects on a chain of this size.
-        expect(Math.min(...queriedRanges.map((r) => r[0]))).toBeGreaterThan(0);
-        for (const [from, to] of queriedRanges) {
-          expect(to - from).toBeLessThan(10_000);
-          expect(to).toBeLessThanOrEqual(HEAD_BLOCK);
-        }
-      });
+  describe("deposits", () => {
+    it("withdraws our verified claim's deposit, never a third party's", async () => {
+      const s = setup();
+      s.params.claim = makeClaimStruct({ claimer: OUR_ADDRESS, honest: ClaimHonestState.CLAIMER });
+      await checkAndClaim(s.params);
+      expect(s.handler.withdrawClaimDeposit).toHaveBeenCalledTimes(1);
 
-      it("pins the claim decision reads to settled blocks", async () => {
-        veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
-        veaOutbox.stateRoot = jest.fn().mockResolvedValue("0xstateroot");
-        veaOutbox.queryFilter = jest.fn(async () => []);
-        veaOutbox.filters = { Claimed: jest.fn(() => ({})) };
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockDeps.claim = null;
-        mockDeps.veaInbox = veaInbox;
-        mockDeps.veaOutbox = veaOutbox;
-        mockDeps.chainId = 11155111;
-        mockDeps.fetchLatestClaimedEpoch = jest.fn().mockResolvedValue({ stateRoot: "0xold" });
-        mockDeps.fetchSettledReadBlocks = jest.fn().mockResolvedValue({ inboxBlock: 4242, outboxBlock: 555 });
+      s.params.claim = makeClaimStruct({ honest: ClaimHonestState.CLAIMER });
+      await checkAndClaim(s.params);
+      expect(s.handler.withdrawClaimDeposit).toHaveBeenCalledTimes(1);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING, EpochOutcome.DONE]);
+    });
 
-        await checkAndClaim(mockDeps);
-
-        // A claim stakes a deposit on these values, so both must come from a
-        // block that can no longer be reorged.
-        expect(veaInbox.snapshots).toHaveBeenCalledWith(mockDeps.epoch, { blockTag: 4242 });
-        expect(veaOutbox.stateRoot).toHaveBeenCalledWith({ blockTag: 555 });
-      });
-
-      it("does not claim while the epoch is not yet settled", async () => {
-        veaInbox.snapshots = jest.fn().mockResolvedValue("0x7890");
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockDeps.claim = null;
-        mockDeps.veaInbox = veaInbox;
-        mockDeps.fetchSettledReadBlocks = jest.fn().mockResolvedValue(null);
-
-        const result = await checkAndClaim(mockDeps);
-
-        expect(result).toBeNull();
-        expect(mockTransactionHandler.makeClaim).not.toHaveBeenCalled();
-      });
-
-      it("should withdraw claim deposit if claimer is honest", async () => {
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockClaim.honest = ClaimHonestState.CLAIMER;
-        const result = await checkAndClaim(mockDeps);
-        expect(result.transactions.withdrawClaimDepositTxn).toEqual(mockTransactions.withdrawClaimDepositTxn);
-      });
-      it("should start verification if verification is not started", async () => {
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockClaim.honest = ClaimHonestState.NONE;
-        const result = await checkAndClaim(mockDeps);
-        expect(result.transactions.startVerificationTxn).toEqual(mockTransactions.startVerificationTxn);
-      });
-      it("should verify snapshot if verification is started", async () => {
-        mockDeps.transactionHandler = mockTransactionHandler;
-        mockClaim.honest = ClaimHonestState.NONE;
-        mockClaim.timestampVerification = 1234;
-        mockDeps.claim = mockClaim;
-        const result = await checkAndClaim(mockDeps);
-        expect(result.transactions.verifySnapshotTxn).toEqual(mockTransactions.verifySnapshotTxn);
-      });
+    it("withdraws our claim through the escape hatch once the bridge has timed out", async () => {
+      const s = setup();
+      s.handler.isBridgeShutdown.mockResolvedValue(true);
+      s.params.claim = makeClaimStruct({ claimer: OUR_ADDRESS, challenger: OTHER });
+      await checkAndClaim(s.params);
+      expect(s.handler.withdrawClaimerEscapeHatch).toHaveBeenCalled();
+      expect(s.handler.startVerification).not.toHaveBeenCalled();
+      expect(s.emitter.emit).toHaveBeenCalledWith(
+        BotEvents.ESCAPE_HATCH,
+        expect.objectContaining({ party: "claimer", action: "detected", epoch: CLAIMABLE })
+      );
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
     });
   });
 });

@@ -1,5 +1,9 @@
 import { scanLogs, findFirstLog, findLatestLog } from "./logScanner";
 
+// No test here reads a clock or sleeps; the timeout only lifts Jest's 5 s default, which a
+// loaded machine can exceed, so the result never depends on speed.
+jest.setTimeout(60_000);
+
 /**
  * A minimal stand-in for an ethers Contract that records the block ranges it is
  * asked for and serves logs from a fixed set. Logs are plain objects with the

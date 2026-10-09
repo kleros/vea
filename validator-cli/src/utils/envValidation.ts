@@ -1,8 +1,11 @@
+import { EventEmitter } from "node:events";
 import { ethers } from "ethers";
 import { Network, getBridgeConfig } from "../consts/bridgeRoutes";
 import { EnvValidationError } from "./errors";
-import { FallbackRpcProvider } from "./fallbackProvider";
+import { FallbackRpcProvider, redactUrl, redactUrlsInText } from "./fallbackProvider";
 import { defaultEmitter } from "./emitter";
+import { BotEvents, AlertPayload } from "./botEvents";
+import { hashClaim } from "./claim";
 
 /**
  * The slice of a provider the preflight needs. Kept minimal so the checks can be
@@ -13,6 +16,25 @@ export interface PreflightProvider {
   getCode(address: string): Promise<string>;
   getBalance(address: string): Promise<bigint>;
 }
+
+/** The fields of the outbox's `Claim` struct, in declaration order. */
+export interface SyntheticClaim {
+  stateRoot: string;
+  claimer: string;
+  timestampClaimed: number;
+  timestampVerification: number;
+  blocknumberVerification: number;
+  honest: number;
+  challenger: string;
+}
+
+/** Reads `hashClaim(claim)` from the outbox at `address` through `provider`. */
+export type ReadOutboxHashClaim = (
+  address: string,
+  abi: unknown,
+  claim: SyntheticClaim,
+  provider: PreflightProvider
+) => Promise<string>;
 
 export interface ValidatedEnvironment {
   signerAddress: string;
@@ -32,6 +54,8 @@ export interface ValidateEnvironmentParams {
     spender: string,
     provider: PreflightProvider
   ) => Promise<{ balance: bigint; allowance: bigint }>;
+  readOutboxHashClaim?: ReadOutboxHashClaim;
+  emitter?: EventEmitter;
 }
 
 const splitList = (value: string | undefined): string[] =>
@@ -49,13 +73,60 @@ const isHttpUrl = (value: string): boolean => {
   }
 };
 
+const isHttpsUrl = (value: string): boolean => {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+/** `scheme://host` of a configured value, or nothing when it does not parse; never the value itself. */
+const describeUrl = (value: string): string => {
+  const redacted = redactUrl(value);
+  return redacted === "<redacted-url>" ? "an unparseable value" : redacted;
+};
+
+/**
+ * A claim whose every field is non-zero and distinct, so the parity probe
+ * exercises the whole packed encoding: a field dropped, reordered or resized on
+ * either side changes the hash. `honest` is 2 (Challenger) for the same reason.
+ */
+export const PARITY_PROBE_CLAIM: SyntheticClaim = {
+  stateRoot: ethers.keccak256(ethers.toUtf8Bytes("vea-validator hashClaim parity probe")),
+  claimer: "0x1111111111111111111111111111111111111111",
+  timestampClaimed: 0x01020304,
+  timestampVerification: 0x05060708,
+  blocknumberVerification: 0x090a0b0c,
+  honest: 2,
+  challenger: "0x2222222222222222222222222222222222222222",
+};
+
+const HASH_CLAIM_ABI = [
+  "function hashClaim((bytes32 stateRoot,address claimer,uint32 timestampClaimed,uint32 timestampVerification,uint32 blocknumberVerification,uint8 honest,address challenger) _claim) pure returns (bytes32)",
+];
+
+/**
+ * Call `hashClaim` with the ABI the bot itself uses for the outbox (the
+ * deployment's), so a stale ABI fails here too; fall back to the struct's
+ * known signature when a deployment carries no ABI.
+ */
+const defaultReadOutboxHashClaim: ReadOutboxHashClaim = async (address, abi, claim, provider) => {
+  const hasHashClaim =
+    Array.isArray(abi) && abi.some((fragment: any) => fragment?.type === "function" && fragment?.name === "hashClaim");
+  const outbox = new ethers.Contract(address, hasHashClaim ? (abi as any) : HASH_CLAIM_ABI, provider as any);
+  return String(await outbox.hashClaim(claim));
+};
+
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function allowance(address,address) view returns (uint256)",
 ];
 
 /**
- * Build a provider for the preflight to probe with.
+ * Build a provider for the preflight to probe with. The preflight calls it with
+ * a single URL to probe that endpoint alone, and with the whole list for the
+ * contract and funding reads, which then go through the same failover as at runtime.
  *
  * Deliberately constructed *without* the expected chain id. FallbackRpcProvider
  * short-circuits `_detectNetwork` to the configured value when it is given one,
@@ -95,6 +166,8 @@ export const validateEnvironment = async ({
   fetchBridgeConfig = getBridgeConfig,
   createProvider = defaultCreateProvider,
   readDepositTokenBalance = defaultReadDepositTokenBalance,
+  readOutboxHashClaim = defaultReadOutboxHashClaim,
+  emitter = defaultEmitter,
 }: ValidateEnvironmentParams = {}): Promise<ValidatedEnvironment> => {
   const problems: string[] = [];
   const warnings: string[] = [];
@@ -103,9 +176,10 @@ export const validateEnvironment = async ({
   const chainIds = validateChainIds(env, problems, fetchBridgeConfig);
   const networks = validateNetworks(env, problems);
   const envioUrl = validateEnvioUrl(env, problems);
+  validateHeartbeatUrl(env, problems);
   validateRoutes(chainIds, problems, fetchBridgeConfig);
 
-  if (problems.length > 0) throw new EnvValidationError(problems);
+  if (problems.length > 0) throw new EnvValidationError(redactAll(problems));
 
   await runPreflight({
     chainIds,
@@ -116,12 +190,21 @@ export const validateEnvironment = async ({
     fetchBridgeConfig,
     createProvider,
     readDepositTokenBalance,
+    readOutboxHashClaim,
+    emitter,
   });
 
-  if (problems.length > 0) throw new EnvValidationError(problems);
+  if (problems.length > 0) throw new EnvValidationError(redactAll(problems));
 
-  return { signerAddress, chainIds, networks, envioUrl, warnings };
+  return { signerAddress, chainIds, networks, envioUrl, warnings: redactAll(warnings) };
 };
+
+/**
+ * Last line of defence for the messages this module builds: every message names
+ * endpoints by `describeUrl`, but RPC error text is quoted verbatim and ethers
+ * puts the request URL into it.
+ */
+const redactAll = (messages: string[]): string[] => messages.map(redactUrlsInText);
 
 interface PreflightParams {
   chainIds: number[];
@@ -137,6 +220,8 @@ interface PreflightParams {
     spender: string,
     provider: PreflightProvider
   ) => Promise<{ balance: bigint; allowance: bigint }>;
+  readOutboxHashClaim: ReadOutboxHashClaim;
+  emitter: EventEmitter;
 }
 
 /** One endpoint the bot will actually talk to, and what it is expected to be. */
@@ -150,13 +235,16 @@ interface Endpoint {
 
 /**
  * Confirm the configured environment describes a chain the bot can actually work
- * on: every endpoint answers as the chain we think it is, the contracts we are
- * about to call exist, and the signer can pay for gas.
+ * on: every reachable endpoint of every RPC list answers as the chain we think
+ * it is, the outbox at the configured address hashes claims exactly as the bot
+ * does, the other contracts exist, and the signer can pay for gas.
  *
- * Funding is reported rather than enforced, with one exception: a signer with
- * zero native balance cannot send any transaction at all, so that is fatal. A
- * balance merely below the deposit is runtime state, not misconfiguration, and
- * refusing to start on it would turn a transient funding gap into a dead bot.
+ * Identity problems are fatal: a wrong chain or a wrong contract yields
+ * confident wrong answers. An unreachable endpoint is not: it is dropped from
+ * the shared bridge config (see `checkEndpointChains`), and only a list left
+ * with no endpoint at all stops the bot, and so does a signer with no native balance on a
+ * chain a route sends to (it cannot pay for any transaction). A balance merely below the
+ * deposit is a warning, and runtime funding checks take it from there.
  */
 const runPreflight = async ({
   chainIds,
@@ -167,82 +255,149 @@ const runPreflight = async ({
   fetchBridgeConfig,
   createProvider,
   readDepositTokenBalance,
+  readOutboxHashClaim,
+  emitter,
 }: PreflightParams): Promise<void> => {
-  for (const chainId of chainIds) {
-    const bridge = fetchBridgeConfig(chainId) as any;
+  // Every configured route's config up front: one environment variable feeds
+  // several lists (RPC_ARB every inbox, RPC_ETH an outbox and a router), and an
+  // unreachable URL is pruned from all of them at once.
+  const bridges = chainIds.map((chainId) => fetchBridgeConfig(chainId) as any);
+  const probes = new Map<string, Promise<ProbeResult>>();
+  const probe = (url: string, expectedChainId: number): Promise<ProbeResult> => {
+    let result = probes.get(url);
+    if (!result) {
+      result = createProvider([url], expectedChainId)
+        .getNetwork()
+        .then(
+          (network): ProbeResult => ({ chainId: Number(network.chainId) }),
+          (error): ProbeResult => ({ error: (error as Error)?.message })
+        );
+      probes.set(url, result);
+    }
+    return result;
+  };
+  const prune = (url: string): void => {
+    for (const bridge of bridges) {
+      for (const urls of [bridge.inboxRPC, bridge.outboxRPC, bridge.routerRPC]) {
+        if (!Array.isArray(urls)) continue;
+        for (let index = urls.indexOf(url); index !== -1; index = urls.indexOf(url)) urls.splice(index, 1);
+      }
+    }
+  };
+
+  for (const [position, chainId] of chainIds.entries()) {
+    const bridge = bridges[position];
     const { rpcEnvVars } = bridge;
 
-    const endpoints: Endpoint[] = [
-      {
-        role: "outbox",
-        envVar: rpcEnvVars.outbox,
-        urls: bridge.outboxRPC,
-        expectedChainId: chainId,
-        provider: createProvider(bridge.outboxRPC, chainId),
-      },
-      {
-        role: "inbox",
-        envVar: rpcEnvVars.inbox,
-        urls: bridge.inboxRPC,
-        expectedChainId: bridge.inboxChainId,
-        provider: createProvider(bridge.inboxRPC, bridge.inboxChainId),
-      },
+    const lists: Array<Omit<Endpoint, "provider">> = [
+      { role: "outbox", envVar: rpcEnvVars.outbox, urls: bridge.outboxRPC, expectedChainId: chainId },
+      { role: "inbox", envVar: rpcEnvVars.inbox, urls: bridge.inboxRPC, expectedChainId: bridge.inboxChainId },
     ];
     if (rpcEnvVars.router && bridge.routerRPC) {
-      endpoints.push({
+      lists.push({
         role: "router",
         envVar: rpcEnvVars.router,
         urls: bridge.routerRPC,
         expectedChainId: bridge.routerChainId,
-        provider: createProvider(bridge.routerRPC, bridge.routerChainId),
       });
     }
 
-    const reachable = await checkEndpointChains(endpoints, chainId, problems);
-    await checkDeployments(reachable, bridge, networks, chainId, problems);
+    const verified: Endpoint[] = [];
+    for (const list of lists) {
+      if (await checkEndpointChains(list, chainId, probe, prune, problems, warnings, emitter)) {
+        verified.push({ ...list, provider: createProvider(list.urls, list.expectedChainId) });
+      }
+    }
+    await checkDeployments(verified, bridge, networks, chainId, problems, readOutboxHashClaim);
     await checkFunding(
-      reachable,
+      verified,
       bridge,
       networks,
       chainId,
       signerAddress,
       problems,
       warnings,
-      readDepositTokenBalance
+      readDepositTokenBalance,
+      emitter
     );
   }
 };
 
-/** Confirm each endpoint answers as the chain it is configured to be. */
-const checkEndpointChains = async (endpoints: Endpoint[], chainId: number, problems: string[]): Promise<Endpoint[]> => {
-  const reachable: Endpoint[] = [];
-  for (const endpoint of endpoints) {
-    try {
-      const network = await endpoint.provider.getNetwork();
-      const reported = Number(network.chainId);
-      if (reported !== endpoint.expectedChainId) {
-        problems.push(
-          `${endpoint.envVar} (chain ${chainId} ${endpoint.role}) answers as chain ${reported}, expected ${endpoint.expectedChainId}.`
-        );
-        continue;
-      }
-      reachable.push(endpoint);
-    } catch (error) {
-      problems.push(
-        `${endpoint.envVar} (chain ${chainId} ${endpoint.role}) is unreachable: ${(error as Error)?.message}`
+/** What one URL answered to `eth_chainId`, or why it did not answer. */
+type ProbeResult = { chainId: number } | { error: string };
+
+/**
+ * Confirm every URL of an RPC list answers as the chain the list is configured
+ * for, each probed on its own. A fallback provider answers from whichever
+ * endpoint is up, so probing through it would vouch only for that one; the
+ * others would be trusted unseen the first time the bot fails over to them.
+ *
+ * A URL that answers as another chain is fatal: it would give confident wrong
+ * answers. A URL that does not answer at all, the first one included, is a
+ * warning plus an `ALERT` (`rpc_url_unreachable`) and is removed in place from
+ * every RPC list of the configured routes, so the bot never fails over to an
+ * endpoint nobody vouched for; it comes back only after a restart. A list left
+ * with no URL that answered as the expected chain is fatal.
+ *
+ * @returns true when the list still holds at least one URL and every one of them
+ * answered with the expected chain id
+ */
+const checkEndpointChains = async (
+  list: Omit<Endpoint, "provider">,
+  chainId: number,
+  probe: (url: string, expectedChainId: number) => Promise<ProbeResult>,
+  prune: (url: string) => void,
+  problems: string[],
+  warnings: string[],
+  emitter: EventEmitter
+): Promise<boolean> => {
+  let allVerified = true;
+  // A copy: pruning shortens the list being walked.
+  for (const [index, url] of [...list.urls].entries()) {
+    const name = `${list.envVar} endpoint ${index + 1} (${describeUrl(url)}, chain ${chainId} ${list.role})`;
+    const result = await probe(url, list.expectedChainId);
+    if ("error" in result) {
+      prune(url);
+      warnings.push(
+        `${name} is unreachable and is dropped from ${list.envVar} until the validator restarts: ${result.error}`
       );
+      const payload: AlertPayload = {
+        level: "warn",
+        code: "rpc_url_unreachable",
+        chainId,
+        details: { envVar: list.envVar, role: list.role, endpoint: index + 1, url: describeUrl(url) },
+      };
+      emitter.emit(BotEvents.ALERT, payload);
+      continue;
+    }
+    if (result.chainId !== list.expectedChainId) {
+      problems.push(`${name} answers as chain ${result.chainId}, expected ${list.expectedChainId}.`);
+      allVerified = false;
     }
   }
-  return reachable;
+  if (list.urls.length === 0) {
+    problems.push(
+      `${list.envVar} has no reachable endpoint for chain ${chainId} ${list.role} (expected chain ${list.expectedChainId}).`
+    );
+    return false;
+  }
+  return allVerified;
 };
 
-/** Confirm the contracts we are about to call are deployed where we think. */
+/**
+ * Confirm the contracts we are about to call are the ones we think. The outbox
+ * must hash a synthetic claim to exactly what `hashClaim` in `claim.ts` computes:
+ * that one call fails on a wrong address (no code, or another contract), a wrong
+ * ABI and any drift in the packed encoding the bot relies on to match claims.
+ * The inbox and router keep the plain code check.
+ */
 const checkDeployments = async (
   endpoints: Endpoint[],
   bridge: any,
   networks: Network[],
   chainId: number,
-  problems: string[]
+  problems: string[],
+  readOutboxHashClaim: ReadOutboxHashClaim
 ): Promise<void> => {
   const roleToContract: Record<string, string> = { inbox: "veaInbox", outbox: "veaOutbox", router: "veaRouter" };
   for (const network of networks) {
@@ -254,23 +409,46 @@ const checkDeployments = async (
     for (const endpoint of endpoints) {
       const contract = route[roleToContract[endpoint.role]];
       if (!contract?.address) continue;
-      try {
-        const code = await endpoint.provider.getCode(contract.address);
-        if (!code || code === "0x") {
-          problems.push(`Chain ${chainId} ${network} ${endpoint.role} has no contract code at ${contract.address}.`);
-        }
-      } catch (error) {
-        problems.push(
-          `Chain ${chainId} ${network} ${endpoint.role} code check at ${contract.address} failed: ${
-            (error as Error)?.message
-          }`
-        );
-      }
+      const where = `Chain ${chainId} ${network} ${endpoint.role} at ${contract.address}`;
+      const problem =
+        endpoint.role === "outbox"
+          ? await outboxParityProblem(contract, endpoint.provider, readOutboxHashClaim)
+          : await contractCodeProblem(contract.address, endpoint.provider);
+      if (problem) problems.push(`${where} ${problem}`);
     }
   }
 };
 
-/** Report what the signer can pay with; fail only when it can pay nothing. */
+/** Why the outbox at `contract.address` fails the hashClaim parity check, or null when it passes. */
+const outboxParityProblem = async (
+  contract: { address: string; abi: any },
+  provider: PreflightProvider,
+  readOutboxHashClaim: ReadOutboxHashClaim
+): Promise<string | null> => {
+  const expectedHash = hashClaim(PARITY_PROBE_CLAIM as any);
+  try {
+    const reported = await readOutboxHashClaim(contract.address, contract.abi, PARITY_PROBE_CLAIM, provider);
+    if (String(reported).toLowerCase() === expectedHash.toLowerCase()) return null;
+    return `failed the hashClaim parity check: the contract returned ${reported}, the validator computes ${expectedHash}. Wrong address, ABI or chain.`;
+  } catch (error) {
+    return `failed the hashClaim parity check: ${(error as Error)?.message}`;
+  }
+};
+
+/** Why `address` holds no contract, or null when code is deployed there. */
+const contractCodeProblem = async (address: string, provider: PreflightProvider): Promise<string | null> => {
+  try {
+    const code = await provider.getCode(address);
+    return !code || code === "0x" ? "has no contract code." : null;
+  } catch (error) {
+    return `code check failed: ${(error as Error)?.message}`;
+  }
+};
+
+/**
+ * Report what the signer can pay with. Nothing here is fatal: every finding is
+ * about one route's funds, and a startup failure would stop every route.
+ */
 const checkFunding = async (
   endpoints: Endpoint[],
   bridge: any,
@@ -279,23 +457,31 @@ const checkFunding = async (
   signerAddress: string,
   problems: string[],
   warnings: string[],
-  readDepositTokenBalance: PreflightParams["readDepositTokenBalance"]
+  readDepositTokenBalance: PreflightParams["readDepositTokenBalance"],
+  emitter: EventEmitter
 ): Promise<void> => {
   const deposits = networks.map((network) => bridge.routeConfig[network]?.deposit).filter(Boolean) as bigint[];
   const largestDeposit = deposits.length > 0 ? deposits.reduce((a, b) => (a > b ? a : b)) : 0n;
+  const alert = (code: string, details: Record<string, unknown>) => {
+    const payload: AlertPayload = { level: "warn", code, chainId, details };
+    emitter.emit(BotEvents.ALERT, payload);
+  };
 
   for (const endpoint of endpoints) {
-    if (endpoint.role === "router") continue; // nothing is ever sent to the router chain
+    // The router chain counts too: on chain 10200 the dispute ticket is executed there from our signer.
     let balance: bigint;
     try {
       balance = await endpoint.provider.getBalance(signerAddress);
     } catch (error) {
-      problems.push(`Chain ${chainId} ${endpoint.role} balance check failed: ${(error as Error)?.message}`);
+      warnings.push(`Chain ${chainId} ${endpoint.role} balance check failed: ${(error as Error)?.message}`);
+      alert("funding_check_failed", { role: endpoint.role, check: "native_balance" });
       continue;
     }
     if (balance === 0n) {
+      // A signer with no native balance cannot send any transaction: fatal, as the operator decided
+      // (the route stays named so the funding gap is clear).
       problems.push(
-        `Signer ${signerAddress} has no native balance on chain ${chainId} ${endpoint.role}; it cannot pay for gas.`
+        `Signer ${signerAddress} has no native balance on chain ${chainId} ${endpoint.role} (chain ${endpoint.expectedChainId}); route ${chainId} cannot send transactions there. Fund it before starting.`
       );
       continue;
     }
@@ -327,7 +513,8 @@ const checkFunding = async (
       );
     }
   } catch (error) {
-    problems.push(`Chain ${chainId} deposit token check failed: ${(error as Error)?.message}`);
+    warnings.push(`Chain ${chainId} deposit token check failed: ${(error as Error)?.message}`);
+    alert("funding_check_failed", { role: "outbox", check: "deposit_token" });
   }
 };
 
@@ -404,6 +591,18 @@ const validateEnvioUrl = (env: Record<string, string | undefined>, problems: str
   return envioUrl;
 };
 
+/**
+ * `HEARTBEAT_URL` is optional, but when set it must be https: the heartbeat
+ * carries the monitor's token in its URL. The value itself is never echoed.
+ */
+const validateHeartbeatUrl = (env: Record<string, string | undefined>, problems: string[]): void => {
+  const heartbeatUrl = env.HEARTBEAT_URL?.trim();
+  if (!heartbeatUrl) return;
+  if (!isHttpsUrl(heartbeatUrl)) {
+    problems.push(`HEARTBEAT_URL must be an https URL when set; got ${describeUrl(heartbeatUrl)}.`);
+  }
+};
+
 const validateRoutes = (chainIds: number[], problems: string[], fetchBridgeConfig: typeof getBridgeConfig): void => {
   for (const chainId of chainIds) {
     const bridge = fetchBridgeConfig(chainId) as any;
@@ -415,18 +614,21 @@ const validateRoutes = (chainIds: number[], problems: string[], fetchBridgeConfi
     ];
     if (rpcEnvVars.router) endpoints.push([rpcEnvVars.router, bridge.routerRPC]);
 
-    for (const [envVar, urls] of endpoints) {
-      if (!urls || urls.length === 0) {
-        problems.push(`${envVar} is empty but chain ${chainId} needs it.`);
-        continue;
-      }
-      for (const url of urls) {
-        if (!isHttpUrl(url)) problems.push(`${envVar} contains "${url}", which is not an http(s) URL.`);
-      }
-    }
+    for (const [envVar, urls] of endpoints) validateRpcList(envVar, urls, chainId, problems);
 
     if (bridge.depositTokenEnvVar && !bridge.depositToken) {
       problems.push(`${bridge.depositTokenEnvVar} is not set but chain ${chainId} takes its deposit in that token.`);
     }
+  }
+};
+
+/** One RPC list must be non-empty and hold only http(s) URLs. */
+const validateRpcList = (envVar: string, urls: string[] | undefined, chainId: number, problems: string[]): void => {
+  if (!urls || urls.length === 0) {
+    problems.push(`${envVar} is empty but chain ${chainId} needs it.`);
+    return;
+  }
+  for (const [index, url] of urls.entries()) {
+    if (!isHttpUrl(url)) problems.push(`${envVar} endpoint ${index + 1} (${describeUrl(url)}) is not an http(s) URL.`);
   }
 };
