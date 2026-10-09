@@ -40,11 +40,13 @@ export type FinalityCheck = [Block, Block, boolean, boolean, FinalityFallback?];
 // and an outbox chain whose finality has stalled is read this many blocks behind latest.
 export const FALLBACK_L1_CONFIRMATIONS = 64;
 export const OUTBOX_STALL_DEPTH_BLOCKS = 64;
-// Finality is two justified epochs (2 * 32 slots * 12 s) plus a 5 minute buffer; a
-// finalized block further behind latest than this (by block timestamps) means a stall.
+// The finalized block is the checkpoint (first slot) of epoch N - 2 while the head is anywhere in
+// epoch N, so a healthy chain's finalized block trails latest by 64 to 95 slots (768 to 1140 s),
+// more when checkpoint slots are missed. Three epochs (3 * 32 slots * 12 s) plus a 5 minute
+// buffer; a finalized block further behind latest than this (by block timestamps) means a stall.
 const finalityBuffer = 300;
-const maxFinalityTimeSecondsEth = slotsPerEpochEth * 2 * secondsPerSlotEth;
-export const FINALITY_STALL_SECS = maxFinalityTimeSecondsEth + finalityBuffer; // 1068
+const maxFinalityTimeSecondsEth = slotsPerEpochEth * 3 * secondsPerSlotEth;
+export const FINALITY_STALL_SECS = maxFinalityTimeSecondsEth + finalityBuffer; // 1452
 
 export interface ResolveSettledReadBlocksParams {
   inboxProvider: JsonRpcProvider;

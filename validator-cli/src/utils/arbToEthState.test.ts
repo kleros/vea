@@ -189,12 +189,12 @@ describe("arbToEthState", () => {
   });
 
   describe("getOutboxReadBlock", () => {
-    it("returns the finalized block while the outbox chain's finality keeps up (exactly 1068 s behind is no stall)", async () => {
+    it("returns the finalized block while the outbox chain's finality keeps up (exactly 1452 s behind is no stall)", async () => {
       const route = createTwoChainRoute({ now: NOW });
       expect((await getOutboxReadBlock({ outboxProvider: route.outbox.provider })).number).toBe(
         route.outbox.block("finalized").number
       );
-      route.router.options.finalizedLag = 89; // 1068 s on 12 s blocks
+      route.router.options.finalizedLag = 121; // 1452 s on 12 s blocks
       expect((await getOutboxReadBlock({ outboxProvider: route.router.provider })).number).toBe(
         route.router.block("finalized").number
       );
@@ -206,7 +206,7 @@ describe("arbToEthState", () => {
       const alerts = (code: string) => events.filter((e) => e[0] === BotEvents.ALERT && e[1]?.code === code);
       const read = () => getOutboxReadBlock({ outboxProvider: route.outbox.provider as any, emitter });
 
-      route.outbox.options.finalizedLag = 214; // 1070 s behind on 5 s blocks
+      route.outbox.options.finalizedLag = 300; // 1500 s behind on 5 s blocks
       for (let i = 0; i < 5; i++) {
         expect((await read()).number).toBe(route.outbox.block("latest").number - 64);
         route.outbox.advance(3);
@@ -218,7 +218,7 @@ describe("arbToEthState", () => {
       for (let i = 0; i < 3; i++) expect((await read()).number).toBe(route.outbox.block("finalized").number);
       expect(alerts("OUTBOX_FINALITY_RECOVERED")).toHaveLength(1);
 
-      route.outbox.options.finalizedLag = 214;
+      route.outbox.options.finalizedLag = 300;
       await read();
       expect(alerts("OUTBOX_FINALITY_STALLED")).toHaveLength(2);
     });
@@ -229,7 +229,7 @@ describe("arbToEthState", () => {
       expect((await getOutboxReadBlock({ outboxProvider: getBlockOnly })).number).toBe(
         route.outbox.block("finalized").number
       );
-      route.outbox.options.finalizedLag = 214;
+      route.outbox.options.finalizedLag = 300;
       expect((await getOutboxReadBlock({ outboxProvider: getBlockOnly })).number).toBe(
         route.outbox.block("latest").number - 64
       );
