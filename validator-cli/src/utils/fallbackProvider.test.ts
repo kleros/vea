@@ -107,6 +107,45 @@ describe("RPC URL redaction", () => {
     }
   });
 
+  it("a rate-limited endpoint gives up after a couple of attempts so the next one is used (v6 and v5)", async () => {
+    const http = await import("node:http");
+    const serve = (handler: (body: any) => [number, any]) =>
+      new Promise<{ url: string; hits: () => number; close: () => void }>((resolve) => {
+        let hits = 0;
+        const server = http.createServer((req, res) => {
+          let raw = "";
+          req.on("data", (chunk) => (raw += chunk));
+          req.on("end", () => {
+            hits++;
+            const body = JSON.parse(raw);
+            const [status, result] = handler(body);
+            res.writeHead(status, { "content-type": "application/json" });
+            const reply = (b: any) => ({ jsonrpc: "2.0", id: b.id, result });
+            res.end(JSON.stringify(Array.isArray(body) ? body.map(reply) : reply(body)));
+          });
+        });
+        server.listen(0, "127.0.0.1", () => {
+          const { port } = server.address() as any;
+          resolve({ url: `http://127.0.0.1:${port}`, hits: () => hits, close: () => server.close() });
+        });
+      });
+    const throttled = await serve(() => [429, null]);
+    const healthy = await serve(() => [200, "0x10"]);
+    try {
+      const v6: any = new FallbackRpcProvider([throttled.url, healthy.url], new EventEmitter(), 11155111);
+      await v6._send({ id: 1, jsonrpc: "2.0", method: "eth_blockNumber", params: [] });
+      expect(throttled.hits()).toBeLessThanOrEqual(3); // ethers default: 12, backing off for minutes
+
+      const before = throttled.hits();
+      const v5 = new FallbackProviderV5([throttled.url, healthy.url], new EventEmitter());
+      expect(await v5.send("eth_blockNumber", [])).toBe("0x10");
+      expect(throttled.hits() - before).toBeLessThanOrEqual(3);
+    } finally {
+      throttled.close();
+      healthy.close();
+    }
+  });
+
   describe("logger", () => {
     const sinkAndEmitter = () => {
       const sink = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };

@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BotEvents } from "./botEvents";
-import { redactRpcError, redactUrl } from "./fallbackProvider";
+import { RATE_LIMITED_ATTEMPTS_WITH_FALLBACK, redactRpcError, redactUrl } from "./fallbackProvider";
 
 type RPCEndpoint = { url: string; label?: string };
 
@@ -71,7 +71,11 @@ export class FallbackProviderV5 extends JsonRpcProvider {
 
   private getInner(i: number) {
     if (!this.inner[i]) {
-      this.inner[i] = new JsonRpcProvider(this.endpoints[i].url);
+      this.inner[i] = new JsonRpcProvider(
+        this.endpoints.length > 1
+          ? { url: this.endpoints[i].url, throttleLimit: RATE_LIMITED_ATTEMPTS_WITH_FALLBACK }
+          : this.endpoints[i].url
+      );
     }
     return this.inner[i];
   }

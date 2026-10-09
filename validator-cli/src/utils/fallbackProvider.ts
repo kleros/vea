@@ -1,8 +1,15 @@
 import { EventEmitter } from "node:events";
-import { JsonRpcPayload, JsonRpcResult, JsonRpcProvider, Network } from "ethers";
+import { FetchRequest, JsonRpcPayload, JsonRpcResult, JsonRpcProvider, Network } from "ethers";
 import { BotEvents } from "./botEvents";
 
 type RPCEndpoint = { url: string; label?: string };
+
+/**
+ * Attempts ethers makes on a rate-limited (429) endpoint before giving up, when there is another
+ * endpoint to fail over to. ethers' own default (12, backing off) holds the whole cycle for
+ * minutes on one throttled endpoint; with a single endpoint that default is kept.
+ */
+export const RATE_LIMITED_ATTEMPTS_WITH_FALLBACK = 2;
 
 /**
  * Reduce an endpoint URL to `scheme://host` (host keeps a port if it has one).
@@ -93,8 +100,10 @@ export class FallbackRpcProvider extends JsonRpcProvider {
 
   private getInner(i: number) {
     if (!this.inner[i]) {
+      const request = new FetchRequest(this.endpoints[i].url);
+      if (this.endpoints.length > 1) request.setThrottleParams({ maxAttempts: RATE_LIMITED_ATTEMPTS_WITH_FALLBACK });
       this.inner[i] = new JsonRpcProvider(
-        this.endpoints[i].url,
+        request,
         this.staticChainId !== undefined ? Network.from(this.staticChainId) : undefined
       );
     }
