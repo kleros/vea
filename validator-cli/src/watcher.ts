@@ -99,7 +99,10 @@ export const snapshotHandlerKey = (chainId: number, network: Network, epoch: num
  * Error text for an event payload: URLs are cut out, since an RPC URL often embeds an API key.
  */
 const errorMessage = (error: unknown): string =>
-  (error instanceof Error ? error.message : String(error)).replace(/[a-z][a-z0-9+.-]*:\/\/[^\s"'<>,)]+/gi, "<url>");
+  (error instanceof Error ? error.message : String(error)).replace(
+    /[a-z][a-z0-9+.-]{0,31}:\/\/[^\s"'<>,)]+/gi,
+    "<url>"
+  );
 
 /**
  * @file This file contains the logic for watching bridge and validating/resolving for claims.

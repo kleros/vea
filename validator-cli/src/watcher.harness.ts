@@ -4,7 +4,7 @@
  * ethers, fallbackProvider, fallbackProviderV5, transactionHandlers, and bridgeRoutes with
  * RPC_ARB / RPC_ETH / RPC_GNOSIS set to the URLs below.
  */
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import { watch, WatcherState } from "./watcher";
 import { ShutdownSignal } from "./utils/shutdown";
 import { createTwoChainRoute, TwoChainRoute } from "./testUtils/twoChainFixture";

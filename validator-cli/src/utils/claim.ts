@@ -536,7 +536,7 @@ const getClaimResolveState = async ({
       veaInboxProvider,
       cache,
     });
-    if (!facts || facts.claimHash.toLowerCase() !== claimHash.toLowerCase()) continue;
+    if (facts?.claimHash.toLowerCase() !== claimHash.toLowerCase()) continue;
     claimResolveState.sendSnapshot = { status: true, txHash: sent.transactionHash };
     break;
   }

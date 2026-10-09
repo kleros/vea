@@ -1,4 +1,4 @@
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import { BotEvents } from "./botEvents";
 
 /**
@@ -6,7 +6,7 @@ import { BotEvents } from "./botEvents";
  */
 export class ShutdownSignal {
   private isShutdownSignal: boolean;
-  private waiters = new Set<() => void>();
+  private readonly waiters = new Set<() => void>();
 
   constructor(initialState: boolean = false) {
     this.isShutdownSignal = initialState;

@@ -1,4 +1,4 @@
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import { ethers } from "ethers";
 import { BotEvents } from "../utils/botEvents";
 import { EpochOutcome } from "../utils/epochOutcome";

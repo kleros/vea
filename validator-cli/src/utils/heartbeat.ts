@@ -1,5 +1,5 @@
 import https from "https";
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import { BotEvents } from "./botEvents";
 import { defaultEmitter } from "./emitter";
 
