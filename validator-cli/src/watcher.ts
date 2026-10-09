@@ -21,6 +21,9 @@ const CYCLE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
 
 // An epoch older than the watch window leaves after this many consecutive null cycles.
 const NULL_CYCLES_TO_LEAVE = 2;
+// At most this many epochs older than the watch window are examined per cycle, so the
+// cold-start backlog (a week of epochs) never delays the next cycle's claimable epoch.
+const BACKLOG_EPOCHS_PER_CYCLE = 20;
 // Alert after this many consecutive undecidable cycles, and again each further as many.
 const UNDECIDABLE_CYCLES_TO_ALERT = 15;
 // Undecidable cycles count only from (E+1)·P + this grace, past normal settlement lag.
@@ -66,6 +69,8 @@ interface RouteConnections {
  * - `newestClaimTimestamp`: the newest `timestampClaimed` fetched so far; never decreases.
  * - `lastLivenessAlarm`: chain time of the last LIVENESS_ALARM; one alarm per 24 h at most.
  * - `snapshotCount`: the inbox count saveSnapshot last returned (-1 before the first).
+ * - `backlogCursor`: the oldest epoch below the window picked last cycle; the next cycle
+ *   continues below it and wraps back to the newest one once none is left.
  */
 interface RouteState {
   chainId: number;
@@ -76,6 +81,7 @@ interface RouteState {
   newestClaimTimestamp?: number;
   lastLivenessAlarm?: number;
   snapshotCount: number;
+  backlogCursor?: number;
   connections?: RouteConnections;
 }
 
@@ -87,6 +93,8 @@ export interface WatcherState {
 
 export interface WatchOptions {
   cycleDelayMs?: number;
+  /** The most epochs older than the watch window examined per cycle (default `BACKLOG_EPOCHS_PER_CYCLE`). */
+  backlogEpochsPerCycle?: number;
   /** The loop's state; a caller may pass its own to inspect it. */
   state?: WatcherState;
 }
@@ -109,14 +117,19 @@ const errorMessage = (error: unknown): string =>
  *
  * @param shutDownSignal - The signal to shut down the watcher
  * @param emitter - The emitter to emit events
- * @param options - `cycleDelayMs`: the pause between cycles; `state`: the loop's state
+ * @param options - `cycleDelayMs`: the pause between cycles; `backlogEpochsPerCycle`: the cap on
+ *   epochs older than the watch window per cycle; `state`: the loop's state
  *
  */
 
 export const watch = async (
   shutDownSignal: ShutdownSignal = new ShutdownSignal(),
   emitter: typeof defaultEmitter = defaultEmitter,
-  { cycleDelayMs = CYCLE_DELAY_MS, state = { routes: {}, transactionHandlers: {} } }: WatchOptions = {}
+  {
+    cycleDelayMs = CYCLE_DELAY_MS,
+    backlogEpochsPerCycle = BACKLOG_EPOCHS_PER_CYCLE,
+    state = { routes: {}, transactionHandlers: {} },
+  }: WatchOptions = {}
 ) => {
   initializeLogger(emitter);
   // Validate the whole environment before anything else, including before the
@@ -137,7 +150,15 @@ export const watch = async (
       await sendHeartbeat("running", heartbeatURL, emitter);
       for (const networkConfig of networkConfigs) {
         if (shutDownSignal.getIsShutdownSignal()) break;
-        await processNetwork(path, toSaveSnapshot, networkConfig, state, shutDownSignal, emitter);
+        await processNetwork(
+          path,
+          toSaveSnapshot,
+          networkConfig,
+          state,
+          backlogEpochsPerCycle,
+          shutDownSignal,
+          emitter
+        );
       }
       await shutDownSignal.wait(cycleDelayMs);
     }
@@ -152,6 +173,7 @@ async function processNetwork(
   toSaveSnapshot: boolean,
   networkConfig: NetworkConfig,
   state: WatcherState,
+  backlogEpochsPerCycle: number,
   shutDownSignal: ShutdownSignal,
   emitter: typeof defaultEmitter
 ): Promise<void> {
@@ -170,7 +192,16 @@ async function processNetwork(
     const examined = new Set<number>();
     try {
       emitter.emit(BotEvents.WATCHING, chainId, network);
-      await processRoute({ path, toSaveSnapshot, route, state, examined, shutDownSignal, emitter });
+      await processRoute({
+        path,
+        toSaveSnapshot,
+        route,
+        state,
+        examined,
+        backlogEpochsPerCycle,
+        shutDownSignal,
+        emitter,
+      });
     } catch (error) {
       emitter.emit(BotEvents.ROUTE_FAILED, { chainId, network, message: errorMessage(error) });
       // Every epoch the failure kept from being examined stays watched for another cycle.
@@ -241,6 +272,7 @@ interface ProcessRouteParams {
   route: RouteState;
   state: WatcherState;
   examined: Set<number>;
+  backlogEpochsPerCycle: number;
   shutDownSignal: ShutdownSignal;
   emitter: typeof defaultEmitter;
 }
@@ -251,6 +283,7 @@ async function processRoute({
   route,
   state,
   examined,
+  backlogEpochsPerCycle,
   shutDownSignal,
   emitter,
 }: ProcessRouteParams): Promise<void> {
@@ -273,6 +306,7 @@ async function processRoute({
     epochPeriod,
     sequencerDelayLimit,
     minChallengePeriod,
+    backlogEpochsPerCycle,
     emitter,
   });
 
@@ -298,14 +332,16 @@ interface CollectEpochsParams {
   epochPeriod: number;
   sequencerDelayLimit: number;
   minChallengePeriod: number;
+  backlogEpochsPerCycle: number;
   emitter: typeof defaultEmitter;
 }
 
 /**
- * Which epochs this cycle examines, newest first. Devnet watches only the current epoch and
- * drops older ones at rollover. Testnet watches the challenge-budget window plus every older
- * epoch still tracked; on a route's first cycle the cold-start range is added so a restarted
- * bot picks up disputes it started earlier.
+ * Which epochs this cycle examines. Devnet watches only the current epoch and drops older
+ * ones at rollover. Testnet watches the whole challenge-budget window, newest first, then up to
+ * `backlogEpochsPerCycle` older epochs still tracked, resuming below where the last cycle
+ * stopped. On a route's first cycle the cold-start range is added so a restarted bot picks up
+ * disputes it started earlier.
  */
 const collectEpochsToWatch = ({
   route,
@@ -315,6 +351,7 @@ const collectEpochsToWatch = ({
   epochPeriod,
   sequencerDelayLimit,
   minChallengePeriod,
+  backlogEpochsPerCycle,
   emitter,
 }: CollectEpochsParams): { toWatch: number[]; windowLow?: number } => {
   if (route.network == Network.DEVNET) {
@@ -331,11 +368,15 @@ const collectEpochsToWatch = ({
     route.coldStartDone = true;
   }
   const window = watchWindow(now, epochPeriod, sequencerDelayLimit, minChallengePeriod);
-  const epochs = new Set<number>(route.epochs.keys());
-  for (let epoch = window.low; epoch <= window.high; epoch++) epochs.add(epoch);
   // Newest first: the claimable epoch is the most time-sensitive.
-  const toWatch = [...epochs].filter((epoch) => epoch <= window.high).sort((a, b) => b - a);
-  return { toWatch, windowLow: window.low };
+  const inWindow: number[] = [];
+  for (let epoch = window.high; epoch >= window.low; epoch--) inWindow.push(epoch);
+  const backlog = [...route.epochs.keys()].filter((epoch) => epoch < window.low).sort((a, b) => b - a);
+  const cursor = route.backlogCursor;
+  const below = cursor === undefined ? backlog : backlog.filter((epoch) => epoch < cursor);
+  const picked = (below.length > 0 ? below : backlog).slice(0, backlogEpochsPerCycle);
+  if (picked.length > 0) route.backlogCursor = picked[picked.length - 1];
+  return { toWatch: [...inWindow, ...picked], windowLow: window.low };
 };
 
 /** Testnet exit rule for epochs older than the window: gone once done, or after two cycles without a claim. */

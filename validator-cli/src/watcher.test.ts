@@ -84,6 +84,32 @@ describe("watcher: which epochs are watched", () => {
     for (let e = w.low; e <= w.high; e++) expect(epochs).toContain(e);
   });
 
+  it("examines the whole window every cycle and at most the cap of older epochs, resuming below the last one", async () => {
+    const CAP = 5;
+    let low = 0;
+    let high = 0;
+    const h = await runWatcher({
+      chains: `${GNOSIS}`,
+      networks: "testnet",
+      path: "claimer",
+      cycles: 3,
+      backlogEpochsPerCycle: CAP,
+      setup: (h) => ({ low, high } = windowOf(GNOSIS, h.now(GNOSIS))),
+    });
+    const backlogOf = (cycle: number) => h.epochsOf("checkAndClaim", cycle).filter((e) => e < low);
+    for (const cycle of [1, 2, 3]) {
+      const epochs = h.epochsOf("checkAndClaim", cycle);
+      // The claimable epoch comes first, then the rest of the window, then the capped backlog.
+      expect(epochs[0]).toBe(high);
+      for (let e = low; e <= high; e++) expect(epochs).toContain(e);
+      expect(backlogOf(cycle)).toHaveLength(CAP);
+    }
+    // Each cycle continues below the oldest epoch the previous one reached, newest first.
+    expect(backlogOf(1)[0]).toBe(low - 1);
+    expect(Math.max(...backlogOf(2))).toBeLessThan(Math.min(...backlogOf(1)));
+    expect(Math.max(...backlogOf(3))).toBeLessThan(Math.min(...backlogOf(2)));
+  });
+
   it("examines every epoch a failed route skipped once it recovers", async () => {
     const missed: number[] = [];
     const h = await runWatcher({

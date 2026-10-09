@@ -81,6 +81,8 @@ export interface RunOptions {
   now?: number;
   /** Runs at the start of each cycle (before any route is processed). */
   beforeCycle?: (cycle: number, h: Harness) => void;
+  /** The cap on epochs older than the watch window per cycle; no cap unless set. */
+  backlogEpochsPerCycle?: number;
   /** Runs before watch starts, once the harness exists. */
   setup?: (h: Harness) => void;
 }
@@ -190,7 +192,11 @@ export const runWatcher = async (options: RunOptions): Promise<Harness> => {
   process.env.NETWORKS = options.networks;
   process.env.HEARTBEAT_URL = "https://heartbeat.test/ping";
 
-  await watch(signal, emitter as any, { cycleDelayMs: 0, state });
+  await watch(signal, emitter as any, {
+    cycleDelayMs: 0,
+    backlogEpochsPerCycle: options.backlogEpochsPerCycle ?? Infinity,
+    state,
+  });
   return h;
 };
 
