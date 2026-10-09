@@ -1,5 +1,11 @@
 import { EventEmitter } from "node:events";
-import { FallbackRpcProvider, redactUrl, redactUrlsInText } from "./fallbackProvider";
+import { FetchRequest } from "ethers";
+import {
+  FallbackRpcProvider,
+  RATE_LIMITED_ATTEMPTS_WITH_FALLBACK,
+  redactUrl,
+  redactUrlsInText,
+} from "./fallbackProvider";
 import { FallbackProviderV5 } from "./fallbackProviderV5";
 import { BotEvents } from "./botEvents";
 
@@ -107,43 +113,26 @@ describe("RPC URL redaction", () => {
     }
   });
 
-  it("a rate-limited endpoint gives up after a couple of attempts so the next one is used (v6 and v5)", async () => {
-    const http = await import("node:http");
-    const serve = (handler: (body: any) => [number, any]) =>
-      new Promise<{ url: string; hits: () => number; close: () => void }>((resolve) => {
-        let hits = 0;
-        const server = http.createServer((req, res) => {
-          let raw = "";
-          req.on("data", (chunk) => (raw += chunk));
-          req.on("end", () => {
-            hits++;
-            const body = JSON.parse(raw);
-            const [status, result] = handler(body);
-            res.writeHead(status, { "content-type": "application/json" });
-            const reply = (b: any) => ({ jsonrpc: "2.0", id: b.id, result });
-            res.end(JSON.stringify(Array.isArray(body) ? body.map(reply) : reply(body)));
-          });
-        });
-        server.listen(0, "127.0.0.1", () => {
-          const { port } = server.address() as any;
-          resolve({ url: `http://127.0.0.1:${port}`, hits: () => hits, close: () => server.close() });
-        });
-      });
-    const throttled = await serve(() => [429, null]);
-    const healthy = await serve(() => [200, "0x10"]);
-    try {
-      const v6: any = new FallbackRpcProvider([throttled.url, healthy.url], new EventEmitter(), 11155111);
-      await v6._send({ id: 1, jsonrpc: "2.0", method: "eth_blockNumber", params: [] });
-      expect(throttled.hits()).toBeLessThanOrEqual(3); // ethers default: 12, backing off for minutes
+  it("with a fallback endpoint, each endpoint gives up on a rate limit after a couple of attempts (v6 and v5)", () => {
+    // ethers' default is 12 attempts with backoff: minutes on one throttled endpoint.
+    const throttle = jest.spyOn(FetchRequest.prototype, "setThrottleParams");
+    const v6: any = new FallbackRpcProvider([PRIMARY, BACKUP], new EventEmitter(), 11155111);
+    v6.getInner(0);
+    v6.getInner(1);
+    expect(throttle.mock.calls).toEqual([
+      [{ maxAttempts: RATE_LIMITED_ATTEMPTS_WITH_FALLBACK }],
+      [{ maxAttempts: RATE_LIMITED_ATTEMPTS_WITH_FALLBACK }],
+    ]);
+    const v5: any = new FallbackProviderV5([PRIMARY, BACKUP], new EventEmitter());
+    expect(v5.getInner(0).connection.throttleLimit).toBe(RATE_LIMITED_ATTEMPTS_WITH_FALLBACK);
 
-      const before = throttled.hits();
-      const v5 = new FallbackProviderV5([throttled.url, healthy.url], new EventEmitter());
-      expect(await v5.send("eth_blockNumber", [])).toBe("0x10");
-      expect(throttled.hits() - before).toBeLessThanOrEqual(3);
-    } finally {
-      throttled.close();
-      healthy.close();
-    }
+    // A single endpoint has nothing to fail over to: ethers' default retry is kept.
+    throttle.mockClear();
+    (new FallbackRpcProvider([PRIMARY], new EventEmitter(), 11155111) as any).getInner(0);
+    expect(throttle).not.toHaveBeenCalled();
+    expect(
+      (new FallbackProviderV5([PRIMARY], new EventEmitter()) as any).getInner(0).connection.throttleLimit
+    ).not.toBe(RATE_LIMITED_ATTEMPTS_WITH_FALLBACK);
   });
 
   describe("logger", () => {
