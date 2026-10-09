@@ -1,5 +1,6 @@
 import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
-import { isSnapshotNeeded, saveSnapshot } from "./snapshot";
+import { isSnapshotNeeded, saveSnapshot, SEND_MARGIN_SECS } from "./snapshot";
+import { BotEvents } from "../utils/botEvents";
 import { MockEmitter } from "../utils/emitter";
 import { ethers } from "ethers";
 
@@ -316,6 +317,7 @@ describe("snapshot", () => {
       count = -1;
       veaInbox.count.mockResolvedValue(currentCount);
       const now = 1801; // 601 seconds after the epoch started
+      veaInboxProvider.getBlock.mockResolvedValue({ number: 150, timestamp: now });
       const isSnapshotNeededMock = jest.fn().mockResolvedValue({
         snapshotNeeded: true,
         latestCount: currentCount,
@@ -370,6 +372,41 @@ describe("snapshot", () => {
       expect(res).toEqual({ transactionHandler, latestCount: currentCount });
     });
 
+    it("does not send when the inbox chain's epoch has ended (or is about to) since the decision", async () => {
+      const now = 2 * epochPeriod - 120; // inside epoch 1's saving window when the cycle started
+      const transactionHandler = { saveSnapshot: jest.fn() };
+      const emitter = new MockEmitter();
+      const emitted = jest.spyOn(emitter, "emit");
+      const run = () =>
+        saveSnapshot({
+          chainId,
+          veaInbox,
+          veaOutbox,
+          veaInboxProvider,
+          veaOutboxProvider,
+          network,
+          epochPeriod,
+          count: 5,
+          transactionHandler,
+          emitter,
+          now,
+          toSaveSnapshot: jest.fn().mockResolvedValue({ snapshotNeeded: true, latestCount: 6 }),
+        });
+
+      // The checks took minutes: the inbox chain is already in epoch 2.
+      veaInboxProvider.getBlock.mockResolvedValue({ number: 300, timestamp: 2 * epochPeriod + 5 });
+      expect(await run()).toEqual({ transactionHandler, latestCount: 5 });
+      // Within the send margin of the epoch's end.
+      veaInboxProvider.getBlock.mockResolvedValue({ number: 300, timestamp: 2 * epochPeriod - SEND_MARGIN_SECS });
+      expect(await run()).toEqual({ transactionHandler, latestCount: 5 });
+
+      expect(transactionHandler.saveSnapshot).not.toHaveBeenCalled();
+      expect(emitted).toHaveBeenCalledWith(
+        BotEvents.ALERT,
+        expect.objectContaining({ code: "SNAPSHOT_EPOCH_ENDED", epoch: 1 })
+      );
+    });
+
     it("should save snapshot in time limit for devnet", async () => {
       const savingPeriod = snapshotSavingPeriod[Network.DEVNET];
       const currentCount = 6;
@@ -380,6 +417,7 @@ describe("snapshot", () => {
         latestCount: currentCount,
       });
       const now = epochPeriod + epochPeriod - savingPeriod; // 60 seconds before the second epoch ends
+      veaInboxProvider.getBlock.mockResolvedValue({ number: 200, timestamp: now });
       const transactionHandler = {
         saveSnapshot: jest.fn(),
       };

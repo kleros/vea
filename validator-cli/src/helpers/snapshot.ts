@@ -37,6 +37,9 @@ export interface SaveSnapshotParams {
   now?: number;
 }
 
+// A snapshot is sent only while at least this long is left in its epoch on the inbox chain.
+export const SEND_MARGIN_SECS = 30;
+
 export const saveSnapshot = async ({
   chainId,
   veaInbox,
@@ -71,6 +74,22 @@ export const saveSnapshot = async ({
     now,
   });
   if (!snapshotNeeded) return { transactionHandler, latestCount };
+  // The checks above can take minutes (log scans), and the inbox files the snapshot under its own
+  // chain's epoch at inclusion. Re-read the inbox chain's time and send only while the epoch
+  // decided on still has SEND_MARGIN_SECS left; otherwise the snapshot would land in the next one.
+  const epoch = Math.floor(now / epochPeriod);
+  const inboxNow = await chainNow(veaInboxProvider);
+  if (Math.floor((inboxNow + SEND_MARGIN_SECS) / epochPeriod) != epoch) {
+    emitter.emit(BotEvents.ALERT, {
+      level: "warn",
+      code: "SNAPSHOT_EPOCH_ENDED",
+      chainId,
+      network,
+      epoch,
+      details: { inboxNow, epochEnd: (epoch + 1) * epochPeriod },
+    });
+    return { transactionHandler, latestCount: count };
+  }
   await transactionHandler.saveSnapshot();
   return { transactionHandler, latestCount };
 };
