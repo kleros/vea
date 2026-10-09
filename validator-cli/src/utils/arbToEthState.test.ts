@@ -327,6 +327,24 @@ describe("arbToEthState", () => {
       expect(result![1]).toBe(finalized);
     });
 
+    it("finds a batch delivered after the L1 head the caller read, scanning back from the current head", async () => {
+      const { route, fake } = setup();
+      const finalized = route.inbox.block("finalized").number;
+      const delivered = fake.deliveryBlock(fake.batchOf(finalized))!;
+      const result = await ArbBlockToL1Block(
+        fake.nodeInterface,
+        fake.sequencer,
+        route.inbox.block("finalized") as any,
+        route.router.block("finalized").number - 7000,
+        route.inbox.block("finalized").number - 1000,
+        false,
+        delivered - 1
+      );
+      expect(result![0].number).toBe(delivered);
+      // Backward from the head: the first chunk scanned ends at the current L1 head.
+      expect(fake.l1Scans[0][1]).toBe(route.router.block("latest").number);
+    });
+
     it("returns undefined without an unfiltered SequencerBatchDelivered scan when the batch is unknown", async () => {
       const { route, fake } = setup();
       fake.failBatchLookup = () => true;

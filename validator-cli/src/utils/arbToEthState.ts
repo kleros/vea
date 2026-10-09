@@ -7,7 +7,7 @@ import { getArbitrumNetwork } from "@arbitrum/sdk";
 import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/SequencerInbox__factory";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
-import { findFirstLog, findLatestLog } from "./logScanner";
+import { findLatestLog } from "./logScanner";
 
 // https://github.com/prysmaticlabs/prysm/blob/493905ee9e33a64293b66823e69704f012b39627/config/params/mainnet_config.go#L103
 const slotsPerEpochEth = 32;
@@ -536,7 +536,7 @@ const findFinalityFallback = async ({
  * @param fromBlockEth from block number on Eth
  * @param fromArbBlock from block number on Arb
  * @param fallbackLatest fallback to latest L2 block if the L2 block is not found on L1
- * @param toBlockEth the L1 head the scan stops at
+ * @param toBlockEth the L1 head read before this lookup; the scan reaches at least this far
  *
  * @returns [L1Block, L2BlockNumberFallback], or undefined when the batch or its delivery is unknown
  */
@@ -572,12 +572,17 @@ const ArbBlockToL1Block = async (
   /**
    * We use the batch number to query the L1 sequencerInbox's SequencerBatchDelivered event
    * then, we get its emitted transaction hash.
+   *
+   * The batch lookup above runs after `toBlockEth` was read, so the Arbitrum node can already
+   * know a batch delivered past it: the scan reaches the L1 head as it is now. A batch is
+   * delivered once and recently, so the scan runs backward from the head.
    */
-  const emittedEvent = await findFirstLog({
+  const l1Head = Math.max(toBlockEth, await sequencer.provider.getBlockNumber());
+  const emittedEvent = await findLatestLog({
     contract: sequencer,
     filter: sequencer.filters.SequencerBatchDelivered(batch),
     fromBlock: fromBlockEth,
-    toBlock: toBlockEth,
+    toBlock: l1Head,
   });
   if (!emittedEvent) {
     return undefined;
