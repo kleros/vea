@@ -6,8 +6,23 @@ import { redactRpcError, redactUrl } from "./fallbackProvider";
 type RPCEndpoint = { url: string; label?: string };
 
 /**
+ * Whether a `send` failure is the node answering that the call reverted. ethers v5 throws the
+ * JSON-RPC error (`code` 3, or -32000 with "execution reverted") as `err.error`, with the raw
+ * response in `err.body`. Every healthy endpoint gives the same answer, so it is the call's
+ * result, not an endpoint failure.
+ */
+export const isExecutionRevert = (err: any): boolean => {
+  const rpcError = err?.error ?? err;
+  if (rpcError?.code === 3) return true;
+  return (
+    /execution reverted/i.test(String(rpcError?.message ?? "")) || /execution reverted/i.test(String(err?.body ?? ""))
+  );
+};
+
+/**
  * ethers v5 (`@ethersproject/providers`) JSON-RPC provider that transparently fails over to the next
- * endpoint when a request fails.
+ * endpoint when a request fails. A reverted call is rethrown as is: it is not retried elsewhere
+ * nor logged as an RPC failure (callers such as the `findBatchContainingBlock` bisection expect it).
  */
 export class FallbackProviderV5 extends JsonRpcProvider {
   private endpoints: RPCEndpoint[];
@@ -41,6 +56,7 @@ export class FallbackProviderV5 extends JsonRpcProvider {
         }
         return result;
       } catch (err: any) {
+        if (isExecutionRevert(err)) throw err;
         lastErr = err;
         this.emitter.emit(BotEvents.RPC_FAILURE, {
           method,

@@ -81,6 +81,32 @@ describe("RPC URL redaction", () => {
     expect(recoveries[0]).toMatchObject({ from: "https://primary.example:8545", to: "https://backup.example" });
   });
 
+  it("FallbackProviderV5 rethrows a reverted call without failing over or logging RPC_FAILURE", async () => {
+    // ethers v5 throws the JSON-RPC error as `err.error`, the raw response in `err.body`.
+    const reverted = (rpcError: { code: number; message: string }) =>
+      Object.assign(ethersLikeError(PRIMARY), {
+        error: Object.assign(new Error(rpcError.message), { code: rpcError.code }),
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, error: rpcError }),
+      });
+
+    for (const rpcError of [
+      { code: 3, message: "execution reverted" },
+      { code: -32000, message: "execution reverted" },
+    ]) {
+      const emitter = new EventEmitter();
+      const failures = capture(emitter, BotEvents.RPC_FAILURE);
+      const provider: any = new FallbackProviderV5([PRIMARY, BACKUP], emitter);
+      const err = reverted(rpcError);
+      provider.inner[0] = { send: jest.fn(async () => Promise.reject(err)) };
+      provider.inner[1] = { send: jest.fn(async () => "0x10") };
+
+      await expect(provider.send("eth_call", [])).rejects.toBe(err);
+
+      expect(failures).toHaveLength(0);
+      expect(provider.inner[1].send).not.toHaveBeenCalled();
+    }
+  });
+
   describe("logger", () => {
     const sinkAndEmitter = () => {
       const sink = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
