@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IAxelarGateway} from "@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol";
 import {IAxelarGasService} from "@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol";
 import {Reporter} from "../Reporter.sol";
+import {PaidReporter} from "../PaidReporter.sol";
 
-contract AxelarReporter is Reporter, Ownable {
+contract AxelarReporter is PaidReporter {
     using Strings for uint256;
 
     string public constant PROVIDER = "axelar";
@@ -25,21 +25,23 @@ contract AxelarReporter is Reporter, Ownable {
     event FeeSet(uint256 fee);
 
     constructor(
-        address headerStorage,
         address yaho,
         address axelarGateway,
-        address axelarGasService
-    ) Reporter(headerStorage, yaho) {
+        address axelarGasService,
+        address governor_,
+        address keeper_
+    ) Reporter(yaho, governor_, keeper_) {
         AXELAR_GATEWAY = IAxelarGateway(axelarGateway);
         AXELAR_GAS_SERVICE = IAxelarGasService(axelarGasService);
     }
 
-    function setChainNameByChainId(uint256 chainId, string calldata chainName) external onlyOwner {
+    function setChainNameByChainId(uint256 chainId, string calldata chainName) external onlyByGovernor {
         chainNames[chainId] = chainName;
         emit ChainNameSet(chainId, chainName);
     }
 
-    function setFee(uint256 fee_) external onlyOwner {
+    function setFee(uint256 fee_) external onlyByGovernorOrKeeper {
+        _checkKeeperUpdate(keccak256("fee"), fee, fee_);
         fee = fee_;
         emit FeeSet(fee_);
     }
@@ -69,6 +71,4 @@ contract AxelarReporter is Reporter, Ownable {
         AXELAR_GATEWAY.callContract(targetChainName, sAdapter, payload);
         return bytes32(0);
     }
-
-    receive() external payable {}
 }

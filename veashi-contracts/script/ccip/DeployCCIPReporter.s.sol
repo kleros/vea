@@ -12,17 +12,17 @@ contract DeployCCIPReporter is DeploymentState {
     function run() external {
         // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
+        address deployer = vm.addr(pk);
         vm.startBroadcast(pk);
 
         //
         // Deploy & configure CCIPReporter
         //
-        address headerStorage = vm.envAddress("HEADER_STORAGE");
         address yaho = vm.envOr("YAHO_ADDRESS", address(0));
         if (yaho == address(0)) yaho = _loadAddress(".yaho");
         address router = vm.envAddress("CCIP_REPORTER_ROUTER");
 
-        CCIPReporter reporter = new CCIPReporter(headerStorage, yaho, router);
+        CCIPReporter reporter = new CCIPReporter(yaho, router, deployer, deployer);
         _updateLocal("ccipReporter", address(reporter));
         console.log("CCIPReporter deployed at:", address(reporter));
 

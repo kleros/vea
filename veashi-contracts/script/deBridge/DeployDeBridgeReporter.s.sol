@@ -10,7 +10,7 @@ contract DeployDeBridgeReporter is DeploymentState {
     function run() external {
         // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
-        address headerStorage = vm.envAddress("HEADER_STORAGE");
+        address deployer = vm.addr(pk);
         address yaho = vm.envAddress("YAHO_ADDRESS");
         uint256 fee = vm.envUint("DEBRIDGE_REPORTER_FEE");
         address reporterDeBridgeGate = vm.envAddress("DEBRIDGE_REPORTER_GATE_ADDRESS");
@@ -20,7 +20,7 @@ contract DeployDeBridgeReporter is DeploymentState {
         //
         // Deploy & configure DeBridgeReporter
         //
-        DeBridgeReporter reporter = new DeBridgeReporter(headerStorage, yaho, reporterDeBridgeGate);
+        DeBridgeReporter reporter = new DeBridgeReporter(yaho, reporterDeBridgeGate, deployer, deployer);
         _updateLocal("deBridgeReporter", address(reporter));
         console.log(" DeBridgeReporter deployed at:", address(reporter));
 

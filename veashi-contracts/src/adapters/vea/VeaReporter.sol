@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {VeaAdapter} from "./VeaAdapter.sol";
 import {Reporter} from "../Reporter.sol";
 import {ISenderGateway} from "./interfaces/ISenderGateway.sol";
 import {IVeaInbox} from "./interfaces/IVeaInbox.sol";
@@ -17,12 +16,13 @@ contract VeaReporter is ISenderGateway, Reporter {
     error InvalidTargetChainId(uint256 targetChainId, uint256 expectedTargetChainId);
 
     constructor(
-        address headerStorage,
         address yaho,
         IVeaInbox veaInbox_,
         address adapter,
-        uint256 expectedTargetChainId
-    ) Reporter(headerStorage, yaho) {
+        uint256 expectedTargetChainId,
+        address governor_,
+        address keeper_
+    ) Reporter(yaho, governor_, keeper_) {
         VEA_INBOX = veaInbox_;
         ADAPTER = adapter;
         EXPECTED_TARGET_CHAIN_ID = expectedTargetChainId;

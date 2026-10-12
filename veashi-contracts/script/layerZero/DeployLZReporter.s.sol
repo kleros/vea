@@ -18,7 +18,6 @@ contract DeployLZReporter is DeploymentState {
         uint256 pk = vm.envUint("DEPLOYER_KEY");
         address deployer = vm.addr(pk);
 
-        address headerStorage = vm.envAddress("HEADER_STORAGE");
         address yaho = vm.envOr("YAHO_ADDRESS", address(0));
         address lzEndpoint = vm.envAddress("LZ_REPORTER_ENDPOINT");
         uint128 defaultFee = uint128(vm.envUint("LZ_DEFAULT_FEE"));
@@ -27,12 +26,13 @@ contract DeployLZReporter is DeploymentState {
 
         vm.startBroadcast(pk);
         LayerZeroReporter reporter = new LayerZeroReporter(
-            headerStorage,
             yaho,
             lzEndpoint,
             deployer, // delegate
             deployer, // refundAddress
-            defaultFee
+            defaultFee,
+            deployer, // governor
+            deployer // keeper
         );
         vm.stopBroadcast();
         _updateLocal("lzReporter", address(reporter));

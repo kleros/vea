@@ -1,38 +1,31 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {IHeaderStorage} from "../interfaces/IHeaderStorage.sol";
+import {MessageIdCalculator} from "@hashi/utils/MessageIdCalculator.sol";
 import {IReporter} from "../interfaces/IReporter.sol";
 import {IAdapter} from "../interfaces/IAdapter.sol";
+import {IDispatchVoucher} from "../interfaces/IDispatchVoucher.sol";
+import {Governed} from "../governance/Governed.sol";
+import {KeeperGoverned} from "../governance/KeeperGoverned.sol";
 
-abstract contract Reporter is IReporter {
-    address public immutable HEADER_STORAGE;
+abstract contract Reporter is IReporter, KeeperGoverned, MessageIdCalculator {
     address public immutable YAHO;
+    /// @dev The one contract (a gateway) whose vouched messages this reporter pays to dispatch.
+    address public dispatcher;
 
     modifier onlyYaho() {
         if (msg.sender != YAHO) revert NotYaho(msg.sender, YAHO);
         _;
     }
 
-    constructor(address headerStorage, address yaho) {
-        HEADER_STORAGE = headerStorage;
+    constructor(address yaho, address governor_, address keeper_) Governed(governor_) KeeperGoverned(keeper_) {
         YAHO = yaho;
     }
 
-    /// @inheritdoc IReporter
-    function dispatchBlocks(
-        uint256 targetChainId,
-        IAdapter adapter,
-        uint256[] memory blockNumbers
-    ) external payable returns (bytes32) {
-        bytes32[] memory blockHeaders = IHeaderStorage(HEADER_STORAGE).storeBlockHeaders(blockNumbers);
-        for (uint256 i = 0; i < blockNumbers.length; ) {
-            emit BlockDispatched(targetChainId, adapter, blockNumbers[i], blockHeaders[i]);
-            unchecked {
-                ++i;
-            }
-        }
-        return _dispatch(targetChainId, address(adapter), blockNumbers, blockHeaders);
+    /// @notice Sets the only dispatcher; replacing it makes an in-flight dispatch of the old one revert.
+    function setDispatcher(address dispatcher_) external onlyByGovernor {
+        dispatcher = dispatcher_;
+        emit DispatcherSet(dispatcher_);
     }
 
     /// @inheritdoc IReporter
@@ -41,14 +34,27 @@ abstract contract Reporter is IReporter {
         IAdapter adapter,
         uint256[] memory messageIds,
         bytes32[] memory messageHashes
-    ) external payable onlyYaho returns (bytes32) {
+    ) external onlyYaho returns (bytes32) {
+        if (messageIds.length == 0 || messageIds.length != messageHashes.length) {
+            revert InvalidMessageArrays(messageIds.length, messageHashes.length);
+        }
+        address dispatcher_ = dispatcher;
+        if (dispatcher_ == address(0)) revert DispatcherNotSet();
         for (uint256 i = 0; i < messageIds.length; ) {
+            uint256 expectedMessageId = calculateMessageId(block.chainid, YAHO, messageHashes[i]);
+            if (messageIds[i] != expectedMessageId) revert MessageIdMismatch(messageIds[i], expectedMessageId);
+            if (!IDispatchVoucher(dispatcher_).isDispatching(messageHashes[i])) {
+                revert MessageNotVouched(dispatcher_, messageHashes[i]);
+            }
             emit MessageDispatched(targetChainId, adapter, messageIds[i], messageHashes[i]);
             unchecked {
                 ++i;
             }
         }
-        return _dispatch(targetChainId, address(adapter), messageIds, messageHashes);
+        bytes32 result = _dispatch(targetChainId, address(adapter), messageIds, messageHashes);
+        // The bridge call may reach the governor: a dispatcher replaced meanwhile voids this dispatch.
+        if (dispatcher != dispatcher_) revert DispatcherReplaced(dispatcher_, dispatcher);
+        return result;
     }
 
     function _dispatch(

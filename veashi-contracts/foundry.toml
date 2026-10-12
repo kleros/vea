@@ -1,6 +1,8 @@
 [profile.default]
 src = "src"
 out = "out"
+solc = "0.8.30"
+evm_version = "cancun"
 via_ir = true
 libs = ["lib","../node_modules/"]
 fs_permissions = [

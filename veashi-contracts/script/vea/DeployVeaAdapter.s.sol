@@ -11,6 +11,7 @@ contract DeployVeaAdapter is DeploymentState {
     function run() external {
         // start broadcasting as your deployer
         uint256 pk = vm.envUint("DEPLOYER_KEY");
+        address deployer = vm.addr(pk);
         vm.startBroadcast(pk);
 
         //
@@ -18,7 +19,7 @@ contract DeployVeaAdapter is DeploymentState {
         //
         address veaOutbox = vm.envAddress("VEA_OUTBOX");
         uint256 sourceChain = vm.envUint("VEA_SOURCE_CHAIN_ID");
-        VeaAdapter adapter = new VeaAdapter(veaOutbox, sourceChain);
+        VeaAdapter adapter = new VeaAdapter(veaOutbox, sourceChain, deployer);
         _updateLocal("veaAdapter", address(adapter));
         console.log("VeaAdapter deployed at:", address(adapter));
 

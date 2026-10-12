@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Reporter} from "../Reporter.sol";
+import {PaidReporter} from "../PaidReporter.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/libraries/Client.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract CCIPReporter is Reporter, Ownable {
+contract CCIPReporter is PaidReporter {
     using SafeERC20 for IERC20;
 
     string public constant PROVIDER = "ccip";
 
     IRouterClient public immutable CCIP_ROUTER;
 
-    uint256 public fee;
     uint256 public defaultGasLimit = 200_000;
     /// @dev ERC20 used to pay CCIP fees. address(0) = pay in native.
     /// Required on chains with no native gas token (e.g. Tempo -> pathUSD).
@@ -26,33 +25,33 @@ contract CCIPReporter is Reporter, Ownable {
     error InsufficientFeeBalance(uint256 required, uint256 available);
 
     event ChainSelectorSet(uint256 indexed chainId, uint64 indexed chainSelector);
-    event FeeSet(uint256 fee);
     event FeeTokenSet(address indexed feeToken);
     event DefaultGasLimitSet(uint256 defaultGasLimit);
 
-    constructor(address headerStorage, address yaho, address ccipRouter) Reporter(headerStorage, yaho) {
+    constructor(
+        address yaho,
+        address ccipRouter,
+        address governor_,
+        address keeper_
+    ) Reporter(yaho, governor_, keeper_) {
         CCIP_ROUTER = IRouterClient(ccipRouter);
     }
 
-    function setChainSelectorByChainId(uint256 chainId, uint64 chainSelector) external onlyOwner {
+    function setChainSelectorByChainId(uint256 chainId, uint64 chainSelector) external onlyByGovernor {
         chainSelectors[chainId] = chainSelector;
         emit ChainSelectorSet(chainId, chainSelector);
     }
 
-    function setFee(uint256 fee_) external onlyOwner {
-        fee = fee_;
-        emit FeeSet(fee_);
-    }
-
     /// @notice Set the ERC20 used to pay CCIP fees. address(0) pays in native.
-    function setFeeToken(address feeToken_) external onlyOwner {
+    function setFeeToken(address feeToken_) external onlyByGovernor {
         feeToken = feeToken_;
         emit FeeTokenSet(feeToken_);
     }
 
     /// @notice Destination execution gas limit. Chains that price state creation
     /// higher (e.g. Tempo TIP-1000: 250k gas per new storage slot) need this raised.
-    function setDefaultGasLimit(uint256 defaultGasLimit_) external onlyOwner {
+    function setDefaultGasLimit(uint256 defaultGasLimit_) external onlyByGovernorOrKeeper {
+        _checkKeeperUpdate(keccak256("defaultGasLimit"), defaultGasLimit, defaultGasLimit_);
         defaultGasLimit = defaultGasLimit_;
         emit DefaultGasLimitSet(defaultGasLimit_);
     }
@@ -71,7 +70,11 @@ contract CCIPReporter is Reporter, Ownable {
             receiver: abi.encode(adapter),
             data: payload,
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array - no tokens are transferred
-            extraArgs: Client._argsToBytes(Client.EVMExtraArgsV1({gasLimit: defaultGasLimit})),
+            // V2 with out-of-order execution allowed, which lanes that enforce it require: each message
+            // stores independent ids and hashes and Yaru executes by id, so delivery order does not matter.
+            extraArgs: Client._argsToBytes(
+                Client.GenericExtraArgsV2({gasLimit: defaultGasLimit, allowOutOfOrderExecution: true})
+            ),
             feeToken: feeToken_ // address(0) = native, otherwise an ERC20 accepted by the router
         });
 
@@ -90,6 +93,4 @@ contract CCIPReporter is Reporter, Ownable {
         }
         return messageId;
     }
-
-    receive() external payable {}
 }
