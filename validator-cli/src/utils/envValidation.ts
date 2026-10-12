@@ -56,6 +56,7 @@ export interface ValidateEnvironmentParams {
   ) => Promise<{ balance: bigint; allowance: bigint }>;
   readOutboxHashClaim?: ReadOutboxHashClaim;
   emitter?: EventEmitter;
+  probeTimeoutMs?: number;
 }
 
 const splitList = (value: string | undefined): string[] =>
@@ -136,6 +137,25 @@ const ERC20_ABI = [
 export const defaultCreateProvider = (urls: string[], _expectedChainId: number): PreflightProvider =>
   new FallbackRpcProvider(urls, defaultEmitter) as unknown as PreflightProvider;
 
+/**
+ * How long one endpoint's `eth_chainId` probe may take. Without a bound, an endpoint that
+ * drops packets (no answer, no refusal) holds startup for ethers' 300 s request timeout.
+ */
+export const PROBE_TIMEOUT_MS = 10_000;
+
+/** `promise`, or a rejection once `ms` passes first. The timer never outlives the race. */
+const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
+  let timer: NodeJS.Timeout | undefined;
+  const timedOut = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer within ${ms} ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timedOut]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 const defaultReadDepositTokenBalance = async (
   token: string,
   owner: string,
@@ -168,6 +188,7 @@ export const validateEnvironment = async ({
   readDepositTokenBalance = defaultReadDepositTokenBalance,
   readOutboxHashClaim = defaultReadOutboxHashClaim,
   emitter = defaultEmitter,
+  probeTimeoutMs = PROBE_TIMEOUT_MS,
 }: ValidateEnvironmentParams = {}): Promise<ValidatedEnvironment> => {
   const problems: string[] = [];
   const warnings: string[] = [];
@@ -192,6 +213,7 @@ export const validateEnvironment = async ({
     readDepositTokenBalance,
     readOutboxHashClaim,
     emitter,
+    probeTimeoutMs,
   });
 
   if (problems.length > 0) throw new EnvValidationError(redactAll(problems));
@@ -222,6 +244,7 @@ interface PreflightParams {
   ) => Promise<{ balance: bigint; allowance: bigint }>;
   readOutboxHashClaim: ReadOutboxHashClaim;
   emitter: EventEmitter;
+  probeTimeoutMs: number;
 }
 
 /** One endpoint the bot will actually talk to, and what it is expected to be. */
@@ -257,6 +280,7 @@ const runPreflight = async ({
   readDepositTokenBalance,
   readOutboxHashClaim,
   emitter,
+  probeTimeoutMs,
 }: PreflightParams): Promise<void> => {
   // Every configured route's config up front: one environment variable feeds
   // several lists (RPC_ARB every inbox, RPC_ETH an outbox and a router), and an
@@ -266,12 +290,10 @@ const runPreflight = async ({
   const probe = (url: string, expectedChainId: number): Promise<ProbeResult> => {
     let result = probes.get(url);
     if (!result) {
-      result = createProvider([url], expectedChainId)
-        .getNetwork()
-        .then(
-          (network): ProbeResult => ({ chainId: Number(network.chainId) }),
-          (error): ProbeResult => ({ error: (error as Error)?.message })
-        );
+      result = withTimeout(createProvider([url], expectedChainId).getNetwork(), probeTimeoutMs).then(
+        (network): ProbeResult => ({ chainId: Number(network.chainId) }),
+        (error): ProbeResult => ({ error: (error as Error)?.message })
+      );
       probes.set(url, result);
     }
     return result;

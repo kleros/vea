@@ -232,7 +232,7 @@ async function challengeAndCheckRelay({
     challenged: false,
     toRelay: false,
   };
-  if (onChainSnapshot !== claim.stateRoot && isNotChallenged) {
+  if (String(onChainSnapshot).toLowerCase() !== String(claim.stateRoot).toLowerCase() && isNotChallenged) {
     await transactionHandler.challengeClaim();
     challengeAndRelayState.challenged = true;
   }

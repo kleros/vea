@@ -653,7 +653,7 @@ const ARB_GOOD = "https://arb-good.example/rpc";
 const GNO_GOOD = "https://gno-good.example/rpc";
 const GNO_DOWN = "https://gno-down.example/rpc";
 
-type Served = { chainId: number; down?: boolean };
+type Served = { chainId: number; down?: boolean; silent?: boolean };
 
 const SERVED: Record<string, Served> = {
   [ETH_DOWN]: { chainId: SEPOLIA, down: true },
@@ -668,6 +668,7 @@ const ur_providerFactory = (served: Record<string, Served> = SERVED) =>
   jest.fn((urls: string[], _expected: number) => ({
     getNetwork: jest.fn(async () => {
       const endpoint = served[urls[0]];
+      if (endpoint.silent) return new Promise<never>(() => {});
       if (endpoint.down) throw new Error(`missing response (url="${urls[0]}")`);
       return { chainId: endpoint.chainId };
     }),
@@ -739,6 +740,18 @@ describe("validateEnvironment: an unreachable RPC URL is pruned, not fatal", () 
       }),
     ]);
     expect(JSON.stringify({ warnings: result.warnings, alerts })).not.toContain(KEY);
+  });
+
+  it("prunes an endpoint that never answers once the probe timeout passes", async () => {
+    const { getBridgeConfig } = loadBridgeRoutes({ RPC_ARB: ARB_GOOD, RPC_ETH: `${ETH_DOWN},${ETH_GOOD}` });
+    const createProvider = ur_providerFactory({ ...SERVED, [ETH_DOWN]: { chainId: SEPOLIA, silent: true } });
+
+    const result = await run(getBridgeConfig, [SEPOLIA], { createProvider, probeTimeoutMs: 20 });
+
+    expect(getBridgeConfig(SEPOLIA).outboxRPC).toEqual([ETH_GOOD]);
+    expect(result.warnings.some((w) => w.includes("RPC_ETH endpoint 1") && w.includes("no answer within 20 ms"))).toBe(
+      true
+    );
   });
 
   it("prunes the URL from every list that holds it: RPC_ETH feeds the Sepolia outbox and the Chiado router", async () => {

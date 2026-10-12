@@ -131,6 +131,15 @@ describe("validator", () => {
       expect(theirs.outcomes).toEqual([EpochOutcome.DONE]);
     });
 
+    it("does not challenge a claim whose root matches snapshots[E] in a different hex case", async () => {
+      const root = "0x" + "ab".repeat(32);
+      const s = setup(claimStruct({ stateRoot: root.toUpperCase().replace("0X", "0x"), claimer: OTHER }));
+      s.veaInbox.snapshots = jest.fn(s.route.inbox.pinned(() => root));
+      await challengeAndResolveClaim(s.params);
+      expect(s.handler.challengeClaim).not.toHaveBeenCalled();
+      expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+    });
+
     it("reports UNDECIDABLE when the challenge cannot be funded", async () => {
       const s = setup();
       s.handler.challengeClaim = jest.fn().mockRejectedValue(new CannotFundError("challenge"));
