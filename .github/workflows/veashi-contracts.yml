@@ -46,7 +46,9 @@ jobs:
           HUSKY: 0
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+        with:
+          version: v1.8.5
 
       - name: Forge build
         run: forge build

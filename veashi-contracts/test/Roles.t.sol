@@ -10,6 +10,7 @@ import {LayerZeroAdapter} from "../src/adapters/layerZero/LayerZeroAdapter.sol";
 import {DeBridgeAdapter} from "../src/adapters/deBridge/DeBridgeAdapter.sol";
 import {AxelarAdapter} from "../src/adapters/axelar/AxelarAdapter.sol";
 import {VeaAdapter} from "../src/adapters/vea/VeaAdapter.sol";
+import {DeBridgeReporter} from "../src/adapters/deBridge/DeBridgeReporter.sol";
 import {VeashiTestBase} from "./utils/VeashiTestBase.sol";
 import "./utils/Mocks.sol";
 
@@ -73,8 +74,9 @@ contract RolesTest is VeashiTestBase {
         }
     }
 
-    function test_RowGovernor_ChangeGovernorOnEveryContract() public {
-        address[10] memory targets = [
+    /// @dev Every reporter and adapter.
+    function _governedContracts() internal view returns (address[10] memory) {
+        return [
             address(ccipReporter),
             address(lzReporter),
             address(deBridgeReporter),
@@ -86,6 +88,10 @@ contract RolesTest is VeashiTestBase {
             address(axelarAdapter),
             address(veaAdapter)
         ];
+    }
+
+    function test_RowGovernor_ChangeGovernorOnEveryContract() public {
+        address[10] memory targets = _governedContracts();
         address newGovernor = makeAddr("newGovernor");
         for (uint256 i = 0; i < targets.length; i++) {
             _assertGovernorOnly(targets[i], abi.encodeCall(Governed.changeGovernor, (newGovernor)));
@@ -97,6 +103,26 @@ contract RolesTest is VeashiTestBase {
             vm.prank(newGovernor);
             Governed(targets[i]).changeGovernor(governor);
         }
+    }
+
+    /// A zero governor would lock the contract (and, on the LayerZero contracts, hand the OZ owner to address(0)).
+    function test_ChangeGovernorRejectsZeroOnEveryContract() public {
+        address[10] memory targets = _governedContracts();
+        for (uint256 i = 0; i < targets.length; i++) {
+            vm.prank(governor);
+            vm.expectRevert(Governed.ZeroGovernor.selector);
+            Governed(targets[i]).changeGovernor(address(0));
+            assertEq(Governed(targets[i]).governor(), governor);
+        }
+        assertEq(lzReporter.owner(), governor);
+        assertEq(lzAdapter.owner(), governor);
+    }
+
+    function test_ConstructorRejectsZeroGovernor() public {
+        vm.expectRevert(Governed.ZeroGovernor.selector);
+        new CCIPAdapter(address(ccipRouter), address(0));
+        vm.expectRevert(Governed.ZeroGovernor.selector);
+        new DeBridgeReporter(address(yaho), address(deBridgeGate), address(0), keeper);
     }
 
     function test_RowGovernor_ChainMapsAndIds() public {

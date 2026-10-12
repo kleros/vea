@@ -7,6 +7,7 @@ abstract contract Governed {
     address public governor;
 
     error GovernorOnly();
+    error ZeroGovernor();
 
     event GovernorChanged(address indexed previousGovernor, address indexed newGovernor);
 
@@ -16,12 +17,15 @@ abstract contract Governed {
     }
 
     constructor(address governor_) {
+        if (governor_ == address(0)) revert ZeroGovernor();
         governor = governor_;
         emit GovernorChanged(address(0), governor_);
     }
 
-    /// @notice Hands the contract over to a new governor.
+    /// @notice Hands the contract over to a new governor. There is no zero governor: it would lock the
+    /// contract, and on LayerZero contracts hand the OZ ownership to address(0) as well.
     function changeGovernor(address newGovernor) external onlyByGovernor {
+        if (newGovernor == address(0)) revert ZeroGovernor();
         _setGovernor(newGovernor);
     }
 
