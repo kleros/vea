@@ -44,12 +44,20 @@ contracts:
     events:
       - event: MessageDispatched
 chains:
-  - id: 421614
-    # Earlier of inbox's start block (189388217) and yaho's (92669889) — see
-    # Global Constraints in the plan for why this differs from either source.
+  # ---------------------------------------------------------------------------
+  # Chain `start_block` is the earliest deployment on that chain. Where a chain
+  # carries several contracts deployed at different times, the later ones set
+  # their own `start_block` so nothing is scanned before it exists.
+  # Yaho addresses come from veashi-sdk/addresses/<src>-<dst>.json (one Yaho
+  # per source chain per route; routes sharing a deployment are listed once).
+  # ---------------------------------------------------------------------------
+
+  # ----- Testnets -----
+  - id: 421614 # Arbitrum Sepolia
     start_block: 92669889
     contracts:
       - name: VeaInboxArbToEth
+        start_block: 189388217
         address:
           - 0x8B925669606026CcCfAFD72840F5b0CAeDA80078 # ArbToEth Testnet
           - 0x45138BC4E364A16919C4571699171d774A7590BD # ArbToEth Devnet
@@ -57,33 +65,104 @@ chains:
           - 0x162f826E18380567CE0548395a3Ad2A54EA87B96 # ArbToGnosis Testnet
       - name: Yaho
         address:
-          - 0xDbdF80c87f414fac8342e04D870764197bD3bAC7
-  - id: 11155111
+          - 0xDbdF80c87f414fac8342e04D870764197bD3bAC7 # 421614-11155111, 421614-10200, 421614-84532
+  - id: 11155111 # Ethereum Sepolia
     start_block: 9100938
     contracts:
       - name: VeaOutbox
         address:
           - 0xf720FA4575FB2FE96c7f05B1b5abc2d281cDa09a # ArbToEth Testnet
           - 0x60af9Fc1dd7d5bce69a66A8AEf456952b03A39C7 # ArbToEth Devnet
-  - id: 10200
+      - name: Yaho
+        start_block: 11115803
+        address:
+          - 0xb286025885808F2A2D42cd9e2204D007f52b135e # 11155111-84532 (block 11115803)
+          - 0xc7adf4dED023475f1b601E39444634DF4Ca62905 # 11155111-5042002 (block 11666202)
+  - id: 10200 # Gnosis Chiado
     start_block: 17544965
     contracts:
       - name: VeaOutbox
         address:
           - 0x879A9F4476D4445A1deCf40175a700C4c829824D # ArbToGnosis Devnet
           - 0x15aC29269b044E1d9042F597513B27Ffa4A7f257 # ArbToGnosis Testnet
-  - id: 1514
+  - id: 84532 # Base Sepolia
+    start_block: 43182223
+    contracts:
+      - name: Yaho
+        address:
+          - 0xcfD14674659bB15D0304a3608239a46A14d77554 # 84532-11155111 (block 43182223)
+          - 0xf69BCD5Ff8A64919BE217bC017454aba4f6daa9D # 84532-421614 (block 43265524)
+  - id: 5042002 # Arc Testnet
+    start_block: 60881780
+    # Newer HyperSync chain not yet in envio's built-in chain table; endpoint given explicitly.
+    hypersync_config:
+      url: https://5042002.hypersync.xyz
+    contracts:
+      - name: Yaho
+        address:
+          - 0x644Be3a596F082CC36D0bD929ABe855180536ac3 # 5042002-11155111
+
+  # ----- Mainnets -----
+  - id: 1 # Ethereum
+    start_block: 25373011
+    contracts:
+      - name: Yaho
+        address:
+          - 0x47F3Ba12550dFA097c77A10eB6472a881Ea5AA0e # 1-8453 (block 25373011)
+          - 0xA6243C9DDf54de341De4D30F6955bdF50dE8e488 # 1-4663 (block 25870527)
+          - 0x44d3d3d8cB731958Df78DAf531b16E23DfB27450 # 1-4217 (block 25888168)
+          - 0x969AB2aC35EC63AB70C70e5ab604Cf48e8367A95 # 1-5042 (block 26003178)
+  - id: 42161 # Arbitrum One
+    start_block: 427763138
+    contracts:
+      - name: Yaho
+        address:
+          - 0xD0375320591ff87797CEb03CBeE80C82fD61BC77 # 42161-1514, 42161-8453 (block 427763138)
+          - 0xd578fa969579CB7b560446D486C8451cd454C8cd # 42161-4663 (block 500069401)
+          - 0x8d0FEC421618dD7c82fB3009DB3f27d87F8026df # 42161-4217 (block 500953080)
+  - id: 8453 # Base
+    start_block: 47621992
+    contracts:
+      - name: Yaho
+        address:
+          - 0x88fAa01842E32beA05b167C679443009c3891183 # 8453-1, 8453-42161
+  - id: 1514 # Story
     start_block: 12699901
+    # Not on HyperSync — RPC is the primary data source for this chain.
     rpc:
       url: https://mainnet.storyrpc.io
       for: sync
     contracts:
       - name: Yaho
         address:
-          - 0x0313f25f51f8846fdDFaBCb7F0672e4D3E1C0E76
-  - id: 42161
-    start_block: 427763138
+          - 0x0313f25f51f8846fdDFaBCb7F0672e4D3E1C0E76 # 1514-42161
+  - id: 4217 # Tempo
+    start_block: 37616896
+    # Newer HyperSync chain not yet in envio's built-in chain table; endpoint given explicitly.
+    hypersync_config:
+      url: https://4217.hypersync.xyz
     contracts:
       - name: Yaho
         address:
-          - 0xD0375320591ff87797CEb03CBeE80C82fD61BC77
+          - 0x3e71215c32095fd32c458E683D557709c3cef2f9 # 4217-1 (block 37616896)
+          - 0xC814209b3814165d70B1A21Fa417D7aad67a7bc0 # 4217-42161 (block 37639518)
+  - id: 4663 # Robinhood Chain
+    start_block: 50257797
+    # Newer HyperSync chain not yet in envio's built-in chain table; endpoint given explicitly.
+    hypersync_config:
+      url: https://4663.hypersync.xyz
+    contracts:
+      - name: Yaho
+        address:
+          - 0x644Be3a596F082CC36D0bD929ABe855180536ac3 # 4663-42161 (block 50257797)
+          - 0x7AA0c9376178EBC081eAd5C49801C86Ce834D629 # 4663-1 (block 50287261)
+  - id: 5042 # Arc
+    start_block: 21463879
+    # Newer HyperSync chain not yet in envio's built-in chain table; endpoint given explicitly.
+    hypersync_config:
+      url: https://5042.hypersync.xyz
+    contracts:
+      - name: Yaho
+        address:
+          - 0xd231B305F050aAeA434B8c7339D03cd7483d5610 # 5042-42161 (block 21463879)
+          - 0x12E24D73f0386ACf281fb5d1502fF159df7616Ff # 5042-1 (block 21468436)

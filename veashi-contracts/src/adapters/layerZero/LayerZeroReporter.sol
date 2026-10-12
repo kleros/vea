@@ -6,9 +6,12 @@ import {ILayerZeroEndpointV2, MessagingParams, MessagingFee, MessagingReceipt} f
 import {Reporter} from "../Reporter.sol";
 import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 import {OAppCore} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppCore.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract LayerZeroReporter is Reporter, Ownable, OAppCore {
     using OptionsBuilder for bytes;
+    using SafeERC20 for IERC20;
 
     string public constant PROVIDER = "layer-zero";
     ILayerZeroEndpointV2 public immutable LAYER_ZERO_ENDPOINT;
@@ -72,7 +75,20 @@ contract LayerZeroReporter is Reporter, Ownable, OAppCore {
         );
         // solhint-disable-next-line check-send-result
         MessagingFee memory msgFee = LAYER_ZERO_ENDPOINT.quote(params, address(this));
-        MessagingReceipt memory receipt = LAYER_ZERO_ENDPOINT.send{value: msgFee.nativeFee}(params, refundAddress);
+
+        // Chains without a native gas token (e.g. Tempo) run LayerZero's EndpointV2Alt:
+        // endpoint.nativeToken() returns an ERC20 that stands in for native value, and the
+        // fee is paid by transferring that token to the endpoint rather than via msg.value.
+        // On ordinary chains nativeToken() is address(0) and the native path is used.
+        address nativeErc20 = LAYER_ZERO_ENDPOINT.nativeToken();
+
+        MessagingReceipt memory receipt;
+        if (nativeErc20 == address(0)) {
+            receipt = LAYER_ZERO_ENDPOINT.send{value: msgFee.nativeFee}(params, refundAddress);
+        } else {
+            IERC20(nativeErc20).safeTransfer(address(LAYER_ZERO_ENDPOINT), msgFee.nativeFee);
+            receipt = LAYER_ZERO_ENDPOINT.send(params, refundAddress);
+        }
         return receipt.guid;
     }
 

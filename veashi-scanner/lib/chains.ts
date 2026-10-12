@@ -22,11 +22,15 @@ export const getViemChain = (chainId: number) => Object.values(viemChains).find(
 const RPC_OVERRIDES: Record<number, string | undefined> = {
   1: import.meta.env.VITE_RPC_1, // Ethereum
   1514: import.meta.env.VITE_RPC_1514, // Story
+  4217: import.meta.env.VITE_RPC_4217, // Tempo
+  4663: import.meta.env.VITE_RPC_4663, // Robinhood Chain
+  5042: import.meta.env.VITE_RPC_5042, // Arc
   8453: import.meta.env.VITE_RPC_8453, // Base
   10200: import.meta.env.VITE_RPC_10200, // Gnosis Chiado
   42161: import.meta.env.VITE_RPC_42161, // Arbitrum One
   84532: import.meta.env.VITE_RPC_84532, // Base Sepolia
   421614: import.meta.env.VITE_RPC_421614, // Arbitrum Sepolia
+  5042002: import.meta.env.VITE_RPC_5042002, // Arc Testnet
   11155111: import.meta.env.VITE_RPC_11155111, // Ethereum Sepolia
 };
 

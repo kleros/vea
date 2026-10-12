@@ -5080,7 +5080,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@kleros/vea-relayer-cli@workspace:relayer-cli"
   dependencies:
-    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.0.4"
+    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.1.0"
     "@typechain/ethers-v6": "npm:^0.5.1"
     "@types/jest": "npm:^29.5.14"
     dotenv: "npm:^16.4.5"
@@ -5207,7 +5207,7 @@ __metadata:
   dependencies:
     "@eslint/js": "npm:^9.15.0"
     "@kleros/ui-components-library": "npm:^3.6.0"
-    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.0.4"
+    "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.1.0"
     "@tailwindcss/vite": "npm:^4"
     "@types/node": "npm:22"
     "@types/react": "npm:^18.3.12"
@@ -5224,15 +5224,15 @@ __metadata:
     tailwindcss: "npm:^4"
     typescript: "npm:^5"
     typescript-eslint: "npm:^8.15.0"
-    viem: "npm:^2.47.0"
+    viem: "npm:^2.56.9"
     vite: "npm:^6.4.3"
   languageName: unknown
   linkType: soft
 
-"@kleros/veashi-sdk@npm:@kleros/veashi-sdk@0.0.4":
-  version: 0.0.4
-  resolution: "@kleros/veashi-sdk@npm:0.0.4"
-  checksum: 10/0042ccd609117a15552419b6ce2991d2e9740b99cc7aa2905e786e3f3d1c5631cda8eeb39ca547405d4947f5a115ed338bbf7f6ed346b488cb169ec02942155d
+"@kleros/veashi-sdk@npm:@kleros/veashi-sdk@0.1.0":
+  version: 0.1.0
+  resolution: "@kleros/veashi-sdk@npm:0.1.0"
+  checksum: 10/b8e73dc3acc51687af3f90f9ac76a5836563ca0029df547fd3ce114b93906fc98a3c13534bcc028df6ee33ef1e377282e9758c02b1c86a0fb69eae2668740388
   languageName: node
   linkType: hard
 
@@ -20735,9 +20735,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ox@npm:0.14.25":
-  version: 0.14.25
-  resolution: "ox@npm:0.14.25"
+"ox@npm:0.14.45":
+  version: 0.14.45
+  resolution: "ox@npm:0.14.45"
   dependencies:
     "@adraffy/ens-normalize": "npm:^1.11.0"
     "@noble/ciphers": "npm:^1.3.0"
@@ -20752,7 +20752,7 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10/1e48f9f599f5c1d15a9518c34a6d690831d0964a6d871b162cf7334dd12019ad7521b91b8707e01ee6702781f7111f6d2d9057b5dfb9c6ff4b55f6ef7b62d2e2
+  checksum: 10/44f4414d28a93cfe1f608eba7135a2fe7b153305f25b0af5fc35eb7d345ad452e47423d1045ea3a15035d130bd10874fb71be958d5ed16ad49d97114075cae58
   languageName: node
   linkType: hard
 
@@ -26005,9 +26005,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:^2.47.0":
-  version: 2.51.2
-  resolution: "viem@npm:2.51.2"
+"viem@npm:^2.56.9":
+  version: 2.56.9
+  resolution: "viem@npm:2.56.9"
   dependencies:
     "@noble/curves": "npm:1.9.1"
     "@noble/hashes": "npm:1.8.0"
@@ -26015,14 +26015,14 @@ __metadata:
     "@scure/bip39": "npm:1.6.0"
     abitype: "npm:1.2.3"
     isows: "npm:1.0.7"
-    ox: "npm:0.14.25"
-    ws: "npm:8.20.1"
+    ox: "npm:0.14.45"
+    ws: "npm:8.21.0"
   peerDependencies:
     typescript: ">=5.0.4"
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10/2009ffe0838bc4ca07ad6b3f4ed0a20db83f5c4294ee5ca80562ef2d7993281a20c23b1e899947391677cb74d467ac935a3952722b7994e4c2adf8e2d0743962
+  checksum: 10/cb26e8dc26fb6dae94976fc013debbfd213c4785ce5bfe692d0ddf26b4aa38fc777863d26efceb73f83d95ecbc2d9498e098d06408a5370fa6205d54c49dae5a
   languageName: node
   linkType: hard
 

@@ -26,6 +26,25 @@ Hashi pairs are configured separately (see `HASHI_CHAINS` below).
 | `RPC_CHIADO`                           | Comma-separated RPC URL(s) for Chiado                                           |
 | `RPC_ARBITRUM_SEPOLIA`                 | Comma-separated RPC URL(s) for Arbitrum Sepolia                                 |
 
+### Hashi route RPCs
+
+Each chain on a configured `HASHI_CHAINS` pair needs its RPC variable set (comma-separated URL(s), tried in order). The Hashi executor derives the Yaho/Yaru/Hashi addresses for the pair from `@kleros/veashi-sdk`; only the RPC wiring lives in the relayer.
+
+| Variable               | Chain            | Chain ID |
+| ---------------------- | ---------------- | -------- |
+| `RPC_ETH`              | Ethereum         | 1        |
+| `RPC_STORY`            | Story            | 1514     |
+| `RPC_TEMPO`            | Tempo            | 4217     |
+| `RPC_ROBINHOOD`        | Robinhood Chain  | 4663     |
+| `RPC_ARC`              | Arc              | 5042     |
+| `RPC_BASE`             | Base             | 8453     |
+| `RPC_CHIADO`           | Chiado           | 10200    |
+| `RPC_ARBITRUM_ONE`     | Arbitrum One     | 42161    |
+| `RPC_BASE_SEPOLIA`     | Base Sepolia     | 84532    |
+| `RPC_ARBITRUM_SEPOLIA` | Arbitrum Sepolia | 421614   |
+| `RPC_ARC_TESTNET`      | Arc Testnet      | 5042002  |
+| `RPC_SEPOLIA`          | Sepolia          | 11155111 |
+
 ### Chain selection
 
 | Variable       | Description                                                                                                    |
