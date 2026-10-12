@@ -13,9 +13,12 @@ permissions:
 jobs:
   build-and-push:
     # workflow_dispatch has no native ref filter, so a manual run from any branch
-    # would build that branch and move :latest. The push triggers above are
+    # would publish an image of that branch. The push triggers above are
     # already ref-filtered; this restricts manual runs to the same deploy branch.
     if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/dev'
+    # Publishing waits here for approval. The environment's required reviewers and
+    # its allowed refs (dev, v* tags) are set in the repo settings, not in this file.
+    environment: docker-publish
     runs-on: ubuntu-latest
     permissions:
       # Needed for actions/checkout to fetch code.
@@ -49,6 +52,20 @@ jobs:
           # keeps it out of the Docker build context, which is the whole repo.
           persist-credentials: false
 
+      # :latest is what docker-compose.yml pulls, so it moves only to the highest
+      # release. Pushing a tag for an older version (a backport, a re-tag) must
+      # not roll operators back. Pre-release tags (v1.2.0-rc.1) never match.
+      - id: release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          newest=$(git ls-remote --tags --refs origin 'v*' | sed 's#.*refs/tags/##' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          if [ "$newest" = "$GITHUB_REF_NAME" ]; then
+            echo "newest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "newest=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -66,8 +83,13 @@ jobs:
             org.opencontainers.image.description=${{ matrix.description }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.licenses=MIT
+          # The action's default (latest=auto) adds :latest to every v* tag,
+          # including older ones; the release step above decides instead.
+          flavor: |
+            latest=false
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ steps.release.outputs.newest == 'true' }}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
             type=semver,pattern={{version}}
             type=sha,prefix=sha-,format=short
 

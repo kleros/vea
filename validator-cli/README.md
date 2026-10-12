@@ -11,7 +11,8 @@ fail immediately without it. From the repo root:
 
 `cp validator-cli/.env.dist validator-cli/.env`
 
-Run the image published to GHCR (from the repo root):
+Run the image published to GHCR (from the repo root). Compose pulls `:latest`, the newest
+release; `:dev` follows the `dev` branch and `:<version>` (e.g. `:0.4.0`) pins a release.
 
 `docker compose up validator`
 
