@@ -461,7 +461,7 @@ const checkFunding = async (
   emitter: EventEmitter
 ): Promise<void> => {
   const deposits = networks.map((network) => bridge.routeConfig[network]?.deposit).filter(Boolean) as bigint[];
-  const largestDeposit = deposits.length > 0 ? deposits.reduce((a, b) => (a > b ? a : b)) : 0n;
+  const largestDeposit = deposits.reduce((a, b) => (a > b ? a : b), 0n);
   const alert = (code: string, details: Record<string, unknown>) => {
     const payload: AlertPayload = { level: "warn", code, chainId, details };
     emitter.emit(BotEvents.ALERT, payload);

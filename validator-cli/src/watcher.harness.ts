@@ -112,7 +112,8 @@ export const runWatcher = async (options: RunOptions): Promise<Harness> => {
   const chains = createTwoChainRoute(options.now === undefined ? {} : { now: options.now });
   const failing: { [url: string]: () => boolean } = {};
   const providerFor = (url: string) => {
-    const base = url === RPC.arb ? chains.inbox : url === RPC.gnosis ? chains.outbox : chains.router;
+    const chainsByUrl = { [RPC.arb]: chains.inbox, [RPC.gnosis]: chains.outbox };
+    const base = chainsByUrl[url] ?? chains.router;
     return {
       ...base.provider,
       name: base.name,

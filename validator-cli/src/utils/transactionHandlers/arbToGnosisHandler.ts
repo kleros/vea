@@ -14,7 +14,7 @@ import {
 } from "./baseTransactionHandler";
 import { BotEvents } from "../botEvents";
 import { ClaimNotSetError } from "../errors";
-import { getBridgeConfig, Network } from "../../consts/bridgeRoutes";
+import { getBridgeConfig } from "../../consts/bridgeRoutes";
 import { getWETH } from "../ethers";
 import { messageExecutor } from "../arbMsgExecutor";
 
