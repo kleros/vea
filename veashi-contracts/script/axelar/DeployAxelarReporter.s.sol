@@ -12,17 +12,17 @@ contract DeployAxelarReporter is DeploymentState {
     function run() external {
         // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
+        address deployer = vm.addr(pk);
         vm.startBroadcast(pk);
 
         //
         // Deploy & configure AxelarReporter
         //
-        address headerStorage = vm.envAddress("HEADER_STORAGE");
         address yaho = vm.envAddress("YAHO_ADDRESS");
         address gateway = vm.envAddress("AXELAR_REPORTER_GATEWAY");
         address gasService = vm.envAddress("AXELAR_REPORTER_GAS_SERVICE");
 
-        AxelarReporter reporter = new AxelarReporter(headerStorage, yaho, gateway, gasService);
+        AxelarReporter reporter = new AxelarReporter(yaho, gateway, gasService, deployer, deployer);
         _updateLocal("axelarReporter", address(reporter));
         console.log("AxelarReporter deployed at:", address(reporter));
 

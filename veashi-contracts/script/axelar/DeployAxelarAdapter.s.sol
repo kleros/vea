@@ -11,13 +11,14 @@ contract DeployAxelarAdapter is DeploymentState {
     function run() external {
         // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
+        address deployer = vm.addr(pk);
         vm.startBroadcast(pk);
 
         //
         // Deploy & configure AxelarAdapter
         //
         address gateway = vm.envAddress("AXELAR_ADAPTER_GATEWAY");
-        AxelarAdapter adapter = new AxelarAdapter(gateway);
+        AxelarAdapter adapter = new AxelarAdapter(gateway, deployer);
         _updateLocal("axelarAdapter", address(adapter));
         console.log("AxelarAdapter deployed at:", address(adapter));
 

@@ -11,13 +11,14 @@ contract DeployCCIPAdapter is DeploymentState {
     function run() external {
         // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
+        address deployer = vm.addr(pk);
         vm.startBroadcast(pk);
 
         //
         // Deploy & configure CCIPAdapter
         //
         address router = vm.envAddress("CCIP_ADAPTER_ROUTER");
-        CCIPAdapter adapter = new CCIPAdapter(router);
+        CCIPAdapter adapter = new CCIPAdapter(router, deployer);
         _updateLocal("ccipAdapter", address(adapter));
         console.log(" CCIPAdapter deployed at:", address(adapter));
 

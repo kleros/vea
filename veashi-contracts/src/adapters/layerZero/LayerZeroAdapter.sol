@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OAppCore} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppCore.sol";
 import {Adapter} from "../Adapter.sol";
+import {Governed} from "../../governance/Governed.sol";
+import {GovernedOAppCore} from "./GovernedOAppCore.sol";
 import {ILayerZeroReceiver} from "./interfaces/ILayerZeroReceiver.sol";
 import {Origin} from "./interfaces/ILayerZeroEndpointV2.sol";
 
-contract LayerZeroAdapter is Adapter, ILayerZeroReceiver, OAppCore {
+contract LayerZeroAdapter is Adapter, ILayerZeroReceiver, GovernedOAppCore {
     string public constant PROVIDER = "layer-zero";
     address public immutable LAYER_ZERO_ENDPOINT;
 
@@ -18,15 +19,21 @@ contract LayerZeroAdapter is Adapter, ILayerZeroReceiver, OAppCore {
 
     event ReporterSet(uint256 indexed chainId, uint32 indexed endpointId, address indexed reporter);
 
-    constructor(address lzEndpoint, address delegate) OAppCore(lzEndpoint, delegate) {
+    constructor(
+        address lzEndpoint,
+        address delegate,
+        address governor_
+    ) Governed(governor_) OAppCore(lzEndpoint, delegate) {
         LAYER_ZERO_ENDPOINT = lzEndpoint;
     }
 
     function lzReceive(
         Origin calldata _origin,
-        bytes32 /* _guid*/,
+        bytes32,
+        /* _guid*/
         bytes calldata _message,
-        address /* _executor*/,
+        address,
+        /* _executor*/
         bytes calldata /* _extraData*/
     ) external payable {
         if (
@@ -37,7 +44,11 @@ contract LayerZeroAdapter is Adapter, ILayerZeroReceiver, OAppCore {
         _storeHashes(chainIds[_origin.srcEid], ids, hashes);
     }
 
-    function nextNonce(uint32 /*_srcEid*/, bytes32 /*_sender*/) public pure override returns (uint64 nonce) {
+    function nextNonce(
+        uint32,
+        /*_srcEid*/
+        bytes32 /*_sender*/
+    ) public pure override returns (uint64 nonce) {
         return 0;
     }
 
@@ -49,7 +60,7 @@ contract LayerZeroAdapter is Adapter, ILayerZeroReceiver, OAppCore {
         return (1, 1);
     }
 
-    function setReporterByChain(uint256 chainId, uint32 endpointId, address reporter) external onlyOwner {
+    function setReporterByChain(uint256 chainId, uint32 endpointId, address reporter) external onlyByGovernor {
         enabledReporters[endpointId] = reporter;
         chainIds[endpointId] = chainId;
         emit ReporterSet(chainId, endpointId, reporter);

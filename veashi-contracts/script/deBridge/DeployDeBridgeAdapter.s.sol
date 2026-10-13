@@ -10,13 +10,14 @@ contract DeployDeBridgeAdapter is DeploymentState {
     function run() external {
         // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
+        address deployer = vm.addr(pk);
         vm.startBroadcast(pk);
 
         //
         // Deploy & configure DeBridgeAdapter
         //
         address adapterDeBridgeGate = vm.envAddress("DEBRIDGE_ADAPTER_GATE_ADDRESS");
-        DeBridgeAdapter adapter = new DeBridgeAdapter(adapterDeBridgeGate);
+        DeBridgeAdapter adapter = new DeBridgeAdapter(adapterDeBridgeGate, deployer);
         _updateLocal("deBridgeAdapter", address(adapter));
         console.log(" DeBridgeAdapter deployed at:", address(adapter));
 

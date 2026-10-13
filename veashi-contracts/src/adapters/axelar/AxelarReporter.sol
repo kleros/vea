@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IAxelarGateway} from "@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol";
 import {IAxelarGasService} from "@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol";
 import {Reporter} from "../Reporter.sol";
+import {PaidReporter} from "../PaidReporter.sol";
+import {IAdapter} from "../../interfaces/IAdapter.sol";
 
-contract AxelarReporter is Reporter, Ownable {
+contract AxelarReporter is PaidReporter {
     using Strings for uint256;
 
     string public constant PROVIDER = "axelar";
@@ -25,23 +26,36 @@ contract AxelarReporter is Reporter, Ownable {
     event FeeSet(uint256 fee);
 
     constructor(
-        address headerStorage,
         address yaho,
         address axelarGateway,
-        address axelarGasService
-    ) Reporter(headerStorage, yaho) {
+        address axelarGasService,
+        address governor_,
+        address keeper_
+    ) Reporter(yaho, governor_, keeper_) {
         AXELAR_GATEWAY = IAxelarGateway(axelarGateway);
         AXELAR_GAS_SERVICE = IAxelarGasService(axelarGasService);
     }
 
-    function setChainNameByChainId(uint256 chainId, string calldata chainName) external onlyOwner {
+    function setChainNameByChainId(uint256 chainId, string calldata chainName) external onlyByGovernor {
         chainNames[chainId] = chainName;
         emit ChainNameSet(chainId, chainName);
     }
 
-    function setFee(uint256 fee_) external onlyOwner {
+    function setFee(uint256 fee_) external onlyByGovernorOrKeeper {
+        _checkKeeperUpdate(keccak256("fee"), fee, fee_);
         fee = fee_;
         emit FeeSet(fee_);
+    }
+
+    /// @inheritdoc PaidReporter
+    function quoteDispatch(
+        uint256 targetChainId,
+        IAdapter,
+        uint256[] memory,
+        bytes32[] memory
+    ) public view override returns (address token, uint256 amount) {
+        _chainName(targetChainId);
+        return (address(0), fee);
     }
 
     function _dispatch(
@@ -50,8 +64,7 @@ contract AxelarReporter is Reporter, Ownable {
         uint256[] memory ids,
         bytes32[] memory hashes
     ) internal override returns (bytes32) {
-        string memory targetChainName = chainNames[targetChainId];
-        if (keccak256(abi.encode(targetChainName)) == NULL_STRING) revert ChainIdNotSupported(targetChainId);
+        string memory targetChainName = _chainName(targetChainId);
 
         string memory sAdapter = uint256(uint160(adapter)).toHexString(20);
         bytes memory payload = abi.encode(ids, hashes);
@@ -70,5 +83,8 @@ contract AxelarReporter is Reporter, Ownable {
         return bytes32(0);
     }
 
-    receive() external payable {}
+    function _chainName(uint256 targetChainId) internal view returns (string memory targetChainName) {
+        targetChainName = chainNames[targetChainId];
+        if (keccak256(abi.encode(targetChainName)) == NULL_STRING) revert ChainIdNotSupported(targetChainId);
+    }
 }

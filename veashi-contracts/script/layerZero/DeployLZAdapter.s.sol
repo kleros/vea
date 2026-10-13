@@ -20,7 +20,7 @@ contract DeployLZAdapter is DeploymentState {
         uint256 chainId = vm.envUint("REPORTER_CHAIN_ID");
         address receiveLib = vm.envAddress("LZ_RECEIVE_LIB");
         vm.startBroadcast(pk);
-        LayerZeroAdapter adapter = new LayerZeroAdapter(lzEndpoint, deployer);
+        LayerZeroAdapter adapter = new LayerZeroAdapter(lzEndpoint, deployer, deployer);
         console.log("Deployed LayerZeroAdapter at:", address(adapter));
         _updateLocal("lzAdapter", address(adapter));
 
