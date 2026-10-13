@@ -72,6 +72,86 @@ describe("RPC URL redaction", () => {
     expect(recoveries[0]).toMatchObject({ from: "https://primary.example:8545", to: "https://backup.example" });
   });
 
+  describe("FallbackRpcProvider JSON-RPC error bodies", () => {
+    // ethers v6 `_send` returns an error body as a result instead of throwing, so an HTTP 200
+    // carrying a rate limit (or a non-archive node refusing old state) must still fail over.
+    const call = { id: 1, jsonrpc: "2.0" as const, method: "eth_call", params: [] };
+    const errorBody = (code: number, message: string, data?: string) => [
+      { id: 1, error: { code, message, ...(data ? { data } : {}) } },
+    ];
+    const setup = (primary: any, backup: any) => {
+      const emitter = new EventEmitter();
+      const failures = capture(emitter, BotEvents.RPC_FAILURE);
+      const recoveries = capture(emitter, BotEvents.RPC_RECOVERED);
+      const provider: any = new FallbackRpcProvider([PRIMARY, BACKUP], emitter, 11155111);
+      provider.inner[0] = { _send: jest.fn(async () => primary) };
+      provider.inner[1] = { _send: jest.fn(async () => backup) };
+      return { provider, failures, recoveries };
+    };
+
+    it.each([
+      ["a rate limit in an HTTP 200", errorBody(-32029, "public rate limit exceeded")],
+      ["a -32005 limit exceeded", errorBody(-32005, "rate limit exceeded")],
+      ["historical state not available", errorBody(-32000, "historical state 0xabc is not available")],
+    ])("fails over on %s", async (_name, body) => {
+      const { provider, failures, recoveries } = setup(body, [{ id: 1, result: "0x10" }]);
+
+      await expect(provider._send(call)).resolves.toEqual([{ id: 1, result: "0x10" }]);
+
+      expect(failures).toHaveLength(1);
+      expect(failures[0]).toMatchObject({ method: "eth_call", from: "https://primary.example:8545" });
+      expect(recoveries).toHaveLength(1);
+      expect(JSON.stringify([failures, recoveries])).not.toContain(KEY);
+    });
+
+    it("fails over when any response in a batch is an error body", async () => {
+      const { provider, failures } = setup(
+        [{ id: 1, result: "0x1" }, ...errorBody(-32029, "rate limit exceeded")],
+        [
+          { id: 1, result: "0x1" },
+          { id: 2, result: "0x2" },
+        ]
+      );
+
+      await expect(provider._send([call, { ...call, id: 2 }])).resolves.toHaveLength(2);
+
+      expect(failures).toHaveLength(1);
+      expect(failures[0].method).toBe("batch");
+    });
+
+    it.each([
+      ["code 3 with revert data", errorBody(3, "execution reverted: Invalid claim.", "0x08c379a0")],
+      ["-32000 execution reverted", errorBody(-32000, "execution reverted")],
+    ])("returns a reverted call (%s) as is, without failing over", async (_name, body) => {
+      const { provider, failures } = setup(body, [{ id: 1, result: "0x10" }]);
+
+      await expect(provider._send(call)).resolves.toBe(body);
+
+      expect(failures).toHaveLength(0);
+      expect(provider.inner[1]._send).not.toHaveBeenCalled();
+    });
+
+    it("rejects when every endpoint answers with an error body, and logs each failure", async () => {
+      const limited = errorBody(-32029, "public rate limit exceeded");
+      const { provider, failures, recoveries } = setup(limited, limited);
+
+      await expect(provider._send(call)).rejects.toThrow("RPC error -32029: public rate limit exceeded");
+
+      expect(failures).toHaveLength(2);
+      expect(recoveries).toHaveLength(0);
+    });
+
+    it("keeps using the endpoint it failed over to", async () => {
+      const { provider } = setup(errorBody(-32029, "rate limit exceeded"), [{ id: 1, result: "0x10" }]);
+
+      await provider._send(call);
+      await provider._send(call);
+
+      expect(provider.inner[0]._send).toHaveBeenCalledTimes(1);
+      expect(provider.inner[1]._send).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it("FallbackProviderV5 logs RPC_FAILURE and RPC_RECOVERED with scheme://host only", async () => {
     const emitter = new EventEmitter();
     const failures = capture(emitter, BotEvents.RPC_FAILURE);

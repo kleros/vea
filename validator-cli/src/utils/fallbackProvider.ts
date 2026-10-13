@@ -44,7 +44,29 @@ export const redactRpcError = (err: any): { message: string; code?: string } => 
 };
 
 /**
+ * Whether a JSON-RPC error body is the node answering that the call reverted. Every healthy endpoint
+ * gives the same answer, so it is the call's result, not an endpoint failure (the same rule as
+ * `isExecutionRevert` in fallbackProviderV5).
+ */
+export const isRevertResponse = (rpcError: any): boolean =>
+  rpcError?.code === 3 || /execution reverted/i.test(String(rpcError?.message ?? ""));
+
+/**
+ * The first JSON-RPC error body in an endpoint's answer that is not a revert, or undefined.
+ * ethers v6 `_send` hands error bodies back as results (an HTTP 200 carrying a rate limit, or a
+ * non-archive node refusing historical state), so the caller has to look for them.
+ */
+const endpointErrorIn = (responses: Array<JsonRpcResult>): { code?: number; message?: string } | undefined => {
+  for (const response of responses) {
+    const rpcError = (response as any)?.error;
+    if (rpcError && !isRevertResponse(rpcError)) return rpcError;
+  }
+  return undefined;
+};
+
+/**
  * ethers v6 JSON-RPC provider that transparently fails over to the next endpoint when a request fails.
+ * A JSON-RPC error body that is not a revert counts as a failure of that endpoint.
  */
 export class FallbackRpcProvider extends JsonRpcProvider {
   private endpoints: RPCEndpoint[];
@@ -80,6 +102,10 @@ export class FallbackRpcProvider extends JsonRpcProvider {
       const i = (this.activeIndex + attempt) % this.endpoints.length;
       try {
         const result = await this.getInner(i)._send(payload);
+        const rpcError = endpointErrorIn(result);
+        if (rpcError) {
+          throw Object.assign(new Error(`RPC error ${rpcError.code}: ${rpcError.message}`), { code: "SERVER_ERROR" });
+        }
         if (i !== this.activeIndex) {
           this.emitter.emit(BotEvents.RPC_RECOVERED, { method, from: this.label(this.activeIndex), to: this.label(i) });
           this.activeIndex = i;
