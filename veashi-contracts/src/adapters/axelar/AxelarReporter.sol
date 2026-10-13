@@ -6,6 +6,7 @@ import {IAxelarGateway} from "@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import {IAxelarGasService} from "@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol";
 import {Reporter} from "../Reporter.sol";
 import {PaidReporter} from "../PaidReporter.sol";
+import {IAdapter} from "../../interfaces/IAdapter.sol";
 
 contract AxelarReporter is PaidReporter {
     using Strings for uint256;
@@ -46,14 +47,24 @@ contract AxelarReporter is PaidReporter {
         emit FeeSet(fee_);
     }
 
+    /// @inheritdoc PaidReporter
+    function quoteDispatch(
+        uint256 targetChainId,
+        IAdapter,
+        uint256[] memory,
+        bytes32[] memory
+    ) public view override returns (address token, uint256 amount) {
+        _chainName(targetChainId);
+        return (address(0), fee);
+    }
+
     function _dispatch(
         uint256 targetChainId,
         address adapter,
         uint256[] memory ids,
         bytes32[] memory hashes
     ) internal override returns (bytes32) {
-        string memory targetChainName = chainNames[targetChainId];
-        if (keccak256(abi.encode(targetChainName)) == NULL_STRING) revert ChainIdNotSupported(targetChainId);
+        string memory targetChainName = _chainName(targetChainId);
 
         string memory sAdapter = uint256(uint160(adapter)).toHexString(20);
         bytes memory payload = abi.encode(ids, hashes);
@@ -70,5 +81,10 @@ contract AxelarReporter is PaidReporter {
 
         AXELAR_GATEWAY.callContract(targetChainName, sAdapter, payload);
         return bytes32(0);
+    }
+
+    function _chainName(uint256 targetChainId) internal view returns (string memory targetChainName) {
+        targetChainName = chainNames[targetChainId];
+        if (keccak256(abi.encode(targetChainName)) == NULL_STRING) revert ChainIdNotSupported(targetChainId);
     }
 }

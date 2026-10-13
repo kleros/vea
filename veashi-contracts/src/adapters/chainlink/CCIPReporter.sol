@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Reporter} from "../Reporter.sol";
 import {PaidReporter} from "../PaidReporter.sol";
+import {IAdapter} from "../../interfaces/IAdapter.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/libraries/Client.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -56,28 +57,35 @@ contract CCIPReporter is PaidReporter {
         emit DefaultGasLimitSet(defaultGasLimit_);
     }
 
+    /// @inheritdoc PaidReporter
+    function quoteDispatch(
+        uint256 targetChainId,
+        IAdapter adapter,
+        uint256[] memory ids,
+        bytes32[] memory hashes
+    ) public view override returns (address token, uint256 amount) {
+        (uint64 targetChainSelector, Client.EVM2AnyMessage memory message) = _message(
+            targetChainId,
+            address(adapter),
+            ids,
+            hashes
+        );
+        return (message.feeToken, CCIP_ROUTER.getFee(targetChainSelector, message));
+    }
+
     function _dispatch(
         uint256 targetChainId,
         address adapter,
         uint256[] memory ids,
         bytes32[] memory hashes
     ) internal override returns (bytes32) {
-        uint64 targetChainSelector = chainSelectors[targetChainId];
-        if (targetChainSelector == 0) revert ChainSelectorNotAvailable();
-        bytes memory payload = abi.encode(ids, hashes);
-        address feeToken_ = feeToken;
-        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
-            receiver: abi.encode(adapter),
-            data: payload,
-            tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array - no tokens are transferred
-            // V2 with out-of-order execution allowed, which lanes that enforce it require: each message
-            // stores independent ids and hashes and Yaru executes by id, so delivery order does not matter.
-            extraArgs: Client._argsToBytes(
-                Client.GenericExtraArgsV2({gasLimit: defaultGasLimit, allowOutOfOrderExecution: true})
-            ),
-            feeToken: feeToken_ // address(0) = native, otherwise an ERC20 accepted by the router
-        });
-
+        (uint64 targetChainSelector, Client.EVM2AnyMessage memory message) = _message(
+            targetChainId,
+            adapter,
+            ids,
+            hashes
+        );
+        address feeToken_ = message.feeToken;
         uint256 fees = CCIP_ROUTER.getFee(targetChainSelector, message);
 
         bytes32 messageId;
@@ -92,5 +100,26 @@ contract CCIPReporter is PaidReporter {
             messageId = CCIP_ROUTER.ccipSend(targetChainSelector, message);
         }
         return messageId;
+    }
+
+    function _message(
+        uint256 targetChainId,
+        address adapter,
+        uint256[] memory ids,
+        bytes32[] memory hashes
+    ) internal view returns (uint64 targetChainSelector, Client.EVM2AnyMessage memory message) {
+        targetChainSelector = chainSelectors[targetChainId];
+        if (targetChainSelector == 0) revert ChainSelectorNotAvailable();
+        message = Client.EVM2AnyMessage({
+            receiver: abi.encode(adapter),
+            data: abi.encode(ids, hashes),
+            tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array - no tokens are transferred
+            // V2 with out-of-order execution allowed, which lanes that enforce it require: each message
+            // stores independent ids and hashes and Yaru executes by id, so delivery order does not matter.
+            extraArgs: Client._argsToBytes(
+                Client.GenericExtraArgsV2({gasLimit: defaultGasLimit, allowOutOfOrderExecution: true})
+            ),
+            feeToken: feeToken // address(0) = native, otherwise an ERC20 accepted by the router
+        });
     }
 }

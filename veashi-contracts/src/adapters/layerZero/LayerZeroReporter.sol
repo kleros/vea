@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {ILayerZeroEndpointV2, MessagingParams, MessagingFee, MessagingReceipt} from "./interfaces/ILayerZeroEndpointV2.sol";
 import {Reporter} from "../Reporter.sol";
 import {PaidReporter} from "../PaidReporter.sol";
+import {IAdapter} from "../../interfaces/IAdapter.sol";
 import {GovernedOAppCore} from "./GovernedOAppCore.sol";
 import {Governed} from "../../governance/Governed.sol";
 import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
@@ -66,24 +67,24 @@ contract LayerZeroReporter is PaidReporter, GovernedOAppCore {
         return (1, 1);
     }
 
+    /// @inheritdoc PaidReporter
+    function quoteDispatch(
+        uint256 targetChainId,
+        IAdapter adapter,
+        uint256[] memory ids,
+        bytes32[] memory hashes
+    ) public view override returns (address token, uint256 amount) {
+        MessagingParams memory params = _params(targetChainId, address(adapter), ids, hashes);
+        return (LAYER_ZERO_ENDPOINT.nativeToken(), LAYER_ZERO_ENDPOINT.quote(params, address(this)).nativeFee);
+    }
+
     function _dispatch(
         uint256 targetChainId,
         address adapter,
         uint256[] memory ids,
         bytes32[] memory hashes
     ) internal override returns (bytes32) {
-        uint32 targetEndpointId = endpointIds[targetChainId];
-        if (targetEndpointId == 0) revert EndpointIdNotAvailable();
-        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(gasLimit, 0);
-        bytes memory message = abi.encode(ids, hashes);
-        bytes32 receiverBytes32 = bytes32(uint256(uint160(adapter)));
-        MessagingParams memory params = MessagingParams(
-            targetEndpointId,
-            receiverBytes32,
-            message,
-            options,
-            false // receiver in lz Token
-        );
+        MessagingParams memory params = _params(targetChainId, adapter, ids, hashes);
         // solhint-disable-next-line check-send-result
         MessagingFee memory msgFee = LAYER_ZERO_ENDPOINT.quote(params, address(this));
 
@@ -101,5 +102,23 @@ contract LayerZeroReporter is PaidReporter, GovernedOAppCore {
             receipt = LAYER_ZERO_ENDPOINT.send(params, refundAddress);
         }
         return receipt.guid;
+    }
+
+    function _params(
+        uint256 targetChainId,
+        address adapter,
+        uint256[] memory ids,
+        bytes32[] memory hashes
+    ) internal view returns (MessagingParams memory) {
+        uint32 targetEndpointId = endpointIds[targetChainId];
+        if (targetEndpointId == 0) revert EndpointIdNotAvailable();
+        return
+            MessagingParams(
+                targetEndpointId,
+                bytes32(uint256(uint160(adapter))),
+                abi.encode(ids, hashes),
+                OptionsBuilder.newOptions().addExecutorLzReceiveOption(gasLimit, 0),
+                false // receiver in lz Token
+            );
     }
 }

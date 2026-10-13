@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Reporter} from "../Reporter.sol";
 import {PaidReporter} from "../PaidReporter.sol";
+import {IAdapter} from "../../interfaces/IAdapter.sol";
 import {IDeBridgeGate} from "./interfaces/IDeBridgeGate.sol";
 import {Flags} from "./utils/Flags.sol";
 
@@ -39,14 +40,24 @@ contract DeBridgeReporter is PaidReporter {
         emit FeeSet(fee_);
     }
 
+    /// @inheritdoc PaidReporter
+    function quoteDispatch(
+        uint256 targetChainId,
+        IAdapter,
+        uint256[] memory,
+        bytes32[] memory
+    ) public view override returns (address token, uint256 amount) {
+        _deBridgeChainId(targetChainId);
+        return (address(0), fee + deBridgeGate.globalFixedNativeFee());
+    }
+
     function _dispatch(
         uint256 targetChainId,
         address adapter,
         uint256[] memory ids,
         bytes32[] memory hashes
     ) internal override returns (bytes32) {
-        uint256 targetDeBridgeChainId = deBridgeChainIds[targetChainId];
-        if (targetDeBridgeChainId == 0) revert DeBridgeChainIdNotSet(targetChainId);
+        uint256 targetDeBridgeChainId = _deBridgeChainId(targetChainId);
         uint256 protocolFee = deBridgeGate.globalFixedNativeFee();
 
         // Exposing nativeSender must be requested explicitly by setting the PROXY_WITH_SENDER flag
@@ -61,5 +72,10 @@ contract DeBridgeReporter is PaidReporter {
             0
         );
         return submissionId;
+    }
+
+    function _deBridgeChainId(uint256 targetChainId) internal view returns (uint256 targetDeBridgeChainId) {
+        targetDeBridgeChainId = deBridgeChainIds[targetChainId];
+        if (targetDeBridgeChainId == 0) revert DeBridgeChainIdNotSet(targetChainId);
     }
 }

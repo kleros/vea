@@ -93,20 +93,26 @@ contract WrongIdYaho {
 
 contract MockCCIPRouter {
     uint256 public fee = 0.01 ether;
+    /// @dev Fee per byte of message data, so a quote depends on the message (0 keeps the fee flat).
+    uint256 public perByte;
     bytes public lastExtraArgs;
     bytes public lastData;
     uint64 public lastSelector;
     uint256 public sends;
 
-    function getFee(uint64, Client.EVM2AnyMessage memory) external view returns (uint256) {
-        return fee;
+    function setPerByte(uint256 perByte_) external {
+        perByte = perByte_;
+    }
+
+    function getFee(uint64, Client.EVM2AnyMessage memory message) external view returns (uint256) {
+        return fee + message.data.length * perByte;
     }
 
     function ccipSend(
         uint64 selector,
         Client.EVM2AnyMessage calldata message
     ) external payable virtual returns (bytes32) {
-        require(msg.value == fee, "fee");
+        require(msg.value == fee + message.data.length * perByte, "fee");
         lastExtraArgs = message.extraArgs;
         lastData = message.data;
         lastSelector = selector;
@@ -117,6 +123,10 @@ contract MockCCIPRouter {
 
 contract MockLZEndpoint {
     uint256 public fee = 0.02 ether;
+    /// @dev Fee per byte of message, so a quote depends on the message (0 keeps the fee flat).
+    uint256 public perByte;
+    /// @dev The ERC20 an EndpointV2Alt takes in place of native value; address(0) is a plain endpoint.
+    address public nativeToken;
     mapping(address => address) public delegates;
     uint32 public lastDstEid;
     uint256 public sends;
@@ -125,16 +135,20 @@ contract MockLZEndpoint {
         delegates[msg.sender] = delegate;
     }
 
-    function nativeToken() external pure returns (address) {
-        return address(0);
+    function setPerByte(uint256 perByte_) external {
+        perByte = perByte_;
     }
 
-    function quote(MessagingParams calldata, address) external view returns (MessagingFee memory) {
-        return MessagingFee(fee, 0);
+    function setNativeToken(address nativeToken_) external {
+        nativeToken = nativeToken_;
+    }
+
+    function quote(MessagingParams calldata params, address) external view returns (MessagingFee memory) {
+        return MessagingFee(fee + params.message.length * perByte, 0);
     }
 
     function send(MessagingParams calldata params, address) external payable returns (MessagingReceipt memory r) {
-        require(msg.value == fee, "fee");
+        if (nativeToken == address(0)) require(msg.value == fee + params.message.length * perByte, "fee");
         lastDstEid = params.dstEid;
         sends++;
         r.guid = keccak256(abi.encode(sends));
