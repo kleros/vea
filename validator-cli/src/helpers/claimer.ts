@@ -248,9 +248,12 @@ async function makeClaim({
 
   const savedSnapshot = await veaInbox.snapshots(epoch, { blockTag: settledBlocks.inboxBlock });
   if (savedSnapshot == ethers.ZeroHash) {
-    // snapshots[epoch] is final once the epoch has ended, so no snapshot means nothing to claim.
+    // snapshots[epoch] is final once the epoch has ended, so no snapshot means nothing for us to
+    // claim. It is not DONE: anyone can still claim this epoch, with any root, until its claim
+    // window closes, and a DONE epoch is skipped from the next epoch on, so a late fraudulent claim
+    // would go unchallenged. Once the epoch has passed, passedEpochOutcome decides DONE.
     emitter.emit(BotEvents.NO_SNAPSHOT);
-    report(EpochOutcome.DONE);
+    report(EpochOutcome.PENDING);
     return null;
   }
   const outboxStateRoot = await veaOutbox.stateRoot({ blockTag: settledBlocks.outboxBlock });
@@ -276,7 +279,8 @@ async function makeClaim({
     return transactionHandler;
   }
   emitter.emit(BotEvents.NO_NEW_MESSAGES);
-  report(EpochOutcome.DONE);
+  // Not DONE, as with no snapshot above: another claim can still land in this epoch's window.
+  report(EpochOutcome.PENDING);
   return null;
 }
 

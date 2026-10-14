@@ -8,10 +8,9 @@
  */
 export enum EpochOutcome {
   /**
-   * Nothing is left to do, so the watcher may stop watching the epoch: either its claim window has
-   * closed on the outbox read block and no claim, dispute or transaction for it is pending, or the
-   * claimer read `snapshots[E]` at a settled inbox block (`resolveSettledReadBlocks`: the epoch has
-   * ended on an L1-backed Arbitrum block, so the value is final) and found nothing to claim.
+   * Nothing is left to do, so the watcher may stop watching the epoch: its claim window has closed
+   * on the outbox read block and no claim, dispute or transaction for it is pending. Finding nothing
+   * to claim ourselves is not enough while the window is open: someone else can still claim.
    */
   DONE = "done",
   /** Work is in flight: a claim, challenge, snapshot, verification or resolution step. Keep watching. */

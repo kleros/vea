@@ -149,7 +149,7 @@ describe("claimer", () => {
       s.fetchLatestClaimedEpoch.mockResolvedValue({ stateRoot: SAVED });
       await checkAndClaim(s.params);
       expect(s.handler.makeClaim).not.toHaveBeenCalled();
-      expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
     });
 
     it("does not claim when the outbox already holds the snapshot", async () => {
@@ -157,14 +157,16 @@ describe("claimer", () => {
       s.veaOutbox.stateRoot = jest.fn(s.route.outbox.pinned(() => SAVED));
       await checkAndClaim(s.params);
       expect(s.handler.makeClaim).not.toHaveBeenCalled();
-      expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
     });
 
-    it("is DONE for an epoch with no snapshot, UNDECIDABLE while the epoch is not settled", async () => {
+    // A claimable epoch is never DONE: its claim window is still open, so another claim can land
+    // after this read, and a DONE epoch is skipped from the next epoch on.
+    it("is PENDING for an epoch with no snapshot, UNDECIDABLE while the epoch is not settled", async () => {
       const s = setup();
       s.veaInbox.snapshots = jest.fn(s.route.inbox.pinned(() => ethers.ZeroHash));
       await checkAndClaim(s.params);
-      expect(s.outcomes).toEqual([EpochOutcome.DONE]);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
 
       const t = setup();
       t.params.fetchSettledReadBlocks = jest.fn().mockResolvedValue(null);
