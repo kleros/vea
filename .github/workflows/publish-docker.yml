@@ -10,6 +10,16 @@ on:
 permissions:
   contents: read
 
+# One publish at a time, in push order. The release step below checks "newest"
+# before building, so two overlapping tag runs could otherwise finish out of
+# order and leave :latest on the older release. queue: max keeps every pending
+# run (the default keeps only the latest pending one and cancels the rest,
+# which would drop that tag's version image).
+concurrency:
+  group: publish-docker
+  queue: max
+  cancel-in-progress: false
+
 jobs:
   build-and-push:
     # workflow_dispatch has no native ref filter, so a manual run from any branch
