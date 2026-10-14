@@ -1,0 +1,120 @@
+name: Publish Docker Images
+
+on:
+  push:
+    branches: [dev]
+    tags: ["v*"]
+  workflow_dispatch:
+
+# Declare default permissions as read only.
+permissions:
+  contents: read
+
+# One publish at a time, in push order. The release step below checks "newest"
+# before building, so two overlapping tag runs could otherwise finish out of
+# order and leave :latest on the older release. queue: max keeps every pending
+# run (the default keeps only the latest pending one and cancels the rest,
+# which would drop that tag's version image).
+concurrency:
+  group: publish-docker
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    # workflow_dispatch has no native ref filter, so a manual run from any branch
+    # would publish an image of that branch. The push triggers above are
+    # already ref-filtered; this restricts manual runs to the same deploy branch.
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/dev'
+    # Publishing waits here for approval. The environment's required reviewers and
+    # its allowed refs (dev, v* tags) are set in the repo settings, not in this file.
+    environment: docker-publish
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed for actions/checkout to fetch code.
+      contents: read
+      # Needed to push the built images to GitHub Container Registry.
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: validator-cli
+            dockerfile: ./validator-cli/Dockerfile
+            target: validator
+            title: vea-validator-cli
+            description: "Validator bot for the Vea cross-chain bridge: saves snapshots, challenges invalid claims and advances verification"
+          - image: relayer-cli
+            dockerfile: ./relayer-cli/Dockerfile
+            target: relayer
+            title: vea-relayer-cli
+            description: "Relayer bot for the Vea cross-chain bridge: relays messages from VeaInbox to VeaOutbox and executes Hashi messages"
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here uses git after checkout, and GHCR auth comes from
+          # docker/login-action below. Keeping the token out of .git/config also
+          # keeps it out of the Docker build context, which is the whole repo.
+          persist-credentials: false
+
+      # :latest is what docker-compose.yml pulls, so it moves only to the highest
+      # release. Pushing a tag for an older version (a backport, a re-tag) must
+      # not roll operators back. Pre-release tags (v1.2.0-rc.1) never match.
+      - id: release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          newest=$(git ls-remote --tags --refs origin 'v*' | sed 's#.*refs/tags/##' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          if [ "$newest" = "$GITHUB_REF_NAME" ]; then
+            echo "newest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "newest=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.image }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.title }}
+            org.opencontainers.image.description=${{ matrix.description }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.licenses=MIT
+          # The action's default (latest=auto) adds :latest to every v* tag,
+          # including older ones; the release step above decides instead.
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=latest,enable=${{ steps.release.outputs.newest == 'true' }}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-,format=short
+
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Per-image cache scope: both matrix legs would otherwise share the
+          # default "buildkit" scope and evict each other every run.
+          cache-from: type=gha,scope=${{ matrix.image }}
+          # mode=max also exports the builder stage, where yarn install and the
+          # contracts build happen. The default (mode=min) would only cache the
+          # final stage's layers, which is not where the slow work is.
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
