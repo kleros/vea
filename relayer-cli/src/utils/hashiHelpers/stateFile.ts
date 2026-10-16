@@ -4,6 +4,7 @@ import { EventEmitter } from "events";
 import { claimLock, releaseLock } from "../lock";
 import { BotEvents } from "../botEvents";
 import { HashiMessageExecutionVars } from "./hashiTypes";
+import { toPlainMessage } from "./hashiMsgUtils";
 require("dotenv").config();
 
 /**
@@ -115,7 +116,7 @@ async function readPendingMessages(
     const chain_state = JSON.parse(chain_state_raw, bigIntReviver);
 
     if ("hashiMessages" in chain_state && Array.isArray(chain_state.hashiMessages)) {
-      return chain_state.hashiMessages;
+      return chain_state.hashiMessages.map(withNamedMessage);
     }
 
     return [];
@@ -124,6 +125,10 @@ async function readPendingMessages(
     return [];
   }
 }
+
+// Older cycles saved RPC-path messages as positional arrays (a serialized ethers Result); rebuild the named fields.
+const withNamedMessage = (record: HashiMessageExecutionVars): HashiMessageExecutionVars =>
+  Array.isArray(record?.message) ? { ...record, message: toPlainMessage(record.message) } : record;
 
 const bigIntReplacer = (_key: string, value: unknown) => (typeof value === "bigint" ? `${value}n` : value);
 const bigIntReviver = (_key: string, value: unknown) =>
