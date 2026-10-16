@@ -15,7 +15,8 @@ import { getDispatchedMessagesFromEnvio } from "./hashiHelpers/envioQueries";
 import { getStartBlockNumber, readPendingMessages, updateHashiStateFile } from "./hashiHelpers/stateFile";
 import { FallbackRpcProvider } from "./fallbackProvider";
 import { ExecutionError, MissingEnvironmentVariable } from "./errors";
-import { classifyPreflightError, isSkippableThresholdError, PreflightFailure } from "./hashiHelpers/revertClass";
+import { classifyPreflightError, PreflightFailure } from "./hashiHelpers/revertClass";
+import { classifyCallFailure, isMessageSpecific } from "./revertClassifier";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 const MAX_BATCH_SIZE = 10;
@@ -336,7 +337,8 @@ interface ToExecuteMessageInterface {
 /**
  * Check if a message is executable on Hashi by verifying if the threshold is met.
  * A threshold check that reverts (or aborts in the VM) is specific to this message, for example an adapter
- * without getHash, so the message is skipped this cycle; a transport failure is rethrown so the route retries.
+ * without getHash, so the message is skipped this cycle; a failure not tied to the message (transport, or a failure
+ * the classifier cannot place) is rethrown so the route retries.
  * @param chainId The chain ID
  * @param nonce The message nonce
  * @param inboxAddress The Vea Inbox address
@@ -353,7 +355,7 @@ async function toExecuteMessage({
   try {
     msgStatus = await hasThresholdMet(sourceChainId, hashiMessage, emitter);
   } catch (error) {
-    if (!isSkippableThresholdError(error)) {
+    if (!isMessageSpecific(classifyCallFailure(error))) {
       throw error;
     }
     emitter.emit(

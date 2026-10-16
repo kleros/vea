@@ -11,10 +11,11 @@ import {
   executeBatchOnHashi,
   YaruExecutor,
 } from "./hashi";
-import { thresholdViewAbi } from "./hashiHelpers/abi";
+import { YaruAbi, thresholdViewAbi } from "./hashiHelpers/abi";
+import { getHashiMsgId } from "./hashiHelpers/hashiMsgUtils";
 import { HashiExecutionStatus, HashiMessage, HashiMessageExecutionVars } from "./hashiHelpers/hashiTypes";
 import { readPendingMessages, updateHashiStateFile } from "./hashiHelpers/stateFile";
-import { fixtures, preflightFixtures } from "../tests/hashi/revertFixtures";
+import { ALREADY_EXECUTED_DATA, fixtures, fromNodeError, nodeBodies, yaruStaticCall } from "../tests/revert/fixtures";
 import { YAHO, dispatchedLog, dispatchedMessage, fakeFileSystem, logScanProvider } from "../tests/hashi/dispatchedLogs";
 
 class MockEmitter extends EventEmitter {
@@ -26,6 +27,15 @@ class MockEmitter extends EventEmitter {
     return super.emit(event, ...args);
   }
 }
+
+// Threshold-check failures the shared classifier ties to the message, and failures that take the transport action:
+// transport failures, and the unknown failures no rule ties to the message
+const THRESHOLD_MESSAGE_FAILURES = ["N1", "N4", "A3", "A4", "A5", "P6", "P9"] as const;
+const UNKNOWN_FAILURES = ["U1", "U2", "U3", "U4", "P11"] as const;
+const THRESHOLD_TRANSPORT_FAILURES = [
+  ...(["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "P12"] as const),
+  ...UNKNOWN_FAILURES,
+];
 
 describe("hashi", () => {
   let mockEmitter = new MockEmitter();
@@ -730,7 +740,7 @@ describe("hashi", () => {
         const emit = jest.spyOn(emitter, "emit");
         const callFailed = record(11n, rpcShaped(3), nowSec - 3600);
         const passing = record(12n, rpcShaped(4), nowSec - 60);
-        const { yaru, send } = fakeYaru((nonce) => (nonce === 3n ? preflightFixtures.R4 : undefined));
+        const { yaru, send } = fakeYaru((nonce) => (nonce === 3n ? yaruStaticCall("R4") : undefined));
 
         await runHashiExecutor(
           buildArgs({
@@ -752,12 +762,12 @@ describe("hashi", () => {
         expect(savedPending()).toEqual([callFailed]);
         expect(savedPending()[0]).toBe(callFailed);
         expect(savedPending()[0].timestamp).toBe(nowSec - 3600);
-        expect(emit).toHaveBeenCalledWith(BotEvents.HASHI_MESSAGE_FAILING, "3", "0", "1", preflightFixtures.R4);
+        expect(emit).toHaveBeenCalledWith(BotEvents.HASHI_MESSAGE_FAILING, "3", "0", "1", yaruStaticCall("R4"));
       });
 
       it("should drop a message whose preflight fails with MessageIdAlreadyExecuted", async () => {
         const alreadyExecuted = record(11n, rpcShaped(3), nowSec - 60);
-        const { yaru, send } = fakeYaru(() => preflightFixtures.R5);
+        const { yaru, send } = fakeYaru(() => yaruStaticCall("R5"));
 
         await runCycle([alreadyExecuted], yaru);
 
@@ -767,7 +777,7 @@ describe("hashi", () => {
 
       it("should not keep a failed message dispatched more than one week ago", async () => {
         const expired = record(11n, rpcShaped(3), nowSec - ONE_WEEK - 60);
-        const { yaru } = fakeYaru(() => preflightFixtures.R4);
+        const { yaru } = fakeYaru(() => yaruStaticCall("R4"));
 
         await runCycle([expired], yaru);
 
@@ -784,6 +794,44 @@ describe("hashi", () => {
         expect(sentNonces(send)).toEqual([[4n]]);
         expect(savedPending()).toEqual([]);
       });
+
+      it("should keep pending a message whose preflight fails with CallFailed given only in info.error.data (N4)", async () => {
+        const kept = record(11n, rpcShaped(3), nowSec - 60);
+        const { yaru, send, staticCall } = fakeYaru(() => fixtures.N4);
+
+        await runCycle([kept], yaru);
+
+        expect((fixtures.N4 as any).data).toBeNull();
+        expect(staticCall).toHaveBeenCalledTimes(1);
+        expect(send).not.toHaveBeenCalled();
+        expect(savedPending()).toEqual([kept]);
+      });
+
+      it("should drop a message whose preflight fails with MessageIdAlreadyExecuted given only in info.error.data", async () => {
+        const alreadyExecuted = record(11n, rpcShaped(3), nowSec - 60);
+        const error = fromNodeError({ ...nodeBodies.N4, data: ALREADY_EXECUTED_DATA });
+        const { yaru, send } = fakeYaru(() => error);
+
+        await runCycle([alreadyExecuted], yaru);
+
+        expect((error as any).data).toBeNull();
+        expect(send).not.toHaveBeenCalled();
+        expect(savedPending()).toEqual([]);
+      });
+
+      it.each([...(["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9"] as const), ...UNKNOWN_FAILURES])(
+        "should keep a message pending, with no probe, when the preflight fails with %s",
+        async (id) => {
+          const kept = record(11n, rpcShaped(3), nowSec - 60);
+          const { yaru, send, staticCall } = fakeYaru(() => fixtures[id]);
+
+          await runCycle([kept], yaru);
+
+          expect(staticCall).toHaveBeenCalledTimes(1);
+          expect(send).not.toHaveBeenCalled();
+          expect(savedPending()).toEqual([kept]);
+        }
+      );
 
       it("should keep nothing pending when executeMsgsOnHashi resolves undefined", async () => {
         const executed = record(12n, rpcShaped(4), nowSec - 60);
@@ -805,8 +853,8 @@ describe("hashi", () => {
     });
 
     describe("with a threshold check that fails", () => {
-      it.each(["T1", "T2", "T3", "T4"] as const)(
-        "should reject with the transport error (%s) and write no checkpoint",
+      it.each(THRESHOLD_TRANSPORT_FAILURES)(
+        "should reject with the transport or unknown failure (%s) and write no checkpoint",
         async (id) => {
           const hasThresholdMet = jest.fn().mockRejectedValue(fixtures[id]);
           await expect(
@@ -823,6 +871,8 @@ describe("hashi", () => {
               })
             )
           ).rejects.toBe(fixtures[id]);
+          // One threshold check per call: no retry
+          expect(hasThresholdMet).toHaveBeenCalledTimes(2);
           expect(updateStateFile).not.toHaveBeenCalled();
         }
       );
@@ -864,6 +914,108 @@ describe("hashi", () => {
           );
         }
       );
+
+      describe("through getMessageStatus on the target chain provider", () => {
+        const bridgeConfig = {
+          sourceChainId,
+          targetChainId,
+          sourceRPC: "http://test.rpc",
+          targetRPC: "http://test.rpc",
+          yahoAddress: YAHO,
+          yaruAddress: "0x00000000000000000000000000000000000000b2",
+          hashiAddress: "0x00000000000000000000000000000000000000b3",
+        };
+        const thresholdIface = new Interface(thresholdViewAbi);
+        const thresholdMet = thresholdIface.encodeFunctionResult("checkHashWithThresholdFromAdapters", [true]);
+        const notExecuted = new Interface(YaruAbi).encodeFunctionResult("executed", [false]);
+        const failingMessage = dispatchedMessage(9n, BigInt(targetChainId), 1) as HashiMessage;
+        const passingMessage = dispatchedMessage(10n, BigInt(targetChainId), 1) as HashiMessage;
+        const thresholdCall = (message: HashiMessage) =>
+          thresholdIface.encodeFunctionData("checkHashWithThresholdFromAdapters", [
+            BigInt(sourceChainId),
+            getHashiMsgId(sourceChainId, YAHO, message),
+            BigInt(message.threshold),
+            message.adapters,
+          ]);
+        const failingThresholdCall = thresholdCall(failingMessage);
+        const record = (messageId: bigint, message: HashiMessage): HashiMessageExecutionVars => ({
+          txHash: "0xTxHash",
+          timestamp: nowSec - 60,
+          blockNumber: 1234567,
+          messageId,
+          message,
+        });
+
+        // A target chain provider: the failing message's threshold check rejects with `thresholdFailure`, every other
+        // threshold check passes, and no message is executed on Yaru yet
+        const targetProvider = (thresholdFailure: Error) => ({
+          call: jest.fn(async (tx: { to: string; data: string }) => {
+            if (tx.data === failingThresholdCall) throw thresholdFailure;
+            return tx.to === bridgeConfig.hashiAddress ? thresholdMet : notExecuted;
+          }),
+        });
+        const callsWith = (provider: ReturnType<typeof targetProvider>, data: string) =>
+          provider.call.mock.calls.filter(([tx]) => tx.data === data);
+
+        const runCycle = (provider: ReturnType<typeof targetProvider>, emitter: EventEmitter) =>
+          runHashiExecutor(
+            buildArgs({
+              emitter,
+              fetchAllMessageLogs: jest.fn().mockResolvedValue({
+                txns: [record(1n, failingMessage), record(2n, passingMessage)],
+                toBlock: currentBlockNumber,
+              }),
+              isMessageExecutable: (args: any) =>
+                toExecuteMessage({
+                  ...args,
+                  hasThresholdMet: (s, m, e) => getMessageStatus(s, m, e, bridgeConfig, provider),
+                }),
+            })
+          );
+
+        it.each(THRESHOLD_MESSAGE_FAILURES)(
+          "should skip the message whose threshold check fails with %s, execute the other and write the checkpoint",
+          async (id) => {
+            const emitter = new MockEmitter();
+            const emit = jest.spyOn(emitter, "emit");
+            const provider = targetProvider(fixtures[id]);
+
+            const result = await runCycle(provider, emitter);
+
+            expect(result).toBe(currentBlockNumber);
+            expect(emit).toHaveBeenCalledWith(BotEvents.HASHI_MESSAGE_FAILING, "9", "0", "1", fixtures[id]);
+            expect(callsWith(provider, failingThresholdCall)).toHaveLength(1);
+            expect(mockExecuteMsgsOnHashi).toHaveBeenCalledWith(
+              sourceChainId,
+              targetChainId,
+              [passingMessage],
+              emitter
+            );
+            expect(updateStateFile).toHaveBeenCalledWith(
+              sourceChainId,
+              targetChainId,
+              expect.any(Number),
+              currentBlockNumber,
+              [],
+              "hashi",
+              emitter
+            );
+          }
+        );
+
+        it.each(THRESHOLD_TRANSPORT_FAILURES)(
+          "should reject with the transport or unknown failure %s after one call, execute nothing and write no checkpoint",
+          async (id) => {
+            const provider = targetProvider(fixtures[id]);
+
+            await expect(runCycle(provider, mockEmitter)).rejects.toBe(fixtures[id]);
+
+            expect(provider.call).toHaveBeenCalledTimes(1);
+            expect(mockExecuteMsgsOnHashi).not.toHaveBeenCalled();
+            expect(updateStateFile).not.toHaveBeenCalled();
+          }
+        );
+      });
     });
   });
 
