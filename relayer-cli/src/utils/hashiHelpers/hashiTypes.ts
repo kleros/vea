@@ -1,9 +1,10 @@
+// Numeric fields are numbers on the Envio path and bigints on the RPC log path (and after the state file revives them).
 export interface HashiMessage {
-  nonce: number;
+  nonce: number | bigint;
   sender: string;
-  targetChainId: number;
+  targetChainId: number | bigint;
   receiver: string;
-  threshold: number;
+  threshold: number | bigint;
   data: string;
   reporters: string[];
   adapters: string[];
