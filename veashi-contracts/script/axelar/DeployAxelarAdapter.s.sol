@@ -1,40 +1,43 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "forge-std/console.sol";
-import "../../src/adapters/axelar/AxelarReporter.sol";
-import "../../src/adapters/axelar/AxelarAdapter.sol";
-import "../helpers/DeploymentState.sol";
+import {console} from "forge-std/console.sol";
+import {AxelarAdapter} from "../../src/adapters/axelar/AxelarAdapter.sol";
+import {AxelarInputs} from "./AxelarInputs.sol";
 
-contract DeployAxelarAdapter is DeploymentState {
+contract DeployAxelarAdapter is AxelarInputs {
     function run() external {
-        // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
         address deployer = vm.addr(pk);
-        vm.startBroadcast(pk);
+        _requireAdapterChain();
+        _requireNotDeployed("axelarAdapter");
 
-        //
-        // Deploy & configure AxelarAdapter
-        //
-        address gateway = vm.envAddress("AXELAR_ADAPTER_GATEWAY");
-        AxelarAdapter adapter = new AxelarAdapter(gateway, deployer);
-        _updateLocal("axelarAdapter", address(adapter));
-        console.log("AxelarAdapter deployed at:", address(adapter));
-
-        // read chain-specific setup from env
-        uint256 reporterChainId = vm.envUint("REPORTER_CHAIN_ID");
-        string memory reporterChainName = vm.envString("AXELAR_REPORTER_CHAIN_NAME");
+        AxelarAdapterInputs memory inputs = _axelarAdapterInputs();
         address reporter = _loadAddress(".axelarReporter");
+        require(reporter != address(0), ".axelarReporter is zero in deployment state");
 
-        // Axelar delivers the source address as an EIP-55 checksummed hex string, so the
-        // stored reporter must be checksummed for the adapter's keccak comparison to pass.
-        // vm.toString(address) returns the checksummed form.
+        // Axelar delivers the source address as an EIP-55 checksummed string and the adapter compares its hash,
+        // so the reporter is stored checksummed (vm.toString returns that form).
         string memory reporterString = vm.toString(reporter);
 
-        // use the reporter chainId + Axelar chain name + reporter address to wire up the adapter
-        adapter.setReporterByChain(reporterChainId, reporterChainName, reporterString);
-
+        vm.startBroadcast(pk);
+        AxelarAdapter adapter = new AxelarAdapter(inputs.gateway, deployer);
+        adapter.setReporterByChain(REPORTER_CHAIN_ID, inputs.reporterChainName, reporterString);
         vm.stopBroadcast();
+        console.log("AxelarAdapter deployed at:", address(adapter));
+
+        bytes32 nameHash = keccak256(bytes(inputs.reporterChainName));
+        require(address(adapter.gateway()) == inputs.gateway, "AxelarAdapter gateway mismatch");
+        require(adapter.governor() == deployer, "AxelarAdapter governor mismatch");
+        require(
+            adapter.chainIds(nameHash) == REPORTER_CHAIN_ID,
+            "AxelarAdapter chainIds(reporter chain name) mismatch"
+        );
+        require(
+            adapter.enabledReporters(nameHash) == keccak256(bytes(reporterString)),
+            "AxelarAdapter enabledReporters(reporter chain name) mismatch"
+        );
+
+        _updateLocal("axelarAdapter", address(adapter));
     }
 }
