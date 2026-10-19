@@ -271,6 +271,55 @@ contract DispatchAccessTest is VeashiTestBase {
         }
     }
 
+    /// A reporter listed twice in one message pays once: Yaho calls every entry, the vouch covers both.
+    function test_RepeatedReporterEntryReverts() public {
+        address otherAdapter = makeAddr("otherAdapter");
+        for (uint256 i = 0; i < reporters.length; i++) {
+            IHashiReporter[] memory r = new IHashiReporter[](2);
+            IHashiAdapter[] memory a = new IHashiAdapter[](2);
+            r[0] = r[1] = IHashiReporter(address(reporters[i]));
+            a[0] = IHashiAdapter(adapters[i]);
+            // A different adapter does not make it a different message.
+            a[1] = IHashiAdapter(otherAdapter);
+            (, bytes32 messageHash, ) = _next(address(gateway), STORY, 1, receiver, "m", r, a);
+            vm.expectRevert(abi.encodeWithSelector(IReporter.MessageAlreadyDispatched.selector, messageHash));
+            gateway.dispatch(STORY, 1, receiver, "m", r, a);
+
+            _assertGatewayDispatchSucceeds(i);
+        }
+    }
+
+    /// The guard is per message: one transaction can dispatch several messages through the same reporter.
+    function test_SeveralMessagesInOneTransactionEachPay() public {
+        (IHashiReporter[] memory r, IHashiAdapter[] memory a) = _one(0);
+        bytes[] memory data = new bytes[](3);
+        data[0] = data[2] = "same";
+        data[1] = "other";
+        uint256 balance = address(ccipReporter).balance;
+        gateway.dispatchEach(STORY, 1, receiver, data, r, a);
+        assertEq(ccipRouter.sends(), 3);
+        assertEq(address(ccipReporter).balance, balance - 3 * ccipRouter.fee());
+    }
+
+    /// A batch that repeats a vouched hash pays once.
+    function test_BatchRepeatingAHashReverts() public {
+        MockVoucher voucher = new MockVoucher();
+        bytes32 messageHash = keccak256("vouched");
+        voucher.setVouched(messageHash);
+        uint256 messageId = yaho.calculateMessageId(block.chainid, address(yaho), messageHash);
+        uint256[] memory ids = new uint256[](2);
+        bytes32[] memory hashes = new bytes32[](2);
+        ids[0] = ids[1] = messageId;
+        hashes[0] = hashes[1] = messageHash;
+        for (uint256 i = 0; i < reporters.length; i++) {
+            vm.prank(governor);
+            reporters[i].setDispatcher(address(voucher));
+            vm.prank(address(yaho));
+            vm.expectRevert(abi.encodeWithSelector(IReporter.MessageAlreadyDispatched.selector, messageHash));
+            reporters[i].dispatchMessages(STORY, IAdapter(adapters[i]), ids, hashes);
+        }
+    }
+
     /// [O4]: a gateway switch replaces the dispatcher at once; the old gateway's dispatch reverts.
     function test_OldGatewayRevertsAfterSwitch() public {
         GatewayHarness newGateway = new GatewayHarness(address(yaho));

@@ -12,7 +12,6 @@ contract AxelarReporter is PaidReporter {
     using Strings for uint256;
 
     string public constant PROVIDER = "axelar";
-    bytes32 private constant NULL_STRING = keccak256("");
     IAxelarGateway public immutable AXELAR_GATEWAY;
     IAxelarGasService public immutable AXELAR_GAS_SERVICE;
 
@@ -85,6 +84,6 @@ contract AxelarReporter is PaidReporter {
 
     function _chainName(uint256 targetChainId) internal view returns (string memory targetChainName) {
         targetChainName = chainNames[targetChainId];
-        if (keccak256(abi.encode(targetChainName)) == NULL_STRING) revert ChainIdNotSupported(targetChainId);
+        if (bytes(targetChainName).length == 0) revert ChainIdNotSupported(targetChainId);
     }
 }

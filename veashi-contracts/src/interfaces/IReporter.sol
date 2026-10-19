@@ -9,6 +9,7 @@ interface IReporter {
     error DispatcherNotSet();
     error MessageIdMismatch(uint256 messageId, uint256 expectedMessageId);
     error MessageNotVouched(address dispatcher, bytes32 messageHash);
+    error MessageAlreadyDispatched(bytes32 messageHash);
     error DispatcherReplaced(address dispatcher, address newDispatcher);
 
     /**
@@ -38,6 +39,7 @@ interface IReporter {
      * @param messageIds - An array of Uint256 message identifiers.
      * @param messageHashes - An array of bytes32 message hashes.
      * @notice This function can be called only by Yaho, and only for messages the reporter's dispatcher vouches for.
+     * A reporter dispatches each message once: a second entry for the same message reverts.
      * @return result - The result returned by the adapter as bytes.
      */
     function dispatchMessages(

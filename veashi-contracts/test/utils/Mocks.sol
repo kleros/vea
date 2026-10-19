@@ -28,6 +28,20 @@ contract GatewayHarness is VouchedDispatcher {
         return _dispatchVouched(targetChainId, threshold, receiver, data, reporters, adapters);
     }
 
+    /// @dev Several messages in one call: Foundry clears transient storage between a test's top-level calls.
+    function dispatchEach(
+        uint256 targetChainId,
+        uint256 threshold,
+        address receiver,
+        bytes[] memory data,
+        IHashiReporter[] memory reporters,
+        IHashiAdapter[] memory adapters
+    ) external {
+        for (uint256 i = 0; i < data.length; i++) {
+            _dispatchVouched(targetChainId, threshold, receiver, data[i], reporters, adapters);
+        }
+    }
+
     function _yaho() internal view override returns (address) {
         return YAHO;
     }

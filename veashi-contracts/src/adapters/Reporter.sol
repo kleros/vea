@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {MessageIdCalculator} from "@hashi/utils/MessageIdCalculator.sol";
 import {IReporter} from "../interfaces/IReporter.sol";
@@ -12,6 +12,9 @@ abstract contract Reporter is IReporter, KeeperGoverned, MessageIdCalculator {
     address public immutable YAHO;
     /// @dev The one contract (a gateway) whose vouched messages this reporter pays to dispatch.
     address public dispatcher;
+    /// @dev The last hash this reporter paid for; cleared at the end of every transaction.
+    /// The dispatcher vouches for one hash at a time, so a repeat of a message comes right after it.
+    bytes32 private transient _lastDispatchedHash;
 
     modifier onlyYaho() {
         if (msg.sender != YAHO) revert NotYaho(msg.sender, YAHO);
@@ -46,6 +49,9 @@ abstract contract Reporter is IReporter, KeeperGoverned, MessageIdCalculator {
             if (!IDispatchVoucher(dispatcher_).isDispatching(messageHashes[i])) {
                 revert MessageNotVouched(dispatcher_, messageHashes[i]);
             }
+            // Yaho calls every reporter entry, so a reporter listed twice would pay twice for one message.
+            if (messageHashes[i] == _lastDispatchedHash) revert MessageAlreadyDispatched(messageHashes[i]);
+            _lastDispatchedHash = messageHashes[i];
             emit MessageDispatched(targetChainId, adapter, messageIds[i], messageHashes[i]);
             unchecked {
                 ++i;

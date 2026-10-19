@@ -8,6 +8,7 @@ import {PaidReporter} from "../src/adapters/PaidReporter.sol";
 import {CCIPReporter} from "../src/adapters/chainlink/CCIPReporter.sol";
 import {LayerZeroReporter} from "../src/adapters/layerZero/LayerZeroReporter.sol";
 import {DeBridgeReporter} from "../src/adapters/deBridge/DeBridgeReporter.sol";
+import {AxelarReporter} from "../src/adapters/axelar/AxelarReporter.sol";
 import {VeashiTestBase} from "./utils/VeashiTestBase.sol";
 import "./utils/Mocks.sol";
 
@@ -88,15 +89,23 @@ contract QuoteTest is VeashiTestBase {
         lzReporter.quoteDispatch(unknown, IAdapter(adapters[1]), ids, hashes);
         vm.expectRevert(abi.encodeWithSelector(DeBridgeReporter.DeBridgeChainIdNotSet.selector, unknown));
         deBridgeReporter.quoteDispatch(unknown, IAdapter(adapters[2]), ids, hashes);
+        vm.expectRevert(abi.encodeWithSelector(AxelarReporter.ChainIdNotSupported.selector, unknown));
+        axelarReporter.quoteDispatch(unknown, IAdapter(adapters[3]), ids, hashes);
     }
 
-    /// @dev Axelar's unset-name check never fires (audit P6, left as is), so its quote shares the dispatch's behaviour.
-    function test_AxelarQuoteForUnconfiguredChainMatchesDispatch() public view {
-        uint256[] memory ids = new uint256[](1);
-        bytes32[] memory hashes = new bytes32[](1);
-        (address token, uint256 amount) = axelarReporter.quoteDispatch(999, IAdapter(adapters[3]), ids, hashes);
-        assertEq(token, address(0));
-        assertEq(amount, axelarReporter.fee());
+    /// Audit P6: an unset chain name used to pass the check, so the fee was paid for a call routed nowhere.
+    function test_AxelarDispatchToUnconfiguredChainReverts() public {
+        uint256 unknown = 999;
+        (IHashiReporter[] memory r, IHashiAdapter[] memory a) = _one(3);
+        uint256 balance = address(axelarReporter).balance;
+        vm.expectRevert(abi.encodeWithSelector(AxelarReporter.ChainIdNotSupported.selector, unknown));
+        gateway.dispatch(unknown, 1, receiver, "m", r, a);
+        assertEq(address(axelarReporter).balance, balance);
+        assertEq(axelarGateway.calls(), 0);
+
+        // Positive control: a configured chain goes through.
+        gateway.dispatch(STORY, 1, receiver, "m", r, a);
+        assertEq(axelarGateway.calls(), 1);
     }
 
     function _quote(uint256 i, uint256 messageId, bytes32 messageHash) internal view returns (address, uint256) {
