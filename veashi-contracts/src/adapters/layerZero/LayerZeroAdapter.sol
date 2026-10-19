@@ -36,12 +36,15 @@ contract LayerZeroAdapter is Adapter, ILayerZeroReceiver, GovernedOAppCore {
         /* _executor*/
         bytes calldata /* _extraData*/
     ) external payable {
+        uint256 sourceChainId = chainIds[_origin.srcEid];
         if (
             msg.sender != LAYER_ZERO_ENDPOINT ||
-            enabledReporters[_origin.srcEid] != address(uint160(uint256(_origin.sender)))
+            enabledReporters[_origin.srcEid] != address(uint160(uint256(_origin.sender))) ||
+            peers[_origin.srcEid] != _origin.sender ||
+            sourceChainId == 0
         ) revert UnauthorizedLayerZeroReceive();
         (uint256[] memory ids, bytes32[] memory hashes) = abi.decode(_message, (uint256[], bytes32[]));
-        _storeHashes(chainIds[_origin.srcEid], ids, hashes);
+        _storeHashes(sourceChainId, ids, hashes);
     }
 
     function nextNonce(

@@ -27,8 +27,10 @@ contract CCIPAdapter is Adapter, Governed, CCIPReceiver {
     function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
         // NOTE: validity of `msg.sender` is ensured by `CCIPReceiver` prior this internal function invocation
         address sender = abi.decode(message.sender, (address));
-        if (enabledReporters[message.sourceChainSelector] != sender) revert UnauthorizedCCIPReceive();
         uint256 sourceChainId = chainIds[message.sourceChainSelector];
+        if (enabledReporters[message.sourceChainSelector] != sender || sourceChainId == 0) {
+            revert UnauthorizedCCIPReceive();
+        }
         (uint256[] memory ids, bytes32[] memory hashes) = abi.decode(message.data, (uint256[], bytes32[]));
         _storeHashes(sourceChainId, ids, hashes);
     }

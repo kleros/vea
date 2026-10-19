@@ -22,7 +22,7 @@ contract VeaAdapter is IReceiverGateway, Adapter, Governed {
 
     modifier onlyFromAuthenticatedVeaSender(address sourceMsgSender) {
         if (msg.sender != VEA_OUTBOX) revert InvalidVeaOutbox(msg.sender, VEA_OUTBOX);
-        if (sourceMsgSender != REPORTER) revert InvalidReporter(REPORTER, sourceMsgSender);
+        if (sourceMsgSender != REPORTER) revert InvalidReporter(sourceMsgSender, REPORTER);
         _;
     }
 

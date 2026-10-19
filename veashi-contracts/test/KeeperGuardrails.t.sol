@@ -107,6 +107,123 @@ contract KeeperGuardrailsTest is VeashiTestBase {
         axelarReporter.changeKeeperGuardrails(250, 2 hours);
     }
 
+    /// [F9.1]: the governor cannot set a guardrail past 100% per update or a cooldown past a year.
+    function test_ChangeKeeperGuardrailsRejectsOutOfRange() public {
+        uint256 maxCooldown = axelarReporter.MAX_KEEPER_COOLDOWN();
+        assertEq(maxCooldown, 365 days);
+
+        vm.startPrank(governor);
+        vm.expectRevert(abi.encodeWithSelector(KeeperGoverned.InvalidKeeperGuardrails.selector, 10_001, 1 hours));
+        axelarReporter.changeKeeperGuardrails(10_001, 1 hours);
+        vm.expectRevert(abi.encodeWithSelector(KeeperGoverned.InvalidKeeperGuardrails.selector, 500, maxCooldown + 1));
+        axelarReporter.changeKeeperGuardrails(500, maxCooldown + 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                KeeperGoverned.InvalidKeeperGuardrails.selector,
+                type(uint256).max,
+                type(uint256).max
+            )
+        );
+        axelarReporter.changeKeeperGuardrails(type(uint256).max, type(uint256).max);
+        vm.stopPrank();
+
+        assertEq(axelarReporter.keeperMaxChangeBps(), 500);
+        assertEq(axelarReporter.keeperCooldown(), 1 hours);
+    }
+
+    /// [F9.1]: the bounds themselves are accepted and enforced as set.
+    function test_ChangeKeeperGuardrailsAcceptsBounds() public {
+        vm.prank(governor);
+        axelarReporter.changeKeeperGuardrails(10_000, 365 days);
+        assertEq(axelarReporter.keeperMaxChangeBps(), 10_000);
+        assertEq(axelarReporter.keeperCooldown(), 365 days);
+
+        // 100% per update: the keeper may double the value.
+        vm.warp(1_000_000);
+        vm.prank(keeper);
+        axelarReporter.setFee(2000);
+        assertEq(axelarReporter.fee(), 2000);
+
+        // A one-year cooldown.
+        vm.warp(1_000_000 + 365 days - 1);
+        vm.prank(keeper);
+        vm.expectRevert(
+            abi.encodeWithSelector(KeeperGoverned.KeeperCooldownActive.selector, FEE, 1_000_000 + 365 days)
+        );
+        axelarReporter.setFee(1000);
+        vm.warp(1_000_000 + 365 days);
+        vm.prank(keeper);
+        vm.expectRevert(abi.encodeWithSelector(KeeperGoverned.KeeperChangeTooLarge.selector, FEE, 2000, 4001));
+        axelarReporter.setFee(4001);
+        vm.prank(keeper);
+        axelarReporter.setFee(4000);
+        assertEq(axelarReporter.fee(), 4000);
+    }
+
+    /// [F9.1]: a keeper update of a value near type(uint256).max follows the max change rule, without overflow.
+    function test_MaxChangeOnHugeValue() public {
+        uint256 value = type(uint256).max;
+        uint256 step = value / 20; // 5%, rounded down
+        vm.prank(governor);
+        axelarReporter.setFee(value);
+
+        vm.prank(keeper);
+        vm.expectRevert(
+            abi.encodeWithSelector(KeeperGoverned.KeeperChangeTooLarge.selector, FEE, value, value - step - 1)
+        );
+        axelarReporter.setFee(value - step - 1);
+
+        vm.prank(keeper);
+        axelarReporter.setFee(value - step);
+        assertEq(axelarReporter.fee(), value - step);
+    }
+
+    /// [F9.1]: at 100% per update, the keeper may move a value near type(uint256).max anywhere off zero.
+    function test_FullMaxChangeOnHugeValue() public {
+        vm.startPrank(governor);
+        axelarReporter.changeKeeperGuardrails(10_000, 0);
+        axelarReporter.setFee(type(uint256).max);
+        vm.stopPrank();
+
+        vm.prank(keeper);
+        axelarReporter.setFee(1);
+        assertEq(axelarReporter.fee(), 1);
+    }
+
+    /// [F9.1]: a huge keeper-supplied value is too large a change, not an overflow.
+    function test_MaxChangeOnHugeNewValue() public {
+        vm.prank(keeper);
+        vm.expectRevert(
+            abi.encodeWithSelector(KeeperGoverned.KeeperChangeTooLarge.selector, FEE, 1000, type(uint256).max)
+        );
+        axelarReporter.setFee(type(uint256).max);
+        assertEq(axelarReporter.fee(), 1000);
+    }
+
+    /// [F9.1]: the overflow-free check accepts exactly the updates that
+    /// `delta * BPS_DENOMINATOR <= oldValue * keeperMaxChangeBps` accepts.
+    function testFuzz_MaxChangeMatchesBpsRule(uint256 maxChangeBps, uint256 oldValue, uint256 delta, bool up) public {
+        maxChangeBps = bound(maxChangeBps, 0, 10_000);
+        // Bounded so that the reference products below cannot overflow; deltas cluster around the limit.
+        oldValue = bound(oldValue, 1, type(uint256).max / 30_000);
+        delta = bound(delta, 0, (2 * oldValue * maxChangeBps) / 10_000 + 2);
+        uint256 newValue = up || delta > oldValue ? oldValue + delta : oldValue - delta;
+        vm.startPrank(governor);
+        axelarReporter.changeKeeperGuardrails(maxChangeBps, 0);
+        axelarReporter.setFee(oldValue);
+        vm.stopPrank();
+
+        bool allowed = delta * 10_000 <= oldValue * maxChangeBps;
+        if (!allowed) {
+            vm.expectRevert(
+                abi.encodeWithSelector(KeeperGoverned.KeeperChangeTooLarge.selector, FEE, oldValue, newValue)
+            );
+        }
+        vm.prank(keeper);
+        axelarReporter.setFee(newValue);
+        assertEq(axelarReporter.fee(), allowed ? newValue : oldValue);
+    }
+
     function test_ChangeKeeperEmits() public {
         address next = makeAddr("nextKeeper");
         vm.expectEmit(address(axelarReporter));

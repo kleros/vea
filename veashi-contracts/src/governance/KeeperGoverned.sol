@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Governed} from "./Governed.sol";
 
 /// @title KeeperGoverned
@@ -9,6 +10,7 @@ import {Governed} from "./Governed.sol";
 /// never off zero), while the governor moves them freely.
 abstract contract KeeperGoverned is Governed {
     uint256 public constant BPS_DENOMINATOR = 10_000;
+    uint256 public constant MAX_KEEPER_COOLDOWN = 365 days;
 
     address public keeper;
     uint256 public keeperMaxChangeBps = 500;
@@ -21,6 +23,7 @@ abstract contract KeeperGoverned is Governed {
     error KeeperCooldownActive(bytes32 valueKey, uint256 nextUpdateAt);
     error KeeperCannotMoveOffZero(bytes32 valueKey);
     error KeeperChangeTooLarge(bytes32 valueKey, uint256 oldValue, uint256 newValue);
+    error InvalidKeeperGuardrails(uint256 maxChangeBps, uint256 cooldown);
 
     event KeeperChanged(address indexed previousKeeper, address indexed newKeeper);
     event KeeperGuardrailsChanged(uint256 keeperMaxChangeBps, uint256 keeperCooldown);
@@ -41,8 +44,12 @@ abstract contract KeeperGoverned is Governed {
         keeper = newKeeper;
     }
 
-    /// @notice Sets how far and how often the keeper may move an operating value.
+    /// @notice Sets how far and how often the keeper may move an operating value: at most `BPS_DENOMINATOR`
+    /// (100%) per update, and a cooldown of at most `MAX_KEEPER_COOLDOWN`.
     function changeKeeperGuardrails(uint256 maxChangeBps, uint256 cooldown) external onlyByGovernor {
+        if (maxChangeBps > BPS_DENOMINATOR || cooldown > MAX_KEEPER_COOLDOWN) {
+            revert InvalidKeeperGuardrails(maxChangeBps, cooldown);
+        }
         keeperMaxChangeBps = maxChangeBps;
         keeperCooldown = cooldown;
         emit KeeperGuardrailsChanged(maxChangeBps, cooldown);
@@ -58,7 +65,8 @@ abstract contract KeeperGoverned is Governed {
         }
         if (oldValue == 0) revert KeeperCannotMoveOffZero(valueKey);
         uint256 delta = newValue > oldValue ? newValue - oldValue : oldValue - newValue;
-        if (delta * BPS_DENOMINATOR > oldValue * keeperMaxChangeBps) {
+        // Same rule as `delta * BPS_DENOMINATOR > oldValue * keeperMaxChangeBps`, without overflow for any value.
+        if (delta > Math.mulDiv(oldValue, keeperMaxChangeBps, BPS_DENOMINATOR)) {
             revert KeeperChangeTooLarge(valueKey, oldValue, newValue);
         }
         keeperLastUpdate[valueKey] = block.timestamp;

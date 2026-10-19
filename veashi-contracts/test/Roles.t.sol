@@ -118,11 +118,23 @@ contract RolesTest is VeashiTestBase {
         assertEq(lzAdapter.owner(), governor);
     }
 
+    /// @dev Deploys through external helpers: in forge 1.8.5 an expected revert on a bare `new` can end the test there.
     function test_ConstructorRejectsZeroGovernor() public {
         vm.expectRevert(Governed.ZeroGovernor.selector);
-        new CCIPAdapter(address(ccipRouter), address(0));
+        this.deployCCIPAdapter(address(0));
         vm.expectRevert(Governed.ZeroGovernor.selector);
-        new DeBridgeReporter(address(yaho), address(deBridgeGate), address(0), keeper);
+        this.deployDeBridgeReporter(address(0));
+        // Positive controls: the same constructors accept a governor.
+        assertEq(this.deployCCIPAdapter(governor).governor(), governor);
+        assertEq(this.deployDeBridgeReporter(governor).governor(), governor);
+    }
+
+    function deployCCIPAdapter(address governor_) external returns (CCIPAdapter) {
+        return new CCIPAdapter(address(ccipRouter), governor_);
+    }
+
+    function deployDeBridgeReporter(address governor_) external returns (DeBridgeReporter) {
+        return new DeBridgeReporter(address(yaho), address(deBridgeGate), governor_, keeper);
     }
 
     function test_RowGovernor_ChainMapsAndIds() public {

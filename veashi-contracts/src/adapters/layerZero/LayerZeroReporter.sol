@@ -24,6 +24,7 @@ contract LayerZeroReporter is PaidReporter, GovernedOAppCore {
     address public refundAddress;
 
     error EndpointIdNotAvailable();
+    error ZeroRefundAddress();
 
     event EndpointIdSet(uint256 indexed chainId, uint32 indexed endpointId);
     event GasLimitSet(uint256 gasLimit);
@@ -38,6 +39,7 @@ contract LayerZeroReporter is PaidReporter, GovernedOAppCore {
         address governor_,
         address keeper_
     ) Reporter(yaho, governor_, keeper_) OAppCore(lzEndpoint, delegate) {
+        if (refundAddress_ == address(0)) revert ZeroRefundAddress();
         refundAddress = refundAddress_;
         gasLimit = defaultGasLimit_;
         LAYER_ZERO_ENDPOINT = ILayerZeroEndpointV2(lzEndpoint);
@@ -55,6 +57,7 @@ contract LayerZeroReporter is PaidReporter, GovernedOAppCore {
     }
 
     function setDefaultRefundAddress(address refundAddress_) external onlyByGovernor {
+        if (refundAddress_ == address(0)) revert ZeroRefundAddress();
         refundAddress = refundAddress_;
         emit DefaultRefundAddressSet(refundAddress_);
     }
