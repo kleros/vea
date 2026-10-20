@@ -790,16 +790,25 @@ describe("hashi", () => {
       it.each([
         ["an Envio-shaped (number nonce)", envioShaped],
         ["an RPC-shaped (bigint nonce)", rpcShaped],
-      ])("should keep %s message pending when the preflight fails with a transport error (T2)", async (_, shape) => {
-        const kept = record(11n, shape(3), nowSec - 60);
+      ])(
+        "should halt the route, with no checkpoint, when the preflight of %s message fails with a transport error (T2)",
+        async (_, shape) => {
+          const { yaru, send } = fakeYaru(() => fixtures.T2);
+
+          await expect(runCycle([record(11n, shape(3), nowSec - 60)], yaru)).rejects.toBe(fixtures.T2);
+
+          expect(send).not.toHaveBeenCalled();
+          expect(updateStateFile).not.toHaveBeenCalled();
+        }
+      );
+
+      it("should not drop a message dispatched more than one week ago when its preflight fails with a transport error", async () => {
         const { yaru, send } = fakeYaru(() => fixtures.T2);
 
-        const result = await runCycle([kept], yaru);
+        await expect(runCycle([record(11n, rpcShaped(3), nowSec - ONE_WEEK - 60)], yaru)).rejects.toBe(fixtures.T2);
 
-        expect(result).toBe(currentBlockNumber);
         expect(send).not.toHaveBeenCalled();
-        expect(savedPending()).toHaveLength(1);
-        expect(savedPending()[0]).toBe(kept);
+        expect(updateStateFile).not.toHaveBeenCalled();
       });
 
       it("should keep a CallFailed message pending with its dispatch timestamp and out of the batch", async () => {
@@ -887,16 +896,15 @@ describe("hashi", () => {
       });
 
       it.each([...(["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9"] as const), ...UNKNOWN_FAILURES])(
-        "should keep a message pending, with no probe, when the preflight fails with %s",
+        "should halt the route, with no probe and no checkpoint, when the preflight fails with %s",
         async (id) => {
-          const kept = record(11n, rpcShaped(3), nowSec - 60);
           const { yaru, send, staticCall } = fakeYaru(() => fixtures[id]);
 
-          await runCycle([kept], yaru);
+          await expect(runCycle([record(11n, rpcShaped(3), nowSec - 60)], yaru)).rejects.toBe(fixtures[id]);
 
           expect(staticCall).toHaveBeenCalledTimes(1);
           expect(send).not.toHaveBeenCalled();
-          expect(savedPending()).toEqual([kept]);
+          expect(updateStateFile).not.toHaveBeenCalled();
         }
       );
 
@@ -1046,7 +1054,49 @@ describe("hashi", () => {
 
           expect(sentNonces(send)).toEqual([[3n, 4n, 5n], [3n], [4n], [5n]]);
           expect(kept).toEqual([]);
+          expect(emit).toHaveBeenCalledWith(BotEvents.HASHI_BATCH_FAILED, sourceChainId, targetChainId, 3, error);
           expect(emit).toHaveBeenCalledWith(BotEvents.HASHI_MESSAGE_FAILING, "4", "0", "1", error);
+        });
+
+        it("should not send a dropped mined-revert message again in the next cycle", async () => {
+          const records = [record(11n, rpcShaped(3), nowSec - 60), record(12n, rpcShaped(4), nowSec - 60)];
+          const { yaru, send } = scriptedYaru(
+            async () => ({ wait: jest.fn().mockRejectedValue(minedRevert()) }),
+            async () => ({ wait: jest.fn().mockRejectedValue(minedRevert()) }),
+            async () => okTx()
+          );
+          let checkpoint = 50;
+          let saved: HashiMessageExecutionVars[] = [];
+          mockIsMessageExecutable.mockImplementation(async ({ hashiMessage }) => ({
+            hashiMessage,
+            executable: true,
+            status: HashiExecutionStatus.EXECUTABLE,
+          }));
+          const cycle = () =>
+            runHashiExecutor(
+              buildArgs({
+                fetchStartBlockNumber: jest.fn(async () => checkpoint),
+                fetchPendingMessages: jest.fn(async () => saved),
+                // The scan returns the messages dispatched after the checkpoint (block 100)
+                fetchAllMessageLogs: jest.fn(async (_s, _t, _r, _y, fromBlock: number) => ({
+                  txns: records.filter((r) => r.blockNumber > fromBlock),
+                  toBlock: 200,
+                })),
+                executeMsgsOnHashi: (src: number, dst: number, params: HashiMessage[], e: EventEmitter) =>
+                  executeBatchOnHashi(src, dst, params, e, yaru),
+                updateStateFile: jest.fn(async (_s, _t, _ts, block: number, pending: HashiMessageExecutionVars[]) => {
+                  checkpoint = block;
+                  saved = pending;
+                }),
+              })
+            );
+
+          await cycle();
+          await cycle();
+
+          expect(sentNonces(send)).toEqual([[3n, 4n], [3n], [4n]]);
+          expect(checkpoint).toBe(200);
+          expect(saved).toEqual([]);
         });
 
         it("should apply the single rules to a failing batch of one message without resending", async () => {

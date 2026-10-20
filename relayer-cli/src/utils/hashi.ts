@@ -47,16 +47,19 @@ const isWithinPendingWindow = (record: HashiMessageExecutionVars, nowSec: number
   record.timestamp + MAX_PENDING_TIME_SECONDS >= nowSec;
 
 /**
- * Run the Hashi executor to process and execute messages.
- * @param chainId The chain ID
- * @param network The network name
- * @param nonce The starting Vea msg nonce
+ * Run the Hashi executor for one route: scan the messages dispatched since the checkpoint, execute those whose
+ * threshold is met, and save the checkpoint with the messages still pending.
+ * @param sourceChainId The chain ID of the Yaho (source) chain
+ * @param targetChainId The chain ID of the Yaru (target) chain
  * @param emitter The event emitter
- * @param fetchBridgeConfig Function to fetch bridge configuration
- * @param fetchVeaInbox Function to fetch Vea Inbox contract instance
+ * @param fetchBridgeConfig Function to fetch the route's bridge configuration
+ * @param fetchAllMessageLogs Function to fetch the dispatched messages after a block
  * @param isMessageExecutable Function to check if a message is executable
  * @param executeMsgsOnHashi Function to execute messages on Hashi
- * @returns The updated nonce after processing
+ * @param fetchStartBlockNumber Function to claim the lock and read the checkpoint block
+ * @param fetchPendingMessages Function to read the saved pending messages
+ * @param updateStateFile Function to save the checkpoint and the pending messages, and release the lock
+ * @returns The block checkpointed in the state file
  */
 async function runHashiExecutor({
   sourceChainId,
@@ -227,8 +230,10 @@ function connectYaru(sourceChainId: number, targetChainId: number, emitter: Even
 }
 
 /** * Execute a batch of messages on Hashi (Yaru contract)
- * @param chainId The chain ID
- * @param params The array of HashiMessageState to execute
+ * @param sourceChainId The chain ID of the Yaho (source) chain
+ * @param targetChainId The chain ID of the Yaru (target) chain
+ * @param params The messages to execute
+ * @param emitter The event emitter
  * @param yaru The Yaru contract (injected for testing)
  * @returns The nonces of the messages that failed their preflight or their own send and must stay pending
  */
@@ -283,8 +288,10 @@ function toYaruMessage(hashiMessage: HashiMessage): YaruMessage {
 /**
  * Check each message alone before sending the batch, so one failing message does not revert the others. Messages that
  * pass alone can still conflict together; sendYaruBatch handles that.
- * Only a message another party already executed is dropped; a receiver revert (CallFailed), any other revert and
- * a transport failure keep the message pending for the next cycle.
+ * Only a message another party already executed is dropped; a receiver revert (CallFailed) and any other revert keep
+ * the message pending for the next cycle. A failure not tied to the message (transport, or a failure the classifier
+ * cannot place) is rethrown, as in the threshold check, so the cycle writes no checkpoint and no message ages out of
+ * the pending window over a provider fault.
  * @returns The messages that passed and the nonces to keep pending
  */
 async function preflightMessages(
@@ -301,6 +308,10 @@ async function preflightMessages(
       await yaru.executeMessages.staticCall([message]);
       passed.push(message);
     } catch (error) {
+      const failure = classifyPreflightError(error);
+      if (failure === PreflightFailure.TRANSPORT) {
+        throw error;
+      }
       emitter.emit(
         BotEvents.HASHI_MESSAGE_FAILING,
         message.nonce.toString(),
@@ -308,7 +319,7 @@ async function preflightMessages(
         targetChainId.toString(),
         error
       );
-      if (classifyPreflightError(error) !== PreflightFailure.ALREADY_EXECUTED) {
+      if (failure !== PreflightFailure.ALREADY_EXECUTED) {
         kept.push(message.nonce);
       }
     }
@@ -413,6 +424,8 @@ async function sendYaruBatch(
   if (failed.broadcast && classifySendFailure(failed.error) !== MINED_REVERT) {
     throw batchFailure(failed.error, messages.length, sourceChainId, targetChainId, emitter);
   }
+  // Log why the messages go out one by one
+  emitter.emit(BotEvents.HASHI_BATCH_FAILED, sourceChainId, targetChainId, messages.length, failed.error);
 
   const kept: bigint[] = [];
   for (const message of messages) {
@@ -637,7 +650,7 @@ async function decodeRouteLogs(
  * @param targetChainId The chain ID the messages are destined for; other routes' messages are excluded
  * @param providerRPC The RPC URL(s) for the source network, used for the fallback scan
  * @param yahoAddress The Yaho contract address
- * @param fromBlock The starting block number to fetch messages from
+ * @param fromBlock The last block already scanned; only messages after it are fetched
  * @param emitter The event emitter
  * @returns The dispatched messages and the block number to checkpoint in the state file
  */
