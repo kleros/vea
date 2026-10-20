@@ -1,75 +1,90 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "../../src/adapters/layerZero/LayerZeroReporter.sol";
-import {SetConfigParam} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
-import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
-import {ExecutorConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/SendLibBase.sol";
-import {MessageLibManager} from "@layerzerolabs/lz-evm-protocol-v2/contracts/MessageLibManager.sol";
-import {DeploymentState} from "../helpers/DeploymentState.sol";
+import {console} from "forge-std/console.sol";
+import {IMessageLibManager} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
+import {LayerZeroReporter} from "../../src/adapters/layerZero/LayerZeroReporter.sol";
+import {ILZEndpointViews} from "../helpers/BridgeViews.sol";
+import {LZInputs, LZReporterInputs} from "./LZInputs.sol";
 
-contract ConfigureLZReporter is DeploymentState {
-    uint32 constant EXECUTOR_CONFIG_TYPE = 1;
-    uint32 constant ULN_CONFIG_TYPE = 2;
-
+/// @dev Points the reporter at the adapter, pins the send library, sets the DVN config and funds the reporter.
+/// Rerunnable: it sends only the calls whose value differs, and funding tops up to LZ_REPORTER_FUNDING.
+contract ConfigureLZReporter is LZInputs {
     function run() external {
-        // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
-        address lzEndpoint = vm.envAddress("LZ_REPORTER_ENDPOINT");
-        uint256 chainId = vm.envUint("ADAPTER_CHAIN_ID");
-        uint32 eid = uint32(vm.envUint("LZ_ADAPTER_EID"));
-        address sendLib = vm.envAddress("LZ_SEND_LIB");
-        address executor = vm.envAddress("LZ_EXECUTOR");
-        uint128 gasLimit = uint128(vm.envUint("LZ_DEFAULT_FEE"));
-        address reporterAddress = _loadAddress(".lzReporter");
+        address deployer = vm.addr(pk);
+        _requireReporterChain();
+
+        LZReporterInputs memory inputs = _lzReporterInputs();
+        LayerZeroReporter reporter = LayerZeroReporter(payable(_loadAddress(".lzReporter")));
         address adapter = _loadAddress(".lzAdapter");
+        _requireCode("lzReporter", address(reporter));
+        require(
+            address(reporter.LAYER_ZERO_ENDPOINT()) == inputs.endpoint,
+            "lzReporter uses another endpoint than LZ_REPORTER_ENDPOINT"
+        );
+        bytes32 peer = bytes32(uint256(uint160(adapter)));
+
+        ILZEndpointViews endpoint = ILZEndpointViews(inputs.endpoint);
+        bool needGas = reporter.gasLimit() != inputs.gasLimit;
+        bool needPeer = reporter.peers(inputs.adapterEid) != peer;
+        bool needEid = reporter.endpointIds(ADAPTER_CHAIN_ID) != inputs.adapterEid;
+        bool needLib = endpoint.isDefaultSendLibrary(address(reporter), inputs.adapterEid) ||
+            endpoint.getSendLibrary(address(reporter), inputs.adapterEid) != inputs.sendLib;
+        bool needConfig = !_lzConfigMatches(
+            address(reporter),
+            inputs.sendLib,
+            inputs.adapterEid,
+            inputs.uln,
+            true,
+            inputs.executor,
+            inputs.maxMessageSize
+        );
+        if (needGas || needPeer || needEid) {
+            require(reporter.governor() == deployer, "lzReporter: the deployer is not its governor");
+        }
+        if (needLib || needConfig) {
+            require(
+                endpoint.delegates(address(reporter)) == deployer,
+                "lzReporter: the deployer is not its endpoint delegate"
+            );
+        }
 
         vm.startBroadcast(pk);
-        LayerZeroReporter reporter = LayerZeroReporter(payable(reporterAddress));
-        reporter.setGasLimit(gasLimit);
-        // Allow the adapter to receive messages
-        reporter.setPeer(eid, bytes32(uint256(uint160(adapter))));
-        console.log("Peer set for adapter");
-
-        reporter.setEndpointIdByChainId(chainId, eid);
-        console.log("Endpoint set for adapter chainId");
-
-        (bool success, ) = payable(address(reporter)).call{value: 0.001 ether}("");
-        require(success, "ETH transfer to reporter failed");
-        console.log("Funded reporter with 0.001 ETH");
-
-        // Set the DVN config as reporter
-        address[] memory optionalDVNs = new address[](0);
-        address[] memory requiredDVNs = new address[](1);
-
-        requiredDVNs[0] = address(0x53f488E93b4f1b60E8E83aa374dBe1780A1EE8a8);
-
-        UlnConfig memory uln = UlnConfig({
-            confirmations: 15, // minimum block confirmations required
-            requiredDVNCount: 1, // number of DVNs required
-            optionalDVNCount: 0, // optional DVNs count, uint8
-            optionalDVNThreshold: 0, // optional DVN threshold
-            requiredDVNs: requiredDVNs, // sorted list of required DVN addresses
-            optionalDVNs: optionalDVNs // sorted list of optional DVNs
-        });
-
-        /// @notice ExecutorConfig sets message size limit + fee‑paying executor
-        ExecutorConfig memory exec = ExecutorConfig({
-            maxMessageSize: 10000, // max bytes per cross-chain message
-            executor: executor // address that pays destination execution fees
-        });
-
-        bytes memory encodedUln = abi.encode(uln);
-        bytes memory encodedExec = abi.encode(exec);
-
-        SetConfigParam[] memory params = new SetConfigParam[](2);
-        params[0] = SetConfigParam(eid, EXECUTOR_CONFIG_TYPE, encodedExec);
-        params[1] = SetConfigParam(eid, ULN_CONFIG_TYPE, encodedUln);
-
-        MessageLibManager(lzEndpoint).setConfig(address(reporter), sendLib, params);
-        console.log("Config set successfully.");
-
+        if (needGas) reporter.setGasLimit(inputs.gasLimit);
+        if (needPeer) reporter.setPeer(inputs.adapterEid, peer);
+        if (needEid) reporter.setEndpointIdByChainId(ADAPTER_CHAIN_ID, inputs.adapterEid);
+        if (needLib) _pinSendLib(inputs.endpoint, address(reporter), inputs.adapterEid, inputs.sendLib);
+        if (needConfig) {
+            IMessageLibManager(inputs.endpoint).setConfig(
+                address(reporter),
+                inputs.sendLib,
+                _lzSendParams(inputs.adapterEid, inputs.executor, inputs.maxMessageSize, inputs.uln)
+            );
+        }
         vm.stopBroadcast();
+        if (!(needGas || needPeer || needEid || needLib || needConfig)) {
+            console.log("lzReporter already configured: nothing to send");
+        }
+
+        _verifyLz(
+            inputs.endpoint,
+            address(reporter),
+            inputs.sendLib,
+            inputs.adapterEid,
+            inputs.uln,
+            true,
+            inputs.executor,
+            inputs.maxMessageSize
+        );
+        require(reporter.gasLimit() == inputs.gasLimit, "LayerZeroReporter gasLimit mismatch");
+        require(reporter.peers(inputs.adapterEid) == peer, "LayerZeroReporter peers(LZ_ADAPTER_EID) mismatch");
+        require(
+            reporter.endpointIds(ADAPTER_CHAIN_ID) == inputs.adapterEid,
+            "LayerZeroReporter endpointIds(ADAPTER_CHAIN_ID) mismatch"
+        );
+
+        (address token, uint256 quote) = _quote(reporter, ADAPTER_CHAIN_ID, adapter, "lz");
+        _fund(pk, reporter, token, quote, inputs.funding, "LZ_REPORTER_FUNDING");
     }
 }

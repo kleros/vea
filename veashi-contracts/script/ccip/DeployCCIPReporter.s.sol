@@ -1,42 +1,55 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "forge-std/console.sol";
-import "../../src/adapters/chainlink/CCIPReporter.sol";
-import "../../src/adapters/chainlink/CCIPAdapter.sol";
+import {console} from "forge-std/console.sol";
+import {CCIPReporter} from "../../src/adapters/chainlink/CCIPReporter.sol";
+import {DispatcherCheck} from "../helpers/DispatcherCheck.sol";
+import {CCIPInputs, CCIPReporterInputs} from "./CCIPInputs.sol";
 
-import "../helpers/DeploymentState.sol";
+contract DeployCCIPReporter is CCIPInputs, DispatcherCheck {
+    /// @dev Stands in for the adapter, which is deployed later on the other chain; the fee does not depend on it.
+    address private constant PLACEHOLDER_ADAPTER = address(0xdead);
 
-contract DeployCCIPReporter is DeploymentState {
     function run() external {
-        // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
         address deployer = vm.addr(pk);
+        _requireReporterChain();
+        _requireNotDeployed("ccipReporter");
+
+        CCIPReporterInputs memory inputs = _ccipReporterInputs();
+        address yaho = _resolveYaho(true);
+        address keeper = _resolveKeeper(deployer);
+        address dispatcher = _optionalDispatcher(yaho);
+
         vm.startBroadcast(pk);
-
-        //
-        // Deploy & configure CCIPReporter
-        //
-        address yaho = vm.envOr("YAHO_ADDRESS", address(0));
-        if (yaho == address(0)) yaho = _loadAddress(".yaho");
-        address router = vm.envAddress("CCIP_REPORTER_ROUTER");
-
-        CCIPReporter reporter = new CCIPReporter(yaho, router, deployer, deployer);
-        _updateLocal("ccipReporter", address(reporter));
+        CCIPReporter reporter = new CCIPReporter(yaho, inputs.router, deployer, keeper);
+        reporter.setChainSelectorByChainId(ADAPTER_CHAIN_ID, inputs.adapterChainSelector);
+        if (inputs.feeToken != address(0)) reporter.setFeeToken(inputs.feeToken);
+        if (inputs.gasLimitSet) reporter.setDefaultGasLimit(inputs.gasLimit);
+        if (dispatcher != address(0)) reporter.setDispatcher(dispatcher);
+        vm.stopBroadcast();
         console.log("CCIPReporter deployed at:", address(reporter));
 
-        // read chain‐specific setup from env
-        uint256 adapterChainId = vm.envUint("ADAPTER_CHAIN_ID");
-        uint64 adapterChainSelector = uint64(vm.envUint("CCIP_ADAPTER_CHAIN_SELECTOR"));
+        require(reporter.YAHO() == yaho, "CCIPReporter YAHO mismatch");
+        require(address(reporter.CCIP_ROUTER()) == inputs.router, "CCIPReporter CCIP_ROUTER mismatch");
+        require(reporter.governor() == deployer, "CCIPReporter governor is not the deployer");
+        require(reporter.keeper() == keeper, "CCIPReporter keeper mismatch");
+        require(reporter.dispatcher() == dispatcher, "CCIPReporter dispatcher mismatch");
+        require(
+            reporter.chainSelectors(ADAPTER_CHAIN_ID) == inputs.adapterChainSelector,
+            "CCIPReporter chainSelectors(ADAPTER_CHAIN_ID) mismatch"
+        );
+        require(reporter.feeToken() == inputs.feeToken, "CCIPReporter feeToken mismatch");
+        if (inputs.gasLimitSet) {
+            require(reporter.defaultGasLimit() == inputs.gasLimit, "CCIPReporter defaultGasLimit mismatch");
+        } else {
+            console.log("CCIP_GAS_LIMIT unset: contract default 200000 kept");
+        }
+        console.log("defaultGasLimit:", reporter.defaultGasLimit());
 
-        // set the selector
-        reporter.setChainSelectorByChainId(adapterChainId, adapterChainSelector);
+        (address token, uint256 quote) = _quote(reporter, ADAPTER_CHAIN_ID, PLACEHOLDER_ADAPTER, "ccip");
+        _fund(pk, reporter, token, quote, inputs.funding, "CCIP_REPORTER_FUNDING");
 
-        // fund the reporter
-        (bool sent, ) = address(reporter).call{value: 0.0005 ether}("");
-        require(sent, "Failed to fund CCIPReporter");
-
-        vm.stopBroadcast();
+        _updateLocal("ccipReporter", address(reporter));
     }
 }

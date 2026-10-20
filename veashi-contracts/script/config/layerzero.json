@@ -1,0 +1,107 @@
+{
+  "_source": "https://metadata.layerzero-api.com/v1/metadata: messaging DVNs only (version 2, not lzReadCompatible, not deprecated), EIP-55 checksummed. confirmations: the source chain's live LayerZero default, SendUln302.getUlnConfig(an address without config, dstEid) on a pathway whose required DVNs are not the LayerZero dead DVN. Fetched 2026-10-19.",
+  "requiredDVNs": [
+    "layerzero-labs"
+  ],
+  "maxMessageSize": 10000,
+  "chains": {
+    "30101": {
+      "name": "ethereum",
+      "chainId": 1,
+      "confirmations": 15,
+      "dvns": {
+        "layerzero-labs": "0x589dEDbD617e0CBcB916A9223F4d1300c294236b",
+        "nethermind": "0xa59BA433ac34D2927232918Ef5B2eaAfcF130BA5"
+      }
+    },
+    "30110": {
+      "name": "arbitrum",
+      "chainId": 42161,
+      "confirmations": 20,
+      "dvns": {
+        "layerzero-labs": "0x2f55C492897526677C5B68fb199ea31E2c126416",
+        "nethermind": "0xa7b5189bcA84Cd304D8553977c7C614329750d99"
+      }
+    },
+    "30184": {
+      "name": "base",
+      "chainId": 8453,
+      "confirmations": 10,
+      "dvns": {
+        "layerzero-labs": "0x9e059a54699a285714207b43B055483E78FAac25",
+        "nethermind": "0xcd37CA043f8479064e10635020c65FfC005d36f6"
+      }
+    },
+    "30364": {
+      "name": "story",
+      "chainId": 1514,
+      "confirmations": 5,
+      "dvns": {
+        "layerzero-labs": "0x9C061c9A4782294eeF65ef28Cb88233A987F4bdD",
+        "nethermind": "0xDd7B5E1dB4AaFd5C8EC3b764eFB8ed265Aa5445B"
+      }
+    },
+    "30410": {
+      "name": "tempo",
+      "chainId": 4217,
+      "confirmations": 5,
+      "dvns": {
+        "layerzero-labs": "0x76FaFF60799021B301B45dC1BbEDE53F261F9961",
+        "nethermind": "0x0D875bD6c833cEDef7Fca4FE154d023cDB8eb1cb"
+      }
+    },
+    "30417": {
+      "name": "arc",
+      "chainId": 5042,
+      "confirmations": 5,
+      "dvns": {
+        "layerzero-labs": "0xa2447e5B58D357c49Bf74B50B14421e6A100e525",
+        "nethermind": "0x9E0E95Ede70F680f74480b510FF9f45C70e3da80"
+      }
+    },
+    "40145": {
+      "name": "chiado",
+      "chainId": 10200,
+      "confirmations": 1,
+      "dvns": {
+        "layerzero-labs": "0xaBfa1F7c3586eaFF6958DC85BAEbBab7D3908fD2",
+        "nethermind": "0xb186F85d0604FE58af2Ea33fE40244f5EEF7351B"
+      }
+    },
+    "40161": {
+      "name": "sepolia",
+      "chainId": 11155111,
+      "confirmations": 2,
+      "dvns": {
+        "layerzero-labs": "0x8eebf8b423B73bFCa51a1Db4B7354AA0bFCA9193",
+        "nethermind": "0x68802e01D6321D5159208478f297d7007A7516Ed"
+      }
+    },
+    "40231": {
+      "name": "arbitrum-sepolia",
+      "chainId": 421614,
+      "confirmations": 5,
+      "dvns": {
+        "layerzero-labs": "0x53f488E93b4f1b60E8E83aa374dBe1780A1EE8a8",
+        "nethermind": "0x3a74F7174709842d3b8a14ce60B4AA2499F2A2F2"
+      }
+    },
+    "40245": {
+      "name": "base-sepolia",
+      "chainId": 84532,
+      "confirmations": 2,
+      "dvns": {
+        "layerzero-labs": "0xe1a12515F9AB2764b887bF60B923Ca494EBbB2d6",
+        "nethermind": "0xd9222CC3Ccd1DF7c070d700EA377D4aDA2B86Eb5"
+      }
+    },
+    "40434": {
+      "name": "arc-testnet",
+      "chainId": 5042002,
+      "confirmations": 1,
+      "dvns": {
+        "layerzero-labs": "0x88B27057A9e00c5F05DDa29241027afF63f9e6e0"
+      }
+    }
+  }
+}
