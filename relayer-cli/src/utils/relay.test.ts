@@ -17,6 +17,20 @@ const TRANSPORT_FAILURES = [
 // The error ethers' TransactionResponse.wait rejects with when its timeout elapses
 const waitTimeout = makeError("wait for transaction timeout", "TIMEOUT");
 
+// The error ethers' TransactionResponse.wait rejects with when the mined transaction reverted (status 0): it carries
+// the receipt and no revert data
+const minedRevert = Object.assign(makeError("transaction execution reverted", "CALL_EXCEPTION", {} as any), {
+  receipt: { status: 0 },
+});
+
+// A batchSend.estimateGas mock for a batch conflict: a batch of several calls reverts (R1), and so does any single
+// call of a nonce in `failingAlone`
+const conflictingEstimate = (failingAlone: number[] = []) =>
+  jest.fn().mockImplementation((_targets, _values, datas: string[]) => {
+    const conflict = datas.length > 1 || failingAlone.includes(Number(datas[0].replace("callData_", "")));
+    return conflict ? Promise.reject(R1) : Promise.resolve(600000);
+  });
+
 // The nonces carried by a batchSend call, read back from the mocked call data `callData_<nonce>`
 const batchNonces = (batchSend: jest.Mock, call: number): number[] =>
   batchSend.mock.calls[call][2].map((data: string) => Number(data.replace("callData_", "")));
@@ -387,6 +401,230 @@ describe("relay", () => {
       );
     });
 
+    describe("when the batch fails", () => {
+      let emitSpy: jest.SpyInstance;
+
+      const callRelayBatch = (from = nonce) =>
+        relayBatch({
+          targetChainId,
+          network,
+          nonce: from,
+          maxBatchSize,
+          emitter: mockEmitter,
+          fetchBridgeConfig,
+          fetchCount,
+          fetchVeaOutbox,
+          fetchProofAtCount,
+          fetchMessageDataToRelay,
+          fetchBatcher,
+        });
+
+      beforeEach(() => {
+        emitSpy = jest.spyOn(mockEmitter, "emit");
+      });
+
+      afterEach(() => {
+        emitSpy.mockRestore();
+      });
+
+      it("sends a passing batch in one transaction", async () => {
+        fetchCount.mockResolvedValue(3);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+        expect(batchNonces(mockBatchSend, 0)).toEqual([0, 1, 2]);
+        expect(updatedNonce).toBe(3);
+      });
+
+      it("sends the messages of a conflicting batch one by one and skips the one that fails alone", async () => {
+        fetchCount.mockResolvedValue(2);
+        mockBatchSend.estimateGas = conflictingEstimate([1]);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+        expect(batchNonces(mockBatchSend, 0)).toEqual([0]);
+        expect(emitSpy).toHaveBeenCalledWith(BotEvents.MESSAGE_EXECUTION_FAILED, targetChainId, network, 1, R1);
+        expect(updatedNonce).toBe(2);
+
+        // The next cycle starts past both messages and sends nothing
+        const nextNonce = await callRelayBatch(updatedNonce);
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+        expect(nextNonce).toBe(2);
+      });
+
+      it("reports each single's nonce and hash through onBatchSent", async () => {
+        fetchCount.mockResolvedValue(2);
+        mockBatchSend.estimateGas = conflictingEstimate();
+        mockWait.mockResolvedValueOnce({ hash: "0xa" }).mockResolvedValueOnce({ hash: "0xb" });
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(batchNonces(mockBatchSend, 0)).toEqual([0]);
+        expect(batchNonces(mockBatchSend, 1)).toEqual([1]);
+        expect(emitSpy).toHaveBeenCalledWith(BotEvents.RELAY_BATCH, 1, "0xa");
+        expect(emitSpy).toHaveBeenCalledWith(BotEvents.RELAY_BATCH, 2, "0xb");
+        expect(updatedNonce).toBe(2);
+      });
+
+      it("resumes at the failing nonce when the count changed while sending singles", async () => {
+        fetchCount.mockResolvedValueOnce(3).mockResolvedValueOnce(4);
+        mockBatchSend.estimateGas = conflictingEstimate([1]);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+        expect(batchNonces(mockBatchSend, 0)).toEqual([0]);
+        expect(updatedNonce).toBe(1);
+      });
+
+      it("skips a single whose transaction is mined and reverts while the count is unchanged", async () => {
+        fetchCount.mockResolvedValue(1);
+        mockWait.mockRejectedValue(minedRevert);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+        expect(fetchCount).toHaveBeenCalledTimes(2);
+        expect(emitSpy).toHaveBeenCalledWith(
+          BotEvents.MESSAGE_EXECUTION_FAILED,
+          targetChainId,
+          network,
+          0,
+          minedRevert
+        );
+        expect(updatedNonce).toBe(1);
+      });
+
+      it("resumes at a single whose transaction is mined and reverts after the count changed (stale proof)", async () => {
+        fetchCount.mockResolvedValueOnce(1).mockResolvedValueOnce(2);
+        mockWait.mockRejectedValue(minedRevert);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+        expect(updatedNonce).toBe(0);
+      });
+
+      it("skips a single mined and reverted inside the one-by-one sends and relays the rest", async () => {
+        fetchCount.mockResolvedValue(3);
+        mockBatchSend.estimateGas = conflictingEstimate();
+        mockWait
+          .mockResolvedValueOnce({ hash: "0xa" })
+          .mockRejectedValueOnce(minedRevert)
+          .mockResolvedValueOnce({ hash: "0xc" });
+
+        const updatedNonce = await callRelayBatch();
+
+        expect([0, 1, 2].map((call) => batchNonces(mockBatchSend, call))).toEqual([[0], [1], [2]]);
+        expect(emitSpy).toHaveBeenCalledWith(
+          BotEvents.MESSAGE_EXECUTION_FAILED,
+          targetChainId,
+          network,
+          1,
+          minedRevert
+        );
+        expect(emitSpy).toHaveBeenCalledWith(BotEvents.RELAY_BATCH, 1, "0xa");
+        expect(emitSpy).toHaveBeenCalledWith(BotEvents.RELAY_BATCH, 3, "0xc");
+        expect(updatedNonce).toBe(3);
+      });
+
+      it("sends the messages one by one when the batch broadcast is rejected for its size", async () => {
+        fetchCount.mockResolvedValue(3);
+        const oversized = makeError("could not coalesce error", "UNKNOWN_ERROR", {
+          error: { code: -32000, message: "oversized data: transaction size 140000, limit 131072" },
+        });
+        mockBatchSend.mockRejectedValueOnce(oversized);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(4);
+        expect(batchNonces(mockBatchSend, 0)).toEqual([0, 1, 2]);
+        expect([1, 2, 3].map((call) => batchNonces(mockBatchSend, call))).toEqual([[0], [1], [2]]);
+        expect(updatedNonce).toBe(3);
+      });
+
+      it("sends the messages one by one when the batch is mined and reverts", async () => {
+        fetchCount.mockResolvedValue(3);
+        mockWait.mockRejectedValueOnce(minedRevert);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(4);
+        expect(batchNonces(mockBatchSend, 0)).toEqual([0, 1, 2]);
+        expect(batchNonces(mockBatchSend, 1)).toEqual([0]);
+        expect(batchNonces(mockBatchSend, 3)).toEqual([2]);
+        expect(updatedNonce).toBe(3);
+      });
+
+      it("rethrows when the batch wait times out and sends no single", async () => {
+        fetchCount.mockResolvedValue(3);
+        mockWait.mockRejectedValue(waitTimeout);
+
+        const result = callRelayBatch();
+
+        await expect(result).rejects.toBeInstanceOf(ExecutionError);
+        await expect(result).rejects.toHaveProperty("cause", waitTimeout);
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+      });
+
+      it("rethrows a transport error of the batch gas estimation that the first single hits too", async () => {
+        fetchCount.mockResolvedValue(3);
+        mockBatchSend.estimateGas = jest.fn().mockRejectedValue(T1);
+
+        const result = callRelayBatch();
+
+        await expect(result).rejects.toBeInstanceOf(ExecutionError);
+        await expect(result).rejects.toHaveProperty("cause", T1);
+        expect(mockBatchSend.estimateGas).toHaveBeenCalledTimes(2);
+        expect(mockBatchSend).not.toHaveBeenCalled();
+      });
+
+      it("rethrows a transport error of a single", async () => {
+        fetchCount.mockResolvedValue(2);
+        mockBatchSend.estimateGas = jest
+          .fn()
+          .mockRejectedValueOnce(R1)
+          .mockResolvedValueOnce(600000)
+          .mockRejectedValueOnce(T1);
+
+        await expect(callRelayBatch()).rejects.toBeInstanceOf(ExecutionError);
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+      });
+
+      it("applies the single rules to a failing batch of one message", async () => {
+        fetchCount.mockResolvedValue(1);
+        mockBatchSend.estimateGas = jest.fn().mockRejectedValue(R1);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend.estimateGas).toHaveBeenCalledTimes(1);
+        expect(emitSpy).toHaveBeenCalledWith(BotEvents.MESSAGE_EXECUTION_FAILED, targetChainId, network, 0, R1);
+        expect(updatedNonce).toBe(1);
+      });
+
+      it("honours the resume nonce of a full batch", async () => {
+        fetchCount.mockResolvedValueOnce(15).mockResolvedValueOnce(16);
+        mockBatchSend.estimateGas = conflictingEstimate([4]);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(4);
+        expect(updatedNonce).toBe(4);
+      });
+
+      it("honours the resume nonce of a batch sent before a transport stop", async () => {
+        fetchCount.mockResolvedValueOnce(7).mockResolvedValueOnce(8);
+        veaOutboxMock.sendMessage.staticCall = failingAt(3, T1);
+        mockBatchSend.estimateGas = conflictingEstimate([1]);
+
+        const updatedNonce = await callRelayBatch();
+
+        expect(updatedNonce).toBe(1);
+      });
+    });
+
     describe("transaction wait", () => {
       const callRelayBatch = () =>
         relayBatch({
@@ -595,6 +833,40 @@ describe("relay", () => {
         expect(updatedNonce).toBe(6);
       }
     );
+
+    describe("when the batch fails", () => {
+      it("F16.a: sends the messages one by one and skips the one that fails alone", async () => {
+        noncesBySender = { [senderA]: [2, 5, 7] };
+        mockBatchSend.estimateGas = conflictingEstimate([5]);
+
+        const updatedNonce = await callRelayAllFrom(0);
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(2);
+        expect(batchNonces(mockBatchSend, 0)).toEqual([2]);
+        expect(batchNonces(mockBatchSend, 1)).toEqual([7]);
+        expect(emitSpy).toHaveBeenCalledWith(BotEvents.MESSAGE_EXECUTION_FAILED, chainId, network, 5, R1);
+        expect(updatedNonce).toBe(8);
+      });
+
+      it("F16.b: resumes at the failing nonce when the count changed while sending singles", async () => {
+        noncesBySender = { [senderA]: [2, 5, 7] };
+        deps.fetchCount.mockResolvedValueOnce(20).mockResolvedValueOnce(21);
+        mockBatchSend.estimateGas = conflictingEstimate([5]);
+
+        const updatedNonce = await callRelayAllFrom(0);
+
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+        expect(updatedNonce).toBe(5);
+      });
+
+      it("F16.c: rethrows a transport error of the batch gas estimation that the first single hits too", async () => {
+        noncesBySender = { [senderA]: [2, 5] };
+        mockBatchSend.estimateGas = jest.fn().mockRejectedValue(T1);
+
+        await expect(callRelayAllFrom(0)).rejects.toBeInstanceOf(ExecutionError);
+        expect(mockBatchSend).not.toHaveBeenCalled();
+      });
+    });
 
     it("counts messages already relayed as handled", async () => {
       noncesBySender = { [senderA]: [3, 4] };

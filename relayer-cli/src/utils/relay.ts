@@ -8,6 +8,7 @@ import { BotEvents } from "./botEvents";
 import { MissingEnvironmentVariable, InvalidChainId, DataError, ExecutionError } from "./errors";
 import { FallbackRpcProvider } from "./fallbackProvider";
 import { decideStaticCallFailure, StaticCallFailureAction } from "./veaRelayHelpers/staticCallFailure";
+import { classifyCallFailure, isMessageSpecific } from "./revertClassifier";
 
 // A transaction not mined within this time fails the run, so the route retries next cycle instead of freezing the bot
 const TX_CONFIRM_TIMEOUT_MS = 5 * 60 * 1000;
@@ -176,16 +177,78 @@ const checkMessage = async (run: RelayRun, nonce: number): Promise<MessageCheck>
 };
 
 /**
- * Send a batch through the TransactionBatcher and wait for it to be mined; an empty batch is not sent
+ * Whether the error is a transaction that was mined and reverted (ethers puts the receipt on the error)
  */
-const sendBatch = async (run: RelayRun, batch: Batch) => {
-  if (batch.nonces.length === 0) return;
-  const targets = batch.datas.map(() => run.veaOutboxAddress);
-  const values = batch.datas.map(() => 0);
-  const gasLimit = await run.batcher.batchSend.estimateGas(targets, values, batch.datas);
-  const tx = await run.batcher.batchSend(targets, values, batch.datas, { gasLimit });
-  const receipt = await tx.wait(1, TX_CONFIRM_TIMEOUT_MS);
-  run.onBatchSent(batch.nonces[batch.nonces.length - 1] + 1, receipt?.hash);
+const isMinedRevert = (error: unknown): boolean =>
+  (error as { receipt?: { status?: unknown } } | null | undefined)?.receipt?.status === 0;
+
+/** A failed send: its error, and whether the transaction was broadcast before it failed */
+type SendOutcome = { error: unknown; broadcast: boolean } | null;
+
+/**
+ * Send the calls through the TransactionBatcher and wait for the transaction to be mined
+ * @returns null once mined, else the error and whether it came after the broadcast (the confirmation) or before it
+ *   (gas estimation or the broadcast itself)
+ */
+const sendCalls = async (run: RelayRun, nonces: number[], datas: string[]): Promise<SendOutcome> => {
+  const targets = datas.map(() => run.veaOutboxAddress);
+  const values = datas.map(() => 0);
+  let tx: Awaited<ReturnType<RelayRun["batcher"]["batchSend"]>>;
+  try {
+    const gasLimit = await run.batcher.batchSend.estimateGas(targets, values, datas);
+    tx = await run.batcher.batchSend(targets, values, datas, { gasLimit });
+  } catch (error) {
+    return { error, broadcast: false };
+  }
+  let receipt: Awaited<ReturnType<typeof tx.wait>>;
+  try {
+    receipt = await tx.wait(1, TX_CONFIRM_TIMEOUT_MS);
+  } catch (error) {
+    return { error, broadcast: true };
+  }
+  run.onBatchSent(nonces[nonces.length - 1] + 1, receipt?.hash);
+  return null;
+};
+
+/**
+ * Decide what to do with a message that failed when sent alone (or as the only message of a batch).
+ * A revert or a VM abort at gas estimation follows the staticCall rules. A mined revert follows them too: it is skipped
+ * for good, since retrying would pay for a reverted transaction every cycle, unless the outbox count changed, which
+ * made its proof stale. Any other failure (transport, unknown, wait timeout) is rethrown.
+ * @returns The nonce to resume from, or undefined when the message is skipped
+ */
+const settleFailedMessage = async (run: RelayRun, nonce: number, error: unknown): Promise<number | undefined> => {
+  if (!isMinedRevert(error) && !isMessageSpecific(classifyCallFailure(error))) throw error;
+  run.emitter.emit(BotEvents.MESSAGE_EXECUTION_FAILED, run.chainId, run.network, nonce, error);
+  if (isMinedRevert(error)) {
+    return (await run.readCount()) === run.count ? undefined : nonce;
+  }
+  const action = await decideStaticCallFailure(error, run.count, run.readCount);
+  return action === "skip" ? undefined : nonce;
+};
+
+/**
+ * Send a batch through the TransactionBatcher and wait for it to be mined; an empty batch is not sent.
+ * Messages that each pass their staticCall can still fail together: the batcher reverts if any call does, and a batch
+ * can exceed a gas or size limit that no message alone does. So when the batch fails before its broadcast (whatever the
+ * error), or is mined and reverts, it is sent again one message at a time, in nonce order, and a message that fails
+ * alone is handled by settleFailedMessage. A batch broadcast that fails otherwise (a confirmation timeout) is rethrown.
+ * @returns The nonce to resume from when a message stopped the run early, undefined when every message was relayed or skipped
+ */
+const sendBatch = async (run: RelayRun, batch: Batch): Promise<number | undefined> => {
+  if (batch.nonces.length === 0) return undefined;
+  const failed = await sendCalls(run, batch.nonces, batch.datas);
+  if (failed === null) return undefined;
+  if (batch.nonces.length === 1) return settleFailedMessage(run, batch.nonces[0], failed.error);
+  // Once broadcast, only a mined revert is resent message by message; a pending batch plus its singles would pay twice
+  if (failed.broadcast && !isMinedRevert(failed.error)) throw failed.error;
+  for (const [i, nonce] of batch.nonces.entries()) {
+    const single = await sendCalls(run, [nonce], [batch.datas[i]]);
+    if (single === null) continue;
+    const resume = await settleFailedMessage(run, nonce, single.error);
+    if (resume !== undefined) return resume;
+  }
+  return undefined;
 };
 
 /**
@@ -198,6 +261,7 @@ function* nonceRange(from: number, to: number): Generator<number> {
 /**
  * Relay the candidate nonces in batches of at most maxBatchSize messages, checking each message with a staticCall.
  * A message is handled once it is relayed in a mined batch, was already relayed, or is skipped as permanent.
+ * A batch that reverts is sent again message by message, so one conflicting message cannot halt the route.
  * @param candidates The nonces to relay, ascending, each at or above fromNonce and below the run's count; read one at a time
  * @param fromNonce The nonce the caller started from
  * @returns The nonce to resume from: the first candidate not handled, else the last candidate + 1, else fromNonce
@@ -214,18 +278,17 @@ const relayCandidates = async (run: RelayRun, candidates: Iterable<number>, from
       batch.nonces.push(nonce);
       batch.datas.push(check.callData);
       if (batch.nonces.length >= run.maxBatchSize) {
-        await sendBatch(run, batch);
+        const resume = await sendBatch(run, batch);
+        if (resume !== undefined) return resume;
         batch = { nonces: [], datas: [] };
       }
     } else if (check.action === "stop") {
-      await sendBatch(run, batch);
-      return nonce;
+      return (await sendBatch(run, batch)) ?? nonce;
     } else if (check.action === "drop") {
       return batch.nonces[0] ?? nonce;
     }
   }
-  await sendBatch(run, batch);
-  return next;
+  return (await sendBatch(run, batch)) ?? next;
 };
 
 /**
