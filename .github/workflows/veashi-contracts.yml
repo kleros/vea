@@ -40,8 +40,9 @@ jobs:
         run: corepack enable
 
       # The build resolves solidity-rlp and OpenZeppelin from ../node_modules (veashi-contracts/remappings.txt).
+      # It needs only their sources, so no package install script runs (--mode=skip-build).
       - name: Install workspace dependencies
-        run: yarn install --immutable
+        run: yarn install --immutable --mode=skip-build
         env:
           HUSKY: 0
 
