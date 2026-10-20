@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { Interface } from "ethers";
+import { Interface, makeError } from "ethers";
 import { BotEvents } from "./botEvents";
 import { ExecutionError } from "./errors";
 import {
@@ -916,6 +916,257 @@ describe("hashi", () => {
 
         expect(mockExecuteMsgsOnHashi).toHaveBeenCalledTimes(1);
         expect(savedPending()).toEqual([]);
+      });
+
+      describe("when a batch of messages that each pass alone is reverted", () => {
+        const minedRevert = () =>
+          makeError("transaction execution reverted", "CALL_EXCEPTION", {
+            action: "sendTransaction",
+            data: null,
+            reason: null,
+            invocation: null,
+            revert: null,
+            transaction: { to: "0xYARU", data: "0x", from: "0xFrom" },
+            receipt: { status: 0 } as any,
+          });
+        const okTx = () => ({ wait: jest.fn().mockResolvedValue({ hash: "0xmined" }) });
+
+        // A Yaru whose receiver flag is one-shot: the first of the conflicting nonces executed wins, later ones revert
+        const conflictingYaru = (conflicting: bigint[]) => {
+          const executed = new Set<bigint>();
+          const run = (messages: { nonce: bigint }[]) => {
+            const flagSet = conflicting.some((nonce) => executed.has(nonce));
+            const hits = messages.filter((m) => conflicting.includes(m.nonce)).length;
+            if (flagSet ? hits > 0 : hits > 1) throw yaruStaticCall("R4");
+            return messages;
+          };
+          const send = jest.fn(async (messages: { nonce: bigint }[]) => {
+            run(messages).forEach((m) => executed.add(m.nonce));
+            return okTx();
+          });
+          const staticCall = jest.fn(async (messages: { nonce: bigint }[]) => run(messages));
+          const yaru = { executeMessages: Object.assign(send, { staticCall }) } as unknown as YaruExecutor;
+          return { yaru, send, executed };
+        };
+
+        // A Yaru whose sends are scripted in order, every preflight passing
+        const scriptedYaru = (...sends: (() => Promise<unknown>)[]) => {
+          const send = jest.fn();
+          sends.forEach((impl) => send.mockImplementationOnce(impl));
+          const staticCall = jest.fn().mockResolvedValue([]);
+          const yaru = { executeMessages: Object.assign(send, { staticCall }) } as unknown as YaruExecutor;
+          return { yaru, send };
+        };
+
+        const three = () => [
+          record(11n, rpcShaped(3), nowSec - 3600),
+          record(12n, rpcShaped(4), nowSec - 3600),
+          record(13n, rpcShaped(5), nowSec - 3600),
+        ];
+
+        it("should keep the conflicting message pending over several cycles and still checkpoint", async () => {
+          const records = three();
+          const { yaru, send, executed } = conflictingYaru([3n, 4n]);
+          let saved: HashiMessageExecutionVars[] = [];
+          const cycle = async () => {
+            updateStateFile.mockClear();
+            await runHashiExecutor(
+              buildArgs({
+                fetchAllMessageLogs: jest.fn().mockResolvedValue({ txns: records, toBlock: currentBlockNumber }),
+                fetchPendingMessages: jest.fn().mockImplementation(async () => saved),
+                isMessageExecutable: jest.fn(async ({ hashiMessage }) => ({
+                  hashiMessage,
+                  executable: !executed.has(BigInt(hashiMessage.nonce)),
+                  status: executed.has(BigInt(hashiMessage.nonce))
+                    ? HashiExecutionStatus.EXECUTED
+                    : HashiExecutionStatus.EXECUTABLE,
+                })),
+                executeMsgsOnHashi: (src: number, dst: number, params: HashiMessage[], e: EventEmitter) =>
+                  executeBatchOnHashi(src, dst, params, e, yaru),
+              })
+            );
+            saved = savedPending();
+          };
+
+          await cycle();
+          // the batch of all three reverts, then each is sent alone: 3 and 5 execute, 4 hits the flag
+          expect(sentNonces(send)[0]).toEqual([3n, 4n, 5n]);
+          expect(sentNonces(send).slice(1)).toEqual([[3n], [4n], [5n]]);
+          expect(updateStateFile).toHaveBeenCalledTimes(1);
+          expect(saved).toEqual([records[1]]);
+          expect(saved[0].timestamp).toBe(nowSec - 3600);
+
+          send.mockClear();
+          await cycle();
+          expect(send).not.toHaveBeenCalled();
+          expect(updateStateFile).toHaveBeenCalledTimes(1);
+          expect(saved).toEqual([records[1]]);
+        });
+
+        it("should drop the conflicting message once it is older than a week", async () => {
+          const expired = [record(11n, rpcShaped(3), nowSec - 60), record(12n, rpcShaped(4), nowSec - ONE_WEEK - 60)];
+          const { yaru, send } = conflictingYaru([3n, 4n]);
+
+          await runCycle(expired, yaru);
+
+          expect(sentNonces(send)).toEqual([[3n, 4n], [3n], [4n]]);
+          expect(savedPending()).toEqual([]);
+        });
+
+        it("should send one transaction when the batch succeeds", async () => {
+          const emitter = new MockEmitter();
+          const emit = jest.spyOn(emitter, "emit");
+          const { yaru, send } = scriptedYaru(async () => okTx());
+
+          await executeBatchOnHashi(
+            sourceChainId,
+            targetChainId,
+            three().map((r) => r.message),
+            emitter,
+            yaru
+          );
+
+          expect(sentNonces(send)).toEqual([[3n, 4n, 5n]]);
+          expect(emit).toHaveBeenCalledWith(BotEvents.HASHI_BATCH_TXN, "0xmined", 3);
+        });
+
+        it("should drop a single whose own transaction is mined and reverts, and keep sending the rest", async () => {
+          const emitter = new MockEmitter();
+          const emit = jest.spyOn(emitter, "emit");
+          const error = minedRevert();
+          const { yaru, send } = scriptedYaru(
+            async () => ({ wait: jest.fn().mockRejectedValue(error) }),
+            async () => okTx(),
+            async () => ({ wait: jest.fn().mockRejectedValue(error) }),
+            async () => okTx()
+          );
+          const messages = three().map((r) => r.message);
+
+          const kept = await executeBatchOnHashi(sourceChainId, targetChainId, messages, emitter, yaru);
+
+          expect(sentNonces(send)).toEqual([[3n, 4n, 5n], [3n], [4n], [5n]]);
+          expect(kept).toEqual([]);
+          expect(emit).toHaveBeenCalledWith(BotEvents.HASHI_MESSAGE_FAILING, "4", "0", "1", error);
+        });
+
+        it("should apply the single rules to a failing batch of one message without resending", async () => {
+          const error = minedRevert();
+          const { yaru, send } = scriptedYaru(async () => ({ wait: jest.fn().mockRejectedValue(error) }));
+
+          const kept = await executeBatchOnHashi(sourceChainId, targetChainId, [three()[0].message], mockEmitter, yaru);
+
+          expect(send).toHaveBeenCalledTimes(1);
+          expect(kept).toEqual([]);
+        });
+
+        it("should drop a single that Yaru reports as already executed", async () => {
+          const { yaru, send } = scriptedYaru(
+            async () => {
+              throw yaruStaticCall("R4");
+            },
+            async () => okTx(),
+            async () => {
+              throw yaruStaticCall("R5");
+            }
+          );
+          const messages = three()
+            .slice(0, 2)
+            .map((r) => r.message);
+
+          const kept = await executeBatchOnHashi(sourceChainId, targetChainId, messages, mockEmitter, yaru);
+
+          expect(send).toHaveBeenCalledTimes(3);
+          expect(kept).toEqual([]);
+        });
+
+        it("should rethrow a confirmation timeout of the batch, resend nothing and write no checkpoint", async () => {
+          const { yaru, send } = scriptedYaru(async () => ({ wait: jest.fn().mockRejectedValue(fixtures.T5) }));
+
+          await expect(runCycle(three(), yaru)).rejects.toBeInstanceOf(ExecutionError);
+
+          expect(send).toHaveBeenCalledTimes(1);
+          expect(updateStateFile).not.toHaveBeenCalled();
+        });
+
+        it("should rethrow a transport error on a single and write no checkpoint", async () => {
+          const emitter = new MockEmitter();
+          const emit = jest.spyOn(emitter, "emit");
+          const { yaru, send } = scriptedYaru(
+            async () => {
+              throw yaruStaticCall("R4");
+            },
+            async () => okTx(),
+            async () => {
+              throw fixtures.T2;
+            }
+          );
+          mockIsMessageExecutable.mockImplementation(async ({ hashiMessage }) => ({
+            hashiMessage,
+            executable: true,
+            status: HashiExecutionStatus.EXECUTABLE,
+          }));
+
+          await expect(
+            runHashiExecutor(
+              buildArgs({
+                emitter,
+                fetchAllMessageLogs: jest.fn().mockResolvedValue({ txns: three(), toBlock: currentBlockNumber }),
+                executeMsgsOnHashi: (src: number, dst: number, params: HashiMessage[], e: EventEmitter) =>
+                  executeBatchOnHashi(src, dst, params, e, yaru),
+              })
+            )
+          ).rejects.toBeInstanceOf(ExecutionError);
+
+          expect(send).toHaveBeenCalledTimes(3);
+          expect(emit).toHaveBeenCalledWith(BotEvents.HASHI_BATCH_FAILED, sourceChainId, targetChainId, 1, fixtures.T2);
+          expect(updateStateFile).not.toHaveBeenCalled();
+        });
+
+        // The batch is rejected before its broadcast for what it holds together, where each message alone is accepted
+        const oversized = () =>
+          makeError("could not coalesce error", "UNKNOWN_ERROR", {
+            error: { code: -32000, message: "oversized data: transaction size 140000, limit 131072" },
+          });
+        const gasCapped = () => fromNodeError({ code: -32000, message: "gas required exceeds allowance (36000000)" });
+
+        it.each([
+          ["an oversized transaction", oversized],
+          ["the gas cap", gasCapped],
+        ])(
+          "should send each message alone when the batch is rejected before its broadcast by %s",
+          async (_case, rejection) => {
+            const { yaru, send } = scriptedYaru(
+              async () => {
+                throw rejection();
+              },
+              async () => okTx(),
+              async () => okTx(),
+              async () => okTx()
+            );
+
+            await runCycle(three(), yaru);
+
+            expect(sentNonces(send)).toEqual([[3n, 4n, 5n], [3n], [4n], [5n]]);
+            expect(updateStateFile).toHaveBeenCalledTimes(1);
+            expect(savedPending()).toEqual([]);
+          }
+        );
+
+        it("should rethrow, with no checkpoint, when the first single also fails on the transport", async () => {
+          const { yaru, send } = scriptedYaru(
+            async () => {
+              throw fixtures.T2;
+            },
+            async () => {
+              throw fixtures.T2;
+            }
+          );
+
+          await expect(runCycle(three(), yaru)).rejects.toBeInstanceOf(ExecutionError);
+
+          expect(sentNonces(send)).toEqual([[3n, 4n, 5n], [3n]]);
+          expect(updateStateFile).not.toHaveBeenCalled();
+        });
       });
     });
 

@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { Interface, getAddress, Contract, Wallet, isHexString, getBytes, Log, Provider } from "ethers";
+import { Interface, getAddress, Contract, Wallet, isHexString, getBytes, isError, Log, Provider } from "ethers";
 import { getHashiMsgId, toPlainMessage } from "./hashiHelpers/hashiMsgUtils";
 import { messageDispatchedAbi, thresholdViewAbi, YaruAbi } from "./hashiHelpers/abi";
 import { BotEvents } from "./botEvents";
@@ -182,7 +182,8 @@ function addClassified(
 }
 
 /**
- * Map the nonces kept by the preflight back to their saved records, so they keep their dispatch timestamp.
+ * Map the nonces kept by the preflight or by a failed single send back to their saved records, so they keep their
+ * dispatch timestamp.
  * @param executable The entries passed to the executor
  * @param keptNonces The nonces executeBatchOnHashi did not execute but must retry
  * @param nowSec The current unix time in seconds
@@ -229,7 +230,7 @@ function connectYaru(sourceChainId: number, targetChainId: number, emitter: Even
  * @param chainId The chain ID
  * @param params The array of HashiMessageState to execute
  * @param yaru The Yaru contract (injected for testing)
- * @returns The nonces of the messages whose preflight failed and that must stay pending
+ * @returns The nonces of the messages that failed their preflight or their own send and must stay pending
  */
 async function executeBatchOnHashi(
   sourceChainId: number,
@@ -244,7 +245,7 @@ async function executeBatchOnHashi(
     const { passed, kept } = await preflightMessages(yaru, messages, sourceChainId, targetChainId, emitter);
     keptNonces.push(...kept);
     if (passed.length > 0) {
-      await sendYaruBatch(yaru, passed, sourceChainId, targetChainId, emitter);
+      keptNonces.push(...(await sendYaruBatch(yaru, passed, sourceChainId, targetChainId, emitter)));
     }
   }
   return keptNonces;
@@ -280,7 +281,8 @@ function toYaruMessage(hashiMessage: HashiMessage): YaruMessage {
 }
 
 /**
- * Check each message alone before sending the batch, so one failing message does not revert the others.
+ * Check each message alone before sending the batch, so one failing message does not revert the others. Messages that
+ * pass alone can still conflict together; sendYaruBatch handles that.
  * Only a message another party already executed is dropped; a receiver revert (CallFailed), any other revert and
  * a transport failure keep the message pending for the next cycle.
  * @returns The messages that passed and the nonces to keep pending
@@ -314,22 +316,110 @@ async function preflightMessages(
   return { passed, kept };
 }
 
+/** Why a send failed, when it is tied to the messages rather than to the transport */
+const MINED_REVERT = "MINED_REVERT";
+type SendFailure =
+  | typeof MINED_REVERT
+  | PreflightFailure.ALREADY_EXECUTED
+  | PreflightFailure.CALL_FAILED
+  | PreflightFailure.OTHER_REVERT;
+
+/**
+ * Classify a failed send or confirmation. A transaction mined with status 0 carries its receipt but no revert data, so
+ * it is read before the classifier, which would call it unknown.
+ * @returns The failure kind, or null for a transport failure (including a confirmation timeout)
+ */
+function classifySendFailure(error: unknown): SendFailure | null {
+  if (isError(error, "CALL_EXCEPTION") && error.receipt?.status === 0) return MINED_REVERT;
+  const failure = classifyPreflightError(error);
+  return failure === PreflightFailure.TRANSPORT ? null : failure;
+}
+
+/** A failed send: its error, and whether the transaction was broadcast before it failed */
+type SendOutcome = { error: unknown; broadcast: boolean } | null;
+
+/**
+ * Send the messages in one transaction and wait for it to be mined.
+ * @returns null once mined, else the error and whether it came after the broadcast (the confirmation) or before it
+ *   (gas estimation or the broadcast itself)
+ */
+async function submitYaruMessages(
+  yaru: YaruExecutor,
+  messages: YaruMessage[],
+  emitter: EventEmitter
+): Promise<SendOutcome> {
+  let tx: Awaited<ReturnType<YaruExecutor["executeMessages"]>>;
+  try {
+    tx = await yaru.executeMessages(messages);
+  } catch (error) {
+    return { error, broadcast: false };
+  }
+  let receipt: { hash: string } | null;
+  try {
+    receipt = await tx.wait(1, TX_CONFIRM_TIMEOUT_MS);
+  } catch (error) {
+    return { error, broadcast: true };
+  }
+  emitter.emit(BotEvents.HASHI_BATCH_TXN, receipt?.hash, messages.length);
+  return null;
+}
+
+function batchFailure(
+  error: unknown,
+  count: number,
+  sourceChainId: number,
+  targetChainId: number,
+  emitter: EventEmitter
+): ExecutionError {
+  emitter.emit(BotEvents.HASHI_BATCH_FAILED, sourceChainId, targetChainId, count, error);
+  return new ExecutionError("executeMessages batch (hashi)", targetChainId, "hashi", { cause: error });
+}
+
+/**
+ * Send the messages that passed their preflight as one transaction. Yaru reverts the whole batch when any receiver
+ * reverts, and a batch can also exceed a gas or size limit that no message alone does, so messages that each pass alone
+ * can still fail together. When the batch fails before its broadcast (whatever the error), or is mined and reverts, each
+ * message is sent alone in order. A single message that is mined and reverts, or that Yaru reports as already executed,
+ * is dropped; one that fails with CallFailed or another revert is kept pending. Singles already mined stay executed, and
+ * the next cycle reads them as EXECUTED.
+ * A transport failure of a single, or a batch broadcast that is not mined in time, throws ExecutionError so the caller
+ * does not checkpoint past unexecuted messages.
+ * @returns The nonces of the messages that failed on their own and must stay pending
+ */
 async function sendYaruBatch(
   yaru: YaruExecutor,
   messages: YaruMessage[],
   sourceChainId: number,
   targetChainId: number,
   emitter: EventEmitter
-) {
-  // Throw on send/confirmation failure so the caller does not checkpoint past unexecuted messages
-  try {
-    const tx = await yaru.executeMessages(messages);
-    const receipt = await tx.wait(1, TX_CONFIRM_TIMEOUT_MS);
-    emitter.emit(BotEvents.HASHI_BATCH_TXN, receipt.hash, messages.length);
-  } catch (error) {
-    emitter.emit(BotEvents.HASHI_BATCH_FAILED, sourceChainId, targetChainId, messages.length, error);
-    throw new ExecutionError("executeMessages batch (hashi)", targetChainId, "hashi", { cause: error });
+): Promise<bigint[]> {
+  const settleSingle = (message: YaruMessage, error: unknown): bigint[] => {
+    const failure = classifySendFailure(error);
+    if (failure === null) throw batchFailure(error, 1, sourceChainId, targetChainId, emitter);
+    emitter.emit(
+      BotEvents.HASHI_MESSAGE_FAILING,
+      message.nonce.toString(),
+      sourceChainId.toString(),
+      targetChainId.toString(),
+      error
+    );
+    return failure === MINED_REVERT || failure === PreflightFailure.ALREADY_EXECUTED ? [] : [message.nonce];
+  };
+
+  const failed = await submitYaruMessages(yaru, messages, emitter);
+  if (failed === null) return [];
+  if (messages.length === 1) return settleSingle(messages[0], failed.error);
+  // Once broadcast, only a mined revert is resent message by message; a pending batch plus its singles would pay twice
+  if (failed.broadcast && classifySendFailure(failed.error) !== MINED_REVERT) {
+    throw batchFailure(failed.error, messages.length, sourceChainId, targetChainId, emitter);
   }
+
+  const kept: bigint[] = [];
+  for (const message of messages) {
+    const single = await submitYaruMessages(yaru, [message], emitter);
+    if (single !== null) kept.push(...settleSingle(message, single.error));
+  }
+  return kept;
 }
 
 interface ToExecuteMessageInterface {
