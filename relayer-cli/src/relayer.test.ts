@@ -20,7 +20,7 @@ jest.mock("./utils/relayerHelpers", () => ({
 
 describe("relayer", () => {
   describe("start", () => {
-    it("F6.f: removes stale locks once, before the first route is processed", async () => {
+    it("removes stale locks once, before the first route is processed", async () => {
       const shutdownManager = new ShutdownManager(false);
       const emitter = new EventEmitter();
       // Two loop iterations: the route runs in the first; the second wait shuts the loop down

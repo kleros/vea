@@ -190,7 +190,7 @@ describe("Lock", () => {
       emitter.on(BotEvents.EXCEPTION, (err: Error) => exceptions.push(err));
     });
 
-    it("F6.a: removes the lock of a dead pid (ESRCH)", async () => {
+    it("removes the lock of a dead pid (ESRCH)", async () => {
       files = { "testnet_421614_11155111.pid": String(deadPid) };
       await removeStaleLocks(emitter, deps);
       expect(deps.unlinkFileFn).toHaveBeenCalledWith(path.join(lockDir, "testnet_421614_11155111.pid"));
@@ -199,14 +199,14 @@ describe("Lock", () => {
       expect(released[0]).toContain("testnet_421614_11155111.pid");
     });
 
-    it("F6.b: removes the lock of our own pid", async () => {
+    it("removes the lock of our own pid", async () => {
       files = { "hashi_10200_11155111.pid": String(ownPid) };
       await removeStaleLocks(emitter, deps);
       expect(removedFiles()).toEqual(["hashi_10200_11155111.pid"]);
       expect(released).toHaveLength(1);
     });
 
-    it("F6.c: keeps the locks of a live pid and of an EPERM pid", async () => {
+    it("keeps the locks of a live pid and of an EPERM pid", async () => {
       files = { "devnet_421614_11155111.pid": String(livePid), "testnet_421614_10200.pid": String(epermPid) };
       await removeStaleLocks(emitter, deps);
       expect(kill).toHaveBeenCalledWith(livePid, 0);
@@ -215,7 +215,7 @@ describe("Lock", () => {
       expect(released).toHaveLength(0);
     });
 
-    it("F6.d: removes locks holding abc, nothing, 0 or -5 without signalling a pid below 1", async () => {
+    it("removes locks holding abc, nothing, 0 or -5 without signalling a pid below 1", async () => {
       files = { "a.pid": "abc", "b.pid": "", "c.pid": "0", "d.pid": "-5", "e.pid": String(livePid) };
       await removeStaleLocks(emitter, deps);
       expect(removedFiles().sort()).toEqual(["a.pid", "b.pid", "c.pid", "d.pid"]);
@@ -224,7 +224,7 @@ describe("Lock", () => {
       expect(released).toHaveLength(4);
     });
 
-    it("F6.e: resolves and removes nothing when the directory is missing", async () => {
+    it("resolves and removes nothing when the directory is missing", async () => {
       deps.readDirFn.mockRejectedValue(errnoError("ENOENT"));
       await expect(removeStaleLocks(emitter, deps)).resolves.toBeUndefined();
       expect(deps.unlinkFileFn).not.toHaveBeenCalled();

@@ -69,7 +69,7 @@ describe("relayerHelpers", () => {
       '{"ts":1,"nonce":-5}',
       '{"ts":1,"nonce":1.5}',
       '{"ts":1}',
-    ])("F8.b: reads the nonce of the state file %s as 0", async (stateFile) => {
+    ])("reads the nonce of the state file %s as 0", async (stateFile) => {
       fileSystem.existsSync.mockReturnValue(true);
       fileSystem.readFileSync.mockReturnValue(stateFile);
       const result = await initialize(
@@ -84,7 +84,7 @@ describe("relayerHelpers", () => {
       expect(result).toEqual({ nonce: 0 });
       expect(mockUpdateStateFile).not.toHaveBeenCalled();
     });
-    it("F8.b: still reads a stored nonce of 42", async () => {
+    it("still reads a stored nonce of 42", async () => {
       fileSystem.existsSync.mockReturnValue(true);
       fileSystem.readFileSync.mockReturnValue('{"ts":1,"nonce":42}');
       const result = await initialize(

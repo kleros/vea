@@ -367,4 +367,4 @@ const relayAllFrom = async (
   }
 };
 
-export { relayAllFrom, relay, relayBatch, RelayBatchDeps, RelayAllFromDeps, RelayDeps, TX_CONFIRM_TIMEOUT_MS };
+export { relayAllFrom, relay, relayBatch, RelayBatchDeps, RelayAllFromDeps, RelayDeps };

@@ -271,23 +271,20 @@ describe("relay", () => {
       it.each([
         ["T1", T1],
         ["T3", T3],
-      ])(
-        "F4.a: stops at a %s transport error, sends the messages before it and returns its nonce",
-        async (_id, error) => {
-          fetchCount.mockResolvedValue(7);
-          veaOutboxMock.sendMessage.staticCall = failingAt(3, error);
+      ])("stops at a %s transport error, sends the messages before it and returns its nonce", async (_id, error) => {
+        fetchCount.mockResolvedValue(7);
+        veaOutboxMock.sendMessage.staticCall = failingAt(3, error);
 
-          const updatedNonce = await callRelayBatch();
+        const updatedNonce = await callRelayBatch();
 
-          expect(mockBatchSend).toHaveBeenCalledTimes(1);
-          expect(batchNonces(mockBatchSend, 0)).toEqual([0, 1, 2]);
-          expect(veaOutboxMock.sendMessage.staticCall.mock.calls.map((call: any[]) => call[1])).toEqual([0, 1, 2, 3]);
-          expect(fetchCount).toHaveBeenCalledTimes(1);
-          expect(updatedNonce).toBe(3);
-        }
-      );
+        expect(mockBatchSend).toHaveBeenCalledTimes(1);
+        expect(batchNonces(mockBatchSend, 0)).toEqual([0, 1, 2]);
+        expect(veaOutboxMock.sendMessage.staticCall.mock.calls.map((call: any[]) => call[1])).toEqual([0, 1, 2, 3]);
+        expect(fetchCount).toHaveBeenCalledTimes(1);
+        expect(updatedNonce).toBe(3);
+      });
 
-      it("F4.b: skips an R3 revert when the count read again is unchanged", async () => {
+      it("skips an R3 revert when the count read again is unchanged", async () => {
         fetchCount.mockResolvedValue(7);
         veaOutboxMock.sendMessage.staticCall = failingAt(3, R3);
 
@@ -300,7 +297,7 @@ describe("relay", () => {
         expect(updatedNonce).toBe(7);
       });
 
-      it("F4.c: drops the current batch on an R3 revert when the count changed, keeping the batches already sent", async () => {
+      it("drops the current batch on an R3 revert when the count changed, keeping the batches already sent", async () => {
         fetchCount.mockResolvedValueOnce(15).mockResolvedValueOnce(16);
         veaOutboxMock.sendMessage.staticCall = failingAt(12, R3);
 
@@ -340,7 +337,7 @@ describe("relay", () => {
       });
 
       it.each(MESSAGE_FAILURES)(
-        "F4.b: skips a message failing with %s when the count read again is unchanged",
+        "skips a message failing with %s when the count read again is unchanged",
         async (id) => {
           fetchCount.mockResolvedValue(7);
           veaOutboxMock.sendMessage.staticCall = failingAt(3, fixtures[id]);
@@ -362,7 +359,7 @@ describe("relay", () => {
       );
 
       it.each(MESSAGE_FAILURES)(
-        "F4.c: drops the current batch on a message failing with %s when the count changed",
+        "drops the current batch on a message failing with %s when the count changed",
         async (id) => {
           fetchCount.mockResolvedValueOnce(15).mockResolvedValueOnce(16);
           veaOutboxMock.sendMessage.staticCall = failingAt(12, fixtures[id]);
@@ -377,7 +374,7 @@ describe("relay", () => {
       );
 
       it.each(TRANSPORT_FAILURES)(
-        "F4.a: stops at a %s transport or unknown failure with no retry, no count re-read and no skip",
+        "stops at a %s transport or unknown failure with no retry, no count re-read and no skip",
         async (id) => {
           fetchCount.mockResolvedValue(7);
           veaOutboxMock.sendMessage.staticCall = failingAt(3, fixtures[id]);
@@ -655,13 +652,13 @@ describe("relay", () => {
           fetchBatcher,
         });
 
-      it("F15.a: waits for 1 confirmation for at most 5 minutes", async () => {
+      it("waits for 1 confirmation for at most 5 minutes", async () => {
         fetchCount.mockResolvedValue(1);
         await callRelayBatch();
         expect(mockWait).toHaveBeenCalledWith(1, 300000);
       });
 
-      it("F15.b: rejects with ExecutionError when the wait times out", async () => {
+      it("rejects with ExecutionError when the wait times out", async () => {
         fetchCount.mockResolvedValue(1);
         mockWait.mockRejectedValue(waitTimeout);
         const result = callRelayBatch();
@@ -731,7 +728,7 @@ describe("relay", () => {
     const callRelayAllFrom = (nonce: number, maxBatchSize?: number) =>
       relayAllFrom(chainId, network, nonce, [senderA, senderB], emitter, maxBatchSize, deps);
 
-    it("F13.a: leaves out the nonces the snapshot does not cover yet", async () => {
+    it("leaves out the nonces the snapshot does not cover yet", async () => {
       noncesBySender = { [senderA]: [2, 5, 9] };
       deps.fetchCount.mockResolvedValue(6);
 
@@ -743,7 +740,7 @@ describe("relay", () => {
       expect(updatedNonce).toBe(6);
     });
 
-    it("F14.a: relays the senders' messages in ascending batches of at most 10", async () => {
+    it("relays the senders' messages in ascending batches of at most 10", async () => {
       noncesBySender = { [senderA]: [1, 3, 5, 7, 9, 11], [senderB]: [2, 4, 6, 8, 10, 12] };
 
       const updatedNonce = await callRelayAllFrom(0);
@@ -755,7 +752,7 @@ describe("relay", () => {
       expect(updatedNonce).toBe(13);
     });
 
-    it("F14.a: relays a nonce listed for two senders once", async () => {
+    it("relays a nonce listed for two senders once", async () => {
       noncesBySender = { [senderA]: [1, 2], [senderB]: [2, 3] };
 
       const updatedNonce = await callRelayAllFrom(0);
@@ -764,7 +761,7 @@ describe("relay", () => {
       expect(updatedNonce).toBe(4);
     });
 
-    it("F14.b: skips a message whose staticCall reverts (R1) while the count is unchanged", async () => {
+    it("skips a message whose staticCall reverts (R1) while the count is unchanged", async () => {
       noncesBySender = { [senderA]: [1, 2, 3] };
       veaOutboxMock.sendMessage.staticCall = failingAt(2, R1);
 
@@ -776,7 +773,7 @@ describe("relay", () => {
       expect(updatedNonce).toBe(4);
     });
 
-    it("F14.c: stops at a transport error (T2) and returns that message's nonce", async () => {
+    it("stops at a transport error (T2) and returns that message's nonce", async () => {
       noncesBySender = { [senderA]: [4, 9], [senderB]: [6] };
       deps.fetchCount.mockResolvedValue(10);
       veaOutboxMock.sendMessage.staticCall = failingAt(6, T2);
@@ -789,7 +786,7 @@ describe("relay", () => {
       expect(updatedNonce).toBe(6);
     });
 
-    it("F14.d: drops the current batch on an R3 revert with a changed count and returns its first nonce", async () => {
+    it("drops the current batch on an R3 revert with a changed count and returns its first nonce", async () => {
       noncesBySender = { [senderA]: [3, 5, 7, 8] };
       deps.fetchCount.mockResolvedValueOnce(10).mockResolvedValueOnce(11);
       veaOutboxMock.sendMessage.staticCall = failingAt(8, R3);
@@ -801,7 +798,7 @@ describe("relay", () => {
       expect(updatedNonce).toBe(7);
     });
 
-    it.each(MESSAGE_FAILURES)("F14.b: skips a message failing with %s while the count is unchanged", async (id) => {
+    it.each(MESSAGE_FAILURES)("skips a message failing with %s while the count is unchanged", async (id) => {
       noncesBySender = { [senderA]: [1, 2, 3] };
       veaOutboxMock.sendMessage.staticCall = failingAt(2, fixtures[id]);
 
@@ -814,7 +811,7 @@ describe("relay", () => {
     });
 
     it.each(MESSAGE_FAILURES)(
-      "F14.d: drops the current batch on a message failing with %s when the count changed",
+      "drops the current batch on a message failing with %s when the count changed",
       async (id) => {
         noncesBySender = { [senderA]: [3, 5, 7, 8] };
         deps.fetchCount.mockResolvedValueOnce(10).mockResolvedValueOnce(11);
@@ -830,7 +827,7 @@ describe("relay", () => {
     );
 
     it.each(TRANSPORT_FAILURES)(
-      "F14.c: stops at a %s transport or unknown failure with no retry, no count re-read and no skip",
+      "stops at a %s transport or unknown failure with no retry, no count re-read and no skip",
       async (id) => {
         noncesBySender = { [senderA]: [4, 9], [senderB]: [6] };
         deps.fetchCount.mockResolvedValue(10);
@@ -849,7 +846,7 @@ describe("relay", () => {
     );
 
     describe("when the batch fails", () => {
-      it("F16.a: sends the messages one by one and skips the one that fails alone", async () => {
+      it("sends the messages one by one and skips the one that fails alone", async () => {
         noncesBySender = { [senderA]: [2, 5, 7] };
         mockBatchSend.estimateGas = conflictingEstimate([5]);
 
@@ -862,7 +859,7 @@ describe("relay", () => {
         expect(updatedNonce).toBe(8);
       });
 
-      it("F16.b: resumes at the failing nonce when the count changed while sending singles", async () => {
+      it("resumes at the failing nonce when the count changed while sending singles", async () => {
         noncesBySender = { [senderA]: [2, 5, 7] };
         deps.fetchCount.mockResolvedValueOnce(20).mockResolvedValueOnce(21);
         mockBatchSend.estimateGas = conflictingEstimate([5]);
@@ -873,7 +870,7 @@ describe("relay", () => {
         expect(updatedNonce).toBe(5);
       });
 
-      it("F16.c: rethrows a transport error of the batch gas estimation that the first single hits too", async () => {
+      it("rethrows a transport error of the batch gas estimation that the first single hits too", async () => {
         noncesBySender = { [senderA]: [2, 5] };
         mockBatchSend.estimateGas = jest.fn().mockRejectedValue(T1);
 
@@ -892,7 +889,7 @@ describe("relay", () => {
       expect(updatedNonce).toBe(5);
     });
 
-    it("F8.a: returns the input nonce when the count is 0", async () => {
+    it("returns the input nonce when the count is 0", async () => {
       noncesBySender = { [senderA]: [5, 6] };
       deps.fetchCount.mockResolvedValue(0);
 
@@ -903,7 +900,7 @@ describe("relay", () => {
       expect(mockBatchSend).not.toHaveBeenCalled();
     });
 
-    it("F8.a: returns the input nonce when there are no candidates", async () => {
+    it("returns the input nonce when there are no candidates", async () => {
       noncesBySender = { [senderB]: [25] };
 
       const updatedNonce = await callRelayAllFrom(5);
@@ -913,13 +910,13 @@ describe("relay", () => {
       expect(mockBatchSend).not.toHaveBeenCalled();
     });
 
-    it("F15.a: waits for 1 confirmation for at most 5 minutes", async () => {
+    it("waits for 1 confirmation for at most 5 minutes", async () => {
       noncesBySender = { [senderA]: [1] };
       await callRelayAllFrom(0);
       expect(mockWait).toHaveBeenCalledWith(1, 300000);
     });
 
-    it("F15.b: rejects with ExecutionError when the wait times out", async () => {
+    it("rejects with ExecutionError when the wait times out", async () => {
       noncesBySender = { [senderA]: [1] };
       mockWait.mockRejectedValue(waitTimeout);
       const result = callRelayAllFrom(0);
@@ -948,7 +945,7 @@ describe("relay", () => {
       };
     });
 
-    it("F15.a: waits for 1 confirmation for at most 5 minutes", async () => {
+    it("waits for 1 confirmation for at most 5 minutes", async () => {
       await relay(1, 2, network, emitter, deps);
       expect(mockWait).toHaveBeenCalledWith(1, 300000);
     });

@@ -36,13 +36,13 @@ describe("sendHeartbeat", () => {
     requestSpy.mockRestore();
   });
 
-  it("F5.a: resolves on a request error", async () => {
+  it("resolves on a request error", async () => {
     const result = sendHeartbeat("running", heartbeatURL);
     req.emit("error", Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }));
     await expect(result).resolves.toBeUndefined();
   });
 
-  it("F5.b: resolves and destroys the request when the timeout fires", async () => {
+  it("resolves and destroys the request when the timeout fires", async () => {
     const result = sendHeartbeat("running", heartbeatURL);
     expect(req.setTimeout).toHaveBeenCalledWith(10000, expect.any(Function));
     req.timeoutCallback!();
@@ -50,17 +50,17 @@ describe("sendHeartbeat", () => {
     expect(req.destroy).toHaveBeenCalledTimes(1);
   });
 
-  it("F5.c: resolves on an invalid URL", async () => {
+  it("resolves on an invalid URL", async () => {
     await expect(sendHeartbeat("running", "not a url")).resolves.toBeUndefined();
     expect(requestSpy).not.toHaveBeenCalled();
   });
 
-  it("F5.c: resolves without a request on an empty URL", async () => {
+  it("resolves without a request on an empty URL", async () => {
     await expect(sendHeartbeat("running", "")).resolves.toBeUndefined();
     expect(requestSpy).not.toHaveBeenCalled();
   });
 
-  it("F5.d: resolves once the response ends", async () => {
+  it("resolves once the response ends", async () => {
     let settled = false;
     const result = sendHeartbeat("running", heartbeatURL).then(() => {
       settled = true;
