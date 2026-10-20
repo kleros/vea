@@ -545,6 +545,20 @@ describe("relay", () => {
         expect(updatedNonce).toBe(3);
       });
 
+      it("rethrows, and skips nothing, when another transaction with its nonce replaced the single and reverted", async () => {
+        fetchCount.mockResolvedValue(1);
+        const replaced = makeError("transaction was replaced", "TRANSACTION_REPLACED", {
+          cancelled: true,
+          reason: "replaced",
+          hash: "0xother",
+          replacement: {} as any,
+          receipt: { status: 0 } as any,
+        });
+        mockWait.mockRejectedValue(replaced);
+
+        await expect(callRelayBatch()).rejects.toHaveProperty("cause", replaced);
+      });
+
       it("sends the messages one by one when the batch is mined and reverts", async () => {
         fetchCount.mockResolvedValue(3);
         mockWait.mockRejectedValueOnce(minedRevert);

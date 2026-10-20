@@ -1,5 +1,6 @@
 require("dotenv").config();
 import { EventEmitter } from "node:events";
+import { isError } from "ethers";
 import { getCount, getNonceFrom } from "./graphQueries";
 import { getProofAtCount, getMessageDataToRelay } from "./proof";
 import { getVeaOutbox, getBatcher } from "./ethers";
@@ -177,10 +178,11 @@ const checkMessage = async (run: RelayRun, nonce: number): Promise<MessageCheck>
 };
 
 /**
- * Whether the error is a transaction that was mined and reverted (ethers puts the receipt on the error)
+ * Whether the error is this transaction mined and reverted: a CALL_EXCEPTION carrying its status-0 receipt. A
+ * TRANSACTION_REPLACED also carries a receipt, of another transaction, so it is not one.
  */
 const isMinedRevert = (error: unknown): boolean =>
-  (error as { receipt?: { status?: unknown } } | null | undefined)?.receipt?.status === 0;
+  isError(error, "CALL_EXCEPTION") && (error as { receipt?: { status?: unknown } }).receipt?.status === 0;
 
 /** A failed send: its error, and whether the transaction was broadcast before it failed */
 type SendOutcome = { error: unknown; broadcast: boolean } | null;
