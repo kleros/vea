@@ -3,7 +3,7 @@ import { DispatchedTxnData, HashiMessageExecutionVars } from "./hashiTypes";
 import { DataError, MissingEnvironmentVariable } from "../errors";
 
 const DEFAULT_BATCH_SIZE = 10;
-// Page size of the boundary block query, below the indexer's row cap so a short page always means the last page
+// Page size of the boundary block query. The server may cap a page below it, so only an empty page ends the read
 const BLOCK_PAGE_SIZE = 100;
 
 interface EnvioMessageDispatched {
@@ -157,7 +157,7 @@ async function getDispatchedMessagesFromEnvio(
 }
 
 /**
- * Get every MessageDispatched event of this route in one block, page by page.
+ * Get every MessageDispatched event of this route in one block, page by page until an empty page.
  * @param envioEndpoint The Envio GraphQL endpoint
  * @param blockNumber The block to read in full
  * @returns The block's rows, in nonce order
@@ -170,19 +170,19 @@ async function fetchBlockMessages(
   blockNumber: number
 ): Promise<EnvioMessageDispatched[]> {
   const rows: EnvioMessageDispatched[] = [];
-  for (let offset = 0; ; offset += BLOCK_PAGE_SIZE) {
+  for (;;) {
     const page = (await request(envioEndpoint, blockMessagesQuery, {
       sourceChainId,
       targetChainId,
       yaho: yahoAddress,
       blockNumber,
       limit: BLOCK_PAGE_SIZE,
-      offset,
+      offset: rows.length,
     })) as Pick<EnvioDispatchedResponse, "MessageDispatched">;
-    rows.push(...page.MessageDispatched);
-    if (page.MessageDispatched.length < BLOCK_PAGE_SIZE) {
+    if (page.MessageDispatched.length === 0) {
       return rows;
     }
+    rows.push(...page.MessageDispatched);
   }
 }
 
