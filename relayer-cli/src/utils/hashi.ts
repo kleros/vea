@@ -344,11 +344,11 @@ interface ToExecuteMessageInterface {
  * without getHash, so the message is skipped this cycle and kept pending within the one-week window (a VM abort can
  * come from one node's limits, and an adapter can be fixed later); a failure not tied to the message (transport, or a
  * failure the classifier cannot place) is rethrown so the route retries.
- * @param chainId The chain ID
- * @param nonce The message nonce
- * @param inboxAddress The Vea Inbox address
- * @param rpcInbox The RPC URL for the inbox network
- * @returns The HashiMessageState, or null when the threshold check reverted
+ * @param sourceChainId The chain ID of the Yaho (source) chain
+ * @param hashiMessage The message to check
+ * @param emitter The event emitter
+ * @param hasThresholdMet The status check (injected for testing)
+ * @returns The HashiMessageState, or null when the threshold check reverted or aborted in the VM
  */
 async function toExecuteMessage({
   sourceChainId,

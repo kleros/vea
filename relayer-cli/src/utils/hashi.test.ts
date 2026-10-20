@@ -471,6 +471,55 @@ describe("hashi", () => {
         mockEmitter
       );
     });
+    describe("with a saved pending message whose threshold check reverted", () => {
+      const savedTxn: HashiMessageExecutionVars = { ...mockDispatchedTxnData1, timestamp: nowSec - 60 };
+
+      it("should save it again, unexecuted, when its threshold check returns null again", async () => {
+        fetchPendingMessages = jest.fn().mockResolvedValue([savedTxn]);
+        mockIsMessageExecutable.mockResolvedValueOnce(null);
+
+        await runHashiExecutor(buildArgs({ fetchPendingMessages }));
+
+        expect(mockExecuteMsgsOnHashi).not.toHaveBeenCalled();
+        expect(updateStateFile).toHaveBeenCalledWith(
+          sourceChainId,
+          targetChainId,
+          expect.any(Number),
+          currentBlockNumber,
+          [savedTxn],
+          "hashi",
+          mockEmitter
+        );
+      });
+
+      it("should execute it, and not save it, once it is EXECUTABLE", async () => {
+        fetchPendingMessages = jest.fn().mockResolvedValue([savedTxn]);
+        mockIsMessageExecutable.mockResolvedValueOnce({
+          hashiMessage: mockHashiMessage1,
+          executable: true,
+          status: HashiExecutionStatus.EXECUTABLE,
+        });
+
+        await runHashiExecutor(buildArgs({ fetchPendingMessages }));
+
+        expect(mockExecuteMsgsOnHashi).toHaveBeenCalledWith(
+          sourceChainId,
+          targetChainId,
+          [mockHashiMessage1],
+          mockEmitter
+        );
+        expect(updateStateFile).toHaveBeenCalledWith(
+          sourceChainId,
+          targetChainId,
+          expect.any(Number),
+          currentBlockNumber,
+          [],
+          "hashi",
+          mockEmitter
+        );
+      });
+    });
+
     it("should also process local messages from the state file", async () => {
       const localPendingMsg: HashiMessageExecutionVars = {
         ...mockDispatchedTxnData2,
