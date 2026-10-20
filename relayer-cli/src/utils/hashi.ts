@@ -168,6 +168,10 @@ function addClassified(
   nowSec: number
 ) {
   if (messageState === null) {
+    // The threshold check reverted or aborted for this message; retry it next cycle, as a failed Yaru preflight is
+    if (isWithinPendingWindow(record, nowSec)) {
+      classified.pending.push(record);
+    }
     return;
   }
   if (messageState.executable) {
@@ -337,8 +341,9 @@ interface ToExecuteMessageInterface {
 /**
  * Check if a message is executable on Hashi by verifying if the threshold is met.
  * A threshold check that reverts (or aborts in the VM) is specific to this message, for example an adapter
- * without getHash, so the message is skipped this cycle; a failure not tied to the message (transport, or a failure
- * the classifier cannot place) is rethrown so the route retries.
+ * without getHash, so the message is skipped this cycle and kept pending within the one-week window (a VM abort can
+ * come from one node's limits, and an adapter can be fixed later); a failure not tied to the message (transport, or a
+ * failure the classifier cannot place) is rethrown so the route retries.
  * @param chainId The chain ID
  * @param nonce The message nonce
  * @param inboxAddress The Vea Inbox address

@@ -379,11 +379,29 @@ describe("hashi", () => {
       );
     });
 
-    it("should skip messages where isMessageExecutable returns null", async () => {
-      fetchAllMessageLogs = jest.fn().mockResolvedValue({
-        txns: [mockDispatchedTxnData1],
-        toBlock: currentBlockNumber,
-      });
+    it("should keep pending, not execute, a message where isMessageExecutable returns null within the max pending window", async () => {
+      const recentTxn: HashiMessageExecutionVars = { ...mockDispatchedTxnData1, timestamp: nowSec - 60 };
+      fetchAllMessageLogs = jest.fn().mockResolvedValue({ txns: [recentTxn], toBlock: currentBlockNumber });
+      mockIsMessageExecutable.mockResolvedValueOnce(null);
+
+      const result = await runHashiExecutor(buildArgs({ fetchAllMessageLogs }));
+
+      expect(result).toBe(currentBlockNumber);
+      expect(mockExecuteMsgsOnHashi).not.toHaveBeenCalled();
+      expect(updateStateFile).toHaveBeenCalledWith(
+        sourceChainId,
+        targetChainId,
+        expect.any(Number),
+        currentBlockNumber,
+        [recentTxn],
+        "hashi",
+        mockEmitter
+      );
+    });
+
+    it("should drop a message where isMessageExecutable returns null once it is older than MAX_PENDING_TIME_SECONDS", async () => {
+      const expiredTxn: HashiMessageExecutionVars = { ...mockDispatchedTxnData1, timestamp: nowSec - ONE_WEEK - 60 };
+      fetchAllMessageLogs = jest.fn().mockResolvedValue({ txns: [expiredTxn], toBlock: currentBlockNumber });
       mockIsMessageExecutable.mockResolvedValueOnce(null);
 
       const result = await runHashiExecutor(buildArgs({ fetchAllMessageLogs }));
@@ -878,7 +896,7 @@ describe("hashi", () => {
       );
 
       it.each(["R1", "A1"] as const)(
-        "should skip the message whose threshold check fails (%s), execute the other and write the checkpoint",
+        "should keep pending the message whose threshold check fails (%s), execute the other and write the checkpoint",
         async (id) => {
           const skipped: HashiMessageExecutionVars = { ...mockDispatchedTxnData1, timestamp: nowSec - 60 };
           const executable: HashiMessageExecutionVars = { ...mockDispatchedTxnData2, timestamp: nowSec - 60 };
@@ -908,7 +926,7 @@ describe("hashi", () => {
             targetChainId,
             expect.any(Number),
             currentBlockNumber,
-            [],
+            [skipped],
             "hashi",
             mockEmitter
           );
@@ -974,7 +992,7 @@ describe("hashi", () => {
           );
 
         it.each(THRESHOLD_MESSAGE_FAILURES)(
-          "should skip the message whose threshold check fails with %s, execute the other and write the checkpoint",
+          "should keep pending the message whose threshold check fails with %s, execute the other and write the checkpoint",
           async (id) => {
             const emitter = new MockEmitter();
             const emit = jest.spyOn(emitter, "emit");
@@ -996,7 +1014,7 @@ describe("hashi", () => {
               targetChainId,
               expect.any(Number),
               currentBlockNumber,
-              [],
+              [record(1n, failingMessage)],
               "hashi",
               emitter
             );
