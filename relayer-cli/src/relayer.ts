@@ -124,5 +124,8 @@ if (require.main === module) {
     shutdownManager,
     emitter,
   };
-  start(testnetRelayerConfig);
+  start(testnetRelayerConfig).catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 }
