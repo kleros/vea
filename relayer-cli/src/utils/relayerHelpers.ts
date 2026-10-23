@@ -11,6 +11,7 @@ require("dotenv").config();
 /**
  * Initialize the relayer by claiming the lock and reading the nonce from the state file.
  * If the state file does not exist, it will be created with the current timestamp and nonce 0.
+ * A stored nonce that is not a non-negative integer (e.g. a null written by an older version) is read as 0.
  *
  * @param sourceChainId Chain ID of the relayer
  * @param targetChainId Chain ID of the target network
@@ -44,17 +45,15 @@ async function initialize(
 
   const chain_state_raw = fileSystem.readFileSync(stateFile, { encoding: "utf8" });
   const chain_state = JSON.parse(chain_state_raw);
-  let nonce = 0;
-  if ("nonce" in chain_state) {
-    nonce = chain_state["nonce"];
-  }
+  const storedNonce = chain_state["nonce"];
+  const nonce = Number.isInteger(storedNonce) && storedNonce >= 0 ? storedNonce : 0;
 
   return { nonce };
 }
 
 /**
  * Update the state file with the new nonce and release the lock.
- * If nonceFrom is null, the state file will not be updated.
+ * The nonce is written as given; initialize reads a stored nonce that is not a non-negative integer as 0.
  * @param sourceChainId Chain ID of the relayer
  * @param targetChainId Chain ID of the target network
  * @param createdTimestamp Timestamp when the relayer was started
