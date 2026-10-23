@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 import {Adapter} from "../Adapter.sol";
 import {IReceiverGateway} from "./interfaces/IReceiverGateway.sol";
-import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
+import {Governed} from "../../governance/Governed.sol";
 
-contract VeaAdapter is IReceiverGateway, Adapter, Ownable {
+contract VeaAdapter is IReceiverGateway, Adapter, Governed {
     string public constant PROVIDER = "vea";
     address public immutable VEA_OUTBOX;
     address public REPORTER;
@@ -15,18 +15,18 @@ contract VeaAdapter is IReceiverGateway, Adapter, Ownable {
     error InvalidVeaOutbox(address veaOutbox, address expectedVeaOutboux);
     error InvalidReporter(address reporter, address expectedReporter);
 
-    constructor(address veaOutbox_, uint256 sourceChainId) Ownable(msg.sender) {
+    constructor(address veaOutbox_, uint256 sourceChainId, address governor_) Governed(governor_) {
         VEA_OUTBOX = veaOutbox_;
         SOURCE_CHAIN_ID = sourceChainId;
     }
 
     modifier onlyFromAuthenticatedVeaSender(address sourceMsgSender) {
         if (msg.sender != VEA_OUTBOX) revert InvalidVeaOutbox(msg.sender, VEA_OUTBOX);
-        if (sourceMsgSender != REPORTER) revert InvalidReporter(REPORTER, sourceMsgSender);
+        if (sourceMsgSender != REPORTER) revert InvalidReporter(sourceMsgSender, REPORTER);
         _;
     }
 
-    function setReporter(address reporter) external onlyOwner {
+    function setReporter(address reporter) external onlyByGovernor {
         REPORTER = reporter;
     }
 

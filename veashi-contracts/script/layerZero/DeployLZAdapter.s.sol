@@ -1,62 +1,65 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "../../src/adapters/layerZero/LayerZeroAdapter.sol";
-import {SetConfigParam} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
-import {UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
-import {ILayerZeroEndpointV2} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
-import {DeploymentState} from "../helpers/DeploymentState.sol";
+import {console} from "forge-std/console.sol";
+import {IMessageLibManager} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
+import {LayerZeroAdapter} from "../../src/adapters/layerZero/LayerZeroAdapter.sol";
+import {ILZEndpointViews} from "../helpers/BridgeViews.sol";
+import {LZInputs, LZAdapterInputs} from "./LZInputs.sol";
 
-contract DeployLZAdapter is DeploymentState {
-    uint32 constant RECEIVE_CONFIG_TYPE = 2;
-
+/// @dev Deploys the adapter, trusts the route's reporter, pins the receive library and sets the DVN config.
+contract DeployLZAdapter is LZInputs {
     function run() external {
-        // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
         address deployer = vm.addr(pk);
-        address lzEndpoint = vm.envAddress("LZ_ADAPTER_ENDPOINT");
-        uint32 eid = uint32(vm.envUint("LZ_REPORTER_EID"));
-        uint256 chainId = vm.envUint("REPORTER_CHAIN_ID");
-        address receiveLib = vm.envAddress("LZ_RECEIVE_LIB");
-        vm.startBroadcast(pk);
-        LayerZeroAdapter adapter = new LayerZeroAdapter(lzEndpoint, deployer);
-        console.log("Deployed LayerZeroAdapter at:", address(adapter));
-        _updateLocal("lzAdapter", address(adapter));
+        _requireAdapterChain();
+        _requireNotDeployed("lzAdapter");
 
+        LZAdapterInputs memory inputs = _lzAdapterInputs();
         address reporter = _loadAddress(".lzReporter");
-        // Allow the reporter to send messages
-        adapter.setPeer(eid, bytes32(uint256(uint160(reporter))));
-        console.log("Reporter allowed as peer");
+        bytes32 peer = bytes32(uint256(uint160(reporter)));
 
-        // Set reporter as the message sender
-        adapter.setReporterByChain(chainId, eid, reporter);
-
-        // Set reporter as the message sender
-        // adapter.setReporterByChain(chainId, eid, reporter);
-        console.log("Reporter set for chainId");
-        // Set the DVN config as reporter
-        address[] memory optionalDVNs = new address[](0);
-        address[] memory requiredDVNs = new address[](1);
-        requiredDVNs[0] = address(0xe1a12515F9AB2764b887bF60B923Ca494EBbB2d6);
-
-        UlnConfig memory uln = UlnConfig({
-            confirmations: 15, // minimum block confirmations required
-            requiredDVNCount: 1, // number of DVNs required
-            optionalDVNCount: 0, // optional DVNs count, uint8
-            optionalDVNThreshold: 0, // optional DVN threshold
-            requiredDVNs: requiredDVNs, // sorted list of required DVN addresses
-            optionalDVNs: optionalDVNs // sorted list of optional DVNs
-        });
-
-        bytes memory encodedUln = abi.encode(uln);
-
-        SetConfigParam[] memory params = new SetConfigParam[](1);
-        params[0] = SetConfigParam(eid, RECEIVE_CONFIG_TYPE, encodedUln);
-
-        ILayerZeroEndpointV2(lzEndpoint).setConfig(address(adapter), receiveLib, params);
-        console.log("Config set successfully.");
-
+        vm.startBroadcast(pk);
+        LayerZeroAdapter adapter = new LayerZeroAdapter(inputs.endpoint, deployer, deployer);
+        // lzReceive needs all three: the peer, the enabled reporter and a nonzero chain id for the eid.
+        adapter.setPeer(inputs.reporterEid, peer);
+        adapter.setReporterByChain(REPORTER_CHAIN_ID, inputs.reporterEid, reporter);
+        _pinReceiveLib(inputs.endpoint, address(adapter), inputs.reporterEid, inputs.receiveLib);
+        IMessageLibManager(inputs.endpoint).setConfig(
+            address(adapter),
+            inputs.receiveLib,
+            _lzReceiveParams(inputs.reporterEid, inputs.uln)
+        );
         vm.stopBroadcast();
+        console.log("LayerZeroAdapter deployed at:", address(adapter));
+
+        _verifyLz(
+            inputs.endpoint,
+            address(adapter),
+            inputs.receiveLib,
+            inputs.reporterEid,
+            inputs.uln,
+            false,
+            address(0),
+            0
+        );
+        require(adapter.LAYER_ZERO_ENDPOINT() == inputs.endpoint, "LayerZeroAdapter endpoint mismatch");
+        require(adapter.governor() == deployer, "LayerZeroAdapter governor is not the deployer");
+        require(adapter.owner() == deployer, "LayerZeroAdapter owner is not the deployer");
+        require(
+            ILZEndpointViews(inputs.endpoint).delegates(address(adapter)) == deployer,
+            "LayerZeroAdapter endpoint delegate is not the deployer"
+        );
+        require(adapter.peers(inputs.reporterEid) == peer, "LayerZeroAdapter peers(LZ_REPORTER_EID) mismatch");
+        require(
+            adapter.enabledReporters(inputs.reporterEid) == reporter,
+            "LayerZeroAdapter enabledReporters(LZ_REPORTER_EID) mismatch"
+        );
+        require(
+            adapter.chainIds(inputs.reporterEid) == REPORTER_CHAIN_ID,
+            "LayerZeroAdapter chainIds(LZ_REPORTER_EID) mismatch"
+        );
+
+        _updateLocal("lzAdapter", address(adapter));
     }
 }

@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ILayerZeroEndpointV2, MessagingParams, MessagingFee, MessagingReceipt} from "./interfaces/ILayerZeroEndpointV2.sol";
 import {Reporter} from "../Reporter.sol";
+import {PaidReporter} from "../PaidReporter.sol";
+import {IAdapter} from "../../interfaces/IAdapter.sol";
+import {GovernedOAppCore} from "./GovernedOAppCore.sol";
+import {Governed} from "../../governance/Governed.sol";
 import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 import {OAppCore} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppCore.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract LayerZeroReporter is Reporter, Ownable, OAppCore {
+contract LayerZeroReporter is PaidReporter, GovernedOAppCore {
     using OptionsBuilder for bytes;
     using SafeERC20 for IERC20;
 
@@ -18,61 +21,73 @@ contract LayerZeroReporter is Reporter, Ownable, OAppCore {
 
     mapping(uint256 => uint32) public endpointIds;
     uint128 public gasLimit;
-    address refundAddress;
+    address public refundAddress;
 
     error EndpointIdNotAvailable();
+    error ZeroRefundAddress();
 
     event EndpointIdSet(uint256 indexed chainId, uint32 indexed endpointId);
     event GasLimitSet(uint256 gasLimit);
+    event DefaultRefundAddressSet(address indexed refundAddress);
 
     constructor(
-        address headerStorage,
         address yaho,
         address lzEndpoint,
         address delegate,
         address refundAddress_,
-        uint128 defaultGasLimit_
-    ) Reporter(headerStorage, yaho) OAppCore(lzEndpoint, delegate) {
+        uint128 defaultGasLimit_,
+        address governor_,
+        address keeper_
+    ) Reporter(yaho, governor_, keeper_) OAppCore(lzEndpoint, delegate) {
+        if (refundAddress_ == address(0)) revert ZeroRefundAddress();
         refundAddress = refundAddress_;
         gasLimit = defaultGasLimit_;
         LAYER_ZERO_ENDPOINT = ILayerZeroEndpointV2(lzEndpoint);
     }
 
-    function setEndpointIdByChainId(uint256 chainId, uint32 endpointId) external onlyOwner {
+    function setEndpointIdByChainId(uint256 chainId, uint32 endpointId) external onlyByGovernor {
         endpointIds[chainId] = endpointId;
         emit EndpointIdSet(chainId, endpointId);
     }
 
-    function setGasLimit(uint128 gasLimit_) external onlyOwner {
+    function setGasLimit(uint128 gasLimit_) external onlyByGovernorOrKeeper {
+        _checkKeeperUpdate(keccak256("gasLimit"), gasLimit, gasLimit_);
         gasLimit = gasLimit_;
         emit GasLimitSet(gasLimit_);
     }
 
-    function setDefaultRefundAddress(address refundAddress_) external onlyOwner {
+    function setDefaultRefundAddress(address refundAddress_) external onlyByGovernor {
+        if (refundAddress_ == address(0)) revert ZeroRefundAddress();
         refundAddress = refundAddress_;
+        emit DefaultRefundAddressSet(refundAddress_);
+    }
+
+    function _setGovernor(address newGovernor) internal override(Governed, GovernedOAppCore) {
+        super._setGovernor(newGovernor);
     }
 
     function oAppVersion() public pure virtual override returns (uint64 senderVersion, uint64 receiverVersion) {
         return (1, 1);
     }
+
+    /// @inheritdoc PaidReporter
+    function quoteDispatch(
+        uint256 targetChainId,
+        IAdapter adapter,
+        uint256[] memory ids,
+        bytes32[] memory hashes
+    ) public view override returns (address token, uint256 amount) {
+        MessagingParams memory params = _params(targetChainId, address(adapter), ids, hashes);
+        return (LAYER_ZERO_ENDPOINT.nativeToken(), LAYER_ZERO_ENDPOINT.quote(params, address(this)).nativeFee);
+    }
+
     function _dispatch(
         uint256 targetChainId,
         address adapter,
         uint256[] memory ids,
         bytes32[] memory hashes
     ) internal override returns (bytes32) {
-        uint32 targetEndpointId = endpointIds[targetChainId];
-        if (targetEndpointId == 0) revert EndpointIdNotAvailable();
-        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(gasLimit, 0);
-        bytes memory message = abi.encode(ids, hashes);
-        bytes32 receiverBytes32 = bytes32(uint256(uint160(adapter)));
-        MessagingParams memory params = MessagingParams(
-            targetEndpointId,
-            receiverBytes32,
-            message,
-            options,
-            false // receiver in lz Token
-        );
+        MessagingParams memory params = _params(targetChainId, adapter, ids, hashes);
         // solhint-disable-next-line check-send-result
         MessagingFee memory msgFee = LAYER_ZERO_ENDPOINT.quote(params, address(this));
 
@@ -92,5 +107,21 @@ contract LayerZeroReporter is Reporter, Ownable, OAppCore {
         return receipt.guid;
     }
 
-    receive() external payable {}
+    function _params(
+        uint256 targetChainId,
+        address adapter,
+        uint256[] memory ids,
+        bytes32[] memory hashes
+    ) internal view returns (MessagingParams memory) {
+        uint32 targetEndpointId = endpointIds[targetChainId];
+        if (targetEndpointId == 0) revert EndpointIdNotAvailable();
+        return
+            MessagingParams(
+                targetEndpointId,
+                bytes32(uint256(uint160(adapter))),
+                abi.encode(ids, hashes),
+                OptionsBuilder.newOptions().addExecutorLzReceiveOption(gasLimit, 0),
+                false // receiver in lz Token
+            );
+    }
 }

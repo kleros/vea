@@ -1,36 +1,52 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "../../src/adapters/vea/VeaAdapter.sol";
-import "../../src/adapters/vea/VeaReporter.sol";
+import {console} from "forge-std/console.sol";
+import {VeaReporter} from "../../src/adapters/vea/VeaReporter.sol";
 import {IVeaInbox} from "../../src/adapters/vea/interfaces/IVeaInbox.sol";
-import "../helpers/DeploymentState.sol";
+import {DispatcherCheck} from "../helpers/DispatcherCheck.sol";
+import {VeaInputs} from "./VeaInputs.sol";
 
-contract DeployVeaReporter is DeploymentState {
+/// @notice Deploys the VeaReporter on the reporter chain, bound to the route's VeaAdapter. Vea charges no
+/// fee, so the reporter needs no funding.
+contract DeployVeaReporter is VeaInputs, DispatcherCheck {
     function run() external {
-        // start broadcasting as your deployer
         uint256 pk = vm.envUint("DEPLOYER_KEY");
-        vm.startBroadcast(pk);
+        address deployer = vm.addr(pk);
+        _requireReporterChain();
+        _requireNotDeployed("veaReporter");
+        VeaReporterInputs memory inputs = _veaReporterInputs();
 
-        //
-        // Deploy the reporter, pointing at that adapter
-        //
-        address headerStorage = vm.envAddress("HEADER_STORAGE");
-        address yahoAddress = vm.envAddress("YAHO_ADDRESS");
-        address veaInboxAddress = vm.envAddress("VEA_INBOX");
-        uint256 targetChain = vm.envUint("VEA_TARGET_CHAIN_ID");
         address adapter = _loadAddress(".veaAdapter");
+        require(adapter != address(0), "veaAdapter is zero in deployment state");
+        address yaho = _resolveYaho(true);
+        address keeper = _resolveKeeper(deployer);
+        address dispatcher = _optionalDispatcher(yaho);
 
+        vm.startBroadcast(pk);
         VeaReporter reporter = new VeaReporter(
-            headerStorage,
-            yahoAddress,
-            IVeaInbox(veaInboxAddress),
+            yaho,
+            IVeaInbox(inputs.inbox),
             adapter,
-            targetChain
+            ADAPTER_CHAIN_ID,
+            deployer, // governor
+            keeper
         );
+        if (dispatcher != address(0)) reporter.setDispatcher(dispatcher);
+        vm.stopBroadcast();
+
+        require(reporter.YAHO() == yaho, "VeaReporter YAHO mismatch");
+        require(address(reporter.VEA_INBOX()) == inputs.inbox, "VeaReporter VEA_INBOX mismatch");
+        require(reporter.ADAPTER() == adapter, "VeaReporter ADAPTER mismatch");
+        require(
+            reporter.EXPECTED_TARGET_CHAIN_ID() == ADAPTER_CHAIN_ID,
+            "VeaReporter EXPECTED_TARGET_CHAIN_ID mismatch"
+        );
+        require(reporter.governor() == deployer, "VeaReporter governor mismatch");
+        require(reporter.keeper() == keeper, "VeaReporter keeper mismatch");
+        require(reporter.dispatcher() == dispatcher, "VeaReporter dispatcher mismatch");
         console.log("VeaReporter deployed at:", address(reporter));
 
-        vm.stopBroadcast();
+        _updateLocal("veaReporter", address(reporter));
     }
 }

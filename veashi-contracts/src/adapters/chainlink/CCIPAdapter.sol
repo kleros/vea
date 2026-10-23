@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Adapter} from "../Adapter.sol";
+import {Governed} from "../../governance/Governed.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/applications/CCIPReceiver.sol";
 import {Client} from "@chainlink/contracts-ccip/libraries/Client.sol";
 
-contract CCIPAdapter is Adapter, Ownable, CCIPReceiver {
+contract CCIPAdapter is Adapter, Governed, CCIPReceiver {
     string public constant PROVIDER = "ccip";
 
     mapping(uint64 => address) public enabledReporters;
@@ -16,9 +16,9 @@ contract CCIPAdapter is Adapter, Ownable, CCIPReceiver {
 
     event ReporterSet(uint256 indexed chainId, uint64 indexed chainSelector, address indexed reporter);
 
-    constructor(address ccipRouter) CCIPReceiver(ccipRouter) {} // solhint-disable no-empty-blocks
+    constructor(address ccipRouter, address governor_) CCIPReceiver(ccipRouter) Governed(governor_) {} // solhint-disable no-empty-blocks
 
-    function setReporterByChain(uint256 chainId, uint64 chainSelector, address reporter) external onlyOwner {
+    function setReporterByChain(uint256 chainId, uint64 chainSelector, address reporter) external onlyByGovernor {
         enabledReporters[chainSelector] = reporter;
         chainIds[chainSelector] = chainId;
         emit ReporterSet(chainId, chainSelector, reporter);
@@ -27,8 +27,10 @@ contract CCIPAdapter is Adapter, Ownable, CCIPReceiver {
     function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
         // NOTE: validity of `msg.sender` is ensured by `CCIPReceiver` prior this internal function invocation
         address sender = abi.decode(message.sender, (address));
-        if (enabledReporters[message.sourceChainSelector] != sender) revert UnauthorizedCCIPReceive();
         uint256 sourceChainId = chainIds[message.sourceChainSelector];
+        if (enabledReporters[message.sourceChainSelector] != sender || sourceChainId == 0) {
+            revert UnauthorizedCCIPReceive();
+        }
         (uint256[] memory ids, bytes32[] memory hashes) = abi.decode(message.data, (uint256[], bytes32[]));
         _storeHashes(sourceChainId, ids, hashes);
     }
