@@ -8,4 +8,4 @@ We can then discuss the best way to handle things on a case by case basis.
 ## Security maintainers
 
 - Clément Lesaege — clement@kleros.io
-- Mani Brar ([@mani99brar](https://github.com/mani99brar))
+- Mani Brar — manmeet@kleros.io ([@mani99brar](https://github.com/mani99brar))
