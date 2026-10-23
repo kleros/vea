@@ -1,5 +1,6 @@
 import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
-import { isSnapshotNeeded, saveSnapshot } from "./snapshot";
+import { isSnapshotNeeded, saveSnapshot, SEND_MARGIN_SECS } from "./snapshot";
+import { BotEvents } from "../utils/botEvents";
 import { MockEmitter } from "../utils/emitter";
 import { ethers } from "ethers";
 
@@ -10,6 +11,16 @@ describe("snapshot", () => {
   let count: number = 1;
   let epochPeriod = 1200;
   const chainId = 11155111;
+  let veaInboxProvider: any;
+  let veaOutboxProvider: any;
+  const SEC_PER_BLOCK = 12;
+  const HEAD_BLOCK = 1_000_000;
+  const makeProvider = () => ({
+    getBlock: jest.fn(async (tag: any) => {
+      const number = typeof tag === "number" ? tag : HEAD_BLOCK;
+      return { number, timestamp: number * SEC_PER_BLOCK };
+    }),
+  });
   let fetchLastSavedMessage: jest.Mock;
   let fetchLastClaimedEpoch: jest.Mock;
   let fetchClaimForEpoch: jest.Mock;
@@ -30,6 +41,8 @@ describe("snapshot", () => {
         Claimed: jest.fn(),
       },
     };
+    veaInboxProvider = makeProvider();
+    veaOutboxProvider = makeProvider();
     fetchLastClaimedEpoch = jest.fn().mockResolvedValue({ epoch: 1 });
     fetchClaimForEpoch = jest.fn().mockResolvedValue({
       stateRoot: "0xabcde",
@@ -42,12 +55,15 @@ describe("snapshot", () => {
       veaInbox.count.mockResolvedValue(currentCount);
       fetchLastSavedMessage = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", currentCount] }]);
+      veaOutbox.queryFilter.mockResolvedValue([{ data: "0x1", blockNumber: 1 }]);
       const params = {
         network,
         epochPeriod,
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -57,6 +73,48 @@ describe("snapshot", () => {
         snapshotNeeded: false,
         latestCount: currentCount,
       });
+    });
+
+    it("bootstraps the first snapshot: no SnapshotSaved on chain and none in the indexer, but messages in the inbox", async () => {
+      count = -1;
+      veaInbox.count.mockResolvedValue(3);
+      veaInbox.queryFilter.mockResolvedValue([]);
+      fetchLastSavedMessage = jest.fn().mockResolvedValue(null);
+      const params = {
+        network,
+        epochPeriod,
+        chainId,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        count,
+        fetchLastSavedMessage,
+        fetchLastClaimedEpoch,
+        fetchClaimForEpoch,
+      } as any;
+      await expect(isSnapshotNeeded(params)).resolves.toEqual({ snapshotNeeded: true, latestCount: 3 });
+    });
+
+    it("saves nothing when no snapshot exists anywhere and the inbox is empty", async () => {
+      count = -1;
+      veaInbox.count.mockResolvedValue(0);
+      veaInbox.queryFilter.mockResolvedValue([]);
+      fetchLastSavedMessage = jest.fn().mockResolvedValue(null);
+      const params = {
+        network,
+        epochPeriod,
+        chainId,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        count,
+        fetchLastSavedMessage,
+        fetchLastClaimedEpoch,
+        fetchClaimForEpoch,
+      } as any;
+      await expect(isSnapshotNeeded(params)).resolves.toEqual({ snapshotNeeded: false, latestCount: 0 });
     });
 
     it("should return false when count is equal to current count", async () => {
@@ -71,6 +129,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -94,6 +154,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -117,6 +179,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -127,6 +191,47 @@ describe("snapshot", () => {
         latestCount: currentCount,
       });
     });
+    it("scans bounded windows for the last saved snapshot and the last claim", async () => {
+      veaInbox.count.mockResolvedValue(2);
+      const inboxRanges: Array<[number, number]> = [];
+      const outboxRanges: Array<[number, number]> = [];
+      veaInbox.queryFilter = jest.fn(async (_f: any, from: number, to: number) => {
+        inboxRanges.push([from, to]);
+        return [{ args: ["0x1", "0x2", 1], blockNumber: HEAD_BLOCK - 10, index: 0 }];
+      });
+      veaOutbox.queryFilter = jest.fn(async (_f: any, from: number, to: number) => {
+        outboxRanges.push([from, to]);
+        return [{ args: [null, 1, null], data: "0xabc", blockNumber: HEAD_BLOCK - 10, index: 0 }];
+      });
+      veaInbox.snapshots.mockResolvedValue(ethers.ZeroHash);
+      veaOutbox.stateRoot.mockResolvedValue("0xstate");
+      const params = {
+        network,
+        epochPeriod,
+        chainId,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        count: -1,
+        fetchLastSavedMessage: jest.fn(),
+        fetchLastClaimedEpoch,
+        fetchClaimForEpoch,
+      } as any;
+
+      await isSnapshotNeeded(params);
+
+      for (const ranges of [inboxRanges, outboxRanges]) {
+        expect(ranges.length).toBeGreaterThan(0);
+        // ethers defaults an omitted range to fromBlock 0.
+        expect(Math.min(...ranges.map((r) => r[0]))).toBeGreaterThan(0);
+        for (const [from, to] of ranges) {
+          expect(to - from).toBeLessThan(10_000);
+          expect(to).toBeLessThanOrEqual(HEAD_BLOCK);
+        }
+      }
+    });
+
     it("should fallback to fetchLastSavedMessage if queryFilter fails", async () => {
       count = 1;
       let currentCount = 2;
@@ -139,6 +244,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -163,6 +270,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         count,
         fetchLastSavedMessage,
         fetchLastClaimedEpoch,
@@ -189,6 +298,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         network,
         epochPeriod,
         count,
@@ -206,6 +317,7 @@ describe("snapshot", () => {
       count = -1;
       veaInbox.count.mockResolvedValue(currentCount);
       const now = 1801; // 601 seconds after the epoch started
+      veaInboxProvider.getBlock.mockResolvedValue({ number: 150, timestamp: now });
       const isSnapshotNeededMock = jest.fn().mockResolvedValue({
         snapshotNeeded: true,
         latestCount: currentCount,
@@ -217,6 +329,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         network,
         epochPeriod,
         count,
@@ -244,6 +358,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         network,
         epochPeriod,
         count: -1,
@@ -256,6 +372,41 @@ describe("snapshot", () => {
       expect(res).toEqual({ transactionHandler, latestCount: currentCount });
     });
 
+    it("does not send when the inbox chain's epoch has ended (or is about to) since the decision", async () => {
+      const now = 2 * epochPeriod - 120; // inside epoch 1's saving window when the cycle started
+      const transactionHandler = { saveSnapshot: jest.fn() };
+      const emitter = new MockEmitter();
+      const emitted = jest.spyOn(emitter, "emit");
+      const run = () =>
+        saveSnapshot({
+          chainId,
+          veaInbox,
+          veaOutbox,
+          veaInboxProvider,
+          veaOutboxProvider,
+          network,
+          epochPeriod,
+          count: 5,
+          transactionHandler,
+          emitter,
+          now,
+          toSaveSnapshot: jest.fn().mockResolvedValue({ snapshotNeeded: true, latestCount: 6 }),
+        });
+
+      // The checks took minutes: the inbox chain is already in epoch 2.
+      veaInboxProvider.getBlock.mockResolvedValue({ number: 300, timestamp: 2 * epochPeriod + 5 });
+      expect(await run()).toEqual({ transactionHandler, latestCount: 5 });
+      // Within the send margin of the epoch's end.
+      veaInboxProvider.getBlock.mockResolvedValue({ number: 300, timestamp: 2 * epochPeriod - SEND_MARGIN_SECS });
+      expect(await run()).toEqual({ transactionHandler, latestCount: 5 });
+
+      expect(transactionHandler.saveSnapshot).not.toHaveBeenCalled();
+      expect(emitted).toHaveBeenCalledWith(
+        BotEvents.ALERT,
+        expect.objectContaining({ code: "SNAPSHOT_EPOCH_ENDED", epoch: 1 })
+      );
+    });
+
     it("should save snapshot in time limit for devnet", async () => {
       const savingPeriod = snapshotSavingPeriod[Network.DEVNET];
       const currentCount = 6;
@@ -266,6 +417,7 @@ describe("snapshot", () => {
         latestCount: currentCount,
       });
       const now = epochPeriod + epochPeriod - savingPeriod; // 60 seconds before the second epoch ends
+      veaInboxProvider.getBlock.mockResolvedValue({ number: 200, timestamp: now });
       const transactionHandler = {
         saveSnapshot: jest.fn(),
       };
@@ -273,6 +425,8 @@ describe("snapshot", () => {
         chainId,
         veaInbox,
         veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
         network: Network.DEVNET,
         epochPeriod,
         count,
@@ -284,5 +438,144 @@ describe("snapshot", () => {
       expect(transactionHandler.saveSnapshot).toHaveBeenCalled();
       expect(res).toEqual({ transactionHandler, latestCount: currentCount });
     });
+  });
+});
+
+// Snapshot saving decides from chain time, never the host clock.
+const P = 3600;
+const SAVING_PERIOD = snapshotSavingPeriod[Network.TESTNET];
+const SKEW = 30 * 60;
+// Chain time inside the saving window of epoch E: SAVING_PERIOD / 2 seconds before (E+1)·P.
+const EPOCH = 488_888;
+const CHAIN_NOW = (EPOCH + 1) * P - SAVING_PERIOD / 2;
+
+const provider = (timestamp: number) => ({
+  getBlock: jest.fn(async (tag: any) => ({ number: typeof tag === "number" ? tag : 1_000, timestamp })),
+});
+
+const contracts = () => ({
+  veaInbox: {
+    count: jest.fn().mockResolvedValue(5),
+    queryFilter: jest.fn().mockRejectedValue(new Error("no logs")),
+    filters: { SnapshotSaved: jest.fn() },
+    snapshots: jest.fn().mockResolvedValue(ethers.ZeroHash),
+    target: "0xinbox",
+  },
+  veaOutbox: {
+    stateRoot: jest.fn().mockResolvedValue("0x" + "22".repeat(32)),
+    queryFilter: jest.fn(),
+    filters: { Claimed: jest.fn() },
+    target: "0xoutbox",
+  },
+});
+
+describe("snapshot: chain time, not the host clock", () => {
+  beforeEach(() => {
+    jest.useFakeTimers({ doNotFake: ["nextTick", "queueMicrotask", "setImmediate"] });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it.each([
+    ["ahead", SKEW],
+    ["behind", -SKEW],
+  ])(
+    "saveSnapshot without now saves inside the chain's saving window with the host clock 30 minutes %s",
+    async (_name, skew) => {
+      jest.setSystemTime((CHAIN_NOW + skew) * 1000);
+      // The host clock alone would put us outside the window.
+      const hostLeft = P - (Math.floor(Date.now() / 1000) % P);
+      expect(hostLeft).toBeGreaterThan(SAVING_PERIOD);
+
+      const { veaInbox, veaOutbox } = contracts();
+      const transactionHandler = { saveSnapshot: jest.fn() };
+      const toSaveSnapshot = jest.fn().mockResolvedValue({ snapshotNeeded: true, latestCount: 5 });
+      await saveSnapshot({
+        chainId: 11155111,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider: provider(CHAIN_NOW + 3) as any,
+        veaOutboxProvider: provider(CHAIN_NOW) as any,
+        network: Network.TESTNET,
+        epochPeriod: P,
+        count: 4,
+        transactionHandler,
+        emitter: new MockEmitter(),
+        toSaveSnapshot,
+      });
+      expect(transactionHandler.saveSnapshot).toHaveBeenCalled();
+      // The same chain time reaches the snapshot check.
+      expect(toSaveSnapshot.mock.calls[0][0].now).toBe(CHAIN_NOW);
+    }
+  );
+
+  it("saveSnapshot without now waits outside the chain's saving window even when the host clock is inside it", async () => {
+    const chainNow = CHAIN_NOW - SKEW; // 30 minutes earlier on chain: well outside the window
+    jest.setSystemTime(CHAIN_NOW * 1000);
+    const { veaInbox, veaOutbox } = contracts();
+    const transactionHandler = { saveSnapshot: jest.fn() };
+    const toSaveSnapshot = jest.fn();
+    await saveSnapshot({
+      chainId: 11155111,
+      veaInbox,
+      veaOutbox,
+      veaInboxProvider: provider(chainNow) as any,
+      veaOutboxProvider: provider(chainNow) as any,
+      network: Network.TESTNET,
+      epochPeriod: P,
+      count: 4,
+      transactionHandler,
+      emitter: new MockEmitter(),
+      toSaveSnapshot,
+    });
+    expect(toSaveSnapshot).not.toHaveBeenCalled();
+    expect(transactionHandler.saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    // Late in epoch E on chain, the host clock is already in E+1.
+    ["ahead", SKEW, CHAIN_NOW],
+    // Early in epoch E on chain, the host clock is still in E-1.
+    ["behind", -SKEW, EPOCH * P + SAVING_PERIOD / 2],
+  ])(
+    "isSnapshotNeeded without now reads snapshots of the chain's current epoch (host clock %s)",
+    async (_name, skew, chainNow) => {
+      jest.setSystemTime((chainNow + skew) * 1000);
+      expect(Math.floor(Date.now() / 1000 / P)).not.toBe(EPOCH);
+      const { veaInbox, veaOutbox } = contracts();
+      await isSnapshotNeeded({
+        epochPeriod: P,
+        chainId: 11155111,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider: provider(chainNow) as any,
+        veaOutboxProvider: provider(chainNow) as any,
+        count: 4,
+        fetchLastSavedMessage: jest.fn().mockResolvedValue({ id: "msg-5", stateRoot: "0x" + "33".repeat(32) }),
+        fetchLastClaimedEpoch: jest.fn().mockResolvedValue(null),
+      });
+      expect(veaInbox.snapshots).toHaveBeenCalledWith(EPOCH);
+    }
+  );
+
+  it("isSnapshotNeeded uses the now it is given (seconds), as the watcher passes it", async () => {
+    jest.setSystemTime((CHAIN_NOW + SKEW) * 1000);
+    const { veaInbox, veaOutbox } = contracts();
+    const outboxProvider = provider(0);
+    await isSnapshotNeeded({
+      epochPeriod: P,
+      chainId: 11155111,
+      veaInbox,
+      veaOutbox,
+      veaInboxProvider: provider(0) as any,
+      veaOutboxProvider: outboxProvider as any,
+      count: 4,
+      now: CHAIN_NOW,
+      fetchLastSavedMessage: jest.fn().mockResolvedValue({ id: "msg-5", stateRoot: "0x" + "33".repeat(32) }),
+      fetchLastClaimedEpoch: jest.fn().mockResolvedValue(null),
+    });
+    expect(veaInbox.snapshots).toHaveBeenCalledWith(EPOCH);
+    expect(outboxProvider.getBlock).not.toHaveBeenCalledWith("latest");
   });
 });

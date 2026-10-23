@@ -11,6 +11,7 @@ export {
   BaseTransactionHandler,
   ITransactionHandler,
 };
+export { CannotFundError } from "./baseTransactionHandler";
 
 export interface IDevnetTransactionHandler extends ITransactionHandler {
   devnetAdvanceState(stateRoot: string): Promise<void>;

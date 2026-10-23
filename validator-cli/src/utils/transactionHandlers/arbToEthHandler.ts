@@ -30,10 +30,13 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
 
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[this.network];
+    // Checked before estimating: a short balance makes estimateGas revert with no CANNOT_FUND.
+    await this.ensureNativeFunds("claim", { value: deposit });
     // Estimate gas and send claim with deposit
     const gasLimit = await this.veaOutbox["claim(uint256,bytes32)"].estimateGas(this.epoch, stateRoot, {
       value: deposit,
     });
+    await this.ensureNativeFunds("claim", { value: deposit, gasLimit: toBigInt(gasLimit) });
     const tx = await this.veaOutbox.claim(this.epoch, stateRoot, {
       value: deposit,
       gasLimit,
@@ -54,6 +57,7 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
 
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[this.network];
+    await this.ensureNativeFunds("challenge", { value: deposit });
     const gasEstimate = await this.veaOutbox[
       "challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
     ].estimateGas(this.epoch, this.claim, { value: deposit });
@@ -64,6 +68,7 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     if (maxPriorityFeePerGas > maxFeePerGas) {
       maxPriorityFeePerGas = maxFeePerGas;
     }
+    await this.ensureNativeFunds("challenge", { value: deposit, gasLimit: toBigInt(gasEstimate), maxFeePerGas });
 
     const tx = await this.veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
       this.epoch,
@@ -105,6 +110,8 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     const toSubmit = await this.toSubmitTransaction(this.transactions.executeSnapshotTxn, ContractType.OUTBOX, now);
     if (!toSubmit) return;
 
+    // The L1 execution is paid by our address on the outbox chain (Sepolia).
+    await this.ensureNativeFunds("execute snapshot", {});
     const result = await execFn(sendSnapshotHash, this.veaInboxProvider, this.veaOutboxProvider);
     this.emitter.emit(BotEvents.TXN_MADE, result.hash, this.epoch, "Execute Snapshot");
     this.transactions.executeSnapshotTxn = { hash: result.hash, broadcastedTimestamp: now };
