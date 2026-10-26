@@ -18,26 +18,19 @@ import { BotPaths } from "./botConfig";
 import { Network } from "../consts/bridgeRoutes";
 import { redactUrlsInText } from "./fallbackProvider";
 
-const logtailToken = process.env.LOGTAIL_TOKEN;
-
+// Logs go to stdout only. The Logtail transport this once selected (on LOGTAIL_TOKEN) was
+// never installed, so setting the token crashed the bot at import; ship stdout instead.
 const loggerOptions = {
   level: "debug",
   base: { service: "Vea" },
-  transport: logtailToken
-    ? {
-        target: "@logtail/pino",
-        options: {
-          sourceToken: logtailToken,
-        },
-      }
-    : {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "SYS:standard",
-          ignore: "pid,hostname",
-        },
-      },
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
 };
 const baseLogger = pino(loggerOptions);
 const getLogger = (context: string) => baseLogger.child({ context });
@@ -258,6 +251,9 @@ export const configurableInitialize = (emitter: EventEmitter, sink: LogSink = ge
 
   emitter.on(BotEvents.CLAIM_LOG_SCAN_FAILED, (epoch: number, reason?: string) => {
     logger.warn({ epoch, reason }, `claim_log_scan_failed`);
+  });
+  emitter.on(BotEvents.CLAIM_LOG_SCAN_PAUSED, (epoch: number, scannedTo: number, toBlock: number) => {
+    logger.info({ epoch, scannedTo, toBlock }, `claim_log_scan_paused`);
   });
   emitter.on(BotEvents.CLAIM_MISMATCH, (epoch: number) => {
     logger.error({ epoch }, `claim_mismatch`);

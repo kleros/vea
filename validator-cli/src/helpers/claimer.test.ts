@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { checkAndClaim, CheckAndClaimParams } from "./claimer";
+import { checkAndClaim, CheckAndClaimParams, CensorshipTestStatus } from "./claimer";
 import { createTwoChainRoute, TwoChainRoute } from "../testUtils/twoChainFixture";
 import { getBridgeConfig, Network } from "../consts/bridgeRoutes";
 import { resolveSettledReadBlocks, FINALITY_STALL_SECS, OUTBOX_STALL_DEPTH_BLOCKS } from "../utils/arbToEthState";
@@ -43,7 +43,11 @@ interface Setup {
 }
 
 /** A claimer wired to the two-chain fixture: every pinned read throws on another chain's block. */
-const setup = ({ claimedLogs = [] as any[], claimHash = ethers.ZeroHash } = {}): Setup => {
+const setup = ({
+  claimedLogs = [] as any[],
+  claimHash = ethers.ZeroHash,
+  censorshipTest = CensorshipTestStatus.IN_PROGRESS,
+} = {}): Setup => {
   const route = createTwoChainRoute({ now: NOW });
   const scannedRanges: Array<[number, number]> = [];
   const veaInbox = { snapshots: jest.fn(route.inbox.pinned(() => SAVED)) };
@@ -51,6 +55,8 @@ const setup = ({ claimedLogs = [] as any[], claimHash = ethers.ZeroHash } = {}):
     target: "0xoutbox",
     stateRoot: jest.fn(route.outbox.pinned(() => OUTBOX_ROOT)),
     claimHashes: jest.fn(route.outbox.pinned(() => claimHash)),
+    // ethers v6 returns the uint8 enum as a bigint.
+    censorshipTestStatus: jest.fn(route.outbox.pinned(() => BigInt(censorshipTest))),
     filters: { Claimed: jest.fn(() => ({ event: "Claimed" })) },
     queryFilter: jest.fn(async (_filter: any, from: number, to: number) => {
       route.outbox.assertOwnBlock(from);
@@ -269,6 +275,42 @@ describe("claimer", () => {
       await checkAndClaim(s.params);
       expect(s.handler.verifySnapshot).toHaveBeenCalledWith(readBlock.timestamp);
       expect(s.outcomes).toEqual([EpochOutcome.PENDING, EpochOutcome.PENDING]);
+    });
+
+    it("restarts the verification of a claim whose censorship test failed, instead of verifySnapshot", async () => {
+      // More than maxMissingBlocks slots were missed during minChallengePeriod: the test stays
+      // Failed, so verifySnapshot would revert every cycle, and only startVerification restarts it.
+      const s = setup({ censorshipTest: CensorshipTestStatus.FAILED });
+      s.params.claim = makeClaimStruct({ claimer: OUR_ADDRESS, timestampVerification: NOW - 4 * 3600 });
+      await checkAndClaim(s.params);
+      // Read at latest (no blockTag): the status is judged at the block the transaction lands in.
+      expect(s.veaOutbox.censorshipTestStatus).toHaveBeenCalledWith(s.params.claim);
+      expect(s.handler.startVerification).toHaveBeenCalledWith(s.route.outbox.block("finalized").timestamp);
+      expect(s.handler.verifySnapshot).not.toHaveBeenCalled();
+      expect(s.emitter.emit).toHaveBeenCalledWith(
+        BotEvents.ALERT,
+        expect.objectContaining({ level: "warn", code: "censorship_test_failed", epoch: CLAIMABLE })
+      );
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
+    });
+
+    it("sends verifySnapshot once the censorship test passed, without restarting it", async () => {
+      const s = setup({ censorshipTest: CensorshipTestStatus.PASSED });
+      s.params.claim = makeClaimStruct({ claimer: OUR_ADDRESS, timestampVerification: NOW - 4 * 3600 });
+      await checkAndClaim(s.params);
+      expect(s.veaOutbox.censorshipTestStatus).toHaveBeenCalledWith(s.params.claim);
+      expect(s.handler.verifySnapshot).toHaveBeenCalledWith(s.route.outbox.block("finalized").timestamp);
+      expect(s.handler.startVerification).not.toHaveBeenCalled();
+      expect(s.emitter.emit).not.toHaveBeenCalledWith(BotEvents.ALERT, expect.anything());
+    });
+
+    it("starts the verification of an unstarted claim without reading the censorship test", async () => {
+      const s = setup({ censorshipTest: CensorshipTestStatus.NOT_STARTED });
+      s.params.claim = makeClaimStruct({ claimer: OUR_ADDRESS });
+      await checkAndClaim(s.params);
+      expect(s.veaOutbox.censorshipTestStatus).not.toHaveBeenCalled();
+      expect(s.handler.startVerification).toHaveBeenCalledWith(s.route.outbox.block("finalized").timestamp);
+      expect(s.handler.verifySnapshot).not.toHaveBeenCalled();
     });
 
     it("verifies a third party's claim only once it matches snapshots[E] at the settled inbox block", async () => {

@@ -47,14 +47,28 @@ export interface NetworkConfig {
 }
 
 /**
+ * Split a comma-separated environment list: entries are trimmed and empty ones dropped. The
+ * startup preflight and the watcher both read VEAOUTBOX_CHAINS and NETWORKS through this, so
+ * a list the preflight accepts (`11155111, 10200`, a trailing comma) is the list the bot runs.
+ */
+export const splitList = (value: string | undefined): string[] =>
+  (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+/** Repeated entries dropped, first occurrence kept: a route listed twice runs once. */
+const unique = (list: string[]): string[] => [...new Set(list)];
+
+/**
  * Get the network configuration: chainId, networks, and devnet owner
  * @returns NetworkConfig[] - the network configuration
  */
 export function getNetworkConfig(): NetworkConfig[] {
-  const chainIds = process.env.VEAOUTBOX_CHAINS ? process.env.VEAOUTBOX_CHAINS.split(",") : [];
+  // Read as numbers, as the preflight reads them: `011155111` is chain 11155111.
+  const chainIds = unique(splitList(process.env.VEAOUTBOX_CHAINS).map((id) => String(Number(id))));
   validateChainId(chainIds);
-  const rawNetwork = process.env.NETWORKS ? process.env.NETWORKS.split(",") : [];
-  const networks = validateNetworks(rawNetwork);
+  const networks = validateNetworks(unique(splitList(process.env.NETWORKS)));
 
   const networkConfig: NetworkConfig[] = [];
   for (const chainId of chainIds) {

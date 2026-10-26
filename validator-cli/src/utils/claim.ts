@@ -1,7 +1,7 @@
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
-import { ClaimNotFoundError } from "./errors";
+import { ClaimNotFoundError, ClaimScanPausedError } from "./errors";
 import { getMessageStatus } from "./arbMsgExecutor";
 import {
   getClaimForEpoch,
@@ -33,7 +33,45 @@ export interface ClaimParams {
   fetchClaimForEpoch?: typeof getClaimForEpoch;
   fetchVerificationForClaim?: typeof getVerificationForClaim;
   fetchChallengerForClaim?: typeof getChallengerForClaim;
+  /**
+   * Set for an epoch below the watch window (the watcher shares one per route and cycle): its claim
+   * can be months old, so the hash-checked indexer is tried before the logs, and the scan from the
+   * claim to the read block takes at most `blocksLeft` blocks, resuming next visit where it stopped
+   * (`ClaimScanPausedError` until it reaches the read block). Unset: the scan is unbounded.
+   */
+  scanBudget?: ClaimScanBudget;
 }
+
+/** The blocks of claim-log scans left in a cycle; each scan takes what it reads from it. */
+export interface ClaimScanBudget {
+  blocksLeft: number;
+}
+
+/**
+ * The `Challenged` and `VerificationStarted` logs of one epoch's claim, from its claim block up to
+ * `scannedTo`: a budgeted scan resumes after `scannedTo` on its next visit.
+ */
+interface ClaimEventCursor {
+  claimBlock: number;
+  scannedTo: number;
+  challengeLogs: any[];
+  verificationLogs: any[];
+}
+
+/**
+ * Per outbox contract (WeakMap: the watcher keeps one per route), by epoch: the claim last verified
+ * against `claimHash`, and the cursor of its budgeted log scan. A claim hash pins every field of
+ * the claim, so while it is unchanged a revisit costs the one `claimHashes` read.
+ */
+const claimCaches = new WeakMap<
+  object,
+  { verified: Map<number, { claimHash: string; claim: ClaimStruct }>; cursors: Map<number, ClaimEventCursor> }
+>();
+const claimCacheOf = (veaOutbox: any) => {
+  let cache = claimCaches.get(veaOutbox);
+  if (!cache) claimCaches.set(veaOutbox, (cache = { verified: new Map(), cursors: new Map() }));
+  return cache;
+};
 
 /**
  * Block-time estimates and epoch boundaries are both approximate, so the claim
@@ -82,7 +120,7 @@ const pickChallenger = (claim: ClaimStruct, challengers: string[], claimHash: st
  * @returns The reconstructed claim, or null if the logs could not produce one
  */
 const reconstructClaimFromLogs = async (
-  { veaOutbox, veaOutboxProvider, epoch, epochPeriod, emitter }: ClaimParams,
+  { veaOutbox, veaOutboxProvider, epoch, epochPeriod, emitter, scanBudget }: ClaimParams,
   claimHash: string,
   headBlock: { number: number }
 ): Promise<ClaimStruct | null> => {
@@ -119,20 +157,11 @@ const reconstructClaimFromLogs = async (
 
     if (verifyClaimHash({ claim, claimHash })) return claim;
 
-    const [challengeLogs, verificationLogs] = await Promise.all([
-      scanLogs({
-        contract: veaOutbox,
-        filter: veaOutbox.filters.Challenged(epoch, null),
-        fromBlock: claimedLog.blockNumber,
-        toBlock: headBlock.number,
-      }),
-      scanLogs({
-        contract: veaOutbox,
-        filter: veaOutbox.filters.VerificationStarted(epoch),
-        fromBlock: claimedLog.blockNumber,
-        toBlock: headBlock.number,
-      }),
-    ]);
+    const { challengeLogs, verificationLogs } = await scanClaimEvents(
+      { veaOutbox, epoch, emitter, scanBudget },
+      claimedLog.blockNumber,
+      headBlock.number
+    );
     if (verificationLogs.length > 0) {
       // `startVerification` can run again after a failed censorship test and overwrites
       // the claim's verification fields, so only the latest log describes the claim.
@@ -145,11 +174,60 @@ const reconstructClaimFromLogs = async (
       challengeLogs.map((log) => "0x" + log.topics[2].substring(26)),
       claimHash
     );
+    // Logs kept in a cursor that no longer reconstruct the claim (one reorged out): rescan next visit.
+    if (!verifyClaimHash({ claim, claimHash })) claimCacheOf(veaOutbox).cursors.delete(epoch);
     return claim;
   } catch (error) {
+    if (error instanceof ClaimScanPausedError) throw error;
     emitter.emit(BotEvents.CLAIM_LOG_SCAN_FAILED, epoch, (error as Error)?.message);
     return null;
   }
+};
+
+/**
+ * The `Challenged` and `VerificationStarted` logs of `epoch` from `claimBlock` to `toBlock`. With
+ * no budget, scanned whole each time. With one, the scan resumes after the epoch's cursor and reads
+ * at most `blocksLeft` blocks; short of `toBlock` it emits `CLAIM_LOG_SCAN_PAUSED` and throws
+ * `ClaimScanPausedError`.
+ */
+const scanClaimEvents = async (
+  { veaOutbox, epoch, emitter, scanBudget }: Pick<ClaimParams, "veaOutbox" | "epoch" | "emitter" | "scanBudget">,
+  claimBlock: number,
+  toBlock: number
+): Promise<ClaimEventCursor> => {
+  const scan = (fromBlock: number, upTo: number) =>
+    Promise.all([
+      scanLogs({ contract: veaOutbox, filter: veaOutbox.filters.Challenged(epoch, null), fromBlock, toBlock: upTo }),
+      scanLogs({ contract: veaOutbox, filter: veaOutbox.filters.VerificationStarted(epoch), fromBlock, toBlock: upTo }),
+    ]);
+  if (!scanBudget) {
+    const [challengeLogs, verificationLogs] = await scan(claimBlock, toBlock);
+    return { claimBlock, scannedTo: toBlock, challengeLogs, verificationLogs };
+  }
+  const { cursors } = claimCacheOf(veaOutbox);
+  const kept = cursors.get(epoch);
+  let cursor: ClaimEventCursor =
+    kept?.claimBlock === claimBlock
+      ? kept
+      : { claimBlock, scannedTo: claimBlock - 1, challengeLogs: [], verificationLogs: [] };
+  const fromBlock = cursor.scannedTo + 1;
+  const upTo = Math.min(toBlock, fromBlock + Math.max(scanBudget.blocksLeft, 0) - 1);
+  if (upTo >= fromBlock) {
+    const [challengeLogs, verificationLogs] = await scan(fromBlock, upTo);
+    scanBudget.blocksLeft -= upTo - fromBlock + 1;
+    cursor = {
+      claimBlock,
+      scannedTo: upTo,
+      challengeLogs: [...cursor.challengeLogs, ...challengeLogs],
+      verificationLogs: [...cursor.verificationLogs, ...verificationLogs],
+    };
+  }
+  cursors.set(epoch, cursor);
+  if (cursor.scannedTo < toBlock) {
+    emitter.emit(BotEvents.CLAIM_LOG_SCAN_PAUSED, epoch, cursor.scannedTo, toBlock);
+    throw new ClaimScanPausedError(epoch, cursor.scannedTo, toBlock);
+  }
+  return cursor;
 };
 
 /**
@@ -217,7 +295,9 @@ const readClaimHash = async ({
 /**
  * Fetch the claim for an epoch, reconstructing it from logs where possible and
  * from the indexer otherwise. Either source is only accepted once it hashes to
- * the outbox's own `claimHashes[epoch]`.
+ * the outbox's own `claimHashes[epoch]`. The claim last accepted is kept per epoch: while
+ * `claimHashes[epoch]` is unchanged it is returned with no other read. With `scanBudget` set (an
+ * epoch below the watch window) the indexer is tried first and the log scan is budgeted.
  *
  * @param veaOutbox VeaOutbox contract instance
  * @param epoch epoch number of the claim to be fetched
@@ -230,7 +310,38 @@ const getClaim = async (params: ClaimParams): Promise<ClaimStruct | null> => {
   // scanning logs only up to the read block makes reconstruction fail whenever an
   // event lands in between.
   const { readBlock: headBlock, claimHash } = await readClaimHash({ veaOutbox, veaOutboxProvider, epoch, emitter });
-  if (claimHash === ethers.ZeroHash) return null;
+  const cache = claimCacheOf(veaOutbox);
+  if (claimHash === ethers.ZeroHash) {
+    cache.verified.delete(epoch);
+    cache.cursors.delete(epoch);
+    return null;
+  }
+  const known = cache.verified.get(epoch);
+  if (known?.claimHash === claimHash) return { ...known.claim };
+
+  const claim = await fetchVerifiedClaim(params, claimHash, headBlock);
+  cache.verified.set(epoch, { claimHash, claim: { ...claim } });
+  return claim;
+};
+
+/** `getClaim` past its cache: the claim variant that hashes to `claimHash`, or a throw. */
+const fetchVerifiedClaim = async (
+  params: ClaimParams,
+  claimHash: string,
+  headBlock: { number: number }
+): Promise<ClaimStruct> => {
+  const { epoch, emitter, scanBudget } = params;
+  let claimFromGraph: ClaimStruct | null | undefined;
+  if (scanBudget) {
+    // An old claim's log scan runs from the claim up to the read block: the indexer goes first, and
+    // any failure of it leaves the logs to decide.
+    claimFromGraph = await reconstructClaimFromGraph(params, claimHash).catch(() => undefined);
+    const verified = claimFromGraph && verifyClaimHash({ claim: claimFromGraph, claimHash });
+    if (verified) {
+      reportEscapeHatch(params, claimFromGraph!, verified);
+      return verified;
+    }
+  }
 
   const claimFromLogs = await reconstructClaimFromLogs(params, claimHash, headBlock);
   const verifiedFromLogs = claimFromLogs && verifyClaimHash({ claim: claimFromLogs, claimHash });
@@ -239,7 +350,7 @@ const getClaim = async (params: ClaimParams): Promise<ClaimStruct | null> => {
     return verifiedFromLogs;
   }
 
-  const claimFromGraph = await reconstructClaimFromGraph(params, claimHash);
+  if (claimFromGraph === undefined) claimFromGraph = await reconstructClaimFromGraph(params, claimHash);
   if (!claimFromGraph) {
     emitter.emit(BotEvents.NO_CLAIM_FETCHED, epoch);
     throw new ClaimNotFoundError(epoch);
@@ -362,6 +473,14 @@ export interface ClaimResolveStateParams {
   fetchMessageStatus?: typeof getMessageStatus;
   fetchSnapshotSentFromGraph?: typeof getSnapshotSentForEpoch;
   cache?: ClaimResolveCache;
+  /**
+   * Set for an epoch below the watch window (the cycle's backlog budget, shared with `getClaim`):
+   * its sends are scanned for from (E+1)·P, which can be months of inbox blocks. Our final send
+   * already in the cursor goes first, then the indexer's send, and the scan reads at most
+   * `blocksLeft` blocks, resuming next visit (`ClaimScanPausedError` until it reaches the head).
+   * Unset: unbounded.
+   */
+  scanBudget?: ClaimScanBudget;
 }
 
 const logIndexOf = (log: any): number => log.index ?? log.logIndex ?? 0;
@@ -377,6 +496,11 @@ const sameAddress = (a: unknown, b: unknown): boolean =>
  * a per-epoch cursor, so each cycle scans only from the previous cycle's finalized block + 1 up
  * to `latest`. `sendSnapshot` requires `_epoch < block.timestamp / epochPeriod`, so nothing can
  * have been sent before (E+1)*P on the inbox clock.
+ * With `scanBudget`, the blocks up to the finalized block are read at most `blocksLeft` at a
+ * time (the cursor keeps what was read); the unsettled part above it, which an epoch in the window
+ * reads every cycle, is read only once all of it fits in what is left (a frozen finalized block
+ * cannot outrun the budget). `scannedTo` short of `latest`: paused, and
+ * `sents` holds only the sends found so far, the earliest ones.
  */
 const findSnapshotSents = async ({
   veaInbox,
@@ -385,6 +509,7 @@ const findSnapshotSents = async ({
   epochPeriod,
   cacheKey,
   cache,
+  scanBudget,
 }: {
   veaInbox: any;
   veaInboxProvider: JsonRpcProvider;
@@ -392,7 +517,8 @@ const findSnapshotSents = async ({
   epochPeriod: number;
   cacheKey: string;
   cache: ClaimResolveCache;
-}): Promise<SnapshotSentRef[]> => {
+  scanBudget?: ClaimScanBudget;
+}): Promise<{ sents: SnapshotSentRef[]; scannedTo: number; latest: number }> => {
   const [latestBlock, finalizedBlock] = await Promise.all([
     veaInboxProvider.getBlock("latest"),
     veaInboxProvider.getBlock("finalized"),
@@ -410,30 +536,37 @@ const findSnapshotSents = async ({
     fromBlock = Math.max(earliestSendBlock - CLAIM_WINDOW_PAD_BLOCKS, 0);
   }
 
+  let upTo = latestBlock.number;
+  if (scanBudget) {
+    const budgetEnd = fromBlock + Math.max(scanBudget.blocksLeft, 0) - 1;
+    // The unsettled tail is not kept between visits: read it only when all of it fits in what is left.
+    if (budgetEnd < latestBlock.number) upTo = Math.min(budgetEnd, finalizedBlock.number);
+  }
   // A lagging endpoint after a failover can report an older head: then nothing new is scanned.
   const found: SnapshotSentRef[] =
-    latestBlock.number < fromBlock
+    upTo < fromBlock
       ? []
       : (
           await scanLogs({
             contract: veaInbox,
             filter: veaInbox.filters.SnapshotSent(epoch, null),
             fromBlock,
-            toBlock: latestBlock.number,
+            toBlock: upTo,
           })
         ).map((log) => ({
           transactionHash: log.transactionHash,
           blockNumber: log.blockNumber,
           index: logIndexOf(log),
         }));
+  if (scanBudget && upTo >= fromBlock) scanBudget.blocksLeft -= upTo - fromBlock + 1;
 
   // The cursor never moves backwards, and never past what was scanned.
-  const scannedTo = Math.max(fromBlock - 1, Math.min(finalizedBlock.number, latestBlock.number));
+  const scannedTo = Math.max(fromBlock - 1, Math.min(finalizedBlock.number, upTo));
   const settled = found.filter((log) => log.blockNumber <= scannedTo);
   const unsettled = found.filter((log) => log.blockNumber > scannedTo);
   const logs = [...(cursor?.logs ?? []), ...settled];
   cache.snapshotSent.set(cacheKey, { scannedTo, logs });
-  return [...logs, ...unsettled].sort(bySendOrder);
+  return { sents: [...logs, ...unsettled].sort(bySendOrder), scannedTo: upTo, latest: latestBlock.number };
 };
 
 /**
@@ -485,6 +618,11 @@ const getOwnSendFacts = async ({
  * one Arbitrum transaction per dispute. A send whose struct no longer hashes to
  * `claimHashes[E]` (the claim changed after it) is not followed, so the caller re-sends.
  * `claimHashes` is read at the outbox chain's read block, the message status on `l1Provider`.
+ * With `scanBudget` (an epoch below the window) our current send already final in the scan's
+ * cursor is followed, else the indexer's send when its calldata proves it ours and current;
+ * otherwise the budgeted scan decides, and while it is paused short of the inbox head with no send
+ * of ours found it emits `CLAIM_LOG_SCAN_PAUSED` and throws `ClaimScanPausedError`: a scan not
+ * yet complete never reads as "none of ours sent".
  *
  * @returns ClaimResolveState
  */
@@ -502,6 +640,7 @@ const getClaimResolveState = async ({
   fetchMessageStatus = getMessageStatus,
   fetchSnapshotSentFromGraph = getSnapshotSentForEpoch,
   cache = defaultClaimResolveCache,
+  scanBudget,
 }: ClaimResolveStateParams): Promise<ClaimResolveState> => {
   const claimResolveState: ClaimResolveState = {
     sendSnapshot: { status: false, txHash: "" },
@@ -515,32 +654,67 @@ const getClaimResolveState = async ({
   const inboxAddress: string = await veaInbox.getAddress();
   const cacheKey = `${chainId}_${inboxAddress}_${epoch}`;
 
-  let snapshotSents: SnapshotSentRef[];
-  try {
-    snapshotSents = await findSnapshotSents({ veaInbox, veaInboxProvider, epoch, epochPeriod, cacheKey, cache });
-  } catch {
-    // The indexer knows only one `SnapshotSent` per epoch; the final logs found so far still count.
+  /** The first of `sents` that is ours and carries the current claim. */
+  const firstOwnCurrent = async (sents: SnapshotSentRef[]): Promise<SnapshotSentRef | undefined> => {
+    for (const sent of sents) {
+      const facts = await getOwnSendFacts({
+        transactionHash: sent.transactionHash,
+        veaInbox,
+        inboxAddress,
+        signerAddress,
+        veaInboxProvider,
+        cache,
+      });
+      if (facts?.claimHash.toLowerCase() === claimHash.toLowerCase()) return sent;
+    }
+    return undefined;
+  };
+  const graphSend = async (): Promise<SnapshotSentRef[]> => {
     const sentSnapshotFromGraph = await fetchSnapshotSentFromGraph(epoch, inboxAddress, chainId);
-    snapshotSents = [...(cache.snapshotSent.get(cacheKey)?.logs ?? [])];
-    if (sentSnapshotFromGraph && !snapshotSents.some((log) => log.transactionHash === sentSnapshotFromGraph.txHash)) {
-      snapshotSents.push({ transactionHash: sentSnapshotFromGraph.txHash, blockNumber: Infinity, index: 0 });
+    return sentSnapshotFromGraph
+      ? [{ transactionHash: sentSnapshotFromGraph.txHash, blockNumber: Infinity, index: 0 }]
+      : [];
+  };
+
+  // An old epoch's scan can take many cycles: our current send already final in its cursor, else the
+  // indexer's send when it is ours, spares it. The cursor goes first, so an epoch already decided
+  // does not wait on a hung indexer at every visit.
+  let ours = scanBudget
+    ? (await firstOwnCurrent(cache.snapshotSent.get(cacheKey)?.logs ?? [])) ??
+      (await firstOwnCurrent(await graphSend()))
+    : undefined;
+  if (!ours) {
+    let snapshotSents: SnapshotSentRef[];
+    let paused: { scannedTo: number; latest: number } | undefined;
+    try {
+      const scan = await findSnapshotSents({
+        veaInbox,
+        veaInboxProvider,
+        epoch,
+        epochPeriod,
+        cacheKey,
+        cache,
+        scanBudget,
+      });
+      snapshotSents = scan.sents;
+      if (scan.scannedTo < scan.latest) paused = scan;
+    } catch (error) {
+      // A budgeted scan's cursor is partial, and its indexer send was tried above: retry next visit.
+      if (scanBudget) throw error;
+      // The indexer knows only one `SnapshotSent` per epoch; the final logs found so far still count.
+      snapshotSents = [...(cache.snapshotSent.get(cacheKey)?.logs ?? [])];
+      for (const sent of await graphSend()) {
+        if (!snapshotSents.some((log) => log.transactionHash === sent.transactionHash)) snapshotSents.push(sent);
+      }
+    }
+    ours = await firstOwnCurrent(snapshotSents);
+    if (!ours && paused) {
+      emitter.emit(BotEvents.CLAIM_LOG_SCAN_PAUSED, epoch, paused.scannedTo, paused.latest);
+      throw new ClaimScanPausedError(epoch, paused.scannedTo, paused.latest);
     }
   }
-
-  for (const sent of snapshotSents) {
-    const facts = await getOwnSendFacts({
-      transactionHash: sent.transactionHash,
-      veaInbox,
-      inboxAddress,
-      signerAddress,
-      veaInboxProvider,
-      cache,
-    });
-    if (facts?.claimHash.toLowerCase() !== claimHash.toLowerCase()) continue;
-    claimResolveState.sendSnapshot = { status: true, txHash: sent.transactionHash };
-    break;
-  }
-  if (!claimResolveState.sendSnapshot.status) return claimResolveState;
+  if (!ours) return claimResolveState;
+  claimResolveState.sendSnapshot = { status: true, txHash: ours.transactionHash };
 
   claimResolveState.execution.status = await fetchMessageStatus(
     claimResolveState.sendSnapshot.txHash,

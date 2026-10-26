@@ -37,12 +37,13 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
       value: deposit,
     });
     await this.ensureNativeFunds("claim", { value: deposit, gasLimit: toBigInt(gasLimit) });
+    await this.rebroadcastStuck(ContractType.OUTBOX);
     const tx = await this.veaOutbox.claim(this.epoch, stateRoot, {
       value: deposit,
       gasLimit,
     });
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Claim");
-    this.transactions.claimTxn = { hash: tx.hash, broadcastedTimestamp: now };
+    this.transactions.claimTxn = this.recordSent(tx, now, ContractType.OUTBOX);
   }
 
   /**
@@ -62,27 +63,31 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
       "challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"
     ].estimateGas(this.epoch, this.claim, { value: deposit });
 
-    // Profit-driven fee calculation
-    const maxFeePerGas = deposit / (toBigInt(gasEstimate) * BigInt(6));
-    let maxPriorityFeePerGas = BigInt(6_667_000_000_000);
-    if (maxPriorityFeePerGas > maxFeePerGas) {
-      maxPriorityFeePerGas = maxFeePerGas;
-    }
-    await this.ensureNativeFunds("challenge", { value: deposit, gasLimit: toBigInt(gasEstimate), maxFeePerGas });
+    await this.rebroadcastStuck(ContractType.OUTBOX);
+    // Profit-driven fee cap, lowered to what the balance left after the deposit can pay.
+    const overrides = await this.challengeOverrides({
+      value: deposit,
+      gasLimit: toBigInt(gasEstimate),
+      profitCap: deposit / (toBigInt(gasEstimate) * BigInt(6)),
+    });
 
-    const tx = await this.veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
-      this.epoch,
-      this.claim,
-      {
-        maxFeePerGas,
-        maxPriorityFeePerGas,
-        value: deposit,
-        gasLimit: gasEstimate,
-      }
+    const tx = await this.sendOrCannotFund(
+      "challenge",
+      { value: deposit, gasLimit: toBigInt(gasEstimate), maxFeePerGas: overrides.maxFeePerGas },
+      () =>
+        this.veaOutbox["challenge(uint256,(bytes32,address,uint32,uint32,uint32,uint8,address))"](
+          this.epoch,
+          this.claim!,
+          {
+            ...overrides,
+            value: deposit,
+            gasLimit: gasEstimate,
+          }
+        )
     );
 
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Challenge");
-    this.transactions.challengeTxn = { hash: tx.hash, broadcastedTimestamp: now };
+    this.transactions.challengeTxn = this.recordSent(tx, now, ContractType.OUTBOX);
   }
 
   /**
@@ -96,9 +101,10 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
     const toSubmit = await this.toSubmitTransaction(this.transactions.sendSnapshotTxn, ContractType.INBOX, now);
     if (!toSubmit) return;
 
+    await this.rebroadcastStuck(ContractType.INBOX);
     const tx = await this.veaInbox.sendSnapshot(this.epoch, this.claim);
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Send Snapshot");
-    this.transactions.sendSnapshotTxn = { hash: tx.hash, broadcastedTimestamp: now };
+    this.transactions.sendSnapshotTxn = this.recordSent(tx, now, ContractType.INBOX);
   }
 
   /**
@@ -112,9 +118,10 @@ export class ArbToEthTransactionHandler extends BaseTransactionHandler<VeaInboxA
 
     // The L1 execution is paid by our address on the outbox chain (Sepolia).
     await this.ensureNativeFunds("execute snapshot", {});
+    await this.rebroadcastStuck(ContractType.OUTBOX);
     const result = await execFn(sendSnapshotHash, this.veaInboxProvider, this.veaOutboxProvider);
     this.emitter.emit(BotEvents.TXN_MADE, result.hash, this.epoch, "Execute Snapshot");
-    this.transactions.executeSnapshotTxn = { hash: result.hash, broadcastedTimestamp: now };
+    this.transactions.executeSnapshotTxn = this.recordSent(result, now, ContractType.OUTBOX);
   }
 }
 
@@ -145,10 +152,11 @@ export class ArbToEthDevnetTransactionHandler extends ArbToEthTransactionHandler
     if (!toSubmit) return;
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[Network.DEVNET];
+    await this.rebroadcastStuck(ContractType.OUTBOX);
     const tx = await this.veaOutboxDevnet.devnetAdvanceState(this.epoch, stateRoot, {
       value: deposit,
     });
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Advance Devnet State");
-    this.transactions.devnetAdvanceStateTxn = { hash: tx.hash, broadcastedTimestamp: now };
+    this.transactions.devnetAdvanceStateTxn = this.recordSent(tx, now, ContractType.OUTBOX);
   }
 }

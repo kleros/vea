@@ -9,7 +9,7 @@ import {
   verifyClaimHash,
   ClaimHonestState,
 } from "./claim";
-import { ClaimNotFoundError } from "./errors";
+import { ClaimNotFoundError, ClaimScanPausedError } from "./errors";
 import { MockEmitter } from "./emitter";
 import { Network } from "../consts/bridgeRoutes";
 
@@ -311,6 +311,94 @@ describe("snapshotClaim", () => {
       mockClaimParams.fetchClaimForEpoch = jest.fn().mockResolvedValueOnce(null);
 
       await expect(getClaim(mockClaimParams)).rejects.toThrow(new ClaimNotFoundError(epoch));
+    });
+
+    describe("a claim already reconstructed, and the claims of epochs older than the window", () => {
+      const verificationBlock = 4500;
+      const verified = () => ({
+        ...mockClaim,
+        timestampVerification: verificationBlock * SEC_PER_BLOCK,
+        blocknumberVerification: verificationBlock,
+      });
+      const longScanRanges = () =>
+        queriedRanges.filter((r) => r.event === "Challenged" || r.event === "VerificationStarted");
+
+      it("a revisit with an unchanged claim hash returns the claim with no other read; a new hash is reconstructed again", async () => {
+        veaOutbox.claimHashes.mockResolvedValue(hashClaim(mockClaim));
+        serve({ Claimed: [claimedLog()], VerificationStarted: [{ blockNumber: verificationBlock, index: 0 }] });
+        await expect(getClaim(mockClaimParams)).resolves.toEqual(mockClaim);
+        const reads = queriedRanges.length;
+        await expect(getClaim(mockClaimParams)).resolves.toEqual(mockClaim);
+        expect(queriedRanges.length).toBe(reads);
+        // Verification started: the hash changed, so the claim is read again.
+        veaOutbox.claimHashes.mockResolvedValue(hashClaim(verified()));
+        await expect(getClaim(mockClaimParams)).resolves.toEqual(verified());
+        expect(queriedRanges.length).toBeGreaterThan(reads);
+        // Withdrawn: the claim hash is zero, and nothing is kept for it.
+        veaOutbox.claimHashes.mockResolvedValue(ethers.ZeroHash);
+        await expect(getClaim(mockClaimParams)).resolves.toBeNull();
+      });
+
+      it("with a scan budget, the hash-checked indexer goes first: its claim spares the scan from the claim to the read block", async () => {
+        veaOutbox.claimHashes.mockResolvedValue(hashClaim(verified()));
+        serve({ Claimed: [claimedLog()], VerificationStarted: [{ blockNumber: verificationBlock, index: 0 }] });
+        veaOutboxProvider.getTransactionReceipt = jest.fn().mockResolvedValue({ blockNumber: verificationBlock });
+        mockFetchClaim.mockResolvedValue({
+          id: "1",
+          stateRoot: mockClaim.stateRoot,
+          bridger: mockClaim.claimer,
+          timestamp: mockClaim.timestampClaimed,
+          verification: [{ startTimestamp: verificationBlock * SEC_PER_BLOCK, startTxHash: "0xstart" }],
+          challenge: [],
+        });
+        const budget = { blocksLeft: 1000 };
+        await expect(getClaim({ ...mockClaimParams, scanBudget: budget })).resolves.toEqual(verified());
+        expect(longScanRanges()).toEqual([]);
+        expect(budget.blocksLeft).toBe(1000);
+      });
+
+      it("a budgeted scan reads at most the blocks left, pauses, and resumes after them on the next visit", async () => {
+        veaOutbox.claimHashes.mockResolvedValue(hashClaim(verified()));
+        serve({ Claimed: [claimedLog()], VerificationStarted: [{ blockNumber: verificationBlock, index: 0 }] });
+        // The indexer has nothing: the logs decide.
+        mockFetchClaim.mockResolvedValue(undefined);
+        const emitter = new MockEmitter();
+        const emitted = jest.spyOn(emitter, "emit");
+        const visit = (blocksLeft: number) => getClaim({ ...mockClaimParams, emitter, scanBudget: { blocksLeft } });
+
+        await expect(visit(1000)).rejects.toThrow(ClaimScanPausedError);
+        expect(emitted).toHaveBeenCalledWith(BotEvents.CLAIM_LOG_SCAN_PAUSED, epoch, claimedBlock + 999, HEAD_BLOCK);
+        // A budget another epoch spent reads nothing.
+        const before = longScanRanges().length;
+        await expect(visit(0)).rejects.toThrow(ClaimScanPausedError);
+        expect(longScanRanges().length).toBe(before);
+        await expect(visit(1000)).rejects.toThrow(ClaimScanPausedError);
+        await expect(visit(1000)).rejects.toThrow(ClaimScanPausedError);
+        await expect(visit(1000)).resolves.toEqual(verified());
+
+        // Every block from the claim to the read block was scanned once per event, in order.
+        for (const event of ["Challenged", "VerificationStarted"]) {
+          const ranges = rangesFor(event).map(({ from, to }) => [from, to]);
+          expect(ranges).toEqual([
+            [claimedBlock, claimedBlock + 999],
+            [claimedBlock + 1000, claimedBlock + 1999],
+            [claimedBlock + 2000, claimedBlock + 2999],
+            [claimedBlock + 3000, HEAD_BLOCK],
+          ]);
+        }
+        // Then cached: the next visit reads only the claim hash.
+        const reads = queriedRanges.length;
+        await expect(visit(1000)).resolves.toEqual(verified());
+        expect(queriedRanges.length).toBe(reads);
+      });
+
+      it("without a budget (an epoch in the window) the scan runs to the read block at once", async () => {
+        veaOutbox.claimHashes.mockResolvedValue(hashClaim(verified()));
+        serve({ Claimed: [claimedLog()], VerificationStarted: [{ blockNumber: verificationBlock, index: 0 }] });
+        await expect(getClaim(mockClaimParams)).resolves.toEqual(verified());
+        expect(mockFetchClaim).not.toHaveBeenCalled();
+        expect(Math.max(...rangesFor("VerificationStarted").map((r) => r.to))).toBe(HEAD_BLOCK);
+      });
     });
   });
 
@@ -1067,6 +1155,127 @@ describe("claim reconstruction and dispute tickets (two-chain route, chain 10200
       const state = await getClaimResolveState(env.params);
 
       expect(state.sendSnapshot).toEqual({ status: true, txHash: resent.transactionHash });
+    });
+
+    describe("an epoch below the window: the scan for our send is budgeted, and the indexer goes first", () => {
+      /** A six-day-old dispute (~2M inbox blocks since (E+1)·P), our send at the inbox head. */
+      const oldDispute = () => {
+        const epoch = currentEpoch() - 144;
+        const env = resolveEnv(epoch, {});
+        const ours = env.sendSnapshot(route.inbox.block("latest").timestamp - 60, "ours", env.claim);
+        return { env, ours };
+      };
+
+      it("reads at most the blocks left per visit, never decides 'none of ours' while paused, and resumes until it finds ours", async () => {
+        const { env, ours } = oldDispute();
+        const visits: Array<{ from: number; to: number }> = [];
+        let state;
+        for (let visit = 1; ; visit++) {
+          expect(visit).toBeLessThan(10);
+          const before = env.veaInbox.queries.length;
+          const scanBudget = { blocksLeft: 500_000 };
+          try {
+            state = await getClaimResolveState({ ...env.params, scanBudget });
+          } catch (error) {
+            expect(error).toBeInstanceOf(ClaimScanPausedError);
+            const scanned = env.veaInbox.queries.slice(before);
+            visits.push({ from: scanned[0].from, to: scanned[scanned.length - 1].to });
+            expect(scanBudget.blocksLeft).toBe(0);
+            continue;
+          }
+          break;
+        }
+        expect(state.sendSnapshot).toEqual({ status: true, txHash: ours.transactionHash });
+        expect(visits.length).toBeGreaterThan(1);
+        for (const [i, { from, to }] of visits.entries()) {
+          expect(to - from + 1).toBe(500_000);
+          if (i > 0) expect(from).toBe(visits[i - 1].to + 1);
+        }
+        expect(emitter.of(BotEvents.CLAIM_LOG_SCAN_PAUSED)).toHaveLength(visits.length);
+        // The indexer, which knows no send here, was asked on every visit (the cursor holds none of ours).
+        expect(env.params.fetchSnapshotSentFromGraph).toHaveBeenCalledTimes(visits.length + 1);
+      });
+
+      it("follows the indexer's send without scanning when its calldata proves it ours and current", async () => {
+        const { env, ours } = oldDispute();
+        env.params.fetchSnapshotSentFromGraph = jest.fn(async () => ({ txHash: ours.transactionHash }));
+        const state = await getClaimResolveState({ ...env.params, scanBudget: { blocksLeft: 0 } });
+        expect(state.sendSnapshot).toEqual({ status: true, txHash: ours.transactionHash });
+        expect(env.veaInbox.queryFilter).not.toHaveBeenCalled();
+      });
+
+      it("a third party's send from the indexer is not followed: the paused scan leaves it undecided", async () => {
+        const { env } = oldDispute();
+        const theirs = env.sendSnapshot((env.params.epoch + 1) * EPOCH_PERIOD + 600, "theirs", env.claim, {
+          from: OTHER_SENDER,
+        });
+        env.params.fetchSnapshotSentFromGraph = jest.fn(async () => ({ txHash: theirs.transactionHash }));
+        await expect(getClaimResolveState({ ...env.params, scanBudget: { blocksLeft: 1000 } })).rejects.toThrow(
+          ClaimScanPausedError
+        );
+      });
+
+      it("follows our final send already in the cursor without asking the indexer or scanning again", async () => {
+        const epoch = currentEpoch() - 48;
+        const env = resolveEnv(epoch, { sentAt: (epoch + 1) * EPOCH_PERIOD + 600 });
+        const first = await getClaimResolveState({ ...env.params, scanBudget: { blocksLeft: 1_000_000 } });
+        expect(first.sendSnapshot).toEqual({ status: true, txHash: env.sent.transactionHash });
+
+        // One cycle later: an indexer that hangs would cost its timeout on every such visit.
+        route.inbox.advance(480);
+        const queries = env.veaInbox.queries.length;
+        env.params.fetchSnapshotSentFromGraph.mockClear();
+        const scanBudget = { blocksLeft: 50_000 };
+        const second = await getClaimResolveState({ ...env.params, scanBudget });
+
+        expect(second.sendSnapshot).toEqual(first.sendSnapshot);
+        expect(env.params.fetchSnapshotSentFromGraph).not.toHaveBeenCalled();
+        expect(env.veaInbox.queries).toHaveLength(queries);
+        expect(scanBudget.blocksLeft).toBe(50_000);
+        expect(env.veaInboxProvider.getTransaction).toHaveBeenCalledTimes(1);
+
+        // A changed claim is not followed from the cursor: the indexer and the scan decide again.
+        const changed = { ...env.claim, timestampVerification: 1, blocknumberVerification: 2 };
+        route.outbox.advance(10);
+        env.veaOutbox.hashHistory.push([route.outbox.resolve("latest") - 5, hashClaim(changed)]);
+        mockReadBlock.override = async () => route.outbox.block("latest");
+        expect((await getClaimResolveState({ ...env.params, scanBudget })).sendSnapshot.status).toBe(false);
+        expect(env.params.fetchSnapshotSentFromGraph).toHaveBeenCalledTimes(1);
+      });
+
+      it("reads the unsettled tail only when all of it fits in the blocks left: a frozen finalized block cannot outrun the budget", async () => {
+        // Inbox finality frozen for a day: ~345,600 blocks above `finalized`, re-read at every visit.
+        route.inbox.options.finalizedLag = (24 * 3600) / route.inbox.options.secondsPerBlock;
+        const envs = [40, 50, 60].map((age) => resolveEnv(currentEpoch() - age, {}));
+        const ours = envs[0].sendSnapshot(route.inbox.block("latest").timestamp - 60, "ours", envs[0].claim);
+        // An earlier visit scanned each epoch up to the finalized block.
+        for (const env of envs) await getClaimResolveState(env.params);
+        const before = envs.map((env) => env.veaInbox.queries.length);
+
+        const scanBudget = { blocksLeft: 50_000 };
+        for (const env of envs) {
+          await expect(getClaimResolveState({ ...env.params, scanBudget })).rejects.toThrow(ClaimScanPausedError);
+        }
+        const read = envs
+          .flatMap((env, i) => env.veaInbox.queries.slice(before[i]))
+          .reduce((blocks, q) => blocks + q.to - q.from + 1, 0);
+        expect(read).toBeLessThanOrEqual(50_000);
+        expect(scanBudget.blocksLeft).toBeGreaterThanOrEqual(0);
+
+        // With room for all of it, the tail is read and our send in it found.
+        const state = await getClaimResolveState({ ...envs[0].params, scanBudget: { blocksLeft: 400_000 } });
+        expect(state.sendSnapshot).toEqual({ status: true, txHash: ours.transactionHash });
+      });
+
+      it("a budgeted scan that fails throws rather than deciding from its partial cursor", async () => {
+        const { env } = oldDispute();
+        env.veaInbox.queryFilter.mockImplementation(async () => {
+          throw new Error("inbox endpoint down");
+        });
+        await expect(getClaimResolveState({ ...env.params, scanBudget: { blocksLeft: 1000 } })).rejects.toThrow(
+          "inbox endpoint down"
+        );
+      });
     });
 
     it("re-reads an unfinalized SnapshotSent each cycle instead of caching it in the cursor", async () => {

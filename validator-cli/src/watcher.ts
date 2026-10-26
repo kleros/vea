@@ -1,3 +1,4 @@
+import { ZeroHash } from "ethers";
 import { getBridgeConfig, Network } from "./consts/bridgeRoutes";
 import { getVeaInbox, getVeaOutbox } from "./utils/ethers";
 import { FallbackRpcProvider } from "./utils/fallbackProvider";
@@ -9,13 +10,17 @@ import { initialize as initializeLogger } from "./utils/logger";
 import { ShutdownSignal, installShutdownHandlers } from "./utils/shutdown";
 import { sendHeartbeat } from "./utils/heartbeat";
 import { getBotPath, BotPaths, getNetworkConfig, NetworkConfig } from "./utils/botConfig";
-import { getClaim } from "./utils/claim";
+import { getClaim, ClaimScanBudget } from "./utils/claim";
+import { ClaimScanPausedError } from "./utils/errors";
+import { DEFAULT_CHUNK_SIZE } from "./utils/logScanner";
 import { CheckAndClaimParams, checkAndClaim } from "./helpers/claimer";
 import { ChallengeAndResolveClaimParams, challengeAndResolveClaim } from "./helpers/validator";
-import { saveSnapshot, SaveSnapshotParams } from "./helpers/snapshot";
+import { saveSnapshot, SaveSnapshotParams, SnapshotSavedCache } from "./helpers/snapshot";
 import { getTransactionHandler } from "./utils/transactionHandlers";
 import { validateEnvironment } from "./utils/envValidation";
 import { EpochOutcome, mergeOutcomes } from "./utils/epochOutcome";
+import { getClaimedEpochsBelow, getIndexedBlock } from "./utils/graphQueries";
+import { getOutboxReadBlock } from "./utils/arbToEthState";
 
 const CYCLE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
 
@@ -31,6 +36,17 @@ const UNDECIDABLE_GRACE_SECS = 3600;
 // A testnet route with no claim for this long (outbox chain time) raises LIVENESS_ALARM,
 // at most once per this period.
 const LIVENESS_PERIOD_SECS = 24 * 60 * 60;
+// The cold start reads the claim hashes of older claimed epochs this many at a time. Reads made
+// together go out as one JSON-RPC batch, and some endpoints refuse a batch of more than 3.
+const CLAIM_HASH_READS_PER_BATCH = 3;
+// COLD_START_DISCOVERY_FAILED is raised on the first failed cycle and again after each this many more.
+const DISCOVERY_FAILURES_TO_REALERT = 15;
+// The cold start reads at most this many batches of claim hashes per cycle; the rest of its queue
+// resumes next cycle, so a long claim history never holds up the next route, heartbeat or shutdown.
+const DISCOVERY_BATCHES_PER_CYCLE = 20;
+// The blocks of claim-log scans a cycle spends on epochs older than the watch window, across all of
+// them: an old claim's scan runs from its claim to the read block, and resumes next cycle.
+const BACKLOG_CLAIM_SCAN_BLOCKS_PER_CYCLE = 50 * DEFAULT_CHUNK_SIZE;
 
 /**
  * Per-epoch state. Reset rules:
@@ -62,13 +78,26 @@ interface RouteConnections {
 
 /**
  * Per-route state, keyed by `${chainId}_${network}`. Reset rules:
- * - `epochs`: on testnet every epoch examined or seeded by the cold start and not yet left;
- *   on devnet only the current epoch (older ones leave at rollover).
+ * - `epochs`: on testnet every epoch examined, seeded by the cold start or found by its
+ *   discovery of older claims, and not yet left; on devnet only the current epoch (older ones
+ *   leave at rollover).
  * - `coldStartDone`: set once the cold-start range is seeded on the route's first cycle.
+ * - `discoverClaimsBelow`: the oldest epoch the cold start seeded, set with it on testnet. While
+ *   set, each cycle ends by discovering the claimed epochs below it; cleared once all are read.
+ * - `discoveryQueue`: the claimed epochs below it the indexer listed whose claim hash is not read
+ *   yet; the cycle after a failed or capped one resumes at the first one left, without asking the
+ *   indexer again.
+ * - `discoveryFailures`: consecutive cycles whose discovery failed (0 once one succeeds).
  * - `firstCycleTime`: outbox chain time of the route's first cycle (liveness baseline with no claim).
  * - `newestClaimTimestamp`: the newest `timestampClaimed` fetched so far; never decreases.
  * - `lastLivenessAlarm`: chain time of the last LIVENESS_ALARM; one alarm per 24 h at most.
- * - `snapshotCount`: the inbox count saveSnapshot last returned (-1 before the first).
+ * - `snapshotCount`: the inbox count saveSnapshot last returned (-1 before the first), valid only
+ *   in `snapshotCountEpoch`, the epoch it was returned in. A cycle in any other epoch passes -1,
+ *   so each epoch decides afresh even when no message arrived (an epoch whose claim was missed
+ *   needs the same root saved again). Within one epoch a "not needed" answer at the same count
+ *   stays valid: a save by anyone, a claim or a new state root only make a save less needed.
+ * - `snapshotSaved`: the inbox's last SnapshotSaved as far as its chain was scanned, kept across
+ *   epochs (`SnapshotSavedCache`), so each epoch's first check scans only the blocks since.
  * - `backlogCursor`: the oldest epoch below the window picked last cycle; the next cycle
  *   continues below it and wraps back to the newest one once none is left.
  */
@@ -77,10 +106,15 @@ interface RouteState {
   network: Network;
   epochs: Map<number, EpochTrack>;
   coldStartDone: boolean;
+  discoverClaimsBelow?: number;
+  discoveryQueue?: number[];
+  discoveryFailures?: number;
   firstCycleTime?: number;
   newestClaimTimestamp?: number;
   lastLivenessAlarm?: number;
   snapshotCount: number;
+  snapshotCountEpoch?: number;
+  snapshotSaved?: SnapshotSavedCache;
   backlogCursor?: number;
   connections?: RouteConnections;
 }
@@ -95,6 +129,8 @@ export interface WatchOptions {
   cycleDelayMs?: number;
   /** The most epochs older than the watch window examined per cycle (default `BACKLOG_EPOCHS_PER_CYCLE`). */
   backlogEpochsPerCycle?: number;
+  /** The most batches of claim hashes the cold-start discovery reads per cycle (default `DISCOVERY_BATCHES_PER_CYCLE`). */
+  discoveryBatchesPerCycle?: number;
   /** The loop's state; a caller may pass its own to inspect it. */
   state?: WatcherState;
 }
@@ -118,7 +154,8 @@ const errorMessage = (error: unknown): string =>
  * @param shutDownSignal - The signal to shut down the watcher
  * @param emitter - The emitter to emit events
  * @param options - `cycleDelayMs`: the pause between cycles; `backlogEpochsPerCycle`: the cap on
- *   epochs older than the watch window per cycle; `state`: the loop's state
+ *   epochs older than the watch window per cycle; `discoveryBatchesPerCycle`: the cap on the
+ *   cold-start discovery's claim-hash batches per cycle; `state`: the loop's state
  *
  */
 
@@ -128,6 +165,7 @@ export const watch = async (
   {
     cycleDelayMs = CYCLE_DELAY_MS,
     backlogEpochsPerCycle = BACKLOG_EPOCHS_PER_CYCLE,
+    discoveryBatchesPerCycle = DISCOVERY_BATCHES_PER_CYCLE,
     state = { routes: {}, transactionHandlers: {} },
   }: WatchOptions = {}
 ) => {
@@ -155,7 +193,7 @@ export const watch = async (
           toSaveSnapshot,
           networkConfig,
           state,
-          backlogEpochsPerCycle,
+          { backlogEpochsPerCycle, discoveryBatchesPerCycle },
           shutDownSignal,
           emitter
         );
@@ -173,7 +211,10 @@ async function processNetwork(
   toSaveSnapshot: boolean,
   networkConfig: NetworkConfig,
   state: WatcherState,
-  backlogEpochsPerCycle: number,
+  {
+    backlogEpochsPerCycle,
+    discoveryBatchesPerCycle,
+  }: { backlogEpochsPerCycle: number; discoveryBatchesPerCycle: number },
   shutDownSignal: ShutdownSignal,
   emitter: typeof defaultEmitter
 ): Promise<void> {
@@ -199,6 +240,7 @@ async function processNetwork(
         state,
         examined,
         backlogEpochsPerCycle,
+        discoveryBatchesPerCycle,
         shutDownSignal,
         emitter,
       });
@@ -262,6 +304,8 @@ const dropEpoch = (
   emitter: typeof defaultEmitter
 ) => {
   route.epochs.delete(epoch);
+  // A transaction of its handler still unmined is not lost with it: the next send of ours to that
+  // chain re-broadcasts it unchanged while it is stuck (`unminedSends`, baseTransactionHandler.ts).
   delete state.transactionHandlers[claimHandlerKey(route.chainId, route.network, epoch)];
   emitter.emit(BotEvents.EPOCH_DROPPED, { chainId: route.chainId, network: route.network, epoch, reason });
 };
@@ -273,6 +317,7 @@ interface ProcessRouteParams {
   state: WatcherState;
   examined: Set<number>;
   backlogEpochsPerCycle: number;
+  discoveryBatchesPerCycle: number;
   shutDownSignal: ShutdownSignal;
   emitter: typeof defaultEmitter;
 }
@@ -284,6 +329,7 @@ async function processRoute({
   state,
   examined,
   backlogEpochsPerCycle,
+  discoveryBatchesPerCycle,
   shutDownSignal,
   emitter,
 }: ProcessRouteParams): Promise<void> {
@@ -312,10 +358,19 @@ async function processRoute({
 
   if (toSaveSnapshot) await processSnapshot({ route, state, connections, epochPeriod, now, currentEpoch, emitter });
 
+  // Shared by this cycle's epochs below the window (their claim-log and SnapshotSent scans); the
+  // window's own scans are never budgeted.
+  const backlogScanBudget: ClaimScanBudget = { blocksLeft: BACKLOG_CLAIM_SCAN_BLOCKS_PER_CYCLE };
   for (const epoch of toWatch) {
     if (shutDownSignal.getIsShutdownSignal()) return;
-    await processEpoch({ path, route, state, connections, epochPeriod, epoch, now, emitter });
+    const scanBudget = windowLow !== undefined && epoch < windowLow ? backlogScanBudget : undefined;
+    await processEpoch({ path, route, state, connections, epochPeriod, epoch, now, emitter, scanBudget });
     examined.add(epoch);
+  }
+
+  // Only after this cycle's epochs, so the indexer and the reads never delay the claimable one.
+  if (route.discoverClaimsBelow !== undefined) {
+    await discoverOlderClaims(route, connections, { epochPeriod, discoveryBatchesPerCycle, shutDownSignal, emitter });
   }
 
   if (windowLow !== undefined) {
@@ -342,7 +397,7 @@ interface CollectEpochsParams {
  * epochs already DONE, then up to
  * `backlogEpochsPerCycle` older epochs still tracked, resuming below where the last cycle
  * stopped. On a route's first cycle the cold-start range is added so a restarted bot picks up
- * disputes it started earlier.
+ * disputes it started earlier; claims older than the range are found later (`discoverOlderClaims`).
  */
 const collectEpochsToWatch = ({
   route,
@@ -366,6 +421,7 @@ const collectEpochsToWatch = ({
     for (const epoch of epochRange) {
       if (!route.epochs.has(epoch)) route.epochs.set(epoch, { nullStreak: 0, done: false, undecidableStreak: 0 });
     }
+    route.discoverClaimsBelow = Math.min(currentEpoch, ...epochRange);
     route.coldStartDone = true;
   }
   const window = watchWindow(now, epochPeriod, sequencerDelayLimit, minChallengePeriod);
@@ -383,6 +439,112 @@ const collectEpochsToWatch = ({
   const picked = (below.length > 0 ? below : backlog).slice(0, backlogEpochsPerCycle);
   if (picked.length > 0) route.backlogCursor = picked[picked.length - 1];
   return { toWatch: [...inWindow, ...picked], windowLow: window.low };
+};
+
+/**
+ * Cold-start discovery of claims older than the seeded range. The contracts put no age limit on
+ * challenging an unverified claim or withdrawing a resolved deposit, so a restarted bot must still
+ * watch every claim left on the outbox, not only the last week's. The indexer lists the claimed
+ * epochs below the range; an epoch is added only when its `claimHashes(E)` is non-zero at the
+ * outbox read block (zero: withdrawn, nothing left), read `CLAIM_HASH_READS_PER_BATCH` at a time
+ * (`readClaimHashes`). Added epochs lie below the window: they join the backlog and leave through
+ * `pruneAgedEpochs`.
+ *
+ * The list is read only after the indexer reports it has processed the outbox chain past the last
+ * block such a claim can be in, (below+1)·P (`assertIndexedPast`): one still syncing would miss some.
+ *
+ * Each epoch is added once its hash is read: on a failure the epochs read so far stay, the next
+ * cycle resumes at the first one left (`discoveryQueue`), and COLD_START_DISCOVERY_FAILED is raised
+ * on the first failed cycle and after every DISCOVERY_FAILURES_TO_REALERT more. It never fails the route.
+ * A cycle reads at most `discoveryBatchesPerCycle` batches, and none once shutdown is asked: the
+ * queue resumes next cycle.
+ */
+async function discoverOlderClaims(
+  route: RouteState,
+  connections: RouteConnections,
+  {
+    epochPeriod,
+    discoveryBatchesPerCycle,
+    shutDownSignal,
+    emitter,
+  }: {
+    epochPeriod: number;
+    discoveryBatchesPerCycle: number;
+    shutDownSignal: ShutdownSignal;
+    emitter: typeof defaultEmitter;
+  }
+) {
+  const { chainId, network } = route;
+  const below = route.discoverClaimsBelow!;
+  try {
+    if (route.discoveryQueue === undefined) {
+      // Checked before listing: a list read while the indexer was still short of the threshold
+      // would miss the claims it indexed between the two reads, even once the check passes.
+      await assertIndexedPast(chainId, (below + 1) * epochPeriod, connections.veaOutboxProvider);
+      const listed = await getClaimedEpochsBelow(connections.veaOutbox.target, below, chainId);
+      route.discoveryQueue = [...listed];
+    }
+    const queue = route.discoveryQueue;
+    if (queue.length > 0) {
+      const readBlock = await getOutboxReadBlock({ outboxProvider: connections.veaOutboxProvider, emitter });
+      for (let batches = 0; queue.length > 0; batches++) {
+        if (batches >= discoveryBatchesPerCycle || shutDownSignal.getIsShutdownSignal()) {
+          route.discoveryFailures = 0;
+          return;
+        }
+        const batch = queue.slice(0, CLAIM_HASH_READS_PER_BATCH);
+        const hashes = await readClaimHashes(connections.veaOutbox, batch, readBlock.number);
+        batch.forEach((epoch, j) => {
+          if (hashes[j] == ZeroHash || route.epochs.has(epoch)) return;
+          route.epochs.set(epoch, { nullStreak: 0, done: false, undecidableStreak: 0 });
+        });
+        queue.splice(0, batch.length);
+      }
+    }
+    route.discoverClaimsBelow = undefined;
+    route.discoveryQueue = undefined;
+    route.discoveryFailures = 0;
+  } catch (error) {
+    route.discoveryFailures = (route.discoveryFailures ?? 0) + 1;
+    if ((route.discoveryFailures - 1) % DISCOVERY_FAILURES_TO_REALERT != 0) return;
+    emitter.emit(BotEvents.ALERT, {
+      level: "warn",
+      code: "COLD_START_DISCOVERY_FAILED",
+      chainId,
+      network,
+      details: {
+        belowEpoch: below,
+        failedCycles: route.discoveryFailures,
+        epochsLeft: route.discoveryQueue?.length,
+        message: errorMessage(error),
+      },
+    });
+  }
+}
+
+/**
+ * Throws unless the indexer has processed outbox chain `chainId` up to chain time `timestamp`.
+ * A block our endpoint does not know yet (null) is past it: `timestamp` lies behind the head.
+ */
+const assertIndexedPast = async (chainId: number, timestamp: number, outboxProvider: any): Promise<void> => {
+  const indexed = await getIndexedBlock(chainId);
+  const block = indexed === undefined ? undefined : await outboxProvider.getBlock(indexed);
+  if (indexed === undefined || (block && block.timestamp < timestamp)) {
+    throw new Error(`Indexer has not processed chain ${chainId} up to time ${timestamp} (it is at block ${indexed})`);
+  }
+};
+
+/**
+ * `claimHashes(E)` of each epoch at `blockTag`, read together (one small JSON-RPC batch). A read
+ * that failed is retried on its own, outside any batch, before the failure counts.
+ */
+const readClaimHashes = async (veaOutbox: any, epochs: number[], blockTag: number): Promise<string[]> => {
+  const results = await Promise.allSettled(epochs.map((epoch) => veaOutbox.claimHashes(epoch, { blockTag })));
+  const hashes: string[] = [];
+  for (const [j, result] of results.entries()) {
+    hashes.push(result.status === "fulfilled" ? result.value : await veaOutbox.claimHashes(epochs[j], { blockTag }));
+  }
+  return hashes;
 };
 
 /** Testnet exit rule for epochs older than the window: gone once done, or after two cycles without a claim. */
@@ -432,6 +594,7 @@ async function processSnapshot({
   const { chainId, network } = route;
   const key = snapshotHandlerKey(chainId, network, currentEpoch);
   const prefix = `snapshot_${chainId}_${network}_`;
+  // A stale handler's save still unmined is re-broadcast by the next send to the inbox chain, as in dropEpoch.
   for (const stale of Object.keys(state.transactionHandlers)) {
     if (stale.startsWith(prefix) && stale != key) delete state.transactionHandlers[stale];
   }
@@ -447,7 +610,8 @@ async function processSnapshot({
       veaOutboxProvider: connections.veaOutboxProvider,
       network,
       epochPeriod,
-      count: route.snapshotCount,
+      count: route.snapshotCountEpoch === currentEpoch ? route.snapshotCount : -1,
+      savedCache: (route.snapshotSaved ??= {}),
       transactionHandler,
       emitter,
       now,
@@ -455,6 +619,7 @@ async function processSnapshot({
     const { updatedTransactionHandler, latestCount } = await saveSnapshot(params);
     if (updatedTransactionHandler) state.transactionHandlers[key] = updatedTransactionHandler;
     route.snapshotCount = latestCount;
+    route.snapshotCountEpoch = currentEpoch;
   } catch (error) {
     emitter.emit(BotEvents.EPOCH_FAILED, {
       chainId,
@@ -499,6 +664,8 @@ interface ProcessEpochParams {
   epoch: number;
   now: number;
   emitter: typeof defaultEmitter;
+  /** Set for an epoch below the watch window: the cycle's shared budget for its claim-log and SnapshotSent scans. */
+  scanBudget?: ClaimScanBudget;
 }
 
 /** What one cycle's work on an epoch produced, before the keep/exit bookkeeping. */
@@ -509,7 +676,8 @@ interface EpochCycleResult {
   handlerReturned: boolean;
 }
 
-async function processEpoch({ path, route, state, connections, epochPeriod, epoch, now, emitter }: ProcessEpochParams) {
+async function processEpoch(params: ProcessEpochParams) {
+  const { route, epoch, epochPeriod, now, emitter } = params;
   const { chainId, network } = route;
   let track = route.epochs.get(epoch);
   if (!track) {
@@ -517,7 +685,7 @@ async function processEpoch({ path, route, state, connections, epochPeriod, epoc
     route.epochs.set(epoch, track);
   }
 
-  const result = await runEpochHelpers({ path, route, state, connections, epochPeriod, epoch, now, emitter });
+  const result = await runEpochHelpers(params);
   if (result.claim) {
     const claimed = Number(result.claim.timestampClaimed);
     if (claimed > 0 && claimed > (route.newestClaimTimestamp ?? 0)) route.newestClaimTimestamp = claimed;
@@ -540,6 +708,7 @@ async function runEpochHelpers({
   epochPeriod,
   epoch,
   emitter,
+  scanBudget,
 }: ProcessEpochParams): Promise<EpochCycleResult> {
   const { chainId, network } = route;
   const { veaInbox, veaOutbox, veaInboxProvider, veaOutboxProvider, veaRouterProvider } = connections;
@@ -549,9 +718,20 @@ async function runEpochHelpers({
   };
 
   try {
-    result.claim = await getClaim({ network, chainId, veaOutbox, veaOutboxProvider, epoch, epochPeriod, emitter });
+    result.claim = await getClaim({
+      network,
+      chainId,
+      veaOutbox,
+      veaOutboxProvider,
+      epoch,
+      epochPeriod,
+      emitter,
+      scanBudget,
+    });
   } catch (error) {
-    result.failures.push(`getClaim: ${errorMessage(error)}`);
+    // The cycle's scan budget ran out: undecidable until the scan resumes next visit, no failure.
+    if (error instanceof ClaimScanPausedError) result.outcome = EpochOutcome.UNDECIDABLE;
+    else result.failures.push(`getClaim: ${errorMessage(error)}`);
     return result;
   }
 
@@ -577,6 +757,7 @@ async function runEpochHelpers({
         ...shared,
         claim: result.claim,
         transactionHandler: transactionHandler(),
+        scanBudget,
       };
       if (await challengeAndResolveClaim(deps)) result.handlerReturned = true;
     } catch (error) {

@@ -51,6 +51,7 @@ export enum BotEvents {
   NO_CLAIM_FETCHED = "no_claim_fetched",
   CLAIMED_LOG_NOT_FOUND = "claimed_log_not_found",
   CLAIM_LOG_SCAN_FAILED = "claim_log_scan_failed",
+  CLAIM_LOG_SCAN_PAUSED = "claim_log_scan_paused", // epoch, scannedTo, toBlock: the cycle's backlog scan budget ran out
   CLAIM_MISMATCH = "claim_mismatch",
   FINALITY_ISSUE = "finality_issue",
   EPOCH_NOT_SETTLED = "epoch_not_settled",

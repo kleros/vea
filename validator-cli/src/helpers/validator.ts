@@ -1,7 +1,8 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
 import { ITransactionHandler, getTransactionHandler, CannotFundError } from "../utils/transactionHandlers";
-import { getClaim, getClaimResolveState } from "../utils/claim";
+import { getClaim, getClaimResolveState, ClaimScanBudget } from "../utils/claim";
+import { ClaimScanPausedError } from "../utils/errors";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { getBlocksAndCheckFinality, getOutboxReadBlock, resolveSettledReadBlocks } from "../utils/arbToEthState";
@@ -29,6 +30,12 @@ export interface ChallengeAndResolveClaimParams {
   fetchTransactionHandler?: typeof getTransactionHandler;
   /** Report what this cycle concluded for the epoch; see utils/epochOutcome.ts. */
   reportOutcome?: ReportOutcome;
+  /**
+   * Set for an epoch below the watch window: the cycle's backlog scan budget, which bounds the
+   * scan for our sendSnapshot (`getClaimResolveState`). While that scan is paused the epoch is
+   * UNDECIDABLE and no snapshot is sent.
+   */
+  scanBudget?: ClaimScanBudget;
 }
 
 export async function challengeAndResolveClaim({
@@ -48,6 +55,7 @@ export async function challengeAndResolveClaim({
   fetchSettledReadBlocks = resolveSettledReadBlocks,
   fetchTransactionHandler = getTransactionHandler,
   reportOutcome,
+  scanBudget,
 }: ChallengeAndResolveClaimParams): Promise<ITransactionHandler | null> {
   const report = (outcome: EpochOutcome) => reportOutcome?.(outcome);
   if (!claim) {
@@ -135,18 +143,26 @@ export async function challengeAndResolveClaim({
     report(EpochOutcome.PENDING);
     return transactionHandler;
   }
-  await handleResolveFlow({
-    chainId,
-    epoch,
-    epochPeriod,
-    veaInbox,
-    veaInboxProvider,
-    veaOutbox,
-    veaOutboxProvider,
-    queryRpc,
-    transactionHandler,
-    fetchClaimResolveState,
-  });
+  try {
+    await handleResolveFlow({
+      chainId,
+      epoch,
+      epochPeriod,
+      veaInbox,
+      veaInboxProvider,
+      veaOutbox,
+      veaOutboxProvider,
+      queryRpc,
+      transactionHandler,
+      fetchClaimResolveState,
+      scanBudget,
+    });
+  } catch (error) {
+    // The budgeted scan for our send resumes next visit: whether to send is not known yet.
+    if (!(error instanceof ClaimScanPausedError)) throw error;
+    report(EpochOutcome.UNDECIDABLE);
+    return transactionHandler;
+  }
   report(EpochOutcome.PENDING);
   return transactionHandler;
 }
@@ -255,6 +271,7 @@ interface ResolveFlowParams {
   queryRpc: JsonRpcProvider;
   transactionHandler: ITransactionHandler;
   fetchClaimResolveState: typeof getClaimResolveState;
+  scanBudget?: ClaimScanBudget;
 }
 async function handleResolveFlow({
   chainId,
@@ -267,6 +284,7 @@ async function handleResolveFlow({
   queryRpc,
   transactionHandler,
   fetchClaimResolveState,
+  scanBudget,
 }: ResolveFlowParams): Promise<void> {
   // Only our own sendSnapshot transactions are followed, and the lookup reaches the inbox's
   // latest block, so a send is seen by the next cycle: re-send only while none of ours carries
@@ -281,6 +299,7 @@ async function handleResolveFlow({
     signerAddress: transactionHandler.getSignerAddress?.(),
     epoch,
     epochPeriod,
+    scanBudget,
   });
   if (!claimResolveState.sendSnapshot.status) {
     await transactionHandler.sendSnapshot();

@@ -21,12 +21,6 @@ import { messageExecutor } from "../arbMsgExecutor";
 /** The longest a WETH approval's receipt is awaited before the cycle moves on. */
 export const APPROVAL_RECEIPT_TIMEOUT_MS = 3 * 60 * 1000;
 
-/** Routes and epochs (`${chainId}_${network}_${epoch}`) whose `NONCE_STUCK` alert is out. */
-const nonceStuckAlerted = new Set<string>();
-
-/** Test-only: forget which `NONCE_STUCK` alerts were emitted. */
-export const resetNonceStuckAlerts = (): void => nonceStuckAlerted.clear();
-
 /** Resolve true once `tx` is mined, false when `timeoutMs` passes first. A revert still throws. */
 const waitWithBound = async (
   tx: { wait: (confirms?: number, timeout?: number) => Promise<unknown> },
@@ -62,10 +56,12 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
    * Never blocks the bot on a stuck approval:
    *   - an allowance that already covers the deposit sends nothing;
    *   - while the signer's `pending` nonce is above its `latest` nonce (an earlier approval, or
-   *     any other transaction of ours, is still unmined) no second approval is sent and
-   *     `ALERT` `NONCE_STUCK` is emitted once per route and epoch while that lasts;
+   *     any other transaction of ours, is still unmined) no second approval is sent and `ALERT`
+   *     `NONCE_STUCK` is emitted for the `latest` nonce, once until it is used (`alertNonceStuck`,
+   *     the alert stuck sends raise too). A send of ours stuck past MAX_PENDING_TIME is
+   *     re-broadcast unchanged (`rebroadcastStuck`), never replaced: the operator unblocks it. One
+   *     that had left the pool (`pending` == `latest`) queues the approval once it is back in;
    *   - the approval's receipt is awaited for at most `APPROVAL_RECEIPT_TIMEOUT_MS`.
-   * Replacing a stuck transaction with a gas-bumped one is not done (deferred).
    */
   public async approveWeth(action = "approval"): Promise<boolean> {
     const { depositToken, routeConfig } = getBridgeConfig(this.chainId);
@@ -74,30 +70,29 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     const weth = getWETH(depositToken, signer);
     if (toBigInt(await weth.allowance(signer.address, veaOutbox.address)) >= deposit) return true;
 
-    const routeEpoch = `${this.chainId}_${this.network}_${this.epoch}`;
     const [pendingNonce, latestNonce] = await Promise.all([
       this.veaOutboxProvider.getTransactionCount(signer.address, "pending"),
       this.veaOutboxProvider.getTransactionCount(signer.address, "latest"),
     ]);
-    if (pendingNonce > latestNonce) {
-      if (!nonceStuckAlerted.has(routeEpoch)) {
-        nonceStuckAlerted.add(routeEpoch);
-        this.emitter.emit(BotEvents.ALERT, {
-          level: "warn",
-          code: "NONCE_STUCK",
-          chainId: this.chainId,
-          network: this.network,
-          epoch: this.epoch,
-          details: { action, pendingNonce, latestNonce },
-        });
-      }
-      return false;
+    this.forgetUsedNonces(ContractType.OUTBOX, latestNonce);
+    // While a send of ours is unmined an approval would queue behind it, and the claim or challenge
+    // waiting on it too.
+    const queued = pendingNonce > latestNonce;
+    if (queued) await this.alertNonceStuck(ContractType.OUTBOX, latestNonce, { action, pendingNonce, latestNonce });
+    const rebroadcastAt = await this.rebroadcastStuck(ContractType.OUTBOX);
+    if (queued) return false;
+    // A send of ours just re-broadcast had left the pool when `pending` was read (an evicted
+    // approval among them): the approval would queue behind it, or repeat it.
+    if (rebroadcastAt !== undefined) {
+      const pendingNow = await this.veaOutboxProvider.getTransactionCount(signer.address, "pending");
+      if (pendingNow > rebroadcastAt) return false;
     }
-    nonceStuckAlerted.delete(routeEpoch);
 
     await this.ensureNativeFunds(`${action} (WETH approval gas)`, {});
+    const now = Date.now();
     const approveTx = await weth.approve(veaOutbox.address, deposit * BigInt(10)); // Approving for 10 claims
     this.emitter.emit(BotEvents.TXN_MADE, approveTx.hash, this.epoch, "Approve WETH");
+    this.recordSent(approveTx, now, ContractType.OUTBOX);
     if (!(await waitWithBound(approveTx, APPROVAL_RECEIPT_TIMEOUT_MS))) {
       this.emitter.emit(BotEvents.TXN_PENDING, approveTx.hash);
       return false;
@@ -134,9 +129,10 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
 
     const gasEstimate = await this.veaOutbox["claim(uint256,bytes32)"].estimateGas(this.epoch, stateRoot);
     await this.ensureNativeFunds("claim", { gasLimit: toBigInt(gasEstimate) });
+    await this.rebroadcastStuck(ContractType.OUTBOX);
     const tx = await this.veaOutbox.claim(this.epoch, stateRoot, { gasLimit: gasEstimate });
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Claim");
-    this.transactions.claimTxn = { hash: tx.hash, broadcastedTimestamp: now };
+    this.transactions.claimTxn = this.recordSent(tx, now, ContractType.OUTBOX);
   }
 
   public async challengeClaim(): Promise<void> {
@@ -153,24 +149,19 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     ].estimateGas(this.epoch, this.claim);
     const { routeConfig } = getBridgeConfig(this.chainId);
     const { deposit } = routeConfig[this.network];
-    const maxFeePerGasProfitable = deposit / (toBigInt(gasEstimate) * BigInt(6));
-    // Set a reasonable maxPriorityFeePerGas but ensure it's lower than maxFeePerGas
-    let maxPriorityFeePerGasMEV = BigInt(6667000000000); // 6667 gwei
-    // Ensure maxPriorityFeePerGas <= maxFeePerGas
-    if (maxPriorityFeePerGasMEV > maxFeePerGasProfitable) {
-      maxPriorityFeePerGasMEV = maxFeePerGasProfitable;
-    }
-    await this.ensureNativeFunds("challenge", {
+    await this.rebroadcastStuck(ContractType.OUTBOX);
+    // Profit-driven fee cap, lowered to what the xDAI balance can pay (the deposit itself is WETH).
+    const overrides = await this.challengeOverrides({
       gasLimit: toBigInt(gasEstimate),
-      maxFeePerGas: maxFeePerGasProfitable,
+      profitCap: deposit / (toBigInt(gasEstimate) * BigInt(6)),
     });
-    const tx = await this.veaOutbox.challenge(this.epoch, this.claim, {
-      maxFeePerGas: maxFeePerGasProfitable,
-      maxPriorityFeePerGas: maxPriorityFeePerGasMEV,
-      gasLimit: gasEstimate,
-    });
+    const tx = await this.sendOrCannotFund(
+      "challenge",
+      { gasLimit: toBigInt(gasEstimate), maxFeePerGas: overrides.maxFeePerGas },
+      () => this.veaOutbox.challenge(this.epoch, this.claim!, { ...overrides, gasLimit: gasEstimate })
+    );
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Challenge");
-    this.transactions.challengeTxn = { hash: tx.hash, broadcastedTimestamp: now };
+    this.transactions.challengeTxn = this.recordSent(tx, now, ContractType.OUTBOX);
   }
 
   public async sendSnapshot(): Promise<void> {
@@ -181,9 +172,10 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
     if (!toSubmit) return;
 
     const ambGasLimit = BigInt(3000000);
+    await this.rebroadcastStuck(ContractType.INBOX);
     const tx = await this.veaInbox.sendSnapshot(this.epoch, ambGasLimit, this.claim);
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Send Snapshot");
-    this.transactions.sendSnapshotTxn = { hash: tx.hash, broadcastedTimestamp: now };
+    this.transactions.sendSnapshotTxn = this.recordSent(tx, now, ContractType.INBOX);
   }
 
   public async resolveChallengedClaim(sendSnapshotTxn: string): Promise<void> {
@@ -209,12 +201,10 @@ export class ArbToGnosisTransactionHandler extends BaseTransactionHandler<VeaInb
         details: { message: (error as Error)?.message },
       });
     }
+    await this.rebroadcastStuck(ContractType.ROUTER);
     const msgExecuteTrnx = await messageExecutor(sendSnapshotTxn, this.veaInboxProvider, this.veaRouterProvider);
     this.emitter.emit(BotEvents.TXN_MADE, msgExecuteTrnx.hash, this.epoch, "Execute Snapshot");
-    this.transactions.executeSnapshotTxn = {
-      hash: msgExecuteTrnx.hash,
-      broadcastedTimestamp: now,
-    };
+    this.transactions.executeSnapshotTxn = this.recordSent(msgExecuteTrnx, now, ContractType.ROUTER);
   }
 }
 
@@ -247,8 +237,9 @@ export class ArbToGnosisDevnetTransactionHandler extends ArbToGnosisTransactionH
     if (!toSubmit) return;
     if (!(await this.approveWeth("devnet advance state"))) return;
     // The deposit is paid in WETH by `claim`; `devnetAdvanceState` ignores msg.value.
+    await this.rebroadcastStuck(ContractType.OUTBOX);
     const tx = await this.veaOutboxDevnet.devnetAdvanceState(this.epoch, stateRoot);
     this.emitter.emit(BotEvents.TXN_MADE, tx.hash, this.epoch, "Advance Devnet State");
-    this.transactions.devnetAdvanceStateTxn = { hash: tx.hash, broadcastedTimestamp: now };
+    this.transactions.devnetAdvanceStateTxn = this.recordSent(tx, now, ContractType.OUTBOX);
   }
 }

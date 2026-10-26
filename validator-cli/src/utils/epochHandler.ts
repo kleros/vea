@@ -28,7 +28,9 @@ const getChallengeBudget = (
  *
  * The range reaches back the larger of two lookbacks, so it covers both: the 7-day cold-start
  * backlog on top of the L2 sync period (`sequencerDelayLimit + epochPeriod`), and one
- * challenge budget.
+ * challenge budget. It is not every epoch a restart must watch: the contracts put no age limit
+ * on challenging an unverified claim or withdrawing a resolved deposit, so the watcher's cold
+ * start also asks the indexer for claimed epochs below the range (`discoverOlderClaims`).
  *
  * @param currentTimestamp - The outbox chain's latest block timestamp, in seconds
  * @param chainId - The chain ID
@@ -193,5 +195,6 @@ export {
   getLookbackFloorBlock,
   getChallengeBudget,
   COLD_START_BACKLOG_SECS,
+  MIN_SECONDS_PER_BLOCK,
   EpochRangeParams,
 };

@@ -17,6 +17,15 @@ import { EpochOutcome, ReportOutcome } from "../utils/epochOutcome";
 import { getLookbackFloorBlock } from "../utils/epochHandler";
 import { findLatestLog } from "../utils/logScanner";
 import { handleBridgeShutdown, isOurAddress } from "./escapeHatch";
+
+/** The outboxes' `CensorshipTestStatus`, in its ABI order (both outboxes declare the same enum). */
+enum CensorshipTestStatus {
+  FAILED = 0,
+  PASSED = 1,
+  NOT_STARTED = 2,
+  IN_PROGRESS = 3,
+}
+
 interface CheckAndClaimParams {
   chainId: number;
   network: Network;
@@ -100,6 +109,7 @@ async function checkAndClaim({
         transactionHandler,
         claim,
         veaInbox,
+        veaOutbox,
         veaOutboxProvider,
         l1Provider: veaRouterProvider ?? veaOutboxProvider,
         emitter,
@@ -344,6 +354,7 @@ interface VerifyClaimParams {
   transactionHandler: ITransactionHandler;
   claim: ClaimStruct;
   veaInbox: any;
+  veaOutbox: any;
   veaOutboxProvider: JsonRpcProvider;
   l1Provider: JsonRpcProvider;
   emitter: EventEmitter;
@@ -360,6 +371,7 @@ async function verifyClaim({
   transactionHandler,
   claim,
   veaInbox,
+  veaOutbox,
   veaOutboxProvider,
   l1Provider,
   emitter,
@@ -440,10 +452,34 @@ async function verifyClaim({
   if (claim.timestampVerification == 0) {
     await transactionHandler.startVerification(readBlock.timestamp);
   } else {
-    await transactionHandler.verifySnapshot(readBlock.timestamp);
+    // verifySnapshot requires a Passed censorship test. A test that Failed (more than
+    // maxMissingBlocks slots missed during minChallengePeriod) never passes, so verifySnapshot
+    // would revert every cycle and the claim would never be verified; startVerification is the
+    // only call that accepts it, and it restarts the test. The status is judged at the block a
+    // transaction lands in, so it is read at latest, not at the read block.
+    const censorshipTest = Number(await veaOutbox.censorshipTestStatus(claim));
+    if (censorshipTest === CensorshipTestStatus.FAILED) {
+      emitter.emit(BotEvents.ALERT, {
+        level: "warn",
+        code: "censorship_test_failed",
+        chainId,
+        network,
+        epoch,
+        details: {
+          claimer: claim.claimer,
+          timestampVerification: Number(claim.timestampVerification),
+          blocknumberVerification: Number(claim.blocknumberVerification),
+        },
+      });
+      await transactionHandler.startVerification(readBlock.timestamp);
+    } else {
+      // Passed, or still in progress: the handler holds verifySnapshot back until
+      // minChallengePeriod has passed at the read block.
+      await transactionHandler.verifySnapshot(readBlock.timestamp);
+    }
   }
   report(EpochOutcome.PENDING);
   return transactionHandler;
 }
 
-export { checkAndClaim, CheckAndClaimParams };
+export { checkAndClaim, CheckAndClaimParams, CensorshipTestStatus };

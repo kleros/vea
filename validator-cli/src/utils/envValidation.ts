@@ -6,6 +6,7 @@ import { FallbackRpcProvider, redactUrl, redactUrlsInText } from "./fallbackProv
 import { defaultEmitter } from "./emitter";
 import { BotEvents, AlertPayload } from "./botEvents";
 import { hashClaim } from "./claim";
+import { splitList } from "./botConfig";
 
 /**
  * The slice of a provider the preflight needs. Kept minimal so the checks can be
@@ -58,12 +59,6 @@ export interface ValidateEnvironmentParams {
   emitter?: EventEmitter;
   probeTimeoutMs?: number;
 }
-
-const splitList = (value: string | undefined): string[] =>
-  (value ?? "")
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
 
 const isHttpUrl = (value: string): boolean => {
   try {

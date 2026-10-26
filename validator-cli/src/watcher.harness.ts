@@ -1,8 +1,8 @@
 /**
  * Test harness for the watch loop. The test file must mock these modules first (see
  * `watcher.test.ts`): envValidation, logger, heartbeat, claim, claimer, validator, snapshot,
- * ethers, fallbackProvider, fallbackProviderV5, transactionHandlers, and bridgeRoutes with
- * RPC_ARB / RPC_ETH / RPC_GNOSIS set to the URLs below.
+ * graphQueries, ethers, fallbackProvider, fallbackProviderV5, transactionHandlers, and
+ * bridgeRoutes with RPC_ARB / RPC_ETH / RPC_GNOSIS set to the URLs below.
  */
 import { EventEmitter } from "node:events";
 import { watch, WatcherState } from "./watcher";
@@ -14,6 +14,7 @@ import { getClaim } from "./utils/claim";
 import { checkAndClaim } from "./helpers/claimer";
 import { challengeAndResolveClaim } from "./helpers/validator";
 import { saveSnapshot } from "./helpers/snapshot";
+import { getClaimedEpochsBelow, getIndexedBlock } from "./utils/graphQueries";
 import { FallbackProviderV5 } from "./utils/fallbackProviderV5";
 import { getTransactionHandler } from "./utils/transactionHandlers";
 import { EpochOutcome } from "./utils/epochOutcome";
@@ -27,6 +28,8 @@ export const mocks = {
   checkAndClaim: checkAndClaim as jest.Mock,
   challengeAndResolveClaim: challengeAndResolveClaim as jest.Mock,
   saveSnapshot: saveSnapshot as jest.Mock,
+  getClaimedEpochsBelow: getClaimedEpochsBelow as jest.Mock,
+  getIndexedBlock: getIndexedBlock as jest.Mock,
   FallbackProviderV5: FallbackProviderV5 as unknown as jest.Mock,
   getTransactionHandler: getTransactionHandler as jest.Mock,
 };
@@ -83,8 +86,12 @@ export interface RunOptions {
   beforeCycle?: (cycle: number, h: Harness) => void;
   /** The cap on epochs older than the watch window per cycle; no cap unless set. */
   backlogEpochsPerCycle?: number;
+  /** The cap on the cold-start discovery's claim-hash batches per cycle; no cap unless set. */
+  discoveryBatchesPerCycle?: number;
   /** Runs before watch starts, once the harness exists. */
   setup?: (h: Harness) => void;
+  /** Extra provider methods by RPC URL (receipts, nonces, fee data), for a test that runs real handlers. */
+  rpcMethods?: (url: string) => Record<string, unknown>;
 }
 
 export const resetMocks = () => {
@@ -101,6 +108,12 @@ export const resetMocks = () => {
     updatedTransactionHandler: transactionHandler,
     latestCount: count,
   }));
+  // The indexer lists no claim older than the cold-start range unless a test says otherwise, and
+  // has processed each outbox chain up to its head.
+  mocks.getClaimedEpochsBelow.mockResolvedValue([]);
+  mocks.getIndexedBlock.mockImplementation(async (chainId: number) =>
+    (chainId === 10200 ? active!.chains.outbox : active!.chains.router).resolve("latest")
+  );
   mocks.getTransactionHandler.mockImplementation(() => FakeHandler);
 };
 
@@ -116,6 +129,7 @@ export const runWatcher = async (options: RunOptions): Promise<Harness> => {
     const base = chainsByUrl[url] ?? chains.router;
     return {
       ...base.provider,
+      ...options.rpcMethods?.(url),
       name: base.name,
       getBlock: async (tag: any) => {
         if (failing[url]?.()) throw new Error(`rpc down at ${url}/v3/secret-key`);
@@ -196,6 +210,7 @@ export const runWatcher = async (options: RunOptions): Promise<Harness> => {
   await watch(signal, emitter as any, {
     cycleDelayMs: 0,
     backlogEpochsPerCycle: options.backlogEpochsPerCycle ?? Infinity,
+    discoveryBatchesPerCycle: options.discoveryBatchesPerCycle ?? Infinity,
     state,
   });
   return h;

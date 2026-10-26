@@ -1,7 +1,15 @@
 import { EventEmitter } from "node:events";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import { keccak256 } from "ethers";
 import { BotEvents } from "./botEvents";
-import { RATE_LIMITED_ATTEMPTS_WITH_FALLBACK, redactRpcError, redactUrl } from "./fallbackProvider";
+import {
+  ALREADY_KNOWN,
+  RATE_LIMITED_ATTEMPTS_WITH_FALLBACK,
+  isBroadcastVerdict,
+  isRevertRpcError,
+  redactRpcError,
+  redactUrl,
+} from "./fallbackProvider";
 
 type RPCEndpoint = { url: string; label?: string };
 
@@ -9,20 +17,25 @@ type RPCEndpoint = { url: string; label?: string };
  * Whether a `send` failure is the node answering that the call reverted. ethers v5 throws the
  * JSON-RPC error (`code` 3, or -32000 with "execution reverted") as `err.error`, with the raw
  * response in `err.body`. Every healthy endpoint gives the same answer, so it is the call's
- * result, not an endpoint failure.
+ * result, not an endpoint failure. The v6 provider reads the same JSON-RPC error off the response.
  */
-export const isExecutionRevert = (err: any): boolean => {
-  const rpcError = err?.error ?? err;
-  if (rpcError?.code === 3) return true;
-  return (
-    /execution reverted/i.test(String(rpcError?.message ?? "")) || /execution reverted/i.test(String(err?.body ?? ""))
-  );
-};
+export const isExecutionRevert = (err: any): boolean =>
+  isRevertRpcError(err?.error ?? err) || /execution reverted/i.test(String(err?.body ?? ""));
+
+/**
+ * The JSON-RPC error a node answered with, when `err` carries one: ethers v5 keeps it as `err.error`
+ * (with a numeric `code`). A transport failure (no response, a non-2xx status, a timeout) has none.
+ */
+const nodeAnswerOf = (err: any): { code: number; message?: string } | undefined =>
+  typeof err?.error?.code === "number" ? err.error : undefined;
 
 /**
  * ethers v5 (`@ethersproject/providers`) JSON-RPC provider that transparently fails over to the next
  * endpoint when a request fails. A reverted call is rethrown as is: it is not retried elsewhere
  * nor logged as an RPC failure (callers such as the `findBatchContainingBlock` bisection expect it).
+ * So is a node's verdict on eth_sendRawTransaction (`isBroadcastVerdict`); "already known" returns
+ * the send's hash. When every endpoint fails, the last node answer is thrown over a later
+ * transport error, so ethers still maps it (INSUFFICIENT_FUNDS, NONCE_EXPIRED).
  */
 export class FallbackProviderV5 extends JsonRpcProvider {
   private endpoints: RPCEndpoint[];
@@ -46,6 +59,7 @@ export class FallbackProviderV5 extends JsonRpcProvider {
   // Overrides the low-level transport so ALL RPC calls go through the fallback logic.
   async send(method: string, params: Array<any>): Promise<any> {
     let lastErr: any;
+    let lastAnswer: any;
     for (let attempt = 0; attempt < this.endpoints.length; attempt++) {
       const i = (this.activeIndex + attempt) % this.endpoints.length;
       try {
@@ -57,7 +71,14 @@ export class FallbackProviderV5 extends JsonRpcProvider {
         return result;
       } catch (err: any) {
         if (isExecutionRevert(err)) throw err;
+        const answer = nodeAnswerOf(err);
+        if (method === "eth_sendRawTransaction" && answer && isBroadcastVerdict(answer)) {
+          // The node holds it: the send succeeded. Any other verdict is thrown as the node gave it.
+          if (ALREADY_KNOWN.test(String(answer.message ?? ""))) return keccak256(params[0]);
+          throw err;
+        }
         lastErr = err;
+        if (answer) lastAnswer = err;
         this.emitter.emit(BotEvents.RPC_FAILURE, {
           method,
           from: this.label(this.activeIndex),
@@ -66,7 +87,7 @@ export class FallbackProviderV5 extends JsonRpcProvider {
         });
       }
     }
-    throw lastErr;
+    throw lastAnswer ?? lastErr;
   }
 
   private getInner(i: number) {

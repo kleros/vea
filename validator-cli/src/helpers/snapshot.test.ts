@@ -21,7 +21,7 @@ describe("snapshot", () => {
       return { number, timestamp: number * SEC_PER_BLOCK };
     }),
   });
-  let fetchLastSavedMessage: jest.Mock;
+  let fetchLastSnapshotSaved: jest.Mock;
   let fetchLastClaimedEpoch: jest.Mock;
   let fetchClaimForEpoch: jest.Mock;
   beforeEach(() => {
@@ -53,7 +53,7 @@ describe("snapshot", () => {
       count = -1;
       let currentCount = 1;
       veaInbox.count.mockResolvedValue(currentCount);
-      fetchLastSavedMessage = jest.fn();
+      fetchLastSnapshotSaved = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", currentCount] }]);
       veaOutbox.queryFilter.mockResolvedValue([{ data: "0x1", blockNumber: 1 }]);
       const params = {
@@ -65,7 +65,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count,
-        fetchLastSavedMessage,
+        fetchLastSnapshotSaved,
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -79,7 +79,7 @@ describe("snapshot", () => {
       count = -1;
       veaInbox.count.mockResolvedValue(3);
       veaInbox.queryFilter.mockResolvedValue([]);
-      fetchLastSavedMessage = jest.fn().mockResolvedValue(null);
+      fetchLastSnapshotSaved = jest.fn().mockResolvedValue(null);
       const params = {
         network,
         epochPeriod,
@@ -89,7 +89,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count,
-        fetchLastSavedMessage,
+        fetchLastSnapshotSaved,
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -100,7 +100,7 @@ describe("snapshot", () => {
       count = -1;
       veaInbox.count.mockResolvedValue(0);
       veaInbox.queryFilter.mockResolvedValue([]);
-      fetchLastSavedMessage = jest.fn().mockResolvedValue(null);
+      fetchLastSnapshotSaved = jest.fn().mockResolvedValue(null);
       const params = {
         network,
         epochPeriod,
@@ -110,7 +110,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count,
-        fetchLastSavedMessage,
+        fetchLastSnapshotSaved,
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -121,7 +121,7 @@ describe("snapshot", () => {
       count = 1;
       let currentCount = 1;
       veaInbox.count.mockResolvedValue(currentCount);
-      fetchLastSavedMessage = jest.fn();
+      fetchLastSnapshotSaved = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", currentCount] }]);
       const params = {
         network,
@@ -132,7 +132,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count,
-        fetchLastSavedMessage,
+        fetchLastSnapshotSaved,
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -145,7 +145,7 @@ describe("snapshot", () => {
       count = 1;
       let currentCount = 2;
       veaInbox.count.mockResolvedValue(currentCount);
-      fetchLastSavedMessage = jest.fn();
+      fetchLastSnapshotSaved = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", currentCount] }]);
       veaOutbox.queryFilter.mockResolvedValue([{ args: [null, 1, null] }]);
       const params = {
@@ -157,7 +157,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count,
-        fetchLastSavedMessage,
+        fetchLastSnapshotSaved,
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -170,7 +170,7 @@ describe("snapshot", () => {
       count = 1;
       let currentCount = 2;
       veaInbox.count.mockResolvedValue(currentCount);
-      fetchLastSavedMessage = jest.fn();
+      fetchLastSnapshotSaved = jest.fn();
       veaInbox.queryFilter.mockResolvedValue([{ args: ["0x1", "0x2", 1] }]);
       veaOutbox.queryFilter.mockResolvedValue([{ args: [null, 1, null] }]);
       const params = {
@@ -182,7 +182,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count,
-        fetchLastSavedMessage,
+        fetchLastSnapshotSaved,
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -214,7 +214,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count: -1,
-        fetchLastSavedMessage: jest.fn(),
+        fetchLastSnapshotSaved: jest.fn(),
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -232,11 +232,11 @@ describe("snapshot", () => {
       }
     });
 
-    it("should fallback to fetchLastSavedMessage if queryFilter fails", async () => {
+    it("should fallback to fetchLastSnapshotSaved if queryFilter fails", async () => {
       count = 1;
       let currentCount = 2;
       veaInbox.count.mockResolvedValue(currentCount);
-      fetchLastSavedMessage = jest.fn().mockResolvedValue({ id: "message-0", stateRoot: "0x1" });
+      fetchLastSnapshotSaved = jest.fn().mockResolvedValue({ count: 1, stateRoot: "0x1" });
       veaInbox.queryFilter.mockRejectedValue(new Error("queryFilter failed"));
       const params = {
         network,
@@ -247,7 +247,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count,
-        fetchLastSavedMessage,
+        fetchLastSnapshotSaved,
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -260,7 +260,7 @@ describe("snapshot", () => {
       count = 1;
       let currentCount = 3;
       veaInbox.count.mockResolvedValue(currentCount);
-      fetchLastSavedMessage = jest.fn().mockResolvedValue({ id: "message-3", stateRoot: "0x0" });
+      fetchLastSnapshotSaved = jest.fn().mockResolvedValue({ count: 3, stateRoot: "0x0" });
       veaInbox.queryFilter.mockRejectedValue(new Error("queryFilter failed"));
       veaOutbox.stateRoot.mockResolvedValue("0xabcde");
       veaInbox.snapshots.mockResolvedValue(ethers.ZeroHash);
@@ -273,7 +273,7 @@ describe("snapshot", () => {
         veaInboxProvider,
         veaOutboxProvider,
         count,
-        fetchLastSavedMessage,
+        fetchLastSnapshotSaved,
         fetchLastClaimedEpoch,
         fetchClaimForEpoch,
       } as any;
@@ -281,6 +281,156 @@ describe("snapshot", () => {
         snapshotNeeded: true,
         latestCount: currentCount,
       });
+    });
+  });
+
+  describe("isSnapshotNeeded: the on-chain SnapshotSaved log and the indexer agree on what a count is", () => {
+    const ROOT_SAVED = "0x" + "44".repeat(32);
+    const ROOT_OTHER = "0x" + "55".repeat(32);
+    const check = (overrides: Record<string, unknown> = {}) =>
+      isSnapshotNeeded({
+        epochPeriod,
+        chainId,
+        veaInbox,
+        veaOutbox,
+        veaInboxProvider,
+        veaOutboxProvider,
+        count: -1,
+        fetchLastSnapshotSaved,
+        fetchLastClaimedEpoch,
+        ...overrides,
+      } as any);
+    beforeEach(() => {
+      veaInbox.count.mockResolvedValue(5);
+      veaInbox.snapshots.mockResolvedValue(ethers.ZeroHash);
+      veaOutbox.stateRoot.mockResolvedValue(ROOT_OTHER);
+      fetchLastSnapshotSaved = jest.fn();
+    });
+
+    it("with no SnapshotSaved log in the lookback, the indexer's last SnapshotSaved count is compared with the inbox count", async () => {
+      // Five messages, all saved: the indexer's count is the inbox count it saved, not a 0-based message nonce.
+      veaInbox.queryFilter.mockResolvedValue([]);
+      veaOutbox.queryFilter.mockResolvedValue([{ data: ROOT_SAVED, blockNumber: 1 }]);
+      fetchLastSnapshotSaved.mockResolvedValue({ count: 5, stateRoot: ROOT_SAVED });
+      await expect(check()).resolves.toEqual({ snapshotNeeded: false, latestCount: 5 });
+      fetchLastSnapshotSaved.mockResolvedValue({ count: 4, stateRoot: ROOT_SAVED });
+      await expect(check()).resolves.toEqual({ snapshotNeeded: true, latestCount: 5 });
+      expect(fetchLastSnapshotSaved).toHaveBeenCalledWith(veaInbox.target, chainId);
+    });
+
+    it("a missing Claimed log keeps the on-chain SnapshotSaved count: a new message is a save, with the indexer down", async () => {
+      veaInbox.count.mockResolvedValue(6);
+      veaInbox.queryFilter.mockResolvedValue([{ args: [ROOT_SAVED, 1, 5], blockNumber: 1 }]);
+      veaOutbox.queryFilter.mockResolvedValue([]);
+      fetchLastSnapshotSaved.mockRejectedValue(new Error("indexer timed out"));
+      fetchLastClaimedEpoch = jest.fn().mockRejectedValue(new Error("indexer timed out"));
+      await expect(check({ fetchLastClaimedEpoch })).resolves.toEqual({ snapshotNeeded: true, latestCount: 6 });
+      expect(fetchLastSnapshotSaved).not.toHaveBeenCalled();
+      expect(fetchLastClaimedEpoch).not.toHaveBeenCalled();
+    });
+
+    it("a missing Claimed log is asked of the indexer only for the missed-claim check, whose failure skips that check alone", async () => {
+      veaInbox.queryFilter.mockResolvedValue([{ args: [ROOT_SAVED, 1, 5], blockNumber: 1 }]);
+      veaOutbox.queryFilter.mockResolvedValue([]);
+      // The saved root was never claimed: saved again in an epoch with no snapshot yet.
+      fetchLastClaimedEpoch = jest.fn().mockResolvedValue({ stateRoot: ROOT_OTHER });
+      await expect(check({ fetchLastClaimedEpoch })).resolves.toEqual({ snapshotNeeded: true, latestCount: 5 });
+      // It was claimed: nothing to save.
+      fetchLastClaimedEpoch = jest.fn().mockResolvedValue({ stateRoot: ROOT_SAVED });
+      await expect(check({ fetchLastClaimedEpoch })).resolves.toEqual({ snapshotNeeded: false, latestCount: 5 });
+      // The indexer cannot tell: no re-save, and no throw. The count passed in comes back, so the
+      // next check asks again instead of ending at "no new message" for the rest of the epoch.
+      fetchLastClaimedEpoch = jest.fn().mockRejectedValue(new Error("indexer timed out"));
+      await expect(check({ fetchLastClaimedEpoch })).resolves.toEqual({ snapshotNeeded: false, latestCount: -1 });
+      expect(fetchLastSnapshotSaved).not.toHaveBeenCalled();
+    });
+
+    it("an indexer failure in the missed-claim check is retried by the next cycle in the saving window, which re-saves", async () => {
+      veaInbox.queryFilter.mockResolvedValue([{ args: [ROOT_SAVED, 1, 5], blockNumber: 1 }]);
+      veaOutbox.queryFilter.mockResolvedValue([]);
+      veaInboxProvider.getBlock.mockImplementation(async (tag: any) => {
+        const number = typeof tag === "number" ? tag : HEAD_BLOCK;
+        return { number, timestamp: tag === "latest" ? 2 * epochPeriod - 60 : number * SEC_PER_BLOCK };
+      });
+      fetchLastClaimedEpoch = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("indexer timed out"))
+        .mockResolvedValue({ stateRoot: ROOT_OTHER });
+      const transactionHandler = { saveSnapshot: jest.fn() };
+      // Cycles in epoch 1's saving window, each passing on the count the one before returned (-1 at its start).
+      let count = -1;
+      for (let cycle = 0; cycle < 2; cycle++) {
+        ({ latestCount: count } = await saveSnapshot({
+          chainId,
+          veaInbox,
+          veaOutbox,
+          veaInboxProvider,
+          veaOutboxProvider,
+          network,
+          epochPeriod,
+          count,
+          transactionHandler,
+          emitter: new MockEmitter(),
+          now: 2 * epochPeriod - 60,
+          toSaveSnapshot: (params) => isSnapshotNeeded({ ...params, fetchLastSnapshotSaved, fetchLastClaimedEpoch }),
+        }));
+      }
+      expect(fetchLastClaimedEpoch).toHaveBeenCalledTimes(2);
+      expect(transactionHandler.saveSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    it("with the route's cache, a later check scans only the inbox blocks finalized since, and asks the indexer no more", async () => {
+      let finalized = HEAD_BLOCK;
+      veaInboxProvider.getBlock.mockImplementation(async (tag: any) => {
+        const number = typeof tag === "number" ? tag : finalized;
+        return { number, timestamp: number * SEC_PER_BLOCK };
+      });
+      // A quiet inbox: no SnapshotSaved in the lookback, so the indexer tells the last one.
+      const saves: Array<{ blockNumber: number; args: [string, number, number] }> = [];
+      const inboxRanges: Array<[number, number]> = [];
+      veaInbox.queryFilter = jest.fn(async (_f: any, from: number, to: number) => {
+        inboxRanges.push([from, to]);
+        return saves.filter((log) => log.blockNumber >= from && log.blockNumber <= to);
+      });
+      veaOutbox.queryFilter.mockResolvedValue([{ data: ROOT_SAVED, blockNumber: 1 }]);
+      fetchLastSnapshotSaved.mockResolvedValue({ count: 5, stateRoot: ROOT_SAVED });
+      const savedCache = {};
+
+      await expect(check({ savedCache })).resolves.toEqual({ snapshotNeeded: false, latestCount: 5 });
+      // The whole lookback, chunk by chunk.
+      expect(inboxRanges.length).toBeGreaterThan(5);
+
+      // A new epoch (count -1 again), 300 blocks later.
+      finalized += 300;
+      inboxRanges.length = 0;
+      await expect(check({ savedCache })).resolves.toEqual({ snapshotNeeded: false, latestCount: 5 });
+      expect(inboxRanges).toEqual([[HEAD_BLOCK + 1, HEAD_BLOCK + 300]]);
+      expect(fetchLastSnapshotSaved).toHaveBeenCalledTimes(1);
+
+      // A message arrives and is saved: found by the forward scan.
+      veaInbox.count.mockResolvedValue(7);
+      saves.push({ blockNumber: HEAD_BLOCK + 350, args: [ROOT_OTHER, 2, 6] });
+      finalized += 100;
+      inboxRanges.length = 0;
+      await expect(check({ savedCache })).resolves.toEqual({ snapshotNeeded: true, latestCount: 7 });
+      expect(inboxRanges).toEqual([[HEAD_BLOCK + 301, HEAD_BLOCK + 400]]);
+      expect(savedCache).toEqual({ scannedTo: HEAD_BLOCK + 400, lastSaved: { count: 6, stateRoot: ROOT_OTHER } });
+      expect(fetchLastSnapshotSaved).toHaveBeenCalledTimes(1);
+    });
+
+    it("a failed scan leaves the cache as it was: the indexer answers that check alone", async () => {
+      const savedCache = { scannedTo: HEAD_BLOCK - 10, lastSaved: { count: 5, stateRoot: ROOT_SAVED } };
+      veaInbox.queryFilter.mockRejectedValue(new Error("rpc down"));
+      veaOutbox.queryFilter.mockResolvedValue([{ data: ROOT_SAVED, blockNumber: 1 }]);
+      fetchLastSnapshotSaved.mockResolvedValue({ count: 4, stateRoot: ROOT_SAVED });
+      await expect(check({ savedCache })).resolves.toEqual({ snapshotNeeded: true, latestCount: 5 });
+      expect(savedCache).toEqual({ scannedTo: HEAD_BLOCK - 10, lastSaved: { count: 5, stateRoot: ROOT_SAVED } });
+    });
+
+    it("with neither a SnapshotSaved log nor an answer from the indexer, it throws: nothing tells what was saved", async () => {
+      veaInbox.queryFilter.mockResolvedValue([]);
+      fetchLastSnapshotSaved.mockRejectedValue(new Error("indexer timed out"));
+      await expect(check()).rejects.toThrow("indexer timed out");
     });
   });
 
@@ -339,8 +489,10 @@ describe("snapshot", () => {
         now,
         toSaveSnapshot: isSnapshotNeededMock,
       });
-      expect(transactionHandler.saveSnapshot).toHaveBeenCalled();
-      expect(res).toEqual({ transactionHandler, latestCount: currentCount });
+      // Told the inbox count to cover, so a mined save of fewer messages is superseded.
+      expect(transactionHandler.saveSnapshot).toHaveBeenCalledWith(currentCount);
+      // The count passed in, not the inbox's: the save may not land, so the next cycle re-checks.
+      expect(res).toEqual({ transactionHandler, latestCount: count });
     });
 
     it("should not save snapshot if snapshot is needed", async () => {
@@ -436,7 +588,7 @@ describe("snapshot", () => {
         toSaveSnapshot: isSnapshotNeededMock,
       });
       expect(transactionHandler.saveSnapshot).toHaveBeenCalled();
-      expect(res).toEqual({ transactionHandler, latestCount: currentCount });
+      expect(res).toEqual({ transactionHandler, latestCount: count });
     });
   });
 });
@@ -552,7 +704,7 @@ describe("snapshot: chain time, not the host clock", () => {
         veaInboxProvider: provider(chainNow) as any,
         veaOutboxProvider: provider(chainNow) as any,
         count: 4,
-        fetchLastSavedMessage: jest.fn().mockResolvedValue({ id: "msg-5", stateRoot: "0x" + "33".repeat(32) }),
+        fetchLastSnapshotSaved: jest.fn().mockResolvedValue({ count: 5, stateRoot: "0x" + "33".repeat(32) }),
         fetchLastClaimedEpoch: jest.fn().mockResolvedValue(null),
       });
       expect(veaInbox.snapshots).toHaveBeenCalledWith(EPOCH);
@@ -572,10 +724,92 @@ describe("snapshot: chain time, not the host clock", () => {
       veaOutboxProvider: outboxProvider as any,
       count: 4,
       now: CHAIN_NOW,
-      fetchLastSavedMessage: jest.fn().mockResolvedValue({ id: "msg-5", stateRoot: "0x" + "33".repeat(32) }),
+      fetchLastSnapshotSaved: jest.fn().mockResolvedValue({ count: 5, stateRoot: "0x" + "33".repeat(32) }),
       fetchLastClaimedEpoch: jest.fn().mockResolvedValue(null),
     });
     expect(veaInbox.snapshots).toHaveBeenCalledWith(EPOCH);
     expect(outboxProvider.getBlock).not.toHaveBeenCalledWith("latest");
+  });
+});
+
+describe("snapshot: a sent save is checked on chain again until it lands", () => {
+  const ROOT_SAVED = "0x" + "44".repeat(32);
+  const ROOT_CLAIMED = "0x" + "55".repeat(32);
+  const HEAD = 1_000_000;
+  // A chain whose head is at `now`, 12 s per block.
+  const chainAt = (now: number) => ({
+    getBlock: jest.fn(async (tag: any) => {
+      const number = typeof tag === "number" ? tag : HEAD;
+      return { number, timestamp: now - (HEAD - number) * 12 };
+    }),
+  });
+  // The inbox holds `count` messages while its last SnapshotSaved covers only `savedCount`;
+  // `snapshot` is what this epoch's `snapshots(epoch)` holds.
+  const onChain = (chain: { count: number; savedCount: number; snapshot?: string }) => ({
+    veaInbox: {
+      count: jest.fn(async () => chain.count),
+      filters: { SnapshotSaved: jest.fn() },
+      queryFilter: jest.fn(async (_f: any, _from: number, to: number) => [
+        { args: [ROOT_SAVED, EPOCH - 1, chain.savedCount], blockNumber: to, index: 0 },
+      ]),
+      snapshots: jest.fn(async () => chain.snapshot ?? ethers.ZeroHash),
+      target: "0xinbox",
+    },
+    veaOutbox: {
+      stateRoot: jest.fn().mockResolvedValue(ROOT_CLAIMED),
+      filters: { Claimed: jest.fn() },
+      queryFilter: jest.fn(async (_f: any, _from: number, to: number) => [
+        { data: ROOT_CLAIMED, blockNumber: to, index: 0 },
+      ]),
+      target: "0xoutbox",
+    },
+  });
+  const cycle = (contracts: ReturnType<typeof onChain>, transactionHandler: any, count: number) =>
+    saveSnapshot({
+      chainId: 11155111,
+      ...contracts,
+      veaInboxProvider: chainAt(CHAIN_NOW) as any,
+      veaOutboxProvider: chainAt(CHAIN_NOW) as any,
+      network: Network.TESTNET,
+      epochPeriod: P,
+      count,
+      transactionHandler,
+      emitter: new MockEmitter(),
+      now: CHAIN_NOW,
+    });
+
+  it("a save that was sent and never landed is offered to the handler again next cycle", async () => {
+    // Five messages, the last snapshot saved three: a save is needed, and the one sent never lands.
+    const contracts = onChain({ count: 5, savedCount: 3 });
+    const transactionHandler = { saveSnapshot: jest.fn() };
+
+    const first = await cycle(contracts, transactionHandler, -1);
+    expect(transactionHandler.saveSnapshot).toHaveBeenCalledTimes(1);
+    // Not the inbox's count: caching it would end every later check at `count == currentCount`.
+    expect(first.latestCount).toBe(-1);
+
+    // The watcher passes back what it was given. The chain still shows no save of 5, so the
+    // handler is asked again; whether it re-sends is its call (a save still in flight is not).
+    const second = await cycle(contracts, transactionHandler, first.latestCount);
+    expect(transactionHandler.saveSnapshot).toHaveBeenCalledTimes(2);
+    expect(second.latestCount).toBe(-1);
+  });
+
+  it("once the save shows on chain, the count is cached and the next cycle stops at it", async () => {
+    const chain: { count: number; savedCount: number; snapshot?: string } = { count: 5, savedCount: 3 };
+    const contracts = onChain(chain);
+    const transactionHandler = { saveSnapshot: jest.fn() };
+
+    const sent = await cycle(contracts, transactionHandler, -1);
+    // The save lands: this epoch's snapshot is set and the last SnapshotSaved covers all five.
+    Object.assign(chain, { savedCount: 5, snapshot: ROOT_SAVED });
+    const landed = await cycle(contracts, transactionHandler, sent.latestCount);
+    expect(landed.latestCount).toBe(5);
+    const reads = contracts.veaInbox.queryFilter.mock.calls.length;
+
+    await cycle(contracts, transactionHandler, landed.latestCount);
+    expect(transactionHandler.saveSnapshot).toHaveBeenCalledTimes(1);
+    // Within the epoch the cached count still short-circuits: no log scan.
+    expect(contracts.veaInbox.queryFilter.mock.calls.length).toBe(reads);
   });
 });

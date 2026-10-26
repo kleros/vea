@@ -8,6 +8,7 @@ import { SequencerInbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/Se
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 import { findLatestLog } from "./logScanner";
+import { MIN_SECONDS_PER_BLOCK } from "./epochHandler";
 
 // https://github.com/prysmaticlabs/prysm/blob/493905ee9e33a64293b66823e69704f012b39627/config/params/mainnet_config.go#L103
 const slotsPerEpochEth = 32;
@@ -354,9 +355,18 @@ const getBlocksAndCheckFinality = async (
   let blockLatestArb = (await ArbProvider.getBlock("latest")) as Block;
 
   const maxDelayInSeconds = 7 * 24 * 60 * 60; // 7 days
-  const blockoldArb = (await ArbProvider.getBlock(blockLatestArb.number - 100)) as Block;
-  const arbAverageBlockTime = (blockLatestArb.timestamp - blockoldArb.timestamp) / 100;
-  const fromBlockArbFinalized = blockFinalizedArb.number - Math.ceil(maxDelayInSeconds / arbAverageBlockTime);
+  const sampleNumber = Math.max(blockLatestArb.number - 100, 0);
+  const blockoldArb = (await ArbProvider.getBlock(sampleNumber)) as Block;
+  // Floored: blocks sharing one timestamp (a burst of delayed-inbox messages, a local chain) would
+  // make the average 0, the range below -Infinity, and the batch bisection never end.
+  const arbAverageBlockTime = Math.max(
+    (blockLatestArb.timestamp - blockoldArb.timestamp) / Math.max(blockLatestArb.number - sampleNumber, 1),
+    MIN_SECONDS_PER_BLOCK
+  );
+  const fromBlockArbFinalized = Math.max(
+    blockFinalizedArb.number - Math.ceil(maxDelayInSeconds / arbAverageBlockTime),
+    0
+  );
   // to performantly query the sequencerInbox's SequencerBatchDelivered event on Eth, we limit the block range
   // we use the heuristic that. delta blocknumber <= delta timestamp / secondsPerSlot
   // Arb: -----------x                   <-- Finalized

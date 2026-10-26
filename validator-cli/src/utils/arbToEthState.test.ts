@@ -291,6 +291,35 @@ describe("arbToEthState", () => {
       expect(events.some((e) => e[0] === BotEvents.FINALITY_ERROR)).toBe(true);
     });
 
+    it("ends when the last 100 Arbitrum blocks share a timestamp (a zero average block time)", async () => {
+      const { route, fake, deps } = setup();
+      const latest = route.inbox.block("latest");
+      const provider = route.inbox.provider;
+      const getBlock = provider.getBlock;
+      // A burst of delayed-inbox messages: the sample block carries the head's timestamp.
+      provider.getBlock = async (tag: any) =>
+        tag === latest.number - 100 ? { ...(await getBlock(tag)), timestamp: latest.timestamp } : getBlock(tag);
+      const lookups = fake.nodeInterface.functions.findBatchContainingBlock;
+      fake.nodeInterface.functions.findBatchContainingBlock = async (n: number) => {
+        // An endless bisection would never stop asking; fail fast instead of hanging Jest.
+        if (fake.batchLookups.length > 10_000) throw new Error("bisection did not end");
+        if (!Number.isFinite(n)) throw new Error(`non-finite block ${n}`);
+        return lookups(n);
+      };
+
+      const result = await getBlocksAndCheckFinality(
+        route.router.provider,
+        provider,
+        RECENT_EPOCH,
+        P,
+        recordEmitter().emitter,
+        deps
+      );
+
+      expect(result).toBeDefined();
+      expect(fake.batchLookups.length).toBeLessThan(10_000);
+    });
+
     it("returns undefined when neither the finalized nor the latest block is found on L1", async () => {
       const { route, fake, deps } = setup();
       fake.hideDelivery = () => true;

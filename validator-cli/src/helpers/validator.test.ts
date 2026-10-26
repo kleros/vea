@@ -9,6 +9,7 @@ import { ClaimHonestState } from "../utils/claim";
 import { messageExecutor } from "../utils/arbMsgExecutor";
 import { resolveSettledReadBlocks } from "../utils/arbToEthState";
 import { resetBridgeShutdownAlerts } from "./escapeHatch";
+import { ClaimScanPausedError } from "../utils/errors";
 
 jest.mock("../utils/arbMsgExecutor", () => ({ messageExecutor: jest.fn(), getMessageStatus: jest.fn() }));
 
@@ -231,6 +232,18 @@ describe("validator", () => {
 
       expect(s.handler.sendSnapshot).toHaveBeenCalledTimes(1);
       expect(s.handler.resolveChallengedClaim).toHaveBeenCalledWith("0xours");
+    });
+
+    it("an epoch below the window: its budget reaches the scan for our send, and a paused scan is UNDECIDABLE and sends nothing", async () => {
+      const s = setup(claimStruct({ challenger: OUR_ADDRESS }));
+      const scanBudget = { blocksLeft: 1000 };
+      s.params.fetchClaimResolveState = jest.fn(async () => {
+        throw new ClaimScanPausedError(EPOCH, 100, 200);
+      }) as any;
+      await expect(challengeAndResolveClaim({ ...s.params, scanBudget })).resolves.toBe(s.handler);
+      expect((s.params.fetchClaimResolveState as jest.Mock).mock.calls[0][0].scanBudget).toBe(scanBudget);
+      expect(s.handler.sendSnapshot).not.toHaveBeenCalled();
+      expect(s.outcomes).toEqual([EpochOutcome.UNDECIDABLE]);
     });
 
     it("an executed ticket that left the claim unresolved sends nothing more (Gnosis AMB failure is not detected)", async () => {

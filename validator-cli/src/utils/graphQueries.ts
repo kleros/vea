@@ -3,6 +3,15 @@ import { ClaimNotFoundError, NoMessageSavedError } from "./errors";
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
 import { ethers } from "ethers";
 
+// An indexer request is aborted (and rejects) after this long. node-fetch, under graphql-request,
+// has no timeout of its own, so an indexer that accepts the connection and never answers would
+// otherwise hang the sequential watch loop: later routes, heartbeats and shutdown all wait on it.
+const INDEXER_TIMEOUT_MS = 30_000;
+
+/** Every indexer request goes through here, so none can outlive `INDEXER_TIMEOUT_MS`. */
+const indexerRequest = <T = any>(url: string, document: string): Promise<T> =>
+  request<T>({ url, document, signal: AbortSignal.timeout(INDEXER_TIMEOUT_MS) });
+
 interface ClaimData {
   epoch?: number;
   id: string;
@@ -29,7 +38,7 @@ const getClaimForEpoch = async (epoch: number, outbox: string, chainId: number):
   try {
     const subgraph = process.env.ENVIO_URL!;
 
-    const result = await request(
+    const result = await indexerRequest(
       `${subgraph}`,
       `{
                         Claim(where: {epoch: {_eq: ${epoch}}, outbox: {id: {_eq: "${outbox}"}}}) {
@@ -97,7 +106,7 @@ const getClaimsForEpochs = async (
       }
     }`;
 
-    const result: { Claim: ClaimData[] } = await request(subgraph, query);
+    const result: { Claim: ClaimData[] } = await indexerRequest(subgraph, query);
     // Map returned claims to corresponding epochs (some epochs may not have claims)
     const claimsByEpoch = new Map<number, ClaimStruct | null>();
     for (const claim of result.Claim) {
@@ -122,6 +131,68 @@ const getClaimsForEpochs = async (
   }
 };
 
+// Rows per page of a paged indexer query.
+const INDEXER_PAGE_SIZE = 1000;
+
+/**
+ * Every epoch below `belowEpoch` with a claim on the outbox, oldest first and each once (used by
+ * the watcher's cold start to find claims older than the epochs it seeds). Paged by epoch,
+ * `INDEXER_PAGE_SIZE` rows at a time, each page starting after the last epoch of the one before.
+ * Throws on an indexer error: a partial list would leave older claims unwatched.
+ * @param outbox
+ * @param belowEpoch
+ * @param chainId
+ * @returns the claimed epochs
+ */
+const getClaimedEpochsBelow = async (outbox: string, belowEpoch: number, chainId: number): Promise<number[]> => {
+  const subgraph = process.env.ENVIO_URL!;
+  const epochs: number[] = [];
+  let page: { epoch: number | string }[];
+  do {
+    const after = epochs.length > 0 ? epochs[epochs.length - 1] : -1;
+    const result: { Claim: { epoch: number | string }[] } = await indexerRequest(
+      subgraph,
+      `{
+        Claim(limit: ${INDEXER_PAGE_SIZE}, order_by: {epoch: asc}, where: {epoch: {_gt: ${after}, _lt: ${belowEpoch}}, outbox: {id: {_eq: "${outbox}"}}}) {
+          epoch
+        }
+      }`
+    );
+    page = result.Claim;
+    for (const claim of page) {
+      const epoch = Number(claim.epoch);
+      if (!Number.isSafeInteger(epoch)) throw new Error(`Indexer returned an invalid claim epoch: ${claim.epoch}`);
+      if (epoch !== epochs[epochs.length - 1]) epochs.push(epoch);
+    }
+    // A full page that does not move past the one before would be fetched again forever.
+    if (page.length === INDEXER_PAGE_SIZE && !(epochs[epochs.length - 1] > after)) {
+      throw new Error(`Indexer claims did not page past epoch ${after}`);
+    }
+  } while (page.length === INDEXER_PAGE_SIZE);
+  return epochs;
+};
+
+/**
+ * The last block of chain `chainId` the indexer has processed (envio's `chain_metadata`), or
+ * undefined when it reports none. Throws on an indexer error.
+ * @param chainId
+ * @returns the block number
+ */
+const getIndexedBlock = async (chainId: number): Promise<number | undefined> => {
+  const subgraph = process.env.ENVIO_URL!;
+  const result: { chain_metadata: { latest_processed_block: number | string | null }[] } = await indexerRequest(
+    subgraph,
+    `{
+      chain_metadata(where: {chain_id: {_eq: ${chainId}}}) {
+        latest_processed_block
+      }
+    }`
+  );
+  const processed = result.chain_metadata[0]?.latest_processed_block;
+  const block = processed == null ? NaN : Number(processed);
+  return Number.isSafeInteger(block) && block >= 0 ? block : undefined;
+};
+
 /**
  * Fetches the last claimed epoch (used for claimer - happy path)
  * @returns ClaimData
@@ -129,7 +200,7 @@ const getClaimsForEpochs = async (
 const getLastClaimedEpoch = async (outbox: string, chainId: number): Promise<ClaimData> => {
   const subgraph = process.env.ENVIO_URL!;
   try {
-    const result = await request(
+    const result = await indexerRequest(
       `${subgraph}`,
       `{
           Claim(limit:1, order_by:{timestamp:desc}, where: {outbox: {id: {_eq: "${outbox}"}}}) {
@@ -163,7 +234,7 @@ type VerificationData = {
 const getVerificationForClaim = async (claimId: string, chainId: number): Promise<VerificationData | undefined> => {
   try {
     const subgraph = process.env.ENVIO_URL!;
-    const result = await request(
+    const result = await indexerRequest(
       `${subgraph}`,
       `{
           Verification(where: {claim: {id: {_eq: "${claimId}"}}}) {
@@ -187,7 +258,7 @@ const getVerificationForClaim = async (claimId: string, chainId: number): Promis
 const getChallengerForClaim = async (claimId: string, chainId: number): Promise<{ challenger: string } | undefined> => {
   try {
     const subgraph = process.env.ENVIO_URL!;
-    const result = await request(
+    const result = await indexerRequest(
       `${subgraph}`,
       `{
           Challenge(where: {claim: {id: {_eq: "${claimId}"}}}) {
@@ -221,7 +292,7 @@ const getSnapshotSentForEpoch = async (
   try {
     const subgraph = process.env.ENVIO_URL!;
 
-    const result: SenSnapshotResponse = await request(
+    const result: SenSnapshotResponse = await indexerRequest(
       `${subgraph}`,
       `{
           Snapshot(where: {epoch: {_eq: ${epoch}}, inbox: { id: { _eq: "${veaInbox}" } }}) {
@@ -238,39 +309,39 @@ const getSnapshotSentForEpoch = async (
   }
 };
 
-type LastMessageSavedResponse = {
-  Message: {
-    id: string;
-    snapshot: {
-      stateRoot: string;
-    };
+type LastSnapshotSavedResponse = {
+  SnapshotSaved: {
+    count: string | number;
+    stateRoot: string;
   }[];
 };
 
 /**
- * Fetches the last message saved for a given inbox (used for validator - happy path)
+ * Fetches the last snapshot saved on a given inbox (used for validator - happy path): its root and
+ * its `count`, the inbox count it saved, comparable to `veaInbox.count()`. Saves only ever cover
+ * more messages, so the highest count is the latest save (equal counts save the same root).
  * @param veaInbox
- * @returns message id
+ * @returns the last save, or null when the inbox has none
  */
-const getLastMessageSaved = async (
+const getLastSnapshotSaved = async (
   veaInbox: string,
   chainId: number
-): Promise<{ id: string; stateRoot: string } | null> => {
+): Promise<{ count: number; stateRoot: string } | null> => {
   const subgraph = process.env.ENVIO_URL!;
   try {
-    const result: LastMessageSavedResponse = await request(
+    const result: LastSnapshotSavedResponse = await indexerRequest(
       `${subgraph}`,
       `{
-      Message(limit:1, order_by:{timestamp:desc}, where:{inbox:{id:{_eq:"${veaInbox}"}}}) {
-        id
-        snapshot{
-          stateRoot
-        }
+      SnapshotSaved(limit:1, order_by:[{count:desc}, {blockNumber:desc}], where:{inbox:{id:{_eq:"${veaInbox}"}}}) {
+        count
+        stateRoot
       }
     }`
     );
-    if (result.Message.length < 1) return null;
-    return { id: result.Message[0].id, stateRoot: result.Message[0].snapshot.stateRoot };
+    if (result.SnapshotSaved.length < 1) return null;
+    const count = Number(result.SnapshotSaved[0].count);
+    if (!Number.isSafeInteger(count)) throw new Error(`Indexer returned an invalid snapshot count: ${count}`);
+    return { count, stateRoot: result.SnapshotSaved[0].stateRoot };
   } catch (e) {
     console.log(e);
     throw new NoMessageSavedError(veaInbox);
@@ -283,7 +354,10 @@ export {
   getVerificationForClaim,
   getChallengerForClaim,
   getSnapshotSentForEpoch,
-  getLastMessageSaved,
+  getLastSnapshotSaved,
   ClaimData,
   getClaimsForEpochs,
+  getClaimedEpochsBelow,
+  getIndexedBlock,
+  INDEXER_TIMEOUT_MS,
 };

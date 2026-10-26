@@ -77,6 +77,19 @@ class EnvValidationError extends Error {
   }
 }
 
+/**
+ * A backlog epoch's claim-log scan, or its scan for our sendSnapshot, stopped at the cycle's scan
+ * budget (`ClaimScanBudget`): its cursor resumes there on the next visit, and the epoch is
+ * undecidable until then.
+ */
+class ClaimScanPausedError extends Error {
+  constructor(epoch: number, scannedTo: number, toBlock: number) {
+    super();
+    this.name = "ClaimScanPausedError";
+    this.message = `Claim log scan for epoch ${epoch} paused at block ${scannedTo} of ${toBlock}`;
+  }
+}
+
 class NoMessageSavedError extends Error {
   constructor(veaInbox: string) {
     super();
@@ -96,4 +109,5 @@ export {
   InvalidChainIdError,
   NoMessageSavedError,
   EnvValidationError,
+  ClaimScanPausedError,
 };
