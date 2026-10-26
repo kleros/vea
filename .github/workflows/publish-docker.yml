@@ -111,10 +111,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Per-image cache scope: both matrix legs would otherwise share the
-          # default "buildkit" scope and evict each other every run.
-          cache-from: type=gha,scope=${{ matrix.image }}
-          # mode=max also exports the builder stage, where yarn install and the
-          # contracts build happen. The default (mode=min) would only cache the
-          # final stage's layers, which is not where the slow work is.
-          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+          # Every publish builds from scratch: no cache imported, none exported.
+          # The GHA cache is repo-wide: any workflow running on dev can write its
+          # entries, whatever their scope, and a later build restores them. The
+          # docker-publish environment gates this job, not that cache, and both
+          # :latest and :dev are run with a PRIVATE_KEY. A per-ref scope would
+          # not help (a scope is a name anyone with cache access can write), nor
+          # would mode=min (it limits what is exported, not what is imported).
+          no-cache: true
