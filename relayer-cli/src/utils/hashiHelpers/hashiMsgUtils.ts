@@ -62,3 +62,24 @@ function hexToBigInt32Bytes(hex32: string): bigint {
   }
   return n;
 }
+
+/**
+ * Rebuild a Yaho message as a plain object with named fields.
+ * An ethers Result (the RPC log decode) and a positional array (a Result saved by JSON.stringify) both carry the
+ * fields in struct order; Result.toObject(true) is not used because it turns 0- and 1-element address arrays into objects.
+ * @param message The message in struct order: nonce, targetChainId, threshold, sender, receiver, data, reporters, adapters
+ * @returns The HashiMessage with plain reporters and adapters arrays
+ */
+export function toPlainMessage(message: ArrayLike<any>): HashiMessage {
+  const [nonce, targetChainId, threshold, sender, receiver, data, reporters, adapters] = Array.from(message);
+  return {
+    nonce,
+    targetChainId,
+    threshold,
+    sender,
+    receiver,
+    data,
+    reporters: [...reporters],
+    adapters: [...adapters],
+  };
+}

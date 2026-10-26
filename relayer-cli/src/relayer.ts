@@ -16,7 +16,7 @@ import { BotEvents } from "./utils/botEvents";
 import { getEpochPeriod, Network } from "./consts/bridgeRoutes";
 import { runHashiExecutor } from "./utils/hashi";
 import { sendHeartbeat } from "./utils/heartbeat";
-import { releaseLock, LockfileExistsError } from "./utils/lock";
+import { releaseLock, LockfileExistsError, removeStaleLocks } from "./utils/lock";
 
 interface RelayerConfig {
   networkConfigs: RelayerNetworkConfig[];
@@ -36,6 +36,8 @@ export async function start({ networkConfigs, shutdownManager, emitter }: Relaye
   const HEARTBEAT_URL = process.env.HEARTBEAT_URL;
   await sendHeartbeat("started", HEARTBEAT_URL!);
   initializeEmitter(emitter);
+  // A process killed without its exit handlers (SIGKILL, OOM) leaves its locks behind; clear them before any route runs
+  await removeStaleLocks(emitter);
   const executeTimes: number[] = networkConfigs.map(() => 0);
   await setupExitHandlers(shutdownManager, emitter);
   while (!shutdownManager.getIsShuttingDown()) {
@@ -122,5 +124,8 @@ if (require.main === module) {
     shutdownManager,
     emitter,
   };
-  start(testnetRelayerConfig);
+  start(testnetRelayerConfig).catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 }
