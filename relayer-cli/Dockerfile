@@ -61,14 +61,17 @@ FROM node:24.14-alpine3.23 AS relayer
 
 # Yarn version for all Vea
 ARG YARN_VERSION=4.6.0
+# `corepack enable` writes the yarn shim to /usr/local/bin, so it runs as root. Yarn
+# itself is prepared as node, the user the container runs as: corepack caches it in
+# the running user's home, and a cache under /root sent every container start to
+# repo.yarnpkg.com for Yarn again. With the network off, a missed cache fails the
+# start loudly instead of fetching an unpinned Yarn into the process holding the key.
 RUN corepack enable \
-  && corepack prepare "yarn@${YARN_VERSION}" --activate
-
-USER root
-RUN mkdir -p /home/node/monorepo/.yarn && chown -R node:node /home/node/monorepo
-
+  && mkdir -p /home/node/monorepo/.yarn && chown -R node:node /home/node/monorepo
 
 USER node
+RUN corepack prepare "yarn@${YARN_VERSION}" --activate
+ENV COREPACK_ENABLE_NETWORK=0
 WORKDIR /home/node/monorepo
 
 # Copy only the necessary files from the builder stage
@@ -87,6 +90,10 @@ COPY --from=relayer-build --link /home/node/monorepo/relayer-cli ./relayer-cli
 
 WORKDIR /home/node/monorepo/relayer-cli
 
+# The copy above lands root-owned (--link), so state/ (the tracked checkpoints, never a host
+# lock file: .dockerignore) is handed to node here as root; mkdir covers a context without it.
+USER root
 RUN mkdir -p /home/node/monorepo/relayer-cli/state && chown -R node:node /home/node/monorepo/relayer-cli/state
+USER node
 ENV YARN_IGNORE_PATH=1
 CMD ["yarn", "start-relayer"]
