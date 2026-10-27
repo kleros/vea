@@ -345,6 +345,26 @@ describe("snapshot", () => {
       expect(fetchLastSnapshotSaved).not.toHaveBeenCalled();
     });
 
+    describe("compares roots as bytes: the indexer may spell a root in another hex case", () => {
+      const ROOT_LOWER = "0x" + "ab".repeat(32);
+      const ROOT_UPPER = "0x" + "AB".repeat(32);
+
+      it("the indexer's saved root is the outbox state root: nothing to save", async () => {
+        veaInbox.queryFilter.mockResolvedValue([]);
+        veaOutbox.queryFilter.mockResolvedValue([]);
+        veaOutbox.stateRoot.mockResolvedValue(ROOT_LOWER);
+        fetchLastSnapshotSaved.mockResolvedValue({ count: 5, stateRoot: ROOT_UPPER });
+        await expect(check()).resolves.toEqual({ snapshotNeeded: false, latestCount: 5 });
+      });
+
+      it("the saved root is the indexer's last claimed root: nothing to save", async () => {
+        veaInbox.queryFilter.mockResolvedValue([{ args: [ROOT_LOWER, 1, 5], blockNumber: 1 }]);
+        veaOutbox.queryFilter.mockResolvedValue([]);
+        fetchLastClaimedEpoch = jest.fn().mockResolvedValue({ stateRoot: ROOT_UPPER });
+        await expect(check({ fetchLastClaimedEpoch })).resolves.toEqual({ snapshotNeeded: false, latestCount: 5 });
+      });
+    });
+
     it("an indexer failure in the missed-claim check is retried by the next cycle in the saving window, which re-saves", async () => {
       veaInbox.queryFilter.mockResolvedValue([{ args: [ROOT_SAVED, 1, 5], blockNumber: 1 }]);
       veaOutbox.queryFilter.mockResolvedValue([]);

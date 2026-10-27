@@ -4,6 +4,7 @@ import { getLookbackFloorBlock } from "../utils/epochHandler";
 import { findLatestLog } from "../utils/logScanner";
 import { Network, snapshotSavingPeriod } from "../consts/bridgeRoutes";
 import { getLastSnapshotSaved, getLastClaimedEpoch } from "../utils/graphQueries";
+import { sameRoot } from "../utils/claim";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
 
@@ -245,7 +246,8 @@ export const isSnapshotNeeded = async ({
   const epochNow = Math.floor((now ?? (await chainNow(veaOutboxProvider))) / epochPeriod);
   const currentSnapshot = await veaInbox.snapshots(epochNow);
   const currentStateRoot = await veaOutbox.stateRoot();
-  if (currentSnapshot != ZeroHash || lastSaved.stateRoot == currentStateRoot) return notNeeded;
+  // Roots are compared as bytes: the saved and the claimed root may come from the indexer, in another hex case.
+  if (currentSnapshot != ZeroHash || sameRoot(lastSaved.stateRoot, currentStateRoot)) return notNeeded;
   let lastClaimedStateroot: string | null;
   if (lastClaimLog.status === "fulfilled" && lastClaimLog.value.log) {
     lastClaimedStateroot = lastClaimLog.value.log.data;
@@ -260,5 +262,5 @@ export const isSnapshotNeeded = async ({
       return { snapshotNeeded: false, latestCount: count };
     }
   }
-  return { snapshotNeeded: lastSaved.stateRoot != lastClaimedStateroot, latestCount: currentCount };
+  return { snapshotNeeded: !sameRoot(lastSaved.stateRoot, lastClaimedStateroot), latestCount: currentCount };
 };

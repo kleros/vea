@@ -492,6 +492,13 @@ const sameAddress = (a: unknown, b: unknown): boolean =>
   typeof a === "string" && typeof b === "string" && a.toLowerCase() === b.toLowerCase();
 
 /**
+ * Whether two state roots are the same bytes. A root from the indexer may be spelled in another hex
+ * case than the chain's; a missing root (null, undefined) compares as `==` did.
+ */
+const sameRoot = (a: string | null | undefined, b: string | null | undefined): boolean =>
+  typeof a === "string" && typeof b === "string" ? a.toLowerCase() === b.toLowerCase() : a == b;
+
+/**
  * Every `SnapshotSent` for the epoch up to the inbox `latest` block. The final part is kept in
  * a per-epoch cursor, so each cycle scans only from the previous cycle's finalized block + 1 up
  * to `latest`. `sendSnapshot` requires `_epoch < block.timestamp / epochPeriod`, so nothing can
@@ -787,4 +794,4 @@ const hashClaim = (claim: ClaimStruct) => {
   );
 };
 
-export { getClaim, hashClaim, verifyClaimHash, getClaimResolveState, ClaimHonestState, ClaimResolveState };
+export { getClaim, hashClaim, verifyClaimHash, getClaimResolveState, sameRoot, ClaimHonestState, ClaimResolveState };

@@ -158,6 +158,16 @@ describe("claimer", () => {
       expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
     });
 
+    it("compares roots as bytes: the indexer's other-case spelling of snapshots[E] is not a new root", async () => {
+      const s = setup();
+      s.veaInbox.snapshots = jest.fn(s.route.inbox.pinned(() => "0x" + "ab".repeat(32)));
+      s.fetchLatestClaimedEpoch.mockResolvedValue({ stateRoot: "0x" + "AB".repeat(32) });
+      await checkAndClaim(s.params);
+      expect(s.handler.makeClaim).not.toHaveBeenCalled();
+      expect(s.emitter.emit).toHaveBeenCalledWith(BotEvents.NO_NEW_MESSAGES);
+      expect(s.outcomes).toEqual([EpochOutcome.PENDING]);
+    });
+
     it("does not claim when the outbox already holds the snapshot", async () => {
       const s = setup();
       s.veaOutbox.stateRoot = jest.fn(s.route.outbox.pinned(() => SAVED));

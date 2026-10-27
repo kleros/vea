@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import { ethers } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { getClaim, ClaimHonestState } from "../utils/claim";
+import { getClaim, ClaimHonestState, sameRoot } from "../utils/claim";
 import { getBlocksAndCheckFinality, getOutboxReadBlock, resolveSettledReadBlocks } from "../utils/arbToEthState";
 import { getLastClaimedEpoch } from "../utils/graphQueries";
 import { BotEvents } from "../utils/botEvents";
@@ -280,9 +280,11 @@ async function makeClaim({
     report(EpochOutcome.UNDECIDABLE);
     return null;
   }
-  // With no claim found at all, the outbox state root alone decides.
+  // With no claim found at all, the outbox state root alone decides. Roots are compared as bytes:
+  // the last claimed one may come from the indexer, spelled in another hex case.
   const newMessagesToBridge =
-    savedSnapshot != outboxStateRoot && (lastClaimedStateroot === null || savedSnapshot != lastClaimedStateroot);
+    !sameRoot(savedSnapshot, outboxStateRoot) &&
+    (lastClaimedStateroot === null || !sameRoot(savedSnapshot, lastClaimedStateroot));
   if (newMessagesToBridge) {
     await transactionHandler.makeClaim(savedSnapshot);
     report(EpochOutcome.PENDING);

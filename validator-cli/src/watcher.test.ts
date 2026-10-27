@@ -1,7 +1,7 @@
 jest.mock("./utils/envValidation", () => ({ validateEnvironment: jest.fn() }));
 jest.mock("./utils/logger", () => ({ initialize: jest.fn() }));
 jest.mock("./utils/heartbeat", () => ({ sendHeartbeat: jest.fn() }));
-jest.mock("./utils/claim", () => ({ getClaim: jest.fn() }));
+jest.mock("./utils/claim", () => ({ getClaim: jest.fn(), sameRoot: jest.requireActual("./utils/claim").sameRoot }));
 jest.mock("./helpers/claimer", () => ({ checkAndClaim: jest.fn() }));
 jest.mock("./helpers/validator", () => ({ challengeAndResolveClaim: jest.fn() }));
 jest.mock("./helpers/snapshot", () => ({ saveSnapshot: jest.fn() }));
