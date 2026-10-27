@@ -44,21 +44,36 @@ interface MessageSentsResponse {
   MessageSent: MessageSent[];
 }
 
+// Page size of the MessageSent query. The server may cap a page below it, so only an empty page ends the read
+const NONCE_PAGE_SIZE = 1000;
+
 /**
- * Get the nonces of messages sent by a given sender
+ * Get the nonces of messages sent by a given sender, page by page until an empty page.
+ * Already-relayed rows at or above `nonce` are included, so a long history needs several pages.
  * @param chainId The chain id of the veaOutbox chain
+ * @param inbox The address of the veaInbox
  * @param nonce The nonce of the first message to relay
  * @param msgSender The address of the sender
- * @returns The nonces of the messages sent by the sender
+ * @param network The network name, for error reporting
+ * @returns All the nonces at or above `nonce` of the messages sent by the sender, in ascending order
  */
-const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSender: string, network: string) => {
+const getNonceFrom = async (
+  chainId: number,
+  inbox: string,
+  nonce: number,
+  msgSender: string,
+  network: string
+): Promise<number[]> => {
   const subgraph = process.env.ENVIO_URL!;
+  const nonces: number[] = [];
   try {
-    const result = (await request(
-      subgraph,
-      `{
+    for (;;) {
+      const result = (await request(
+        subgraph,
+        `{
         MessageSent(
-          limit: 1000,
+          limit: ${NONCE_PAGE_SIZE},
+          offset: ${nonces.length},
           where: {
             inbox: { id: { _eq: "${inbox}" } },
             nonce: { _gte: ${nonce} },
@@ -69,9 +84,12 @@ const getNonceFrom = async (chainId: number, inbox: string, nonce: number, msgSe
           nonce
         }
       }`
-    )) as MessageSentsResponse;
+      )) as MessageSentsResponse;
 
-    return result[`MessageSent`].map((a: { nonce: string | number }) => Number(a.nonce));
+      const page = result[`MessageSent`];
+      if (page.length === 0) return nonces;
+      nonces.push(...page.map((a: { nonce: string | number }) => Number(a.nonce)));
+    }
   } catch (e) {
     throw new DataError("Failed to fetch nonce(subgraph)", chainId, network, { cause: e });
   }
