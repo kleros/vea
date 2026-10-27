@@ -29,7 +29,7 @@ jobs:
         with:
           submodules: recursive
 
-      # Node from the root package.json Volta pin (24.4.0).
+      # Node from the root package.json Volta pin.
       - name: Setup Node.js environment
         uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
