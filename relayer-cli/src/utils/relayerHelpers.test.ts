@@ -63,6 +63,41 @@ describe("relayerHelpers", () => {
       expect(mockUpdateStateFile).not.toHaveBeenCalled();
       expect(nonce).toBe(10);
     });
+    it.each([
+      '{"ts":1,"nonce":null}',
+      '{"ts":1,"nonce":"5"}',
+      '{"ts":1,"nonce":-5}',
+      '{"ts":1,"nonce":1.5}',
+      '{"ts":1}',
+    ])("reads the nonce of the state file %s as 0", async (stateFile) => {
+      fileSystem.existsSync.mockReturnValue(true);
+      fileSystem.readFileSync.mockReturnValue(stateFile);
+      const result = await initialize(
+        sourceChainId,
+        targetChainId,
+        network,
+        emitter as any,
+        claimLock,
+        mockUpdateStateFile,
+        fileSystem as any
+      );
+      expect(result).toEqual({ nonce: 0 });
+      expect(mockUpdateStateFile).not.toHaveBeenCalled();
+    });
+    it("still reads a stored nonce of 42", async () => {
+      fileSystem.existsSync.mockReturnValue(true);
+      fileSystem.readFileSync.mockReturnValue('{"ts":1,"nonce":42}');
+      const result = await initialize(
+        sourceChainId,
+        targetChainId,
+        network,
+        emitter as any,
+        claimLock,
+        mockUpdateStateFile,
+        fileSystem as any
+      );
+      expect(result).toEqual({ nonce: 42 });
+    });
   });
 
   describe("updateStateFile", () => {

@@ -34,6 +34,8 @@ describe("envioQueries", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Drop queued mockResolvedValueOnce answers a failed test left unused
+    mockRequest.mockReset();
     process.env.RELAYER_ENVIO_YAHO = "http://envio.test/v1/graphql";
   });
 
@@ -104,22 +106,142 @@ describe("envioQueries", () => {
       expect(toBlock).toBe(200);
     });
 
-    it("should checkpoint the last fetched message when the batch is full", async () => {
-      const rows = Array.from({ length: 10 }, (_, i) =>
-        makeEnvioRow({ nonce: String(i), blockNumber: String(100 + i) })
-      );
+    it("should not query the boundary block when the batch is not full", async () => {
       mockRequest.mockResolvedValue({
+        MessageDispatched: [makeEnvioRow({ blockNumber: "100" })],
+        chain_metadata: [{ latest_processed_block: 200 }],
+      });
+      await getDispatchedMessagesFromEnvio(sourceChainId, targetChainId, yahoAddress, fromBlock);
+      expect(mockRequest).toHaveBeenCalledTimes(1);
+    });
+
+    describe("with a full batch", () => {
+      const row = (nonce: number, blockNumber: number) =>
+        makeEnvioRow({ messageId: String(1000 + nonce), nonce: String(nonce), blockNumber: String(blockNumber) });
+      const fullBatch = (rows: EnvioMessageDispatched[]) => ({
         MessageDispatched: rows,
         chain_metadata: [{ latest_processed_block: 500 }],
       });
-      const { txns, toBlock } = await getDispatchedMessagesFromEnvio(
+      const blockQueryVars = (blockNumber: number, offset: number) => ({
         sourceChainId,
         targetChainId,
-        yahoAddress,
-        fromBlock
-      );
-      expect(txns).toHaveLength(10);
-      expect(toBlock).toBe(109);
+        yaho: yahoAddress,
+        blockNumber,
+        limit: 100,
+        offset,
+      });
+
+      it("should take every message of the last block and checkpoint that block", async () => {
+        // Rows 0-9 in blocks 100-109; block 109 also holds nonces 10 and 11, beyond the limit
+        const rows = Array.from({ length: 10 }, (_, i) => row(i, 100 + i));
+        mockRequest
+          .mockResolvedValueOnce(fullBatch(rows))
+          .mockResolvedValueOnce({ MessageDispatched: [row(9, 109), row(10, 109), row(11, 109)] })
+          .mockResolvedValueOnce({ MessageDispatched: [] });
+
+        const { txns, toBlock } = await getDispatchedMessagesFromEnvio(
+          sourceChainId,
+          targetChainId,
+          yahoAddress,
+          fromBlock
+        );
+
+        expect(toBlock).toBe(109);
+        expect(txns.map((txn) => txn.message.nonce)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+        expect(mockRequest).toHaveBeenCalledTimes(3);
+        expect(mockRequest).toHaveBeenNthCalledWith(
+          2,
+          "http://envio.test/v1/graphql",
+          expect.stringContaining("blockNumber: { _eq: $blockNumber }"),
+          blockQueryVars(109, 0)
+        );
+        expect(mockRequest).toHaveBeenNthCalledWith(3, expect.any(String), expect.any(String), blockQueryVars(109, 3));
+      });
+
+      it("should take the whole block when every message of the batch shares one block", async () => {
+        const rows = Array.from({ length: 10 }, (_, i) => row(i, 105));
+        const block = Array.from({ length: 12 }, (_, i) => row(i, 105));
+        mockRequest
+          .mockResolvedValueOnce(fullBatch(rows))
+          .mockResolvedValueOnce({ MessageDispatched: block })
+          .mockResolvedValueOnce({ MessageDispatched: [] });
+
+        const { txns, toBlock } = await getDispatchedMessagesFromEnvio(
+          sourceChainId,
+          targetChainId,
+          yahoAddress,
+          fromBlock
+        );
+
+        expect(toBlock).toBe(105);
+        expect(txns.map((txn) => txn.message.nonce)).toEqual(block.map((_, i) => i));
+      });
+
+      it("should read the boundary block page by page until an empty page", async () => {
+        const rows = Array.from({ length: 10 }, (_, i) => row(i, 105));
+        const firstPage = Array.from({ length: 100 }, (_, i) => row(i, 105));
+        const lastPage = Array.from({ length: 5 }, (_, i) => row(100 + i, 105));
+        mockRequest
+          .mockResolvedValueOnce(fullBatch(rows))
+          .mockResolvedValueOnce({ MessageDispatched: firstPage })
+          .mockResolvedValueOnce({ MessageDispatched: lastPage })
+          .mockResolvedValueOnce({ MessageDispatched: [] });
+
+        const { txns, toBlock } = await getDispatchedMessagesFromEnvio(
+          sourceChainId,
+          targetChainId,
+          yahoAddress,
+          fromBlock
+        );
+
+        expect(toBlock).toBe(105);
+        expect(txns).toHaveLength(105);
+        expect(mockRequest).toHaveBeenCalledTimes(4);
+        expect(mockRequest).toHaveBeenNthCalledWith(2, expect.any(String), expect.any(String), blockQueryVars(105, 0));
+        expect(mockRequest).toHaveBeenNthCalledWith(
+          3,
+          expect.any(String),
+          expect.any(String),
+          blockQueryVars(105, 100)
+        );
+        expect(mockRequest).toHaveBeenNthCalledWith(
+          4,
+          expect.any(String),
+          expect.any(String),
+          blockQueryVars(105, 105)
+        );
+      });
+
+      it("should keep reading when the server caps a page below the page size", async () => {
+        // A server row cap of 40: two short pages still precede the end of the block
+        const rows = Array.from({ length: 10 }, (_, i) => row(i, 105));
+        mockRequest
+          .mockResolvedValueOnce(fullBatch(rows))
+          .mockResolvedValueOnce({ MessageDispatched: Array.from({ length: 40 }, (_, i) => row(i, 105)) })
+          .mockResolvedValueOnce({ MessageDispatched: Array.from({ length: 40 }, (_, i) => row(40 + i, 105)) })
+          .mockResolvedValueOnce({ MessageDispatched: [] });
+
+        const { txns, toBlock } = await getDispatchedMessagesFromEnvio(
+          sourceChainId,
+          targetChainId,
+          yahoAddress,
+          fromBlock
+        );
+
+        expect(toBlock).toBe(105);
+        expect(txns.map((txn) => txn.message.nonce)).toEqual(Array.from({ length: 80 }, (_, i) => i));
+        expect(mockRequest).toHaveBeenNthCalledWith(3, expect.any(String), expect.any(String), blockQueryVars(105, 40));
+        expect(mockRequest).toHaveBeenNthCalledWith(4, expect.any(String), expect.any(String), blockQueryVars(105, 80));
+      });
+
+      it("should wrap a boundary block query failure in DataError", async () => {
+        const rows = Array.from({ length: 10 }, (_, i) => row(i, 100 + i));
+        mockRequest.mockResolvedValueOnce(fullBatch(rows)).mockRejectedValueOnce(new Error("connection refused"));
+
+        await expect(
+          getDispatchedMessagesFromEnvio(sourceChainId, targetChainId, yahoAddress, fromBlock)
+        ).rejects.toMatchObject({ name: "DataError" });
+      });
     });
 
     it("should not move the checkpoint backwards when the indexer head lags fromBlock", async () => {
