@@ -30,6 +30,23 @@ const nodeAnswerOf = (err: any): { code: number; message?: string } | undefined 
   typeof err?.error?.code === "number" ? err.error : undefined;
 
 /**
+ * A failed attempt that is the call's answer rather than an endpoint failure, so `send` does not fail
+ * over: a revert, or a node's verdict on eth_sendRawTransaction, is thrown as is.
+ *
+ * @returns the send's hash when the node already holds the transaction, undefined to try the next endpoint
+ */
+const finalAnswerOf = (method: string, params: Array<any>, err: any): string | undefined => {
+  if (isExecutionRevert(err)) throw err;
+  const answer = nodeAnswerOf(err);
+  if (method === "eth_sendRawTransaction" && answer && isBroadcastVerdict(answer)) {
+    // The node holds it: the send succeeded. Any other verdict is thrown as the node gave it.
+    if (ALREADY_KNOWN.test(String(answer.message ?? ""))) return keccak256(params[0]);
+    throw err;
+  }
+  return undefined;
+};
+
+/**
  * ethers v5 (`@ethersproject/providers`) JSON-RPC provider that transparently fails over to the next
  * endpoint when a request fails. A reverted call is rethrown as is: it is not retried elsewhere
  * nor logged as an RPC failure (callers such as the `findBatchContainingBlock` bisection expect it).
@@ -70,15 +87,10 @@ export class FallbackProviderV5 extends JsonRpcProvider {
         }
         return result;
       } catch (err: any) {
-        if (isExecutionRevert(err)) throw err;
-        const answer = nodeAnswerOf(err);
-        if (method === "eth_sendRawTransaction" && answer && isBroadcastVerdict(answer)) {
-          // The node holds it: the send succeeded. Any other verdict is thrown as the node gave it.
-          if (ALREADY_KNOWN.test(String(answer.message ?? ""))) return keccak256(params[0]);
-          throw err;
-        }
+        const heldHash = finalAnswerOf(method, params, err);
+        if (heldHash !== undefined) return heldHash;
         lastErr = err;
-        if (answer) lastAnswer = err;
+        if (nodeAnswerOf(err)) lastAnswer = err;
         this.emitter.emit(BotEvents.RPC_FAILURE, {
           method,
           from: this.label(this.activeIndex),

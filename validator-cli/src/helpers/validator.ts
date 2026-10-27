@@ -66,23 +66,19 @@ export async function challengeAndResolveClaim({
   // Arbitrum's L1: the Sepolia router on chain 10200, the outbox chain itself otherwise.
   const queryRpc = veaRouterProvider ?? veaOutboxProvider;
 
-  if (!transactionHandler) {
-    const TransactionHandler = fetchTransactionHandler(chainId, Network.TESTNET);
-    transactionHandler = new TransactionHandler({
-      chainId,
-      network: Network.TESTNET, // Hardcoded as TESTNET & MAINNET have same contracts
-      epoch,
-      veaInbox,
-      veaOutbox,
-      veaInboxProvider,
-      veaOutboxProvider,
-      veaRouterProvider,
-      emitter,
-      claim,
-    });
-  } else {
-    transactionHandler.claim = claim;
-  }
+  transactionHandler = handlerForClaim({
+    chainId,
+    claim,
+    epoch,
+    veaInbox,
+    veaInboxProvider,
+    veaOutboxProvider,
+    veaRouterProvider,
+    veaOutbox,
+    transactionHandler,
+    emitter,
+    fetchTransactionHandler,
+  });
   const network = transactionHandler.network ?? Network.TESTNET;
   // Resolved claims, deposit withdrawals and the escape hatch read only the outbox: they run
   // before the settled-read gate, so a deposit is recovered even when inbox or L1 reads fail.
@@ -143,29 +139,84 @@ export async function challengeAndResolveClaim({
     report(EpochOutcome.PENDING);
     return transactionHandler;
   }
-  try {
-    await handleResolveFlow({
-      chainId,
-      epoch,
-      epochPeriod,
-      veaInbox,
-      veaInboxProvider,
-      veaOutbox,
-      veaOutboxProvider,
-      queryRpc,
-      transactionHandler,
-      fetchClaimResolveState,
-      scanBudget,
-    });
-  } catch (error) {
-    // The budgeted scan for our send resumes next visit: whether to send is not known yet.
-    if (!(error instanceof ClaimScanPausedError)) throw error;
-    report(EpochOutcome.UNDECIDABLE);
-    return transactionHandler;
-  }
-  report(EpochOutcome.PENDING);
+  const scanPaused = await resolveOrScanPaused({
+    chainId,
+    epoch,
+    epochPeriod,
+    veaInbox,
+    veaInboxProvider,
+    veaOutbox,
+    veaOutboxProvider,
+    queryRpc,
+    transactionHandler,
+    fetchClaimResolveState,
+    scanBudget,
+  });
+  // The budgeted scan for our send resumes next visit: whether to send is not known yet.
+  report(scanPaused ? EpochOutcome.UNDECIDABLE : EpochOutcome.PENDING);
   return transactionHandler;
 }
+
+/**
+ * The cycle's transaction handler for the claim: a new one when none is carried over, else the
+ * carried one with its claim replaced.
+ */
+const handlerForClaim = ({
+  chainId,
+  claim,
+  epoch,
+  veaInbox,
+  veaInboxProvider,
+  veaOutboxProvider,
+  veaRouterProvider,
+  veaOutbox,
+  transactionHandler,
+  emitter,
+  fetchTransactionHandler,
+}: Pick<
+  ChallengeAndResolveClaimParams,
+  | "chainId"
+  | "claim"
+  | "epoch"
+  | "veaInbox"
+  | "veaInboxProvider"
+  | "veaOutboxProvider"
+  | "veaRouterProvider"
+  | "veaOutbox"
+  | "transactionHandler"
+> & {
+  emitter: typeof defaultEmitter;
+  fetchTransactionHandler: typeof getTransactionHandler;
+}): ITransactionHandler => {
+  if (transactionHandler) {
+    transactionHandler.claim = claim;
+    return transactionHandler;
+  }
+  const TransactionHandler = fetchTransactionHandler(chainId, Network.TESTNET);
+  return new TransactionHandler({
+    chainId,
+    network: Network.TESTNET, // Hardcoded as TESTNET & MAINNET have same contracts
+    epoch,
+    veaInbox,
+    veaOutbox,
+    veaInboxProvider,
+    veaOutboxProvider,
+    veaRouterProvider,
+    emitter,
+    claim,
+  });
+};
+
+/** `handleResolveFlow`, with a paused budgeted scan for our send returned as true rather than thrown. */
+const resolveOrScanPaused = async (params: ResolveFlowParams): Promise<boolean> => {
+  try {
+    await handleResolveFlow(params);
+    return false;
+  } catch (error) {
+    if (error instanceof ClaimScanPausedError) return true;
+    throw error;
+  }
+};
 
 /**
  * A resolved claim: withdraw the challenge deposit when the challenger won and it is ours

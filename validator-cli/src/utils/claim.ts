@@ -609,6 +609,57 @@ const getOwnSendFacts = async ({
   return facts;
 };
 
+/** What `firstOwnCurrent` checks each send against: our signer, the inbox and the current claim hash. */
+type OwnCurrentLookup = Omit<Parameters<typeof getOwnSendFacts>[0], "transactionHash"> & { claimHash: string };
+
+/** The first of `sents` that is ours and carries the current claim. */
+const firstOwnCurrent = async (
+  sents: SnapshotSentRef[],
+  { claimHash, ...lookup }: OwnCurrentLookup
+): Promise<SnapshotSentRef | undefined> => {
+  for (const sent of sents) {
+    const facts = await getOwnSendFacts({ transactionHash: sent.transactionHash, ...lookup });
+    if (facts?.claimHash.toLowerCase() === claimHash.toLowerCase()) return sent;
+  }
+  return undefined;
+};
+
+/** The indexer's `SnapshotSent` for the epoch, if any, as a send that sorts after every scanned one. */
+const graphSends = async (
+  fetchSnapshotSentFromGraph: typeof getSnapshotSentForEpoch,
+  epoch: number,
+  inboxAddress: string,
+  chainId: number
+): Promise<SnapshotSentRef[]> => {
+  const sentSnapshotFromGraph = await fetchSnapshotSentFromGraph(epoch, inboxAddress, chainId);
+  return sentSnapshotFromGraph
+    ? [{ transactionHash: sentSnapshotFromGraph.txHash, blockNumber: Infinity, index: 0 }]
+    : [];
+};
+
+/**
+ * The `SnapshotSent` logs to check for ours, with where a budgeted scan paused short of the inbox
+ * head. A failed scan is rethrown when budgeted (its cursor is partial, and its indexer send was
+ * already tried); otherwise the final logs found so far and the indexer's send stand in for it.
+ */
+const listSnapshotSents = async (
+  params: Parameters<typeof findSnapshotSents>[0],
+  indexerSends: () => Promise<SnapshotSentRef[]>
+): Promise<{ sents: SnapshotSentRef[]; paused?: { scannedTo: number; latest: number } }> => {
+  try {
+    const scan = await findSnapshotSents(params);
+    return { sents: scan.sents, paused: scan.scannedTo < scan.latest ? scan : undefined };
+  } catch (error) {
+    if (params.scanBudget) throw error;
+    // The indexer knows only one `SnapshotSent` per epoch; the final logs found so far still count.
+    const sents = [...(params.cache.snapshotSent.get(params.cacheKey)?.logs ?? [])];
+    for (const sent of await indexerSends()) {
+      if (!sents.some((log) => log.transactionHash === sent.transactionHash)) sents.push(sent);
+    }
+    return { sents };
+  }
+};
+
 /**
  * Fetches the claim resolve state: whether one of our own `sendSnapshot` transactions carrying
  * the current claim struct is in flight, and whether its L2 -> L1 message is ready to execute.
@@ -653,61 +704,22 @@ const getClaimResolveState = async ({
 
   const inboxAddress: string = await veaInbox.getAddress();
   const cacheKey = `${chainId}_${inboxAddress}_${epoch}`;
-
-  /** The first of `sents` that is ours and carries the current claim. */
-  const firstOwnCurrent = async (sents: SnapshotSentRef[]): Promise<SnapshotSentRef | undefined> => {
-    for (const sent of sents) {
-      const facts = await getOwnSendFacts({
-        transactionHash: sent.transactionHash,
-        veaInbox,
-        inboxAddress,
-        signerAddress,
-        veaInboxProvider,
-        cache,
-      });
-      if (facts?.claimHash.toLowerCase() === claimHash.toLowerCase()) return sent;
-    }
-    return undefined;
-  };
-  const graphSend = async (): Promise<SnapshotSentRef[]> => {
-    const sentSnapshotFromGraph = await fetchSnapshotSentFromGraph(epoch, inboxAddress, chainId);
-    return sentSnapshotFromGraph
-      ? [{ transactionHash: sentSnapshotFromGraph.txHash, blockNumber: Infinity, index: 0 }]
-      : [];
-  };
+  const lookup: OwnCurrentLookup = { veaInbox, inboxAddress, signerAddress, veaInboxProvider, cache, claimHash };
+  const indexerSends = () => graphSends(fetchSnapshotSentFromGraph, epoch, inboxAddress, chainId);
 
   // An old epoch's scan can take many cycles: our current send already final in its cursor, else the
   // indexer's send when it is ours, spares it. The cursor goes first, so an epoch already decided
   // does not wait on a hung indexer at every visit.
   let ours = scanBudget
-    ? (await firstOwnCurrent(cache.snapshotSent.get(cacheKey)?.logs ?? [])) ??
-      (await firstOwnCurrent(await graphSend()))
+    ? (await firstOwnCurrent(cache.snapshotSent.get(cacheKey)?.logs ?? [], lookup)) ??
+      (await firstOwnCurrent(await indexerSends(), lookup))
     : undefined;
   if (!ours) {
-    let snapshotSents: SnapshotSentRef[];
-    let paused: { scannedTo: number; latest: number } | undefined;
-    try {
-      const scan = await findSnapshotSents({
-        veaInbox,
-        veaInboxProvider,
-        epoch,
-        epochPeriod,
-        cacheKey,
-        cache,
-        scanBudget,
-      });
-      snapshotSents = scan.sents;
-      if (scan.scannedTo < scan.latest) paused = scan;
-    } catch (error) {
-      // A budgeted scan's cursor is partial, and its indexer send was tried above: retry next visit.
-      if (scanBudget) throw error;
-      // The indexer knows only one `SnapshotSent` per epoch; the final logs found so far still count.
-      snapshotSents = [...(cache.snapshotSent.get(cacheKey)?.logs ?? [])];
-      for (const sent of await graphSend()) {
-        if (!snapshotSents.some((log) => log.transactionHash === sent.transactionHash)) snapshotSents.push(sent);
-      }
-    }
-    ours = await firstOwnCurrent(snapshotSents);
+    const { sents, paused } = await listSnapshotSents(
+      { veaInbox, veaInboxProvider, epoch, epochPeriod, cacheKey, cache, scanBudget },
+      indexerSends
+    );
+    ours = await firstOwnCurrent(sents, lookup);
     if (!ours && paused) {
       emitter.emit(BotEvents.CLAIM_LOG_SCAN_PAUSED, epoch, paused.scannedTo, paused.latest);
       throw new ClaimScanPausedError(epoch, paused.scannedTo, paused.latest);

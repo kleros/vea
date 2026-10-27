@@ -415,38 +415,103 @@ async function verifyClaim({
     return transactionHandler;
   }
   if (!ours) {
-    // A third party's claim is verified too (it is what advances `latestVerifiedEpoch`), but
-    // only once it is checked against `snapshots[E]` at a settled inbox block: the claimer never
-    // pushes a claim it has not checked toward verification. A mismatch is fraud, which the
-    // challenger path handles; it is reported here too, since `--path=claimer` runs no challenger.
-    const settledBlocks = await fetchSettledReadBlocks({
-      inboxProvider: transactionHandler.veaInboxProvider,
-      outboxProvider: veaOutboxProvider,
-      l1Provider,
+    const thirdPartyOutcome = await checkThirdPartyClaim({
+      chainId,
+      network,
       epoch,
       epochPeriod,
-      emitter: emitter as any,
+      transactionHandler,
+      claim,
+      veaInbox,
+      veaOutboxProvider,
+      l1Provider,
+      emitter,
       fetchBlocksAndCheckFinality,
+      fetchSettledReadBlocks,
     });
-    if (!settledBlocks) {
-      report(EpochOutcome.UNDECIDABLE);
-      return null;
-    }
-    const savedSnapshot = await veaInbox.snapshots(epoch, { blockTag: settledBlocks.inboxBlock });
-    // Compare the bytes, not the spelling: a root from the indexer may differ in hex case.
-    if (String(savedSnapshot).toLowerCase() !== String(claim.stateRoot).toLowerCase()) {
-      emitter.emit(BotEvents.ALERT, {
-        level: "error",
-        code: "claim_mismatch_unverified",
-        chainId,
-        network,
-        epoch,
-        details: { claimer: claim.claimer, claimed: claim.stateRoot, snapshot: savedSnapshot },
-      });
-      report(EpochOutcome.PENDING);
-      return transactionHandler;
+    if (thirdPartyOutcome) {
+      report(thirdPartyOutcome);
+      return thirdPartyOutcome === EpochOutcome.PENDING ? transactionHandler : null;
     }
   }
+  await advanceVerification({
+    chainId,
+    network,
+    epoch,
+    transactionHandler,
+    claim,
+    veaOutbox,
+    veaOutboxProvider,
+    emitter,
+  });
+  report(EpochOutcome.PENDING);
+  return transactionHandler;
+}
+
+/**
+ * A third party's claim is verified too (it is what advances `latestVerifiedEpoch`), but only once
+ * it is checked against `snapshots[E]` at a settled inbox block: the claimer never pushes a claim it
+ * has not checked toward verification. A mismatch is fraud, which the challenger path handles; it is
+ * reported here too, since `--path=claimer` runs no challenger.
+ *
+ * @returns null when the claim matches the snapshot, else the outcome to report (UNDECIDABLE when no
+ * settled read block exists, PENDING on a mismatch)
+ */
+async function checkThirdPartyClaim({
+  chainId,
+  network,
+  epoch,
+  epochPeriod,
+  transactionHandler,
+  claim,
+  veaInbox,
+  veaOutboxProvider,
+  l1Provider,
+  emitter,
+  fetchBlocksAndCheckFinality,
+  fetchSettledReadBlocks,
+}: Omit<VerifyClaimParams, "veaOutbox" | "report">): Promise<EpochOutcome | null> {
+  const settledBlocks = await fetchSettledReadBlocks({
+    inboxProvider: transactionHandler.veaInboxProvider,
+    outboxProvider: veaOutboxProvider,
+    l1Provider,
+    epoch,
+    epochPeriod,
+    emitter: emitter as any,
+    fetchBlocksAndCheckFinality,
+  });
+  if (!settledBlocks) return EpochOutcome.UNDECIDABLE;
+  const savedSnapshot = await veaInbox.snapshots(epoch, { blockTag: settledBlocks.inboxBlock });
+  // Compare the bytes, not the spelling: a root from the indexer may differ in hex case.
+  if (String(savedSnapshot).toLowerCase() === String(claim.stateRoot).toLowerCase()) return null;
+  emitter.emit(BotEvents.ALERT, {
+    level: "error",
+    code: "claim_mismatch_unverified",
+    chainId,
+    network,
+    epoch,
+    details: { claimer: claim.claimer, claimed: claim.stateRoot, snapshot: savedSnapshot },
+  });
+  return EpochOutcome.PENDING;
+}
+
+/**
+ * Moves an unchallenged claim toward verification: starts the censorship test, or restarts it when
+ * it failed, or verifies the snapshot once it passed.
+ */
+async function advanceVerification({
+  chainId,
+  network,
+  epoch,
+  transactionHandler,
+  claim,
+  veaOutbox,
+  veaOutboxProvider,
+  emitter,
+}: Pick<
+  VerifyClaimParams,
+  "chainId" | "network" | "epoch" | "transactionHandler" | "claim" | "veaOutbox" | "veaOutboxProvider" | "emitter"
+>): Promise<void> {
   // The outbox read block (finalized, or latest minus 64 during a finality stall).
   const readBlock = await getOutboxReadBlock({ outboxProvider: veaOutboxProvider, emitter: emitter as any });
   if (claim.timestampVerification == 0) {
@@ -478,8 +543,6 @@ async function verifyClaim({
       await transactionHandler.verifySnapshot(readBlock.timestamp);
     }
   }
-  report(EpochOutcome.PENDING);
-  return transactionHandler;
 }
 
 export { checkAndClaim, CheckAndClaimParams, CensorshipTestStatus };

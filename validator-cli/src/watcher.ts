@@ -416,14 +416,7 @@ const collectEpochsToWatch = ({
     }
     return { toWatch: [currentEpoch] };
   }
-  if (!route.coldStartDone) {
-    const epochRange = setEpochRange({ chainId: route.chainId, currentTimestamp: now, epochPeriod, now: now * 1000 });
-    for (const epoch of epochRange) {
-      if (!route.epochs.has(epoch)) route.epochs.set(epoch, { nullStreak: 0, done: false, undecidableStreak: 0 });
-    }
-    route.discoverClaimsBelow = Math.min(currentEpoch, ...epochRange);
-    route.coldStartDone = true;
-  }
+  if (!route.coldStartDone) seedColdStartRange(route, now, currentEpoch, epochPeriod);
   const window = watchWindow(now, epochPeriod, sequencerDelayLimit, minChallengePeriod);
   // Newest first: the claimable epoch is the most time-sensitive. A window epoch that reported
   // DONE is skipped until it leaves the window: DONE is final (no claim can appear for an epoch
@@ -433,12 +426,34 @@ const collectEpochsToWatch = ({
   for (let epoch = window.high; epoch >= window.low; epoch--) {
     if (epoch == window.high || !route.epochs.get(epoch)?.done) inWindow.push(epoch);
   }
-  const backlog = [...route.epochs.keys()].filter((epoch) => epoch < window.low).sort((a, b) => b - a);
+  const picked = pickBacklogEpochs(route, window.low, backlogEpochsPerCycle);
+  return { toWatch: [...inWindow, ...picked], windowLow: window.low };
+};
+
+/**
+ * A route's first cycle: track the cold-start range, so a restarted bot picks up disputes it started
+ * earlier, and mark everything older for `discoverOlderClaims`.
+ */
+const seedColdStartRange = (route: RouteState, now: number, currentEpoch: number, epochPeriod: number) => {
+  const epochRange = setEpochRange({ chainId: route.chainId, currentTimestamp: now, epochPeriod, now: now * 1000 });
+  for (const epoch of epochRange) {
+    if (!route.epochs.has(epoch)) route.epochs.set(epoch, { nullStreak: 0, done: false, undecidableStreak: 0 });
+  }
+  route.discoverClaimsBelow = Math.min(currentEpoch, ...epochRange);
+  route.coldStartDone = true;
+};
+
+/**
+ * Up to `backlogEpochsPerCycle` tracked epochs below the window, newest first, resuming below where
+ * the last cycle stopped (`backlogCursor`) and wrapping to the top once the bottom is reached.
+ */
+const pickBacklogEpochs = (route: RouteState, windowLow: number, backlogEpochsPerCycle: number): number[] => {
+  const backlog = [...route.epochs.keys()].filter((epoch) => epoch < windowLow).sort((a, b) => b - a);
   const cursor = route.backlogCursor;
   const below = cursor === undefined ? backlog : backlog.filter((epoch) => epoch < cursor);
   const picked = (below.length > 0 ? below : backlog).slice(0, backlogEpochsPerCycle);
   if (picked.length > 0) route.backlogCursor = picked[picked.length - 1];
-  return { toWatch: [...inWindow, ...picked], windowLow: window.low };
+  return picked;
 };
 
 /**
