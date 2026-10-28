@@ -4,6 +4,21 @@ on:
   push:
     branches: [dev]
     tags: ["v*"]
+    # Only the images' inputs: what the two Dockerfiles copy (the bot workspace, contracts and
+    # the root Yarn files) plus .dockerignore and this file. A merge that touches none of them
+    # would publish the same bot code again behind another approval. GitHub ignores path
+    # filters on tag pushes, so every v* tag still publishes. Past 3,000 changed files the
+    # filter may skip a dev push; publish that one with workflow_dispatch.
+    paths:
+      - "relayer-cli/**"
+      - "validator-cli/**"
+      - "contracts/**"
+      - "package.json"
+      - "yarn.lock"
+      - ".yarnrc.yml"
+      - ".yarn/releases/**"
+      - ".dockerignore"
+      - ".github/workflows/publish-docker.yml"
   workflow_dispatch:
 
 # Declare default permissions as read only.
