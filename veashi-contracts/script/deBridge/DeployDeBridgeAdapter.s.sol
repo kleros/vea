@@ -1,32 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "forge-std/console.sol";
-import "../../src/adapters/deBridge/DeBridgeAdapter.sol";
-import "../helpers/DeploymentState.sol";
+import {console} from "forge-std/console.sol";
+import {DeBridgeAdapter} from "../../src/adapters/deBridge/DeBridgeAdapter.sol";
+import {DeBridgeInputs} from "./DeBridgeInputs.sol";
 
-contract DeployDeBridgeAdapter is DeploymentState {
+contract DeployDeBridgeAdapter is DeBridgeInputs {
     function run() external {
-        // read deployer key and start broadcasting
         uint256 pk = vm.envUint("DEPLOYER_KEY");
-        vm.startBroadcast(pk);
+        address deployer = vm.addr(pk);
+        _requireAdapterChain();
+        _requireNotDeployed("deBridgeAdapter");
 
-        //
-        // Deploy & configure DeBridgeAdapter
-        //
-        address adapterDeBridgeGate = vm.envAddress("DEBRIDGE_ADAPTER_GATE_ADDRESS");
-        DeBridgeAdapter adapter = new DeBridgeAdapter(adapterDeBridgeGate);
-        _updateLocal("deBridgeAdapter", address(adapter));
-        console.log(" DeBridgeAdapter deployed at:", address(adapter));
-
-        // // read chain‐specific setup from env
-        uint256 reporterChainId = vm.envUint("DEBRIDGE_REPORTER_CHAIN_ID");
+        DeBridgeAdapterInputs memory inputs = _deBridgeAdapterInputs();
         address reporter = _loadAddress(".deBridgeReporter");
 
-        // Set reporter for the given chainId
-        adapter.setReporterByChainId(reporterChainId, reporter);
-
+        vm.startBroadcast(pk);
+        DeBridgeAdapter adapter = new DeBridgeAdapter(inputs.gate, deployer);
+        // The CallProxy reports the source by deBridge id; the reporter is enabled under the EVM id.
+        adapter.setChainIdByDeBridgeChainId(inputs.reporterDeBridgeChainId, REPORTER_CHAIN_ID);
+        adapter.setReporterByChainId(REPORTER_CHAIN_ID, reporter);
         vm.stopBroadcast();
+        console.log("DeBridgeAdapter deployed at:", address(adapter));
+
+        require(address(adapter.deBridgeGate()) == inputs.gate, "DeBridgeAdapter deBridgeGate mismatch");
+        require(adapter.governor() == deployer, "DeBridgeAdapter governor mismatch");
+        require(
+            adapter.chainIds(inputs.reporterDeBridgeChainId) == REPORTER_CHAIN_ID,
+            "DeBridgeAdapter chainIds mismatch"
+        );
+        require(adapter.enabledReporters(REPORTER_CHAIN_ID) == reporter, "DeBridgeAdapter enabledReporters mismatch");
+
+        _updateLocal("deBridgeAdapter", address(adapter));
     }
 }

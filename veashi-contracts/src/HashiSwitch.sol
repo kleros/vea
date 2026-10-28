@@ -36,7 +36,7 @@ contract Switch {
         uint256 _threshold,
         IReporter[] memory _reporters,
         IAdapter[] memory _adapters
-    ) external payable {
+    ) external {
         bytes memory _msgData = abi.encode(msg.sender);
 
         (uint256 msgId, ) = yaho.dispatchMessageToAdapters(

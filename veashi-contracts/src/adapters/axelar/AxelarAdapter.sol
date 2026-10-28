@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AxelarExecutable} from "@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol";
 import {Adapter} from "../Adapter.sol";
+import {Governed} from "../../governance/Governed.sol";
 
-contract AxelarAdapter is Adapter, Ownable, AxelarExecutable {
+contract AxelarAdapter is Adapter, Governed, AxelarExecutable {
     string public constant PROVIDER = "axelar";
 
     mapping(bytes32 => bytes32) public enabledReporters;
@@ -15,13 +15,13 @@ contract AxelarAdapter is Adapter, Ownable, AxelarExecutable {
 
     event ReporterSet(uint256 indexed chainId, string name, string indexed reporter);
 
-    constructor(address axelarGateway) AxelarExecutable(axelarGateway) {} // solhint-disable no-empty-blocks
+    constructor(address axelarGateway, address governor_) AxelarExecutable(axelarGateway) Governed(governor_) {} // solhint-disable no-empty-blocks
 
     function setReporterByChain(
         uint256 chainId,
         string calldata chainName,
         string calldata reporter
-    ) external onlyOwner {
+    ) external onlyByGovernor {
         bytes32 chainNameHash = keccak256(bytes(chainName));
         enabledReporters[chainNameHash] = keccak256(bytes(reporter));
         chainIds[chainNameHash] = chainId;
@@ -29,7 +29,8 @@ contract AxelarAdapter is Adapter, Ownable, AxelarExecutable {
     }
 
     function _execute(
-        bytes32 /* commandId */,
+        bytes32,
+        /* commandId */
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
