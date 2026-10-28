@@ -1,0 +1,27 @@
+# The bot images build with the repository root as context (docker-compose.build.yml,
+# publish-docker.yml) and copy whole workspaces (`COPY validator-cli ./validator-cli`), so
+# anything matched here never reaches an image. Patterns match from the context root
+# only, unlike .gitignore, hence the `**/` prefixes.
+
+# Operator secrets: each bot's .env holds PRIVATE_KEY and keyed RPC URLs.
+**/.env
+**/.env.*
+!**/.env.dist
+
+# A host relayer's lock files: one baked into an image would seed a fresh state volume, and its
+# route would fail on every start (claimLock finds the lock). The tracked state/*.json checkpoints
+# still ship: a fresh volume is seeded with them instead of rescanning from block 0.
+relayer-cli/state/*.pid
+relayer-cli/state/*.pid.lock
+
+# Host installs and build output: the image installs and builds its own. A stale local
+# contracts/typechain-types would otherwise skip the contracts build in the Dockerfiles.
+**/node_modules
+.yarn/cache
+.yarn/install-state.gz
+contracts/artifacts
+contracts/cache
+contracts/typechain-types
+**/coverage
+
+.git
