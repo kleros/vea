@@ -1,13 +1,15 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
-import { ITransactionHandler, getTransactionHandler } from "../utils/transactionHandlers";
-import { getClaim, getClaimResolveState } from "../utils/claim";
+import { ITransactionHandler, getTransactionHandler, CannotFundError } from "../utils/transactionHandlers";
+import { getClaim, getClaimResolveState, ClaimScanBudget } from "../utils/claim";
+import { ClaimScanPausedError } from "../utils/errors";
 import { defaultEmitter } from "../utils/emitter";
 import { BotEvents } from "../utils/botEvents";
-import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
+import { getBlocksAndCheckFinality, getOutboxReadBlock, resolveSettledReadBlocks } from "../utils/arbToEthState";
 import { Network } from "../consts/bridgeRoutes";
+import { EpochOutcome, ReportOutcome } from "../utils/epochOutcome";
+import { handleBridgeShutdown, isOurAddress } from "./escapeHatch";
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { getBlockFromEpoch } from "../utils/epochHandler";
 
 export interface ChallengeAndResolveClaimParams {
   chainId: number;
@@ -24,8 +26,16 @@ export interface ChallengeAndResolveClaimParams {
   fetchClaim?: typeof getClaim;
   fetchClaimResolveState?: typeof getClaimResolveState;
   fetchBlocksAndCheckFinality?: typeof getBlocksAndCheckFinality;
+  fetchSettledReadBlocks?: typeof resolveSettledReadBlocks;
   fetchTransactionHandler?: typeof getTransactionHandler;
-  fetchBlockFromEpoch?: typeof getBlockFromEpoch;
+  /** Report what this cycle concluded for the epoch; see utils/epochOutcome.ts. */
+  reportOutcome?: ReportOutcome;
+  /**
+   * Set for an epoch below the watch window: the cycle's backlog scan budget, which bounds the
+   * scan for our sendSnapshot (`getClaimResolveState`). While that scan is paused the epoch is
+   * UNDECIDABLE and no snapshot is sent.
+   */
+  scanBudget?: ClaimScanBudget;
 }
 
 export async function challengeAndResolveClaim({
@@ -42,77 +52,231 @@ export async function challengeAndResolveClaim({
   veaRouterProvider,
   fetchClaimResolveState = getClaimResolveState,
   fetchBlocksAndCheckFinality = getBlocksAndCheckFinality,
+  fetchSettledReadBlocks = resolveSettledReadBlocks,
   fetchTransactionHandler = getTransactionHandler,
-  fetchBlockFromEpoch = getBlockFromEpoch,
+  reportOutcome,
+  scanBudget,
 }: ChallengeAndResolveClaimParams): Promise<ITransactionHandler | null> {
+  const report = (outcome: EpochOutcome) => reportOutcome?.(outcome);
   if (!claim) {
     emitter.emit(BotEvents.NO_CLAIM, epoch);
+    report(await noClaimOutcome({ veaOutbox, veaOutboxProvider, epoch, epochPeriod, emitter }));
     return null;
   }
+  // Arbitrum's L1: the Sepolia router on chain 10200, the outbox chain itself otherwise.
   const queryRpc = veaRouterProvider ?? veaOutboxProvider;
-  const res = await fetchBlocksAndCheckFinality(queryRpc, veaInboxProvider, epoch, epochPeriod, emitter);
-  const [arbitrumBlock, , finalityIssueFlagArb, finalityIssueFlagEth] = res;
-  if (res === undefined || finalityIssueFlagArb || finalityIssueFlagEth) {
-    emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
-    return null;
-  }
-  const ethBlockTag = "finalized";
 
-  if (!transactionHandler) {
-    const TransactionHandler = fetchTransactionHandler(chainId, Network.TESTNET);
-    transactionHandler = new TransactionHandler({
-      chainId,
-      network: Network.TESTNET, // Hardcoded as TESTNET & MAINNET have same contracts
-      epoch,
-      veaInbox,
-      veaOutbox,
-      veaInboxProvider,
-      veaOutboxProvider,
-      veaRouterProvider,
-      emitter,
-      claim,
-    });
-  } else {
-    transactionHandler.claim = claim;
-  }
-  // If claim is already resolved, nothing to do
+  transactionHandler = handlerForClaim({
+    chainId,
+    claim,
+    epoch,
+    veaInbox,
+    veaInboxProvider,
+    veaOutboxProvider,
+    veaRouterProvider,
+    veaOutbox,
+    transactionHandler,
+    emitter,
+    fetchTransactionHandler,
+  });
+  const network = transactionHandler.network ?? Network.TESTNET;
+  // Resolved claims, deposit withdrawals and the escape hatch read only the outbox: they run
+  // before the settled-read gate, so a deposit is recovered even when inbox or L1 reads fail.
   if (claim.honest !== 0) {
     emitter.emit(BotEvents.CLAIM_ALREADY_RESOLVED, epoch);
-    if (claim.honest === 2) {
-      await transactionHandler.withdrawChallengeDeposit();
-      return transactionHandler;
-    }
+    return withdrawIfOurs(transactionHandler, claim, report);
+  }
+
+  const shutdownOutcome = await handleBridgeShutdown({
+    transactionHandler,
+    claim,
+    party: "challenger",
+    chainId,
+    network,
+    epoch,
+    emitter,
+  });
+  if (shutdownOutcome) {
+    report(shutdownOutcome);
+    return shutdownOutcome === EpochOutcome.PENDING ? transactionHandler : null;
+  }
+
+  // Resolve the blocks this epoch can be read as settled at before reading
+  // anything: a challenge stakes a deposit on the value we are about to read.
+  const settledBlocks = await fetchSettledReadBlocks({
+    inboxProvider: veaInboxProvider,
+    outboxProvider: veaOutboxProvider,
+    l1Provider: queryRpc,
+    epoch,
+    epochPeriod,
+    emitter,
+    fetchBlocksAndCheckFinality,
+  });
+  if (!settledBlocks) {
+    report(EpochOutcome.UNDECIDABLE);
     return null;
   }
 
-  const { challenged, toRelay } = await challengeAndCheckRelay({
+  const challengeState = await challengeOrCannotFund({
     veaInbox,
     epoch,
     claim,
     transactionHandler,
-    arbitrumBlockNumber: arbitrumBlock.number,
+    arbitrumBlockNumber: settledBlocks.inboxBlock,
   });
-  if (!toRelay && !challenged) {
-    return null;
-  } else if (challenged && !toRelay) {
+  if (!challengeState) {
+    report(EpochOutcome.UNDECIDABLE);
     return transactionHandler;
   }
-  await handleResolveFlow({
+  const { challenged, toRelay } = challengeState;
+  if (!toRelay && !challenged) {
+    // A matching claim of ours stays watched until it is verified: a later challenge of it
+    // still needs our snapshot to be resolved. A third party's matching claim leaves nothing
+    // for us to challenge.
+    report(isOurAddress(transactionHandler, claim.claimer) ? EpochOutcome.PENDING : EpochOutcome.DONE);
+    return null;
+  } else if (challenged && !toRelay) {
+    report(EpochOutcome.PENDING);
+    return transactionHandler;
+  }
+  const scanPaused = await resolveOrScanPaused({
     chainId,
     epoch,
     epochPeriod,
-    claim,
     veaInbox,
     veaInboxProvider,
     veaOutbox,
+    veaOutboxProvider,
     queryRpc,
-    ethBlockTag,
     transactionHandler,
     fetchClaimResolveState,
-    fetchBlockFromEpoch,
+    scanBudget,
   });
-
+  // The budgeted scan for our send resumes next visit: whether to send is not known yet.
+  report(scanPaused ? EpochOutcome.UNDECIDABLE : EpochOutcome.PENDING);
   return transactionHandler;
+}
+
+/**
+ * The cycle's transaction handler for the claim: a new one when none is carried over, else the
+ * carried one with its claim replaced.
+ */
+const handlerForClaim = ({
+  chainId,
+  claim,
+  epoch,
+  veaInbox,
+  veaInboxProvider,
+  veaOutboxProvider,
+  veaRouterProvider,
+  veaOutbox,
+  transactionHandler,
+  emitter,
+  fetchTransactionHandler,
+}: Pick<
+  ChallengeAndResolveClaimParams,
+  | "chainId"
+  | "claim"
+  | "epoch"
+  | "veaInbox"
+  | "veaInboxProvider"
+  | "veaOutboxProvider"
+  | "veaRouterProvider"
+  | "veaOutbox"
+  | "transactionHandler"
+> & {
+  emitter: typeof defaultEmitter;
+  fetchTransactionHandler: typeof getTransactionHandler;
+}): ITransactionHandler => {
+  if (transactionHandler) {
+    transactionHandler.claim = claim;
+    return transactionHandler;
+  }
+  const TransactionHandler = fetchTransactionHandler(chainId, Network.TESTNET);
+  return new TransactionHandler({
+    chainId,
+    network: Network.TESTNET, // Hardcoded as TESTNET & MAINNET have same contracts
+    epoch,
+    veaInbox,
+    veaOutbox,
+    veaInboxProvider,
+    veaOutboxProvider,
+    veaRouterProvider,
+    emitter,
+    claim,
+  });
+};
+
+/** `handleResolveFlow`, with a paused budgeted scan for our send returned as true rather than thrown. */
+const resolveOrScanPaused = async (params: ResolveFlowParams): Promise<boolean> => {
+  try {
+    await handleResolveFlow(params);
+    return false;
+  } catch (error) {
+    if (error instanceof ClaimScanPausedError) return true;
+    throw error;
+  }
+};
+
+/**
+ * A resolved claim: withdraw the challenge deposit when the challenger won and it is ours
+ * (withdrawing deletes the claim hash, so the epoch is done once getClaim finds no claim);
+ * otherwise nothing is left for us.
+ */
+const withdrawIfOurs = async (
+  transactionHandler: ITransactionHandler,
+  claim: ClaimStruct,
+  report: (outcome: EpochOutcome) => void
+): Promise<ITransactionHandler | null> => {
+  if (claim.honest === 2 && isOurAddress(transactionHandler, claim.challenger)) {
+    await transactionHandler.withdrawChallengeDeposit();
+    report(EpochOutcome.PENDING);
+    return transactionHandler;
+  }
+  report(EpochOutcome.DONE);
+  return null;
+};
+
+/** `challengeAndCheckRelay`, with a funding shortfall returned as null rather than thrown. */
+const challengeOrCannotFund = async (
+  params: ChallengeAndCheckRelayParams
+): Promise<{ challenged: boolean; toRelay: boolean } | null> => {
+  try {
+    return await challengeAndCheckRelay(params);
+  } catch (err) {
+    if (err instanceof CannotFundError) return null;
+    throw err;
+  }
+};
+
+interface NoClaimOutcomeParams {
+  veaOutbox: any;
+  veaOutboxProvider: JsonRpcProvider;
+  epoch: number;
+  epochPeriod: number;
+  emitter: typeof defaultEmitter;
+}
+
+/**
+ * With no claim found, the epoch is done only when no claim can still appear: the outbox read
+ * block is at or past `(E+2)·epochPeriod` (`claim` only accepts the previous epoch) and
+ * `claimHashes(E)` is zero at that same block.
+ */
+async function noClaimOutcome({
+  veaOutbox,
+  veaOutboxProvider,
+  epoch,
+  epochPeriod,
+  emitter,
+}: NoClaimOutcomeParams): Promise<EpochOutcome> {
+  try {
+    const readBlock = await getOutboxReadBlock({ outboxProvider: veaOutboxProvider, emitter });
+    if (readBlock.timestamp < (epoch + 2) * epochPeriod) return EpochOutcome.PENDING;
+    const claimHash = await veaOutbox.claimHashes(epoch, { blockTag: readBlock.number });
+    return claimHash == ethers.ZeroHash ? EpochOutcome.DONE : EpochOutcome.PENDING;
+  } catch {
+    return EpochOutcome.UNDECIDABLE;
+  }
 }
 
 interface ChallengeAndCheckRelayParams {
@@ -135,7 +299,7 @@ async function challengeAndCheckRelay({
     challenged: false,
     toRelay: false,
   };
-  if (onChainSnapshot !== claim.stateRoot && isNotChallenged) {
+  if (String(onChainSnapshot).toLowerCase() !== String(claim.stateRoot).toLowerCase() && isNotChallenged) {
     await transactionHandler.challengeClaim();
     challengeAndRelayState.challenged = true;
   }
@@ -149,50 +313,50 @@ interface ResolveFlowParams {
   chainId: number;
   epoch: number;
   epochPeriod: number;
-  claim: ClaimStruct;
   veaInbox: any;
   veaInboxProvider: JsonRpcProvider;
   veaOutbox: any;
+  /** The outbox chain: `claimHashes` is read at its blocks. */
+  veaOutboxProvider: JsonRpcProvider;
+  /** Arbitrum's L1, for the L2 -> L1 message status. */
   queryRpc: JsonRpcProvider;
-  ethBlockTag: "latest" | "finalized";
   transactionHandler: ITransactionHandler;
   fetchClaimResolveState: typeof getClaimResolveState;
-  fetchBlockFromEpoch: typeof getBlockFromEpoch;
+  scanBudget?: ClaimScanBudget;
 }
 async function handleResolveFlow({
   chainId,
   epoch,
   epochPeriod,
-  claim,
   veaInbox,
   veaInboxProvider,
   veaOutbox,
+  veaOutboxProvider,
   queryRpc,
-  ethBlockTag,
   transactionHandler,
   fetchClaimResolveState,
-  fetchBlockFromEpoch,
+  scanBudget,
 }: ResolveFlowParams): Promise<void> {
-  const blockNumberOutboxLowerBound = await fetchBlockFromEpoch(epoch, epochPeriod, queryRpc);
+  // Only our own sendSnapshot transactions are followed, and the lookup reaches the inbox's
+  // latest block, so a send is seen by the next cycle: re-send only while none of ours carries
+  // the current claim struct.
   const claimResolveState = await fetchClaimResolveState({
     chainId,
     veaInbox,
     veaInboxProvider,
     veaOutbox,
-    veaOutboxProvider: queryRpc,
+    veaOutboxProvider,
+    l1Provider: queryRpc,
+    signerAddress: transactionHandler.getSignerAddress?.(),
     epoch,
-    fromBlock: blockNumberOutboxLowerBound,
-    toBlock: ethBlockTag,
+    epochPeriod,
+    scanBudget,
   });
-
   if (!claimResolveState.sendSnapshot.status) {
     await transactionHandler.sendSnapshot();
     return;
   }
-  const execStatus = claimResolveState.execution.status;
-  if (execStatus === 1) {
+  if (claimResolveState.execution.status === 1) {
     await transactionHandler.resolveChallengedClaim(claimResolveState.sendSnapshot.txHash);
-  } else if (execStatus === 2 && claim.honest === 2) {
-    await transactionHandler.withdrawChallengeDeposit();
   }
 }

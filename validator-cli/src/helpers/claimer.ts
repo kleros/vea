@@ -1,13 +1,31 @@
 import { EventEmitter } from "events";
 import { ethers } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { getClaim, ClaimHonestState } from "../utils/claim";
-import { getBlocksAndCheckFinality } from "../utils/arbToEthState";
+import { getClaim, ClaimHonestState, sameRoot } from "../utils/claim";
+import { getBlocksAndCheckFinality, getOutboxReadBlock, resolveSettledReadBlocks } from "../utils/arbToEthState";
 import { getLastClaimedEpoch } from "../utils/graphQueries";
 import { BotEvents } from "../utils/botEvents";
 import { ClaimStruct } from "../../../contracts/typechain-types/arbitrumToEth/VeaInboxArbToEth";
-import { ITransactionHandler, IDevnetTransactionHandler, getTransactionHandler } from "../utils/transactionHandlers";
+import {
+  ITransactionHandler,
+  IDevnetTransactionHandler,
+  getTransactionHandler,
+  CannotFundError,
+} from "../utils/transactionHandlers";
 import { Network } from "../consts/bridgeRoutes";
+import { EpochOutcome, ReportOutcome } from "../utils/epochOutcome";
+import { getLookbackFloorBlock } from "../utils/epochHandler";
+import { findLatestLog } from "../utils/logScanner";
+import { handleBridgeShutdown, isOurAddress } from "./escapeHatch";
+
+/** The outboxes' `CensorshipTestStatus`, in its ABI order (both outboxes declare the same enum). */
+enum CensorshipTestStatus {
+  FAILED = 0,
+  PASSED = 1,
+  NOT_STARTED = 2,
+  IN_PROGRESS = 3,
+}
+
 interface CheckAndClaimParams {
   chainId: number;
   network: Network;
@@ -25,7 +43,11 @@ interface CheckAndClaimParams {
   fetchLatestClaimedEpoch?: typeof getLastClaimedEpoch;
   fetchTransactionHandler?: typeof getTransactionHandler;
   fetchBlocksAndCheckFinality?: typeof getBlocksAndCheckFinality;
+  fetchSettledReadBlocks?: typeof resolveSettledReadBlocks;
+  /** Milliseconds. Defaults to the outbox chain's latest block timestamp, never the host clock. */
   now?: number;
+  /** Report what this cycle concluded for the epoch; see utils/epochOutcome.ts. */
+  reportOutcome?: ReportOutcome;
 }
 
 async function checkAndClaim({
@@ -44,10 +66,11 @@ async function checkAndClaim({
   fetchLatestClaimedEpoch = getLastClaimedEpoch,
   fetchTransactionHandler = getTransactionHandler,
   fetchBlocksAndCheckFinality = getBlocksAndCheckFinality,
-  now = Date.now(),
+  fetchSettledReadBlocks = resolveSettledReadBlocks,
+  now,
+  reportOutcome,
 }: CheckAndClaimParams) {
-  let outboxStateRoot = await veaOutbox.stateRoot();
-  const claimAbleEpoch = Math.floor(now / (1000 * epochPeriod)) - 1;
+  const report = (outcome: EpochOutcome) => reportOutcome?.(outcome);
   if (!transactionHandler) {
     const TransactionHandler = fetchTransactionHandler(chainId, network);
     transactionHandler = new TransactionHandler({
@@ -58,133 +81,470 @@ async function checkAndClaim({
       veaOutbox,
       veaInboxProvider,
       veaOutboxProvider,
+      veaRouterProvider,
       emitter,
       claim,
     });
   } else {
     transactionHandler.claim = claim;
   }
-  if (network == Network.DEVNET) {
-    return makeClaimDevnet(
-      epoch,
-      claim,
-      outboxStateRoot,
-      transactionHandler as IDevnetTransactionHandler,
-      veaInbox,
-      emitter
-    );
-  } else if (claim == null && epoch == claimAbleEpoch) {
-    const queryRpc = veaRouterProvider ?? veaOutboxProvider;
-    return makeClaim(
-      chainId,
-      epoch,
-      epochPeriod,
-      transactionHandler,
-      outboxStateRoot,
-      veaInbox,
-      veaOutbox,
-      queryRpc,
-      emitter,
-      fetchLatestClaimedEpoch,
-      fetchBlocksAndCheckFinality
-    );
-  } else if (claim != null) {
-    return verifyClaim(transactionHandler, claim, veaOutboxProvider);
-  } else {
-    emitter.emit(BotEvents.CLAIM_EPOCH_PASSED, epoch);
+  try {
+    if (network == Network.DEVNET) {
+      return await makeClaimDevnet(
+        epoch,
+        claim,
+        transactionHandler as IDevnetTransactionHandler,
+        veaInbox,
+        veaOutbox,
+        emitter,
+        report
+      );
+    }
+    if (claim != null) {
+      return await verifyClaim({
+        chainId,
+        network,
+        epoch,
+        epochPeriod,
+        transactionHandler,
+        claim,
+        veaInbox,
+        veaOutbox,
+        veaOutboxProvider,
+        l1Provider: veaRouterProvider ?? veaOutboxProvider,
+        emitter,
+        report,
+        fetchBlocksAndCheckFinality,
+        fetchSettledReadBlocks,
+      });
+    }
+    // Epoch arithmetic runs on chain time: a host clock that is off must not move the claimable epoch.
+    const nowMs = now ?? (await veaOutboxProvider.getBlock("latest")).timestamp * 1000;
+    const claimAbleEpoch = Math.floor(nowMs / (1000 * epochPeriod)) - 1;
+    if (epoch == claimAbleEpoch) {
+      return await makeClaim({
+        chainId,
+        epoch,
+        epochPeriod,
+        transactionHandler,
+        veaInbox,
+        veaOutbox,
+        veaOutboxProvider,
+        l1Provider: veaRouterProvider ?? veaOutboxProvider,
+        emitter,
+        report,
+        fetchLatestClaimedEpoch,
+        fetchBlocksAndCheckFinality,
+        fetchSettledReadBlocks,
+      });
+    }
+    if (epoch < claimAbleEpoch) {
+      emitter.emit(BotEvents.CLAIM_EPOCH_PASSED, epoch);
+      report(await passedEpochOutcome({ epoch, epochPeriod, veaOutbox, veaOutboxProvider, emitter }));
+    } else {
+      // The epoch has not ended on the outbox chain yet: nothing can be claimed for it.
+      report(EpochOutcome.UNDECIDABLE);
+    }
+    return null;
+  } catch (err) {
+    if (err instanceof CannotFundError) {
+      report(EpochOutcome.UNDECIDABLE);
+      return transactionHandler;
+    }
+    throw err;
   }
-  return null;
+}
+
+/**
+ * An unclaimed epoch whose claim window has passed on the latest block is done only once the
+ * outbox read block is at or past `(E+2)·epochPeriod` too and `claimHashes(E)` is zero at that
+ * same block: the claim was looked up at an earlier block, and one can land in between.
+ */
+async function passedEpochOutcome({
+  epoch,
+  epochPeriod,
+  veaOutbox,
+  veaOutboxProvider,
+  emitter,
+}: {
+  epoch: number;
+  epochPeriod: number;
+  veaOutbox: any;
+  veaOutboxProvider: JsonRpcProvider;
+  emitter: EventEmitter;
+}): Promise<EpochOutcome> {
+  try {
+    const readBlock = await getOutboxReadBlock({ outboxProvider: veaOutboxProvider, emitter: emitter as any });
+    if (readBlock.timestamp < (epoch + 2) * epochPeriod) return EpochOutcome.PENDING;
+    const claimHash = await veaOutbox.claimHashes(epoch, { blockTag: readBlock.number });
+    return claimHash == ethers.ZeroHash ? EpochOutcome.DONE : EpochOutcome.PENDING;
+  } catch {
+    return EpochOutcome.UNDECIDABLE;
+  }
 }
 
 async function makeClaimDevnet(
   epoch: number,
   claim: ClaimStruct | null,
-  outboxStateRoot: string,
   transactionHandler: IDevnetTransactionHandler,
   veaInbox: any,
-  emitter: EventEmitter
+  veaOutbox: any,
+  emitter: EventEmitter,
+  report: ReportOutcome
 ): Promise<IDevnetTransactionHandler | null> {
   if (claim == null) {
-    const [savedSnapshot] = await Promise.all([veaInbox.snapshots(epoch)]);
+    const [savedSnapshot, outboxStateRoot] = await Promise.all([veaInbox.snapshots(epoch), veaOutbox.stateRoot()]);
 
     const newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != ethers.ZeroHash;
-    if (newMessagesToBridge && savedSnapshot != ethers.ZeroHash) {
+    if (newMessagesToBridge) {
       await transactionHandler.devnetAdvanceState(savedSnapshot);
+      report(EpochOutcome.PENDING);
       return transactionHandler;
     }
   }
   emitter.emit(BotEvents.NO_CLAIM_REQUIRED, epoch);
+  report(EpochOutcome.DONE);
   return null;
 }
 
-async function makeClaim(
-  chainId: number,
-  epoch: number,
-  epochPeriod: number,
-  transactionHandler: ITransactionHandler,
-  outboxStateRoot: string,
-  veaInbox: any,
-  veaOutbox: any,
-  queryRpc: JsonRpcProvider,
-  emitter: EventEmitter,
-  fetchLatestClaimedEpoch: typeof getLastClaimedEpoch = getLastClaimedEpoch,
-  fetchBlocksAndCheckFinality: typeof getBlocksAndCheckFinality
-): Promise<ITransactionHandler | null> {
-  const savedSnapshot = await veaInbox.snapshots(epoch);
+interface MakeClaimParams {
+  chainId: number;
+  epoch: number;
+  epochPeriod: number;
+  transactionHandler: ITransactionHandler;
+  veaInbox: any;
+  veaOutbox: any;
+  /** The outbox chain: `stateRoot` and the `Claimed` scan are read here. */
+  veaOutboxProvider: JsonRpcProvider;
+  /** Arbitrum's L1 (the Sepolia router provider on chain 10200): the finality check runs here. */
+  l1Provider: JsonRpcProvider;
+  emitter: EventEmitter;
+  report: ReportOutcome;
+  fetchLatestClaimedEpoch: typeof getLastClaimedEpoch;
+  fetchBlocksAndCheckFinality: typeof getBlocksAndCheckFinality;
+  fetchSettledReadBlocks: typeof resolveSettledReadBlocks;
+}
+
+async function makeClaim({
+  chainId,
+  epoch,
+  epochPeriod,
+  transactionHandler,
+  veaInbox,
+  veaOutbox,
+  veaOutboxProvider,
+  l1Provider,
+  emitter,
+  report,
+  fetchLatestClaimedEpoch,
+  fetchBlocksAndCheckFinality,
+  fetchSettledReadBlocks,
+}: MakeClaimParams): Promise<ITransactionHandler | null> {
+  // Claiming stakes a deposit on the snapshot we are about to read, so resolve
+  // the settled blocks first and read only at them.
+  const settledBlocks = await fetchSettledReadBlocks({
+    inboxProvider: transactionHandler.veaInboxProvider,
+    outboxProvider: veaOutboxProvider,
+    l1Provider,
+    epoch,
+    epochPeriod,
+    emitter: emitter as any,
+    fetchBlocksAndCheckFinality,
+  });
+  if (!settledBlocks) {
+    report(EpochOutcome.UNDECIDABLE);
+    return null;
+  }
+
+  const savedSnapshot = await veaInbox.snapshots(epoch, { blockTag: settledBlocks.inboxBlock });
   if (savedSnapshot == ethers.ZeroHash) {
+    // snapshots[epoch] is final once the epoch has ended, so no snapshot means nothing for us to
+    // claim. It is not DONE: anyone can still claim this epoch, with any root, until its claim
+    // window closes, and a DONE epoch is skipped from the next epoch on, so a late fraudulent claim
+    // would go unchallenged. Once the epoch has passed, passedEpochOutcome decides DONE.
+    emitter.emit(BotEvents.NO_SNAPSHOT);
+    report(EpochOutcome.PENDING);
     return null;
   }
-  let lastClaimedStateroot = null;
-  try {
-    const lastClaimLogs = await veaOutbox.queryFilter(veaOutbox.filters.Claimed());
-    lastClaimedStateroot = lastClaimLogs[lastClaimLogs.length - 1].data;
-  } catch {
-    const claimData = await fetchLatestClaimedEpoch(veaOutbox.target, chainId);
-    lastClaimedStateroot = claimData ? claimData.stateRoot : ethers.ZeroHash;
-  }
-  if (lastClaimedStateroot == null) {
+  const outboxStateRoot = await veaOutbox.stateRoot({ blockTag: settledBlocks.outboxBlock });
+  const lastClaimedStateroot = await findLastClaimedStateRoot({
+    chainId,
+    epoch,
+    epochPeriod,
+    veaOutbox,
+    veaOutboxProvider,
+    emitter,
+    fetchLatestClaimedEpoch,
+  });
+  if (lastClaimedStateroot === undefined) {
+    report(EpochOutcome.UNDECIDABLE);
     return null;
   }
-  const newMessagesToBridge = savedSnapshot != outboxStateRoot && savedSnapshot != lastClaimedStateroot;
+  // With no claim found at all, the outbox state root alone decides. Roots are compared as bytes:
+  // the last claimed one may come from the indexer, spelled in another hex case.
+  const newMessagesToBridge =
+    !sameRoot(savedSnapshot, outboxStateRoot) &&
+    (lastClaimedStateroot === null || !sameRoot(savedSnapshot, lastClaimedStateroot));
   if (newMessagesToBridge) {
-    const res = await fetchBlocksAndCheckFinality(
-      queryRpc,
-      transactionHandler.veaInboxProvider,
-      epoch,
-      epochPeriod,
-      emitter
-    );
-    const [, , finalityIssueFlagArb, finalityIssueFlagEth] = res;
-    if (res === undefined || finalityIssueFlagArb || finalityIssueFlagEth) {
-      emitter.emit(BotEvents.FINALITY_ISSUE, epoch);
+    await transactionHandler.makeClaim(savedSnapshot);
+    report(EpochOutcome.PENDING);
+    return transactionHandler;
+  }
+  emitter.emit(BotEvents.NO_NEW_MESSAGES);
+  // Not DONE, as with no snapshot above: another claim can still land in this epoch's window.
+  report(EpochOutcome.PENDING);
+  return null;
+}
+
+/**
+ * The state root of the latest claim: first from a `Claimed` scan over the lookback window on
+ * the outbox chain's own blocks, then from the indexer.
+ *
+ * @returns the state root, null when neither source has a claim, undefined when neither could answer
+ */
+async function findLastClaimedStateRoot({
+  chainId,
+  epoch,
+  epochPeriod,
+  veaOutbox,
+  veaOutboxProvider,
+  emitter,
+  fetchLatestClaimedEpoch,
+}: {
+  chainId: number;
+  epoch: number;
+  epochPeriod: number;
+  veaOutbox: any;
+  veaOutboxProvider: JsonRpcProvider;
+  emitter: EventEmitter;
+  fetchLatestClaimedEpoch: typeof getLastClaimedEpoch;
+}): Promise<string | null | undefined> {
+  let scanFailed = false;
+  try {
+    const [floorBlock, headBlock] = await Promise.all([
+      getLookbackFloorBlock({ provider: veaOutboxProvider, chainId, epochPeriod }),
+      getOutboxReadBlock({ outboxProvider: veaOutboxProvider, emitter: emitter as any }),
+    ]);
+    const lastClaimLog = await findLatestLog({
+      contract: veaOutbox,
+      filter: veaOutbox.filters.Claimed(),
+      fromBlock: Math.min(floorBlock, headBlock.number),
+      toBlock: headBlock.number,
+    });
+    if (lastClaimLog) return lastClaimLog.data;
+  } catch (err) {
+    scanFailed = true;
+    emitter.emit(BotEvents.CLAIM_LOG_SCAN_FAILED, epoch, err instanceof Error ? err.message : String(err));
+  }
+  // The lookback window had no Claimed (a quiet bridge) or the scan failed: ask the indexer.
+  try {
+    const claimData = await fetchLatestClaimedEpoch(veaOutbox.target, chainId);
+    if (claimData?.stateRoot) return claimData.stateRoot;
+    // An empty indexer answer means "no prior claim" only when the scan saw the window empty too.
+    return scanFailed ? undefined : null;
+  } catch {
+    // An empty window is an answer; an indexer error after a failed scan leaves none.
+    return scanFailed ? undefined : null;
+  }
+}
+
+interface VerifyClaimParams {
+  chainId: number;
+  network: Network;
+  epoch: number;
+  epochPeriod: number;
+  transactionHandler: ITransactionHandler;
+  claim: ClaimStruct;
+  veaInbox: any;
+  veaOutbox: any;
+  veaOutboxProvider: JsonRpcProvider;
+  l1Provider: JsonRpcProvider;
+  emitter: EventEmitter;
+  report: ReportOutcome;
+  fetchBlocksAndCheckFinality: typeof getBlocksAndCheckFinality;
+  fetchSettledReadBlocks: typeof resolveSettledReadBlocks;
+}
+
+async function verifyClaim({
+  chainId,
+  network,
+  epoch,
+  epochPeriod,
+  transactionHandler,
+  claim,
+  veaInbox,
+  veaOutbox,
+  veaOutboxProvider,
+  l1Provider,
+  emitter,
+  report,
+  fetchBlocksAndCheckFinality,
+  fetchSettledReadBlocks,
+}: VerifyClaimParams): Promise<ITransactionHandler | null> {
+  const ours = isOurAddress(transactionHandler, claim.claimer);
+  if (claim.honest == ClaimHonestState.CLAIMER) {
+    if (!ours) {
+      // Another claimer's deposit: not ours to withdraw.
+      report(EpochOutcome.DONE);
       return null;
     }
-    await transactionHandler.makeClaim(savedSnapshot);
-    return transactionHandler;
-  }
-  return null;
-}
-
-async function verifyClaim(
-  transactionHandler: ITransactionHandler,
-  claim: ClaimStruct,
-  veaOutboxProvider: JsonRpcProvider
-) {
-  if (claim.honest == ClaimHonestState.CLAIMER) {
+    // Withdrawing deletes the claim hash; the epoch is done once getClaim finds no claim.
     await transactionHandler.withdrawClaimDeposit();
+    report(EpochOutcome.PENDING);
     return transactionHandler;
-  } else if (claim.honest == ClaimHonestState.NONE) {
-    const finalizedOutboxBlock = await veaOutboxProvider.getBlock("finalized");
-    if (claim.challenger != ethers.ZeroAddress) {
-      return transactionHandler;
+  }
+  if (claim.honest != ClaimHonestState.NONE) {
+    // The challenger won: nothing is left for the claimer.
+    report(EpochOutcome.DONE);
+    return null;
+  }
+  const shutdownOutcome = await handleBridgeShutdown({
+    transactionHandler,
+    claim,
+    party: "claimer",
+    chainId,
+    network,
+    epoch,
+    emitter,
+  });
+  if (shutdownOutcome) {
+    report(shutdownOutcome);
+    return shutdownOutcome === EpochOutcome.PENDING ? transactionHandler : null;
+  }
+  if (claim.challenger != ethers.ZeroAddress) {
+    // In dispute: the challenger path drives resolution.
+    report(EpochOutcome.PENDING);
+    return transactionHandler;
+  }
+  if (!ours) {
+    const thirdPartyOutcome = await checkThirdPartyClaim({
+      chainId,
+      network,
+      epoch,
+      epochPeriod,
+      transactionHandler,
+      claim,
+      veaInbox,
+      veaOutboxProvider,
+      l1Provider,
+      emitter,
+      fetchBlocksAndCheckFinality,
+      fetchSettledReadBlocks,
+    });
+    if (thirdPartyOutcome) {
+      report(thirdPartyOutcome);
+      return thirdPartyOutcome === EpochOutcome.PENDING ? transactionHandler : null;
     }
-    if (claim.timestampVerification == 0) {
-      await transactionHandler.startVerification(finalizedOutboxBlock.timestamp);
+  }
+  await advanceVerification({
+    chainId,
+    network,
+    epoch,
+    transactionHandler,
+    claim,
+    veaOutbox,
+    veaOutboxProvider,
+    emitter,
+  });
+  report(EpochOutcome.PENDING);
+  return transactionHandler;
+}
+
+/**
+ * A third party's claim is verified too (it is what advances `latestVerifiedEpoch`), but only once
+ * it is checked against `snapshots[E]` at a settled inbox block: the claimer never pushes a claim it
+ * has not checked toward verification. A mismatch is fraud, which the challenger path handles; it is
+ * reported here too, since `--path=claimer` runs no challenger.
+ *
+ * @returns null when the claim matches the snapshot, else the outcome to report (UNDECIDABLE when no
+ * settled read block exists, PENDING on a mismatch)
+ */
+async function checkThirdPartyClaim({
+  chainId,
+  network,
+  epoch,
+  epochPeriod,
+  transactionHandler,
+  claim,
+  veaInbox,
+  veaOutboxProvider,
+  l1Provider,
+  emitter,
+  fetchBlocksAndCheckFinality,
+  fetchSettledReadBlocks,
+}: Omit<VerifyClaimParams, "veaOutbox" | "report">): Promise<EpochOutcome | null> {
+  const settledBlocks = await fetchSettledReadBlocks({
+    inboxProvider: transactionHandler.veaInboxProvider,
+    outboxProvider: veaOutboxProvider,
+    l1Provider,
+    epoch,
+    epochPeriod,
+    emitter: emitter as any,
+    fetchBlocksAndCheckFinality,
+  });
+  if (!settledBlocks) return EpochOutcome.UNDECIDABLE;
+  const savedSnapshot = await veaInbox.snapshots(epoch, { blockTag: settledBlocks.inboxBlock });
+  // Compare the bytes, not the spelling: a root from the indexer may differ in hex case.
+  if (String(savedSnapshot).toLowerCase() === String(claim.stateRoot).toLowerCase()) return null;
+  emitter.emit(BotEvents.ALERT, {
+    level: "error",
+    code: "claim_mismatch_unverified",
+    chainId,
+    network,
+    epoch,
+    details: { claimer: claim.claimer, claimed: claim.stateRoot, snapshot: savedSnapshot },
+  });
+  return EpochOutcome.PENDING;
+}
+
+/**
+ * Moves an unchallenged claim toward verification: starts the censorship test, or restarts it when
+ * it failed, or verifies the snapshot once it passed.
+ */
+async function advanceVerification({
+  chainId,
+  network,
+  epoch,
+  transactionHandler,
+  claim,
+  veaOutbox,
+  veaOutboxProvider,
+  emitter,
+}: Pick<
+  VerifyClaimParams,
+  "chainId" | "network" | "epoch" | "transactionHandler" | "claim" | "veaOutbox" | "veaOutboxProvider" | "emitter"
+>): Promise<void> {
+  // The outbox read block (finalized, or latest minus 64 during a finality stall).
+  const readBlock = await getOutboxReadBlock({ outboxProvider: veaOutboxProvider, emitter: emitter as any });
+  if (claim.timestampVerification == 0) {
+    await transactionHandler.startVerification(readBlock.timestamp);
+  } else {
+    // verifySnapshot requires a Passed censorship test. A test that Failed (more than
+    // maxMissingBlocks slots missed during minChallengePeriod) never passes, so verifySnapshot
+    // would revert every cycle and the claim would never be verified; startVerification is the
+    // only call that accepts it, and it restarts the test. The status is judged at the block a
+    // transaction lands in, so it is read at latest, not at the read block.
+    const censorshipTest = Number(await veaOutbox.censorshipTestStatus(claim));
+    if (censorshipTest === CensorshipTestStatus.FAILED) {
+      emitter.emit(BotEvents.ALERT, {
+        level: "warn",
+        code: "censorship_test_failed",
+        chainId,
+        network,
+        epoch,
+        details: {
+          claimer: claim.claimer,
+          timestampVerification: Number(claim.timestampVerification),
+          blocknumberVerification: Number(claim.blocknumberVerification),
+        },
+      });
+      await transactionHandler.startVerification(readBlock.timestamp);
     } else {
-      await transactionHandler.verifySnapshot(finalizedOutboxBlock.timestamp);
+      // Passed, or still in progress: the handler holds verifySnapshot back until
+      // minChallengePeriod has passed at the read block.
+      await transactionHandler.verifySnapshot(readBlock.timestamp);
     }
-    return transactionHandler;
   }
 }
 
-export { checkAndClaim, CheckAndClaimParams };
+export { checkAndClaim, CheckAndClaimParams, CensorshipTestStatus };

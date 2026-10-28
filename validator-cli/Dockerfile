@@ -57,13 +57,17 @@ FROM node:24.22.1-alpine3.23 AS validator
 
 # Yarn version for Vea
 ARG YARN_VERSION=4.6.0
+# `corepack enable` writes the yarn shim to /usr/local/bin, so it runs as root. Yarn
+# itself is prepared as node, the user the container runs as: corepack caches it in
+# the running user's home, and a cache under /root sent every container start to
+# repo.yarnpkg.com for Yarn again. With the network off, a missed cache fails the
+# start loudly instead of fetching an unpinned Yarn into the process holding the key.
 RUN corepack enable \
-  && corepack prepare "yarn@${YARN_VERSION}" --activate
-
-USER root
-RUN mkdir -p /home/node/monorepo/.yarn && chown -R node:node /home/node/monorepo
+  && mkdir -p /home/node/monorepo/.yarn && chown -R node:node /home/node/monorepo
 
 USER node
+RUN corepack prepare "yarn@${YARN_VERSION}" --activate
+ENV COREPACK_ENABLE_NETWORK=0
 WORKDIR /home/node/monorepo
 
 

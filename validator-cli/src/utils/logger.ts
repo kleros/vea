@@ -1,32 +1,86 @@
 import { EventEmitter } from "node:events";
 import pino from "pino";
-import { BotEvents } from "./botEvents";
+import {
+  BotEvents,
+  EpochFailedPayload,
+  RouteFailedPayload,
+  HeartbeatFailedPayload,
+  ShutdownRequestedPayload,
+  EpochDroppedPayload,
+  FinalityFallbackPayload,
+  FailedResolutionPayload,
+  EscapeHatchPayload,
+  CannotFundPayload,
+  LivenessAlarmPayload,
+  AlertPayload,
+} from "./botEvents";
 import { BotPaths } from "./botConfig";
 import { Network } from "../consts/bridgeRoutes";
+import { redactUrlsInText } from "./fallbackProvider";
 
-const logtailToken = process.env.LOGTAIL_TOKEN;
-
+// Logs go to stdout only. The Logtail transport this once selected (on LOGTAIL_TOKEN) was
+// never installed, so setting the token crashed the bot at import; ship stdout instead.
 const loggerOptions = {
   level: "debug",
   base: { service: "Vea" },
-  transport: logtailToken
-    ? {
-        target: "@logtail/pino",
-        options: {
-          sourceToken: logtailToken,
-        },
-      }
-    : {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "SYS:standard",
-          ignore: "pid,hostname",
-        },
-      },
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  },
 };
 const baseLogger = pino(loggerOptions);
 const getLogger = (context: string) => baseLogger.child({ context });
+
+/** The slice of a pino logger the handlers use; injectable so tests can read what would be logged. */
+export interface LogSink {
+  debug(obj: unknown, msg?: string): void;
+  info(obj: unknown, msg?: string): void;
+  warn(obj: unknown, msg?: string): void;
+  error(obj: unknown, msg?: string): void;
+}
+
+const MAX_SCRUB_DEPTH = 6;
+
+/**
+ * Copy a log payload with every URL reduced to `scheme://host`. Error messages
+ * from ethers embed the request URL (and so the RPC key), and a heartbeat URL
+ * carries its token, so every string field is scrubbed, not only the known ones.
+ * Errors become `{ name, message, code }`: their other fields (`info`, `url`,
+ * `request`) are exactly where the URL is.
+ */
+export const scrubLogFields = (value: unknown, depth = 0, seen = new WeakSet<object>()): unknown => {
+  if (typeof value === "string") return redactUrlsInText(value);
+  if (value === null || typeof value !== "object") return value;
+  if (depth >= MAX_SCRUB_DEPTH || seen.has(value)) return "[omitted]";
+  seen.add(value);
+  if (value instanceof Error) {
+    const code = (value as any).code;
+    return {
+      name: value.name,
+      message: redactUrlsInText(String((value as any).shortMessage ?? value.message)),
+      ...(code !== undefined ? { code: String(code) } : {}),
+    };
+  }
+  if (Array.isArray(value)) return value.map((entry) => scrubLogFields(entry, depth + 1, seen));
+  const out: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) out[key] = scrubLogFields(entry, depth + 1, seen);
+  return out;
+};
+
+const scrubbingSink = (sink: LogSink): LogSink => {
+  const wrap =
+    (level: keyof LogSink) =>
+    (obj: unknown, msg?: string): void => {
+      const scrubbed = scrubLogFields(obj);
+      if (msg === undefined) sink[level](scrubbed);
+      else sink[level](scrubbed, redactUrlsInText(msg));
+    };
+  return { debug: wrap("debug"), info: wrap("info"), warn: wrap("warn"), error: wrap("error") };
+};
 
 /**
  * Listens to relevant events of an EventEmitter instance and issues log lines
@@ -43,8 +97,8 @@ export const initialize = (emitter: EventEmitter) => {
   return configurableInitialize(emitter);
 };
 
-export const configurableInitialize = (emitter: EventEmitter) => {
-  const logger = getLogger("Validator");
+export const configurableInitialize = (emitter: EventEmitter, sink: LogSink = getLogger("Validator")) => {
+  const logger = scrubbingSink(sink);
   // Bridger state logs
   emitter.on(BotEvents.STARTED, (path: BotPaths, networks: Network[]) => {
     let pathString = "claimer and challenger";
@@ -172,20 +226,67 @@ export const configurableInitialize = (emitter: EventEmitter) => {
   });
 
   // error logs
+  emitter.on(BotEvents.EPOCH_NOT_SETTLED, (epoch: number, finalizedTimestamp: number, epochBoundary: number) => {
+    logger.warn({ epoch, finalizedTimestamp, epochBoundary }, `epoch_not_settled`);
+  });
+
+  emitter.on(BotEvents.ENV_VALIDATED, (signerAddress: string, chainIds: number[], networks: string[]) => {
+    logger.info({ signerAddress, chainIds, networks }, `env_validated`);
+  });
+
+  emitter.on(BotEvents.ENV_WARNING, (warning: string) => {
+    logger.warn({ warning }, `env_warning`);
+  });
+
   emitter.on(BotEvents.NO_CLAIM_FETCHED, (epoch: number, fromBlock?: number, toBlock?: number) => {
     logger.error({ epoch, fromBlock, toBlock }, `no_claim_fetched`);
+  });
+
+  // The outbox reports a claim for this epoch, but the log scan of the window in
+  // which it must have been made came back empty. Either the scan window is
+  // wrong or the endpoint is not serving the logs it should.
+  emitter.on(BotEvents.CLAIMED_LOG_NOT_FOUND, (epoch: number, fromBlock: number, toBlock: number) => {
+    logger.error({ epoch, fromBlock, toBlock }, `claimed_log_not_found`);
+  });
+
+  emitter.on(BotEvents.CLAIM_LOG_SCAN_FAILED, (epoch: number, reason?: string) => {
+    logger.warn({ epoch, reason }, `claim_log_scan_failed`);
+  });
+  emitter.on(BotEvents.CLAIM_LOG_SCAN_PAUSED, (epoch: number, scannedTo: number, toBlock: number) => {
+    logger.info({ epoch, scannedTo, toBlock }, `claim_log_scan_paused`);
   });
   emitter.on(BotEvents.CLAIM_MISMATCH, (epoch: number) => {
     logger.error({ epoch }, `claim_mismatch`);
   });
   emitter.on(BotEvents.FINALITY_ISSUE, (epoch: number) => {
-    logger.error({ epoch }, `finality_issue`);
+    logger.warn({ epoch }, `finality_issue`);
   });
   emitter.on(BotEvents.FINALITY_ERROR, (message: string) => {
     logger.error({ message }, `finality_error`);
   });
 
   // RPC fallback logs
+  // One payload object per event, see botEvents.ts.
+  emitter.on(BotEvents.EPOCH_FAILED, (payload: EpochFailedPayload) => logger.error(payload, "epoch_failed"));
+  emitter.on(BotEvents.ROUTE_FAILED, (payload: RouteFailedPayload) => logger.error(payload, "route_failed"));
+  emitter.on(BotEvents.HEARTBEAT_FAILED, (payload: HeartbeatFailedPayload) => logger.warn(payload, "heartbeat_failed"));
+  emitter.on(BotEvents.SHUTDOWN_REQUESTED, (payload: ShutdownRequestedPayload) =>
+    logger.info(payload, "shutdown_requested")
+  );
+  emitter.on(BotEvents.EPOCH_DROPPED, (payload: EpochDroppedPayload) => logger.debug(payload, "epoch_dropped"));
+  emitter.on(BotEvents.FINALITY_FALLBACK, (payload: FinalityFallbackPayload) =>
+    logger.warn(payload, "finality_fallback")
+  );
+  emitter.on(BotEvents.FAILED_RESOLUTION, (payload: FailedResolutionPayload) =>
+    logger.error(payload, "failed_resolution")
+  );
+  emitter.on(BotEvents.ESCAPE_HATCH, (payload: EscapeHatchPayload) => logger.warn(payload, "escape_hatch"));
+  emitter.on(BotEvents.CANNOT_FUND, (payload: CannotFundPayload) => logger.error(payload, "cannot_fund"));
+  emitter.on(BotEvents.LIVENESS_ALARM, (payload: LivenessAlarmPayload) => logger.warn(payload, "liveness_alarm"));
+  emitter.on(BotEvents.ALERT, (payload: AlertPayload) =>
+    payload.level === "error" ? logger.error(payload, "alert") : logger.warn(payload, "alert")
+  );
+
   emitter.on(BotEvents.RPC_FAILURE, (data) => {
     logger.error(data, "rpc_failure");
   });
