@@ -18,19 +18,25 @@ import { BotPaths } from "./botConfig";
 import { Network } from "../consts/bridgeRoutes";
 import { redactUrlsInText } from "./fallbackProvider";
 
-// Logs go to stdout only. The Logtail transport this once selected (on LOGTAIL_TOKEN) was
-// never installed, so setting the token crashed the bot at import; ship stdout instead.
+// Logs go to stdout only, one JSON object per line, as the relayer writes them, so a log
+// shipper can parse them. LOCAL_DEPLOY=true switches to pino-pretty for reading in a
+// terminal. The Logtail transport this once selected (on LOGTAIL_TOKEN) was never
+// installed, so setting the token crashed the bot at import; ship stdout instead.
+const localDeploy = process.env.LOCAL_DEPLOY === "true";
+
 const loggerOptions = {
   level: "debug",
   base: { service: "Vea" },
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
-    },
-  },
+  transport: localDeploy
+    ? {
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+          translateTime: "SYS:standard",
+          ignore: "pid,hostname",
+        },
+      }
+    : undefined,
 };
 const baseLogger = pino(loggerOptions);
 const getLogger = (context: string) => baseLogger.child({ context });
@@ -283,8 +289,10 @@ export const configurableInitialize = (emitter: EventEmitter, sink: LogSink = ge
   emitter.on(BotEvents.ESCAPE_HATCH, (payload: EscapeHatchPayload) => logger.warn(payload, "escape_hatch"));
   emitter.on(BotEvents.CANNOT_FUND, (payload: CannotFundPayload) => logger.error(payload, "cannot_fund"));
   emitter.on(BotEvents.LIVENESS_ALARM, (payload: LivenessAlarmPayload) => logger.warn(payload, "liveness_alarm"));
-  emitter.on(BotEvents.ALERT, (payload: AlertPayload) =>
-    payload.level === "error" ? logger.error(payload, "alert") : logger.warn(payload, "alert")
+  // The payload's string `level` picks the log method and is left out of the record: in
+  // JSON output it would sit beside pino's numeric `level`, and parsers keep the last key.
+  emitter.on(BotEvents.ALERT, ({ level, ...alert }: AlertPayload) =>
+    level === "error" ? logger.error(alert, "alert") : logger.warn(alert, "alert")
   );
 
   emitter.on(BotEvents.RPC_FAILURE, (data) => {
