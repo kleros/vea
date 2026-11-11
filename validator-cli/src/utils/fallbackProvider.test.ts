@@ -498,4 +498,16 @@ describe("log levels", () => {
     expect(sink.debug).not.toHaveBeenCalled();
     expect(sink.error).not.toHaveBeenCalled();
   });
+
+  it("logs ALERT at the payload's level without its string level field, which would shadow pino's numeric one", () => {
+    const sink = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+    const emitter = new EventEmitter();
+    configurableInitialize(emitter, sink);
+
+    emitter.emit(BotEvents.ALERT, { level: "error", code: "bridge_shutdown", chainId: 10200, epoch: 7 });
+    emitter.emit(BotEvents.ALERT, { level: "warn", code: "NONCE_STUCK", chainId: 11155111 });
+
+    expect(sink.error).toHaveBeenCalledWith({ code: "bridge_shutdown", chainId: 10200, epoch: 7 }, "alert");
+    expect(sink.warn).toHaveBeenCalledWith({ code: "NONCE_STUCK", chainId: 11155111 }, "alert");
+  });
 });
