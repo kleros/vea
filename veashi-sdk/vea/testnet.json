@@ -1,0 +1,31 @@
+{
+  "421614-10200": {
+    "inbox": {
+      "address": "0x162f826E18380567CE0548395a3Ad2A54EA87B96",
+      "contract": "VeaInboxArbToGnosisTestnet",
+      "network": "arbitrumSepolia"
+    },
+    "outbox": {
+      "address": "0x15aC29269b044E1d9042F597513B27Ffa4A7f257",
+      "contract": "VeaOutboxArbToGnosisTestnet",
+      "network": "chiado"
+    },
+    "router": {
+      "address": "0xd7C54E4cA686a8C51D44534AC6b756676961Fccf",
+      "contract": "RouterArbToGnosisTestnet",
+      "network": "sepolia"
+    }
+  },
+  "421614-11155111": {
+    "inbox": {
+      "address": "0x8B925669606026CcCfAFD72840F5b0CAeDA80078",
+      "contract": "VeaInboxArbToEthTestnet",
+      "network": "arbitrumSepolia"
+    },
+    "outbox": {
+      "address": "0xf720FA4575FB2FE96c7f05B1b5abc2d281cDa09a",
+      "contract": "VeaOutboxArbToEthTestnet",
+      "network": "sepolia"
+    }
+  }
+}

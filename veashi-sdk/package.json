@@ -14,11 +14,13 @@
   ],
   "exports": {
     ".": "./dist/index.js",
-    "./contracts/*.sol": "./contracts/*.sol"
+    "./contracts/*.sol": "./contracts/*.sol",
+    "./vea/testnet.json": "./dist/vea/testnet.json"
   },
   "scripts": {
     "clean": "rm -rf dist contracts typechain-types",
-    "extract": "bash ../veashi-contracts/script/generate-types.sh",
+    "extract": "bash ../veashi-contracts/script/generate-types.sh && yarn extract:vea",
+    "extract:vea": "node scripts/extract-vea.cjs",
     "build:ts": "tsc -p tsconfig.json",
     "build": "yarn clean && yarn extract && yarn build:ts",
     "prepack": "yarn build"
