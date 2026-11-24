@@ -36,11 +36,73 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-push:
+  # Picks the images this push changed, so a merge that only touches one bot does not
+  # rebuild and republish the other (a new digest of the same code, behind another
+  # approval). The path filter above decides whether the workflow runs at all; this
+  # decides which images it builds.
+  changes:
     # workflow_dispatch has no native ref filter, so a manual run from any branch
     # would publish an image of that branch. The push triggers above are
     # already ref-filtered; this restricts manual runs to the same deploy branch.
+    # build-and-push needs this job, so it is skipped with it.
     if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.pick.outputs.matrix }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Commits and trees only: enough for git diff --name-only against the push's base.
+          fetch-depth: 0
+          filter: blob:none
+
+      - id: pick
+        env:
+          BEFORE: ${{ github.event.before }}
+          # Every image this workflow can publish, with its build settings.
+          IMAGES: >-
+            [
+              {"image": "validator-cli", "dockerfile": "./validator-cli/Dockerfile", "target": "validator",
+               "title": "vea-validator-cli",
+               "description": "Validator bot for the Vea cross-chain bridge: saves snapshots, challenges invalid claims and advances verification"},
+              {"image": "relayer-cli", "dockerfile": "./relayer-cli/Dockerfile", "target": "relayer",
+               "title": "vea-relayer-cli",
+               "description": "Relayer bot for the Vea cross-chain bridge: relays messages from VeaInbox to VeaOutbox and executes Hashi messages"}
+            ]
+        run: |
+          set -euo pipefail
+          all=$(jq -c '[.[].image]' <<<"$IMAGES")
+          # Inputs every image is built from besides its own workspace (keep in step with
+          # the path filter above).
+          shared='^(contracts/|package\.json$|yarn\.lock$|\.yarnrc\.yml$|\.yarn/releases/|\.dockerignore$|\.github/workflows/publish-docker\.yml$)'
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/dev ] \
+            && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "$BEFORE" "$GITHUB_SHA")
+            printf 'Changed files:\n%s\n' "$changed"
+            if grep -qE "$shared" <<<"$changed"; then
+              pick=$all
+            else
+              pick=$(jq -c --arg files "$changed" \
+                '[.[].image | select(. as $i | $files | split("\n") | any(startswith($i + "/")))]' <<<"$IMAGES")
+            fi
+          else
+            # Tags, manual runs, or a push whose base commit is unknown: publish every image.
+            pick=$all
+          fi
+          echo "Publishing: $pick"
+          echo "matrix=$(jq -c --argjson pick "$pick" '[.[] | select(.image as $i | any($pick[]; . == $i))]' <<<"$IMAGES")" >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    needs: changes
+    if: needs.changes.outputs.matrix != '[]'
     # Publishing waits here for approval. The environment's required reviewers and
     # its allowed refs (dev, v* tags) are set in the repo settings, not in this file.
     environment: docker-publish
@@ -53,17 +115,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - image: validator-cli
-            dockerfile: ./validator-cli/Dockerfile
-            target: validator
-            title: vea-validator-cli
-            description: "Validator bot for the Vea cross-chain bridge: saves snapshots, challenges invalid claims and advances verification"
-          - image: relayer-cli
-            dockerfile: ./relayer-cli/Dockerfile
-            target: relayer
-            title: vea-relayer-cli
-            description: "Relayer bot for the Vea cross-chain bridge: relays messages from VeaInbox to VeaOutbox and executes Hashi messages"
+        include: ${{ fromJSON(needs.changes.outputs.matrix) }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
