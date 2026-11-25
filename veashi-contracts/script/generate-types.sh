@@ -36,8 +36,8 @@ const COPY_PLAN = [
     { srcBase: '$HASHI_SRC', file: 'Yaru.sol', destSubDir: '' },
 
     // HASHI ADAPTERS -> adapters/layerZero/
-    { srcBase: '$HASHI_SRC', file: 'adapters/layerZero/LayerZeroAdapter.sol', destSubDir: 'adapters/layerZero' },
-    { srcBase: '$HASHI_SRC', file: 'adapters/layerZero/LayerZeroReporter.sol', destSubDir: 'adapters/layerZero' },
+    { srcBase: '$HASHI_SRC', file: 'adapters/LayerZero/LayerZeroAdapter.sol', destSubDir: 'adapters/layerZero' },
+    { srcBase: '$HASHI_SRC', file: 'adapters/LayerZero/LayerZeroReporter.sol', destSubDir: 'adapters/layerZero' },
 
     // VEASHI SRC -> adapters/ (Vea, DeBridge, Chainlink and Axelar)
     { srcBase: '$VEASHI_SRC', file: 'vea', destSubDir: 'adapters/vea' },
