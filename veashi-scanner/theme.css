@@ -1,0 +1,90 @@
+/* The app's theme. kleros-ui.json "theme" names this file, and globals.css imports it right after the library's
+   theme.css, so a value set here replaces the library's, for its components and the app's classes alike.
+   Each commented line is a library token with the library's own value. To change one, uncomment it and set the
+   value: in :root for light, in :root.dark for dark. A token set in :root only keeps the library's dark value.
+   npm run ui:check holds this file to this shape: @layer base, rules on :root and :root.dark only, the library's
+   own token names only, no !important. One theme per app, and no themes on a part of the page. The theme's
+   contrast is the app's to check: the library's own light theme has known AA contrast gaps. */
+@layer base {
+  :root {
+    /* --klerosUIComponentsPrimaryPurple: #4d00b4; */
+    /* --klerosUIComponentsSecondaryPurple: #9013fe; */
+    /* --klerosUIComponentsMediumPurple: #f8f1ff; */
+    /* --klerosUIComponentsLightPurple: #fbf9fe; */
+    /* --klerosUIComponentsPrimaryBlue: #009aff; */
+    /* --klerosUIComponentsSecondaryBlue: #7bcbff; */
+    /* --klerosUIComponentsMediumBlue: #f0f9ff; */
+    /* --klerosUIComponentsLightBlue: #fcfeff; */
+    /* --klerosUIComponentsPrimaryText: #333333; */
+    /* --klerosUIComponentsSecondaryText: #999999; */
+    /* --klerosUIComponentsStroke: #e5e5e5; */
+    /* --klerosUIComponentsLightGrey: #fafafa; */
+    /* --klerosUIComponentsWhiteBackground: #ffffff; */
+    /* --klerosUIComponentsLightBackground: #fafbfc; */
+    /* --klerosUIComponentsImageCheckerColor: #e0e0e0; */
+    /* --klerosUIComponentsDefaultShadow: #00000002; */
+    /* --klerosUIComponentsHoveredShadow: #00000002; */
+    /* --klerosUIComponentsSuccess: #00c42b; */
+    /* --klerosUIComponentsSuccessLight: #f0fbf2; */
+    /* --klerosUIComponentsWarning: #ff9900; */
+    /* --klerosUIComponentsWarningLight: #fff9f0; */
+    /* --klerosUIComponentsError: #f60c36; */
+    /* --klerosUIComponentsErrorLight: #fef0f3; */
+    /* --klerosUIComponentsTint: #d14eff; */
+    /* --klerosUIComponentsTintMedium: #fcf4ff; */
+    /* --klerosUIComponentsTintPurple: #f4f0fa; */
+    /* --klerosUIComponentsDarkPurple: #220050; */
+    /* --klerosUIComponentsVioletPurple: #6a1dcd; */
+    /* --klerosUIComponentsLavenderPurple: #bb72ff; */
+    /* --klerosUIComponentsWhiteLowOpacitySubtle: #ffffff0d; */
+    /* --klerosUIComponentsWhiteLowOpacityStrong: #ffffff26; */
+    /* --klerosUIComponentsBlackLowOpacity: #00000080; */
+    /* --klerosUIComponentsSkeletonBackground: #ebebeb; */
+    /* --klerosUIComponentsSkeletonHighlight: #f5f5f5; */
+    /* --klerosUIComponentsPaleCyan: #acffff; */
+    /* --klerosUIComponentsLimeGreen: #f3ffd9; */
+    /* --klerosUIComponentsTransitionSpeed: .25s; */
+    --klerosUIComponentsBaseRadius: 6px; /* design A keeps 6px corners; the only token this theme sets */
+  }
+
+  :root.dark {
+    /* --klerosUIComponentsName: dark; */
+    /* --klerosUIComponentsPrimaryPurple: #7e1bd4; */
+    /* --klerosUIComponentsSecondaryPurple: #b45fff; */
+    /* --klerosUIComponentsMediumPurple: #390f6c; */
+    /* --klerosUIComponentsLightPurple: #fcfbff; */
+    /* --klerosUIComponentsPrimaryBlue: #6cc5ff; */
+    /* --klerosUIComponentsSecondaryBlue: #a5dbff; */
+    /* --klerosUIComponentsMediumBlue: #2e206c; */
+    /* --klerosUIComponentsLightBlue: #2a1260; */
+    /* --klerosUIComponentsPrimaryText: #daf0ff; */
+    /* --klerosUIComponentsSecondaryText: #becce5; */
+    /* --klerosUIComponentsStroke: #392c74; */
+    /* --klerosUIComponentsLightGrey: #2d1865; */
+    /* --klerosUIComponentsWhiteBackground: #220050; */
+    /* --klerosUIComponentsLightBackground: #1b003f; */
+    /* --klerosUIComponentsImageCheckerColor: #2c0d63; */
+    /* --klerosUIComponentsDefaultShadow: #00000000; */
+    /* --klerosUIComponentsHoveredShadow: #42498f80; */
+    /* --klerosUIComponentsSuccess: #65dc7f; */
+    /* --klerosUIComponentsSuccessLight: #32355b; */
+    /* --klerosUIComponentsWarning: #ffc46b; */
+    /* --klerosUIComponentsWarningLight: #451f54; */
+    /* --klerosUIComponentsError: #ff5a78; */
+    /* --klerosUIComponentsErrorLight: #360652; */
+    /* --klerosUIComponentsTint: #ddb6ff; */
+    /* --klerosUIComponentsTintMedium: #401d6c; */
+    /* --klerosUIComponentsTintPurple: #2f0960; */
+    /* --klerosUIComponentsDarkPurple: #220050; */
+    /* --klerosUIComponentsVioletPurple: #6a1dcd; */
+    /* --klerosUIComponentsLavenderPurple: #bb72ff; */
+    /* --klerosUIComponentsWhiteLowOpacitySubtle: #ffffff0f; */
+    /* --klerosUIComponentsWhiteLowOpacityStrong: #ffffff24; */
+    /* --klerosUIComponentsBlackLowOpacity: #00000080; */
+    /* --klerosUIComponentsSkeletonBackground: #3a2270; */
+    /* --klerosUIComponentsSkeletonHighlight: #3e307c; */
+    /* --klerosUIComponentsPaleCyan: #acffff; */
+    /* --klerosUIComponentsLimeGreen: #f3ffd9; */
+    /* --klerosUIComponentsTransitionSpeed: .25s; */
+  }
+}

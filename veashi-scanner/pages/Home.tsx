@@ -1,148 +1,381 @@
-import { useState, useMemo, useEffect } from "react";
-import Header from "@/components/Header";
-import SearchBar from "@/components/SearchBar";
-import Pagination from "@/components/Pagination";
-import ChainFilterPanel from "@/components/ChainFilterPanel";
-import NetworkToggle from "@/components/NetworkToggle";
-import { NO_CHAIN, ChainFilter, Network } from "@/lib/types";
-import MessagesTable from "@/components/MessagesTable";
-import { parseBlockInput } from "@/lib/utils";
+import { useMemo, useState, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { CompactPagination, NumberField } from "@kleros/ui-components-library";
+import {
+  DataTable,
+  Inline,
+  QueryState,
+  Section,
+  Stack,
+  StatusBadge,
+  shortenAddress,
+  type DataTableColumn,
+} from "@kleros/ui-components-library/kit";
+import { getAllSourceChains, getDestinationChains } from "@kleros/veashi-sdk";
+import { ChainFilterSelect } from "@/components/ChainFilterSelect";
+import { ChainRoute } from "@/components/ChainRoute";
+import { HeroPage } from "@/components/HeroPage";
+import { NetworkSwitch } from "@/components/NetworkSwitch";
+import { SearchForm } from "@/components/SearchForm";
+import { TimeAgo } from "@/components/TimeAgo";
 import { useMessageScanner } from "@/hooks/useMessageScanner";
+import { useMessageStatuses } from "@/hooks/useMessageStatuses";
+import { useNetworkParam } from "@/hooks/useNetworkParam";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useRelativeTimeTick } from "@/hooks/useRelativeTimeTick";
+import { matchesNetwork } from "@/lib/chains";
+import { formatBlock } from "@/lib/format";
+import { statusKey, type MessageStatus } from "@/lib/messageStatus";
+import { bridgeNames, statusBadge, thresholdText } from "@/lib/messageView";
+import { findChainForTx, parseBlockInput } from "@/lib/utils";
+import { NO_CHAIN, type ChainFilter, type Message, type Network } from "@/lib/types";
 
 const ITEMS_PER_PAGE = 10;
+const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
+const NETWORK_NAME: Record<Network, string> = { mainnet: "Mainnet", testnet: "Testnet" };
+const NETWORKS = (["mainnet", "testnet"] as const).map((value) => ({ value, label: NETWORK_NAME[value] }));
 
 export default function Home() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [network, setNetwork] = useState<Network>("mainnet");
-  const [sourceChain, setSourceChain] = useState<ChainFilter>(NO_CHAIN);
-  const [destChain, setDestChain] = useState<ChainFilter>(NO_CHAIN);
+  const [network, setNetwork] = useNetworkParam();
+  const [source, setSource] = useState<ChainFilter>(NO_CHAIN);
+  const [dest, setDest] = useState<ChainFilter>(NO_CHAIN);
   const [fromBlock, setFromBlock] = useState("");
   const [toBlock, setToBlock] = useState("");
+  const [page, setPage] = useState(1);
+  useRelativeTimeTick();
 
-  // Debounce so a scan fires after the user stops typing for 600 ms.
-  const debouncedFromBlock = useDebounce(fromBlock, 600);
-  const debouncedToBlock = useDebounce(toBlock, 600);
+  // Block numbers belong to the source chain, so the range applies only once one is picked. Debounced so a scan
+  // starts after typing stops for 600 ms, as before.
+  const blocksOn = source !== NO_CHAIN;
+  const debouncedFrom = useDebounce(fromBlock, 600);
+  const debouncedTo = useDebounce(toBlock, 600);
+  const parsedFrom = useMemo(() => (blocksOn ? parseBlockInput(debouncedFrom) : undefined), [blocksOn, debouncedFrom]);
+  const parsedTo = useMemo(() => (blocksOn ? parseBlockInput(debouncedTo) : undefined), [blocksOn, debouncedTo]);
 
-  const parsedFromBlock = useMemo(() => parseBlockInput(debouncedFromBlock), [debouncedFromBlock]);
-  const parsedToBlock = useMemo(() => parseBlockInput(debouncedToBlock), [debouncedToBlock]);
+  const { messages, isScanning, blockRange, error } = useMessageScanner(source, dest, parsedFrom, parsedTo, network);
+  const { get } = useMessageStatuses(messages, { enabled: !isScanning });
 
-  const { messages, isScanning, blockRange, error } = useMessageScanner(
-    sourceChain,
-    destChain,
-    parsedFromBlock,
-    parsedToBlock,
-    network
-  );
+  const numPages = Math.max(1, Math.ceil(messages.length / ITEMS_PER_PAGE));
+  const currentPage = Math.min(page, numPages);
+  const rows = messages.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  const hasActiveFilter = sourceChain !== NO_CHAIN || destChain !== NO_CHAIN;
-
-  const totalPages = Math.max(1, Math.ceil(messages.length / ITEMS_PER_PAGE));
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [totalPages, currentPage]);
-
-  const paginatedMessages = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return messages.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [messages, currentPage]);
-
-  const handleNetworkChange = (nextNetwork: Network) => {
-    setNetwork(nextNetwork);
-    setSourceChain(NO_CHAIN);
-    setDestChain(NO_CHAIN);
+  const hasActiveFilter = source !== NO_CHAIN || dest !== NO_CHAIN || fromBlock !== "" || toBlock !== "";
+  const resetFilters = () => {
+    setSource(NO_CHAIN);
+    setDest(NO_CHAIN);
     setFromBlock("");
     setToBlock("");
-    setCurrentPage(1);
+    setPage(1);
   };
 
-  const handleSourceChange = (chain: ChainFilter) => {
-    setSourceChain(chain);
-    setCurrentPage(1);
-  };
-
-  const handleDestChange = (chain: ChainFilter) => {
-    setDestChain(chain);
-    setCurrentPage(1);
-  };
-
-  const clearFilters = () => {
-    setSourceChain(NO_CHAIN);
-    setDestChain(NO_CHAIN);
+  const changeSource = (next: ChainFilter) => {
+    setSource(next);
+    // To stays when the new source can reach it; otherwise it goes back to All chains.
+    if (next !== NO_CHAIN && dest !== NO_CHAIN && !safeDestinations(next).includes(dest as number)) setDest(NO_CHAIN);
     setFromBlock("");
     setToBlock("");
-    setCurrentPage(1);
+    setPage(1);
   };
 
   return (
-    <div className="min-h-screen">
-      <Header />
-
-      <main className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="animate-fade-in flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <SearchBar />
-          </div>
-          <NetworkToggle value={network} onChange={handleNetworkChange} />
-        </div>
-
-        {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-base text-red-500 text-sm animate-fade-in">
-            {error}
-          </div>
-        )}
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <ChainFilterPanel
-            sourceChain={sourceChain}
-            destChain={destChain}
-            onSourceChange={handleSourceChange}
-            onDestChange={handleDestChange}
-            blockRange={blockRange}
-            fromBlock={fromBlock}
-            toBlock={toBlock}
-            onFromBlockChange={(val) => {
-              setFromBlock(val);
-              setCurrentPage(1);
-            }}
-            onToBlockChange={(val) => {
-              setToBlock(val);
-              setCurrentPage(1);
-            }}
-            hasActiveFilter={hasActiveFilter}
-            onClearFilters={clearFilters}
-            network={network}
-          />
-        </div>
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold bg-linear-to-r from-white to-(--text-secondary) bg-clip-text text-transparent flex items-center gap-3">
-              Cross-Chain Messages
-              {isScanning && (
-                <span className="text-sm font-normal text-purple-500 animate-pulse flex items-center gap-1.5">
-                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                    <path
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      className="opacity-75"
-                    />
-                  </svg>
-                </span>
-              )}
-            </h2>
-            <span className="text-sm text-(--text-muted)">{messages.length} messages found</span>
-          </div>
-
-          <MessagesTable messages={paginatedMessages} isLoading={isScanning} onClearFilters={clearFilters} />
-        </div>
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.3s" }}>
-          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-        </div>
-      </main>
-    </div>
+    <HeroPage
+      titleId="find-title"
+      hero={
+        <Stack gap={6}>
+          <h1 id="find-title" className="text-klerosUIComponentsPrimaryText text-2xl font-semibold">
+            Find a cross-chain message
+          </h1>
+          <Stack gap={2}>
+            <HashSearch
+              aside={
+                <NetworkSwitch
+                  label="Network"
+                  options={NETWORKS}
+                  value={network}
+                  onChange={(next) => {
+                    setNetwork(next);
+                    resetFilters();
+                  }}
+                />
+              }
+            />
+            <p className="text-klerosUIComponentsSecondaryText text-xs">
+              Search checks every chain a message can be sent from, mainnet and testnet. The network switch only changes
+              the list below.
+            </p>
+          </Stack>
+        </Stack>
+      }
+    >
+      <Section
+        title={`${NETWORK_NAME[network]} messages`}
+        actions={<p className="text-klerosUIComponentsSecondaryText text-sm">Newest first · refreshes every 15 s</p>}
+      >
+        <Filters
+          network={network}
+          source={source}
+          dest={dest}
+          onSource={changeSource}
+          onDest={(next) => {
+            setDest(next);
+            setPage(1);
+          }}
+          fromBlock={fromBlock}
+          toBlock={toBlock}
+          onFromBlock={(v) => {
+            setFromBlock(v);
+            setPage(1);
+          }}
+          onToBlock={(v) => {
+            setToBlock(v);
+            setPage(1);
+          }}
+          blocksOn={blocksOn}
+          scanned={
+            blocksOn && blockRange
+              ? `Scanning blocks ${formatBlock(blockRange.start)} – ${formatBlock(blockRange.end)}`
+              : null
+          }
+        />
+        <QueryState
+          isLoading={isScanning && messages.length === 0}
+          isError={Boolean(error)}
+          error={error ? new Error(error) : undefined}
+          data={rows}
+          errorTitle="The messages could not be loaded"
+          empty={{
+            title: "No messages",
+            description: "No message matches these filters yet. The list refreshes every 15 s.",
+            action: hasActiveFilter ? { text: "Clear filters", onPress: resetFilters } : undefined,
+          }}
+        >
+          {(pageRows) => (
+            <Stack gap={4}>
+              <MessagesTable rows={pageRows} statusOf={get} />
+              <CompactPagination
+                currentPage={currentPage}
+                numPages={numPages}
+                callback={setPage}
+                label={`Page ${currentPage}`}
+              />
+            </Stack>
+          )}
+        </QueryState>
+      </Section>
+    </HeroPage>
   );
 }
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+/** The source-transaction hash search (the shared SearchForm), with `aside` (the network switch) in the same row. */
+function HashSearch({ aside }: Readonly<{ aside: ReactNode }>) {
+  const navigate = useNavigate();
+  return (
+    <SearchForm
+      label="Source transaction hash"
+      placeholder="0x… the hash of the transaction that sent the message"
+      aside={aside}
+      validate={(q) => {
+        if (TX_HASH_REGEX.test(q)) return null;
+        return q
+          ? "Invalid transaction hash. Expected 0x followed by 64 hex characters."
+          : "Enter a source transaction hash: 0x followed by 64 hex characters.";
+      }}
+      onSearch={async (q) => {
+        const chainId = await findChainForTx(q);
+        if (!chainId) return "Transaction not found on any supported chain.";
+        navigate(`/tx/${chainId}/${q}`);
+        return null;
+      }}
+    />
+  );
+}
+
+// ─── Filters ──────────────────────────────────────────────────────────────────
+
+function safeSources(network: Network): number[] {
+  try {
+    return getAllSourceChains().filter((id) => matchesNetwork(id, network));
+  } catch {
+    return [];
+  }
+}
+
+function safeDestinations(sourceId: number): number[] {
+  try {
+    return getDestinationChains(sourceId);
+  } catch {
+    return [];
+  }
+}
+
+function Filters({
+  network,
+  source,
+  dest,
+  onSource,
+  onDest,
+  fromBlock,
+  toBlock,
+  onFromBlock,
+  onToBlock,
+  blocksOn,
+  scanned,
+}: Readonly<{
+  network: Network;
+  source: ChainFilter;
+  dest: ChainFilter;
+  onSource: (c: ChainFilter) => void;
+  onDest: (c: ChainFilter) => void;
+  fromBlock: string;
+  toBlock: string;
+  onFromBlock: (v: string) => void;
+  onToBlock: (v: string) => void;
+  blocksOn: boolean;
+  scanned: string | null;
+}>) {
+  const sources = useMemo(() => safeSources(network), [network]);
+  // To lists the source's destinations, or every destination on the network when From is All chains, so a
+  // destination works without a source.
+  const destinations = useMemo(() => {
+    const ids = source === NO_CHAIN ? sources.flatMap(safeDestinations) : safeDestinations(source);
+    return [...new Set(ids)].filter((id) => matchesNetwork(id, network));
+  }, [source, sources, network]);
+
+  return (
+    <form aria-label="Filter messages" onSubmit={(e) => e.preventDefault()}>
+      <Inline gap={6}>
+        <Inline gap={3}>
+          <ChainFilterSelect label="From" chainIds={sources} value={source} onChange={onSource} />
+          <ChainFilterSelect label="To" chainIds={destinations} value={dest} onChange={onDest} />
+        </Inline>
+        <Inline gap={2} role="group" aria-labelledby="filter-blocks">
+          <span id="filter-blocks" className="text-klerosUIComponentsSecondaryText text-sm">
+            Source blocks
+          </span>
+          <Inline gap={2} className="flex-nowrap">
+            <BlockField
+              label="From block"
+              placeholder="from"
+              value={fromBlock}
+              onChange={onFromBlock}
+              isDisabled={!blocksOn}
+            />
+            <span aria-hidden="true" className="text-klerosUIComponentsSecondaryText">
+              –
+            </span>
+            <BlockField label="To block" placeholder="to" value={toBlock} onChange={onToBlock} isDisabled={!blocksOn} />
+          </Inline>
+          <span className="text-klerosUIComponentsSecondaryText text-xs">
+            {blocksOn ? scanned : "Pick a source chain first"}
+          </span>
+        </Inline>
+      </Inline>
+    </form>
+  );
+}
+
+function BlockField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  isDisabled,
+}: Readonly<{
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  isDisabled: boolean;
+}>) {
+  return (
+    <NumberField
+      aria-label={label}
+      placeholder={placeholder}
+      value={value === "" ? Number.NaN : Number(value)}
+      onChange={(n) => onChange(Number.isNaN(n) ? "" : String(n))}
+      minValue={0}
+      formatOptions={{ useGrouping: false, maximumFractionDigits: 0 }}
+      isDisabled={isDisabled}
+      inputProps={{ className: "font-mono text-sm" }}
+      className="w-36"
+    />
+  );
+}
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+
+function MessagesTable({ rows, statusOf }: Readonly<{ rows: Message[]; statusOf: (m: Message) => MessageStatus }>) {
+  const navigate = useNavigate();
+  const columns: DataTableColumn<Message>[] = [
+    {
+      key: "status",
+      header: "Status",
+      width: 160,
+      render: (m) => {
+        const b = statusBadge(statusOf(m));
+        return (
+          <StatusBadge tone={b.tone} title={b.title} className="whitespace-nowrap">
+            {b.text}
+          </StatusBadge>
+        );
+      },
+    },
+    {
+      key: "route",
+      header: "Route",
+      width: 292,
+      render: (m) => <ChainRoute from={m.sourceChain} to={m.destinationChain} />,
+    },
+    {
+      key: "bridges",
+      header: "Bridges",
+      render: (m) => (
+        <span className="whitespace-nowrap">
+          {bridgeNames(m).join(", ")}
+          <span className="text-klerosUIComponentsSecondaryText"> · {thresholdText(m)}</span>
+        </span>
+      ),
+    },
+    {
+      key: "tx",
+      header: "Source transaction",
+      width: 216,
+      render: (m) => (
+        <Link
+          to={txPath(m)}
+          className="text-klerosUIComponentsPrimaryBlue hover:text-klerosUIComponentsSecondaryBlue font-mono whitespace-nowrap"
+        >
+          {shortenAddress(m.txHash, 8)}
+        </Link>
+      ),
+    },
+    {
+      key: "block",
+      header: "Block",
+      align: "right",
+      width: 133,
+      render: (m) => <span className="font-mono">{formatBlock(m.blockNumber)}</span>,
+    },
+    {
+      key: "age",
+      header: "Age",
+      align: "right",
+      width: 121,
+      render: (m) => <TimeAgo unixSeconds={m.blockTimestamp} />,
+    },
+  ];
+
+  return (
+    <DataTable
+      columns={columns}
+      rows={rows}
+      rowKey={statusKey}
+      onRowPress={(m) => navigate(txPath(m))}
+      className="bg-klerosUIComponentsWhiteBackground"
+    />
+  );
+}
+
+const txPath = (m: Message) => `/tx/${m.sourceChain}/${m.txHash}`;

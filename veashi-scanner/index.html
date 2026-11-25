@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="scheme-light dark:scheme-dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
@@ -9,8 +9,25 @@
       name="description"
       content="Explore cross-chain messages sent using Hashi protocol with multiple bridge providers"
     />
+    <!-- The mode before first paint, so the wrong one never shows: ?theme=light|dark (the starter's rule), else the
+         choice saved by the header's switch (localStorage "veashi-theme"), else the system setting. Keep it in step
+         with components/AppHeader/AppHeader.tsx, which saves the choice. -->
+    <script>
+      (function () {
+        var asked = new URLSearchParams(window.location.search).get("theme");
+        var saved = null;
+        try {
+          saved = window.localStorage.getItem("veashi-theme");
+        } catch (e) {}
+        var pick = asked === "dark" || asked === "light" ? asked : saved === "dark" || saved === "light" ? saved : null;
+        var dark = pick
+          ? pick === "dark"
+          : typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.classList.toggle("dark", dark);
+      })();
+    </script>
   </head>
-  <body class="antialiased">
+  <body class="bg-klerosUIComponentsLightBackground font-sans text-klerosUIComponentsPrimaryText antialiased">
     <div id="root"></div>
     <script type="module" src="/main.tsx"></script>
   </body>

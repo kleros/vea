@@ -347,7 +347,9 @@ export async function fetchEpochDetail(route: VeaRoute, epoch: number): Promise<
     };
   });
 
-  return { row: toRow(route, epoch, snapshot, claim), messages };
+  const row = toRow(route, epoch, snapshot, claim);
+  // As in fetchEpochs: a failed claim query is not "no claim yet", so it must not read as "Saved".
+  return { row: claimData === null ? { ...row, status: "Unknown" as const } : row, messages };
 }
 
 export interface EpochLocation {

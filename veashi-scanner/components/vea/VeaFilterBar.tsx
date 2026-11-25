@@ -1,19 +1,11 @@
 import { useMemo } from "react";
-import ChainSelect from "@/components/ChainSelect";
-import FilterPanelHeader from "@/components/FilterPanelHeader";
-import SegmentedToggle from "@/components/SegmentedToggle";
+import { Button } from "@kleros/ui-components-library";
+import { Inline } from "@kleros/ui-components-library/kit";
+import { ChainFilterSelect } from "@/components/ChainFilterSelect";
 import { getVeaDestinationChainIds, getVeaSourceChainIds } from "@/lib/vea/config";
-import { type ChainFilter } from "@/lib/types";
-import type { VeaNetwork } from "@/lib/vea/types";
-
-const NETWORK_OPTIONS: { value: VeaNetwork; label: string }[] = [
-  { value: "testnet", label: "Testnet" },
-  { value: "devnet", label: "Devnet" },
-];
+import type { ChainFilter } from "@/lib/types";
 
 interface VeaFilterBarProps {
-  network: VeaNetwork;
-  onNetworkChange: (network: VeaNetwork) => void;
   sourceChain: ChainFilter;
   destChain: ChainFilter;
   onSourceChange: (chain: ChainFilter) => void;
@@ -22,9 +14,8 @@ interface VeaFilterBarProps {
   onClearFilters: () => void;
 }
 
+/** From and To (core DropdownSelect, "All chains" by default), and "Clear filters" while one is set, as Home's filters. */
 export default function VeaFilterBar({
-  network,
-  onNetworkChange,
   sourceChain,
   destChain,
   onSourceChange,
@@ -36,23 +27,12 @@ export default function VeaFilterBar({
   const destOptions = useMemo(() => getVeaDestinationChainIds(sourceChain), [sourceChain]);
 
   return (
-    <div className="glass border border-(--border) overflow-hidden">
-      <FilterPanelHeader title="Filter Epochs" hasActiveFilter={hasActiveFilter} onClearFilters={onClearFilters} />
-
-      <div className="p-5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <ChainSelect label="From Chain" value={sourceChain} options={sourceOptions} onChange={onSourceChange} />
-          <ChainSelect label="To Chain" value={destChain} options={destOptions} onChange={onDestChange} />
-          <div className="flex flex-col">
-            <label className="text-xs font-semibold uppercase tracking-wider text-(--klerosUIComponentsSecondaryText) mb-2 block">
-              Network
-            </label>
-            <div className="flex-1 flex items-center">
-              <SegmentedToggle options={NETWORK_OPTIONS} value={network} onChange={onNetworkChange} size="md" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <form aria-label="Filter epochs" onSubmit={(e) => e.preventDefault()}>
+      <Inline gap={3}>
+        <ChainFilterSelect label="From" chainIds={sourceOptions} value={sourceChain} onChange={onSourceChange} />
+        <ChainFilterSelect label="To" chainIds={destOptions} value={destChain} onChange={onDestChange} />
+        {hasActiveFilter && <Button variant="secondary" small text="Clear filters" onPress={onClearFilters} />}
+      </Inline>
+    </form>
   );
 }

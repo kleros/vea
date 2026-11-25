@@ -1,25 +1,35 @@
+import { StatusBadge, type Tone } from "@kleros/ui-components-library/kit";
 import type { VeaStatus } from "@/lib/vea/types";
 
-const STATUS_STYLES: Record<VeaStatus, { bg: string; text: string }> = {
-  Pending: { bg: "bg-(--klerosUIComponentsWarningLight)", text: "text-(--klerosUIComponentsWarning)" },
-  Saved: { bg: "bg-(--klerosUIComponentsWarningLight)", text: "text-(--klerosUIComponentsWarning)" },
-  Claimed: { bg: "bg-(--surface)", text: "text-(--text-secondary)" },
-  Challenged: { bg: "bg-(--klerosUIComponentsErrorLight)", text: "text-(--klerosUIComponentsError)" },
-  Verifying: { bg: "bg-purple-700/20", text: "text-purple-400" },
-  Verified: { bg: "bg-(--klerosUIComponentsSuccessLight)", text: "text-(--klerosUIComponentsSuccess)" },
-  Resolved: { bg: "bg-pink-600/20", text: "text-pink-400" },
-  Unknown: { bg: "bg-(--surface)", text: "text-(--text-muted)" },
+/** Each epoch status's tone, text and explanation (the badge's title). */
+const VIEW: Record<VeaStatus, { tone: Tone; text: string; title: string }> = {
+  Pending: { tone: "warning", text: "Pending", title: "The snapshot is not saved yet, or is being resolved." },
+  Saved: {
+    tone: "neutral",
+    text: "Saved",
+    title: "The snapshot is saved on the source chain; nobody has claimed it yet.",
+  },
+  Claimed: { tone: "info", text: "Claimed", title: "A bridger claimed the state root on the destination chain." },
+  Challenged: { tone: "error", text: "Challenged", title: "The claim was challenged." },
+  Verifying: { tone: "accent", text: "Verifying", title: "Verification of the claim has started." },
+  Verified: { tone: "success", text: "Verified", title: "The claim was verified." },
+  Resolved: { tone: "success", text: "Resolved", title: "The claim was challenged, then resolved." },
+  Unknown: { tone: "neutral", text: "Not checked", title: "The claim query failed, so no status is shown." },
 };
 
 interface VeaStatusBadgeProps {
   status: VeaStatus;
 }
 
+/**
+ * An epoch's status as a kit StatusBadge. "Unknown" (`fetchEpochs` gives it when the claim query failed) reads "Not
+ * checked", as on the other pages.
+ */
 export default function VeaStatusBadge({ status }: Readonly<VeaStatusBadgeProps>) {
-  const style = STATUS_STYLES[status];
+  const view = VIEW[status];
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${style.bg} ${style.text}`}>
-      {status}
-    </span>
+    <StatusBadge tone={view.tone} title={view.title} className="whitespace-nowrap">
+      {view.text}
+    </StatusBadge>
   );
 }

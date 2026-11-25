@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { Address, Hash } from "viem";
+import { TransactionReceiptNotFoundError, type Address, type Hash } from "viem";
 import { getMessageFromTxHash } from "@/lib/hashi";
 import { getYaho, getDestinationChains } from "@kleros/veashi-sdk";
 import { findMessageInCache } from "@/lib/scannerCache";
@@ -14,11 +14,15 @@ import type { Message } from "@/lib/types";
  *  2. Envio indexer GraphQL query (fast, indexed data).
  *  3. RPC fallback — iterates all destination chains for `sourceChainId`
  *     and calls `getMessageFromTxHash` until one returns a result.
+ *
+ * `readFailed` is true when the error means the source chain could not be read (every RPC attempt threw something
+ * other than "no such receipt"), so the page says "not checked" instead of "not found".
  */
 export function useTransaction(sourceChainId: number, txHash: string) {
   const [message, setMessage] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [readFailed, setReadFailed] = useState(false);
   const [source, setSource] = useState<"cache" | "chain" | null>(null);
 
   useEffect(() => {
@@ -29,6 +33,7 @@ export function useTransaction(sourceChainId: number, txHash: string) {
     const load = async () => {
       setIsLoading(true);
       setError(null);
+      setReadFailed(false);
       setMessage(null);
       setSource(null);
 
@@ -68,6 +73,9 @@ export function useTransaction(sourceChainId: number, txHash: string) {
         }
 
         let found: Awaited<ReturnType<typeof getMessageFromTxHash>> = null;
+        // Attempts that gave an answer (a message, none, or "no such receipt"), and attempts that threw anything else.
+        let answered = 0;
+        let failed = 0;
 
         for (const dstId of destChainIds) {
           if (cancelled) return;
@@ -75,14 +83,25 @@ export function useTransaction(sourceChainId: number, txHash: string) {
           if (!yahoAddress) continue;
           try {
             found = await getMessageFromTxHash(yahoAddress as Address, sourceChainId, txHash as Hash);
+            answered++;
             if (found) break;
-          } catch {
-            // This dest chain didn't have the tx — try the next one.
+          } catch (err) {
+            // No receipt is an answer (the tx is not on this chain); any other error means the chain was not read.
+            if (err instanceof TransactionReceiptNotFoundError) answered++;
+            else failed++;
             continue;
           }
         }
 
         if (cancelled) return;
+
+        if (!found && failed > 0 && answered === 0) {
+          setReadFailed(true);
+          setError(
+            "The source chain could not be read, so it is not known whether this message exists. Try again later."
+          );
+          return;
+        }
 
         if (!found) {
           setError("Transaction not found. It may not exist on this chain or be outside the scanned range.");
@@ -123,5 +142,5 @@ export function useTransaction(sourceChainId: number, txHash: string) {
     };
   }, [sourceChainId, txHash]);
 
-  return { message, isLoading, error, source };
+  return { message, isLoading, error, readFailed, source };
 }
