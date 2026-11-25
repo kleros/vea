@@ -1,4 +1,25 @@
 #!/bin/bash
+# Builds the veashi-sdk inputs. Run it from veashi-sdk/ (`yarn extract` does).
+#
+#   generate-types.sh                   Keep the committed contracts/ and abi/, generate
+#                                       typechain-types/ from abi/, copy the broadcast route
+#                                       files to addresses/ and rewrite registry.ts.
+#                                       Needs no forge build. `yarn build` runs this.
+#   generate-types.sh --from-contracts  First replace contracts/ and abi/ with the current
+#                                       veashi-contracts sources and forge artifacts. Run
+#                                       `forge build` in veashi-contracts before it.
+#
+# contracts/ and abi/ are committed because the SDK must describe the contracts that are
+# deployed. 0.1.x ships the ones deployed before #529; move to the newer ones only together
+# with a redeployment, through --from-contracts and a reviewed diff.
+set -euo pipefail
+
+FROM_CONTRACTS=false
+case "${1:-}" in
+  "") ;;
+  --from-contracts) FROM_CONTRACTS=true ;;
+  *) echo "usage: $0 [--from-contracts]" >&2; exit 1 ;;
+esac
 
 # --- Configuration ---
 HASHI_SRC="../veashi-contracts/lib/hashi/packages/evm/contracts"
@@ -14,9 +35,25 @@ SDK_ADD_DIR="./addresses"
 REGISTRY_FILE="./registry.ts"
 
 # --- Setup ---
-rm -rf "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR" "$SDK_ADD_DIR"
-mkdir -p "$TARGET_DIR" "$SDK_ABI_DIR" "$TYPECHAIN_DIR" "$SDK_ADD_DIR"
+if [ "$FROM_CONTRACTS" = true ]; then
+  if [ ! -d "$ARTIFACTS_DIR" ]; then
+    echo "❌ $ARTIFACTS_DIR not found: run forge build in veashi-contracts first" >&2
+    exit 1
+  fi
+  rm -rf "$TARGET_DIR" "$SDK_ABI_DIR"
+  mkdir -p "$TARGET_DIR" "$SDK_ABI_DIR"
+else
+  for dir in "$TARGET_DIR" "$SDK_ABI_DIR"; do
+    if [ ! -d "$dir" ]; then
+      echo "❌ $dir is missing: restore it from git, or regenerate it with --from-contracts" >&2
+      exit 1
+    fi
+  done
+fi
+rm -rf "$TYPECHAIN_DIR" "$SDK_ADD_DIR"
+mkdir -p "$TYPECHAIN_DIR" "$SDK_ADD_DIR"
 
+if [ "$FROM_CONTRACTS" = true ]; then
 echo "🎯 Executing targeted copy and dependency crawl..."
 
 node -e "
@@ -126,10 +163,13 @@ function walk(dir) {
 }
 walk('$ARTIFACTS_DIR');
 "
+else
+echo "📌 Using the committed contracts/ and abi/"
+fi
 
 # Run TypeChain ONLY on the filtered ABIs
 echo "🚀 Generating targeted TypeChain types..."
-npx typechain --target ethers-v6 "$SDK_ABI_DIR/*.json" --out-dir "$TYPECHAIN_DIR"
+npx --no-install typechain --target ethers-v6 "$SDK_ABI_DIR/*.json" --out-dir "$TYPECHAIN_DIR"
 
 # Syncing Addresses with SDK
 echo "🔗 Syncing chain-specific broadcast files to SDK..."
