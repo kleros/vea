@@ -1,0 +1,201 @@
+name: Publish Veashi SDK
+
+# Publishes @kleros/veashi-sdk to npm when veashi-sdk/package.json on dev carries a version
+# npm does not have yet. A release is a version bump merged to dev; every other run finds the
+# version already published and stops in the check job.
+#
+# npm trusted publishing: the publish job trades its GitHub OIDC token for a one-time npm
+# token, so no npm token is stored in this repo, and npm adds a provenance statement that
+# links the package to this workflow run. npmjs.com must list this repo, this file and the
+# npm-publish environment as a trusted publisher of @kleros/veashi-sdk.
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "veashi-sdk/package.json"
+      - ".github/workflows/publish-veashi-sdk.yml"
+  workflow_dispatch:
+
+# Declare default permissions as read only.
+permissions:
+  contents: read
+
+# One release at a time, in push order. queue: max keeps every pending run (the default keeps
+# only the newest pending one and cancels the rest, which would skip that version).
+concurrency:
+  group: publish-veashi-sdk
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  check:
+    # workflow_dispatch has no native ref filter, so a manual run from any branch would publish
+    # that branch. The push trigger is limited to dev; this limits manual runs to dev too.
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.version.outputs.publish }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      node: ${{ steps.version.outputs.node }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Node from the root package.json Volta pin.
+      - name: Setup Node.js environment
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version-file: package.json
+
+      # Publish only a version npm does not have yet. A plain version must be above the current
+      # latest and becomes latest. A prerelease (1.2.3-rc.1) goes to the next tag.
+      - name: Decide what to publish
+        id: version
+        run: |
+          node <<'EOF'
+          const fs = require("fs");
+          const { execFileSync } = require("child_process");
+          const { name, version } = require("./veashi-sdk/package.json");
+          const output = (key, value) => fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+          const view = (field) =>
+            JSON.parse(execFileSync("npm", ["view", name, field, "--json"], { encoding: "utf8" }));
+          const parse = (v) => {
+            const m = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(v);
+            if (!m) throw new Error(`${v} is not an x.y.z or x.y.z-pre version`);
+            return { core: m.slice(1, 4).map(Number), pre: m[4] };
+          };
+
+          const ours = parse(version);
+          if ([].concat(view("versions")).includes(version)) {
+            console.log(`${name}@${version} is already on npm: nothing to publish.`);
+            output("publish", "false");
+            process.exit(0);
+          }
+          let tag = "next";
+          if (!ours.pre) {
+            const latest = view("dist-tags.latest");
+            const step = ours.core.map((n, i) => n - parse(latest).core[i]).find((d) => d !== 0) ?? 0;
+            if (step <= 0) {
+              throw new Error(
+                `${version} is not above latest (${latest}), so publishing it would move latest back. ` +
+                  "Publish it by hand under its own dist-tag.",
+              );
+            }
+            tag = "latest";
+          }
+          console.log(`Publishing ${name}@${version} under the ${tag} tag.`);
+          output("publish", "true");
+          output("version", version);
+          output("tag", tag);
+          output("node", require("./package.json").volta.node);
+          EOF
+
+  # Builds and packs without id-token, so the install and the build tools never hold a
+  # credential that can publish. The publish job only runs npm on the packed tarball.
+  build:
+    needs: check
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      # No submodules and no forge build: yarn build uses the committed veashi-sdk/contracts
+      # and veashi-sdk/abi, plus the route files in veashi-contracts/broadcast.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: ${{ needs.check.outputs.node }}
+
+      # Yarn from the root package.json packageManager field.
+      - name: Enable Corepack
+        run: corepack enable
+
+      # The build needs typechain, ethers and typescript from the workspace install, and no
+      # package install script (--mode=skip-build).
+      - name: Install workspace dependencies
+        run: yarn install --immutable --mode=skip-build
+        env:
+          HUSKY: 0
+
+      - name: Build the SDK
+        run: yarn workspace @kleros/veashi-sdk build
+
+      # yarn build rewrites addresses/ and registry.ts from veashi-contracts/broadcast. If that
+      # changes a committed file, the commit is out of sync and the package would not match it.
+      - name: Check the build changed no committed file
+        run: |
+          if [ -n "$(git status --porcelain -- veashi-sdk)" ]; then
+            git status --short -- veashi-sdk
+            git diff --stat -- veashi-sdk
+            echo "::error::yarn build changed committed files in veashi-sdk. Run it in veashi-sdk and commit the result."
+            exit 1
+          fi
+
+      - name: Pack
+        working-directory: veashi-sdk
+        run: |
+          mkdir -p "$RUNNER_TEMP/pack"
+          npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/pack"
+          tar -tzf "$RUNNER_TEMP"/pack/*.tgz | sort
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: veashi-sdk-package
+          path: ${{ runner.temp }}/pack/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [check, build]
+    # Publishing waits here for approval. The npm-publish environment's required reviewers and
+    # its allowed branch (dev) are set in the repo settings, not in this file.
+    environment: npm-publish
+    runs-on: ubuntu-latest
+    permissions:
+      # The OIDC token npm trusted publishing trades for a one-time publish token.
+      id-token: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: ${{ needs.check.outputs.node }}
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: veashi-sdk-package
+          path: ${{ runner.temp }}/pack
+
+      - name: Check the npm CLI supports trusted publishing
+        run: |
+          node -e '
+            const [major, minor, patch] = process.argv[1].split(".").map(Number);
+            if (major < 11 || (major === 11 && (minor < 5 || (minor === 5 && patch < 1)))) {
+              console.error(`npm ${process.argv[1]} cannot use trusted publishing: it needs npm 11.5.1 or newer.`);
+              process.exit(1);
+            }
+          ' "$(npm --version)"
+
+      - name: Publish
+        env:
+          TAG: ${{ needs.check.outputs.tag }}
+        run: npm publish "$RUNNER_TEMP"/pack/*.tgz --access public --tag "$TAG"

@@ -48,3 +48,13 @@ import "@kleros/veashi-sdk/contracts/interfaces/IYaru.sol";
 import "@kleros/veashi-sdk/contracts/adapters/vea/VeaReporter.sol";
 import "@kleros/veashi-sdk/contracts/adapters/layerZero/LayerZeroReporter.sol";
 ```
+
+---
+
+## 🚀 Releasing
+
+Bump `version` in `veashi-sdk/package.json` and merge it to `dev`. The `Publish Veashi SDK` workflow (`.github/workflows/publish-veashi-sdk.yml`) builds and packs the package, waits for approval in the `npm-publish` environment, then publishes it to npm with trusted publishing. A version that is already on npm publishes nothing.
+
+`yarn build` uses the committed `contracts/` and `abi/`, so the package describes the deployed contracts. It only regenerates the TypeChain types, `addresses/` (from `veashi-contracts/broadcast`) and `registry.ts`. Commit any change it makes before you release.
+
+To ship newer contracts together with their redeployment, run `forge build` in `veashi-contracts`, then `yarn extract:contracts` in `veashi-sdk`. Review the diff to `contracts/` and `abi/`, and bump the minor version.

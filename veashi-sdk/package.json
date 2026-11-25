@@ -1,10 +1,15 @@
 {
   "name": "@kleros/veashi-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SDK and selected smart contracts for Veashi",
   "packageManager": "yarn@4.6.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kleros/vea.git",
+    "directory": "veashi-sdk"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -17,8 +22,9 @@
     "./contracts/*.sol": "./contracts/*.sol"
   },
   "scripts": {
-    "clean": "rm -rf dist contracts typechain-types",
+    "clean": "rm -rf dist typechain-types",
     "extract": "bash ../veashi-contracts/script/generate-types.sh",
+    "extract:contracts": "bash ../veashi-contracts/script/generate-types.sh --from-contracts",
     "build:ts": "tsc -p tsconfig.json",
     "build": "yarn clean && yarn extract && yarn build:ts",
     "prepack": "yarn build"
