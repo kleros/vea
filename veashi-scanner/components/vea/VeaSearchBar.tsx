@@ -1,72 +1,31 @@
-import { useState } from "react";
+import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Searchbar, Button } from "@kleros/ui-components-library";
+import { SearchForm } from "@/components/SearchForm";
 import { findEpochByNumber, findEpochByTxHash } from "@/lib/vea/client";
 
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const EPOCH_REGEX = /^\d{1,15}$/;
 
-export default function VeaSearchBar() {
-  const [search, setSearch] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/** The epoch search (a number or a transaction hash), with `aside` (the network switch) in the same row, as on Home. */
+export default function VeaSearchBar({ aside }: Readonly<{ aside?: ReactNode }>) {
   const navigate = useNavigate();
-
-  const handleChange = (value: string) => {
-    setSearch(value);
-    if (error) setError(null);
-  };
-
-  const runSearch = async (rawValue: string) => {
-    const trimmed = rawValue.trim();
-    if (!trimmed) return;
-
-    const isTxHash = TX_HASH_REGEX.test(trimmed);
-    const isEpoch = EPOCH_REGEX.test(trimmed);
-    if (!isTxHash && !isEpoch) {
-      setError("Enter a transaction hash (0x + 64 hex characters) or an epoch number.");
-      return;
-    }
-
-    setIsSearching(true);
-    setError(null);
-
-    try {
-      const found = isTxHash ? await findEpochByTxHash(trimmed) : await findEpochByNumber(Number(trimmed));
-      if (found) {
-        navigate(`/vea/${found.route.bridgeKey}/${found.route.network}/${found.epoch}`);
-      } else {
-        setError(isTxHash ? "No epoch found for that transaction hash." : "No epoch found with that number.");
-      }
-    } catch (err) {
-      console.error("Failed to route to epoch:", err);
-      setError("Search failed. Please try again.");
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
   return (
-    <div className="flex flex-wrap items-start gap-2 w-full">
-      <Searchbar
-        value={search}
-        onChange={handleChange}
-        onSubmit={runSearch}
-        isDisabled={isSearching}
-        isInvalid={!!error}
-        showFieldError={!!error}
-        fieldErrorProps={{ children: error ?? undefined }}
-        placeholder="Search by epoch number or transaction hash..."
-        className="flex-1"
-      />
-
-      <Button
-        variant="primary"
-        text="Search"
-        isLoading={isSearching}
-        isDisabled={!search.trim() || isSearching}
-        onPress={() => runSearch(search)}
-      />
-    </div>
+    <SearchForm
+      label="Epoch number or transaction hash"
+      placeholder="An epoch number, or the hash of a snapshot or claim transaction"
+      aside={aside}
+      validate={(q) =>
+        TX_HASH_REGEX.test(q) || EPOCH_REGEX.test(q)
+          ? null
+          : "Enter an epoch number or a transaction hash (0x followed by 64 hex characters)."
+      }
+      onSearch={async (q) => {
+        const isTxHash = TX_HASH_REGEX.test(q);
+        const found = isTxHash ? await findEpochByTxHash(q) : await findEpochByNumber(Number(q));
+        if (!found) return isTxHash ? "No epoch found for that transaction hash." : "No epoch found with that number.";
+        navigate(`/vea/${found.route.bridgeKey}/${found.route.network}/${found.epoch}`);
+        return null;
+      }}
+    />
   );
 }

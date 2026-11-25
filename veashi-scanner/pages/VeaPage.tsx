@@ -1,110 +1,128 @@
-import { useEffect, useMemo, useState } from "react";
-import Header from "@/components/Header";
-import Pagination from "@/components/Pagination";
+import { useMemo, useState } from "react";
+import { CompactPagination } from "@kleros/ui-components-library";
+import { QueryState, Section, Stack } from "@kleros/ui-components-library/kit";
+import { HeroPage } from "@/components/HeroPage";
+import { NetworkSwitch } from "@/components/NetworkSwitch";
 import VeaFilterBar from "@/components/vea/VeaFilterBar";
 import VeaEpochsTable from "@/components/vea/VeaEpochsTable";
 import VeaSearchBar from "@/components/vea/VeaSearchBar";
-import { getMatchingVeaRoutes } from "@/lib/vea/config";
+import { useRelativeTimeTick } from "@/hooks/useRelativeTimeTick";
 import { useVeaEpochs } from "@/hooks/useVeaEpochs";
+import { getMatchingVeaRoutes } from "@/lib/vea/config";
 import { NO_CHAIN, type ChainFilter } from "@/lib/types";
 import type { VeaNetwork } from "@/lib/vea/types";
 
 const ITEMS_PER_PAGE = 10;
+const NETWORK_NAME: Record<VeaNetwork, string> = { testnet: "Testnet", devnet: "Devnet" };
+const NETWORKS = (["testnet", "devnet"] as const).map((value) => ({ value, label: NETWORK_NAME[value] }));
 
+/** `/vea`: the epoch search, then the network's epochs (newest first) with From / To filters and paging. */
 export default function VeaPage() {
+  // Vea's networks are Testnet and Devnet, not Home's Mainnet / Testnet, so the choice stays in state, as before.
   const [network, setNetwork] = useState<VeaNetwork>("testnet");
   const [sourceChain, setSourceChain] = useState<ChainFilter>(NO_CHAIN);
   const [destChain, setDestChain] = useState<ChainFilter>(NO_CHAIN);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [page, setPage] = useState(1);
+  useRelativeTimeTick();
 
-  // NO_CHAIN (the default) matches every route for the selected network, merging
-  // both bridges into one combined, newest-first view.
+  // NO_CHAIN (the default) matches every route for the selected network, merging both bridges into one newest-first
+  // list.
   const routes = useMemo(
     () => getMatchingVeaRoutes(network, sourceChain, destChain),
     [network, sourceChain, destChain]
   );
   const { rows, isLoading, error } = useVeaEpochs(routes);
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / ITEMS_PER_PAGE));
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [totalPages, currentPage]);
-
-  const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return rows.slice(start, start + ITEMS_PER_PAGE);
-  }, [rows, currentPage]);
-
-  const handleNetworkChange = (next: VeaNetwork) => {
-    setNetwork(next);
-    setCurrentPage(1);
-  };
-
-  const handleSourceChange = (chain: ChainFilter) => {
-    setSourceChain(chain);
-    setDestChain(NO_CHAIN);
-    setCurrentPage(1);
-  };
-
-  const handleDestChange = (chain: ChainFilter) => {
-    setDestChain(chain);
-    setCurrentPage(1);
-  };
+  const numPages = Math.max(1, Math.ceil(rows.length / ITEMS_PER_PAGE));
+  const currentPage = Math.min(page, numPages);
+  const pageRows = rows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const hasActiveFilter = sourceChain !== NO_CHAIN || destChain !== NO_CHAIN;
-
   const clearFilters = () => {
     setSourceChain(NO_CHAIN);
     setDestChain(NO_CHAIN);
-    setCurrentPage(1);
+    setPage(1);
   };
 
   return (
-    <div className="min-h-screen">
-      <Header />
-
-      <main className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="animate-fade-in">
-          <h2 className="text-2xl font-bold bg-linear-to-r from-white to-(--text-secondary) bg-clip-text text-transparent">
-            Vea Epochs
-          </h2>
-          <p className="text-sm text-(--text-muted) mt-1">
-            Snapshot, claim, and verification lifecycle for each Vea bridge epoch.
-          </p>
-        </div>
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.05s" }}>
-          <VeaSearchBar />
-        </div>
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.08s" }}>
-          <VeaFilterBar
-            network={network}
-            onNetworkChange={handleNetworkChange}
-            sourceChain={sourceChain}
-            destChain={destChain}
-            onSourceChange={handleSourceChange}
-            onDestChange={handleDestChange}
-            hasActiveFilter={hasActiveFilter}
-            onClearFilters={clearFilters}
-          />
-        </div>
-
-        {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-base text-red-500 text-sm animate-fade-in">
-            {error}
-          </div>
-        )}
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <VeaEpochsTable rows={paginatedRows} isLoading={isLoading} onClearFilters={clearFilters} />
-        </div>
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-        </div>
-      </main>
-    </div>
+    <HeroPage
+      titleId="vea-title"
+      hero={
+        <Stack gap={6}>
+          <Stack gap={2}>
+            <h1 id="vea-title" className="text-klerosUIComponentsPrimaryText text-2xl font-semibold">
+              Vea epochs
+            </h1>
+            <p className="text-klerosUIComponentsSecondaryText text-sm">
+              The snapshot, claim and verification of each Vea bridge epoch.
+            </p>
+          </Stack>
+          <Stack gap={2}>
+            <VeaSearchBar
+              aside={
+                <NetworkSwitch
+                  label="Network"
+                  options={NETWORKS}
+                  value={network}
+                  onChange={(next) => {
+                    setNetwork(next);
+                    setPage(1);
+                  }}
+                />
+              }
+            />
+            <p className="text-klerosUIComponentsSecondaryText text-xs">
+              Search checks every Vea route, testnet and devnet; a number that several routes share opens the newest
+              snapshot. The network switch only changes the list below.
+            </p>
+          </Stack>
+        </Stack>
+      }
+    >
+      <Section
+        title={`${NETWORK_NAME[network]} epochs`}
+        actions={<p className="text-klerosUIComponentsSecondaryText text-sm">Newest first</p>}
+      >
+        <VeaFilterBar
+          sourceChain={sourceChain}
+          destChain={destChain}
+          onSourceChange={(chain) => {
+            setSourceChain(chain);
+            setDestChain(NO_CHAIN);
+            setPage(1);
+          }}
+          onDestChange={(chain) => {
+            setDestChain(chain);
+            setPage(1);
+          }}
+          hasActiveFilter={hasActiveFilter}
+          onClearFilters={clearFilters}
+        />
+        <QueryState
+          isLoading={isLoading && rows.length === 0}
+          isError={Boolean(error)}
+          error={error ? new Error(error) : undefined}
+          data={pageRows}
+          errorTitle="The epochs could not be loaded"
+          empty={{
+            title: "No epochs",
+            description: "No epochs found for the selected chains and network.",
+            action: hasActiveFilter ? { text: "Clear filters", onPress: clearFilters } : undefined,
+          }}
+        >
+          {(visible) => (
+            <Stack gap={4}>
+              <VeaEpochsTable rows={visible} />
+              <CompactPagination
+                currentPage={currentPage}
+                numPages={numPages}
+                callback={setPage}
+                label={`Page ${currentPage}`}
+              />
+            </Stack>
+          )}
+        </QueryState>
+      </Section>
+    </HeroPage>
   );
 }

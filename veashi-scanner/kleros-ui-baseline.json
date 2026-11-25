@@ -1,0 +1,11 @@
+{
+  "version": "3.11.0-beta.1",
+  "lint": {
+    "hooks/useMessageScanner.ts|kleros-ui/no-restricted-syntax": 1,
+    "hooks/useRelativeTimeTick.ts|kleros-ui/no-restricted-syntax": 1
+  },
+  "tsc": {},
+  "css": {
+    "globals.css|kleros-ui/css-tailwind-only": 2
+  }
+}

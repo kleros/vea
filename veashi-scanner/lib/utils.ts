@@ -3,24 +3,6 @@ import { getViemChain, getRpcUrl } from "./chains";
 
 const RPC_PROBE_TIMEOUT_MS = 8_000;
 
-export function getStatusMeta(current: number, required: number) {
-  if (current >= required && required > 0) {
-    return {
-      label: "Confirmed",
-      dotClass: "bg-green-400 animate-pulse",
-      barClass: "bg-green-400",
-    };
-  }
-  if (current > 0) {
-    return {
-      label: "In Progress",
-      dotClass: "bg-amber-400",
-      barClass: "bg-amber-400",
-    };
-  }
-  return { label: "Pending", dotClass: "bg-red-400", barClass: "bg-red-400" };
-}
-
 export async function findChainForTx(hash: string): Promise<number | null> {
   const normalizedHash = hash.toLowerCase();
   const chainIds = getAllSourceChains();
@@ -70,25 +52,6 @@ export async function findChainForTx(hash: string): Promise<number | null> {
     console.log(`Transaction ${normalizedHash} not found on any supported chains.`);
     return null;
   }
-}
-
-/** Format a unix timestamp (seconds) as a short relative time, e.g. "5m ago". */
-export function formatRelativeTime(unixSeconds?: number): string {
-  if (unixSeconds === undefined) return "—";
-
-  const diffSeconds = Math.max(0, Date.now() / 1000 - unixSeconds);
-  const units: [string, number][] = [
-    ["y", 60 * 60 * 24 * 365],
-    ["d", 60 * 60 * 24],
-    ["h", 60 * 60],
-    ["m", 60],
-  ];
-
-  for (const [label, secondsPerUnit] of units) {
-    const value = Math.floor(diffSeconds / secondsPerUnit);
-    if (value >= 1) return `${value}${label} ago`;
-  }
-  return "just now";
 }
 
 export function parseBlockInput(value: string): number | undefined {

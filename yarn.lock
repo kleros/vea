@@ -1320,6 +1320,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dual-bundle/import-meta-resolve@npm:^4.2.1":
+  version: 4.2.1
+  resolution: "@dual-bundle/import-meta-resolve@npm:4.2.1"
+  checksum: 10/c93f600fe0af015fdf1d6e58cd2823b8282d02e44eb6207eb5fc17e95f6c76bf67c018b12bd6ea71017b214269b59791dad2f3d560131be2df4e995400063258
+  languageName: node
+  linkType: hard
+
 "@elastic/ecs-helpers@npm:^1.1.0":
   version: 1.1.0
   resolution: "@elastic/ecs-helpers@npm:1.1.0"
@@ -1946,6 +1953,16 @@ __metadata:
   dependencies:
     "@types/json-schema": "npm:^7.0.15"
   checksum: 10/f9a428cc651ec15fb60d7d60c2a7bacad4666e12508320eafa98258e976fafaa77d7be7be91519e75f801f15f830105420b14a458d4aab121a2b0a59bc43517b
+  languageName: node
+  linkType: hard
+
+"@eslint/css-tree@npm:^4.0.4":
+  version: 4.1.3
+  resolution: "@eslint/css-tree@npm:4.1.3"
+  dependencies:
+    mdn-data: "npm:2.37.2"
+    source-map-js: "npm:^1.2.1"
+  checksum: 10/78f8443e21bbfc458a10912997b1aa4971e9dc80fd74783919886e44b168efd94005dddd67a7819a19a8ce5a4b4f8a8b45281b8de3aaa39e87a2d693375e1eee
   languageName: node
   linkType: hard
 
@@ -4985,6 +5002,41 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@kleros/ui-components-library@npm:3.11.0-beta.1":
+  version: 3.11.0-beta.1
+  resolution: "@kleros/ui-components-library@npm:3.11.0-beta.1"
+  dependencies:
+    "@cyntler/react-doc-viewer": "npm:^1.17.0"
+    "@internationalized/date": "npm:^3.7.0"
+    bignumber.js: "npm:^9.1.2"
+    clsx: "npm:^2.1.1"
+    lodash: "npm:^4.17.21"
+    react-aria-components: "npm:^1.7.1"
+    react-markdown: "npm:^9.0.1"
+    simplebar: "npm:^5.3.6"
+    simplebar-react: "npm:^2.3.6"
+    tailwind-merge: "npm:^3.0.2"
+    tailwindcss-react-aria-components: "npm:^2.0.0"
+    usehooks-ts: "npm:^2.9.1"
+  peerDependencies:
+    "@tailwindcss/postcss": ^4.0.11
+    eslint: ">=8.26"
+    eslint-plugin-better-tailwindcss: ">=4"
+    react: ^18.0.0
+    react-dom: ^18.0.0
+    react-is: ^18.0.0
+    tailwindcss: ^4.0.11
+  peerDependenciesMeta:
+    eslint:
+      optional: true
+    eslint-plugin-better-tailwindcss:
+      optional: true
+  bin:
+    kleros-ui: bin/kleros-ui.mjs
+  checksum: 10/e49e23f60fa613ac1605ecc78a02f2fcb384dc01433cb631e6e715e1ef4f89ba8184fdf25ddfa074221dbf7e15990faacf66a968f0e00a571cbee74589dc4643
+  languageName: node
+  linkType: hard
+
 "@kleros/ui-components-library@npm:^2.14.0":
   version: 2.20.0
   resolution: "@kleros/ui-components-library@npm:2.20.0"
@@ -5005,35 +5057,6 @@ __metadata:
     react-is: ^18.0.0
     styled-components: ^5.3.3
   checksum: 10/c0e08f0e71e8b09ebd659477e62d4586f5159383d00c81524ae00088a2b4181c0ef5449adced094dacb8b1f830efab4ccd4088d5bfb2d4dae4ed38fc93344542
-  languageName: node
-  linkType: hard
-
-"@kleros/ui-components-library@npm:^3.6.0":
-  version: 3.8.0
-  resolution: "@kleros/ui-components-library@npm:3.8.0"
-  dependencies:
-    "@cyntler/react-doc-viewer": "npm:^1.17.0"
-    "@internationalized/date": "npm:^3.7.0"
-    bignumber.js: "npm:^9.1.2"
-    clsx: "npm:^2.1.1"
-    lodash: "npm:^4.17.21"
-    react: "npm:^18.0.0"
-    react-aria-components: "npm:^1.7.1"
-    react-dom: "npm:^18.0.0"
-    react-is: "npm:^18.0.0"
-    react-markdown: "npm:^9.0.1"
-    simplebar: "npm:^5.3.6"
-    simplebar-react: "npm:^2.3.6"
-    tailwind-merge: "npm:^3.0.2"
-    tailwindcss-react-aria-components: "npm:^2.0.0"
-    usehooks-ts: "npm:^2.9.1"
-  peerDependencies:
-    "@tailwindcss/postcss": ^4.0.11
-    react: ^18.0.0
-    react-dom: ^18.0.0
-    react-is: ^18.0.0
-    tailwindcss: ^4.0.11
-  checksum: 10/a9d9f363f0873767e6d4eef12d3186c63c2345f369eb7412efa48a0477d1121d573aa8db1fb1799534744721cab4b3e7d1368a95580dd8e7e90e1642222b0167
   languageName: node
   linkType: hard
 
@@ -5206,7 +5229,7 @@ __metadata:
   resolution: "@kleros/veashi-scanner@workspace:veashi-scanner"
   dependencies:
     "@eslint/js": "npm:^9.15.0"
-    "@kleros/ui-components-library": "npm:^3.6.0"
+    "@kleros/ui-components-library": "npm:3.11.0-beta.1"
     "@kleros/veashi-sdk": "npm:@kleros/veashi-sdk@0.1.0"
     "@tailwindcss/vite": "npm:^4"
     "@types/node": "npm:22"
@@ -5215,6 +5238,7 @@ __metadata:
     "@vitejs/plugin-react": "npm:^4.3.4"
     clsx: "npm:^2.1.1"
     eslint: "npm:^9"
+    eslint-plugin-better-tailwindcss: "npm:^4.10.0"
     eslint-plugin-react-hooks: "npm:^5.0.0"
     globals: "npm:^15.12.0"
     react: "npm:^18.3.1"
@@ -6927,6 +6951,13 @@ __metadata:
   version: 0.11.0
   resolution: "@pkgjs/parseargs@npm:0.11.0"
   checksum: 10/115e8ceeec6bc69dff2048b35c0ab4f8bbee12d8bb6c1f4af758604586d802b6e669dcb02dda61d078de42c2b4ddce41b3d9e726d7daa6b4b850f4adbf7333ff
+  languageName: node
+  linkType: hard
+
+"@pkgr/core@npm:^0.3.6":
+  version: 0.3.6
+  resolution: "@pkgr/core@npm:0.3.6"
+  checksum: 10/29082aa13d36f13fc41cdc64cb1feb36b630de0d6ebde84e2ff68e3d7a7f1dce4462cca91f76176c46e50bbca6b1e7f1fd9cf907af12d5d70da83bc981ca4ccf
   languageName: node
   linkType: hard
 
@@ -8931,6 +8962,15 @@ __metadata:
   version: 1.3.0
   resolution: "@ungap/structured-clone@npm:1.3.0"
   checksum: 10/80d6910946f2b1552a2406650051c91bbd1f24a6bf854354203d84fe2714b3e8ce4618f49cc3410494173a1c1e8e9777372fe68dce74bd45faf0a7a1a6ccf448
+  languageName: node
+  linkType: hard
+
+"@valibot/to-json-schema@npm:^1.7.1":
+  version: 1.8.0
+  resolution: "@valibot/to-json-schema@npm:1.8.0"
+  peerDependencies:
+    valibot: ^1.5.0
+  checksum: 10/5243137dc534747d7057c1eeeb2ce0596d77e8bca7b93c1e6886304adec43a197d131583986b3f2112c4eb9fee6e5ab3671c000d450ab412f305fd10744beb5d
   languageName: node
   linkType: hard
 
@@ -12783,6 +12823,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"enhanced-resolve@npm:^5.24.1, enhanced-resolve@npm:^5.7.0":
+  version: 5.27.0
+  resolution: "enhanced-resolve@npm:5.27.0"
+  dependencies:
+    graceful-fs: "npm:^4.2.4"
+    tapable: "npm:^2.3.3"
+  checksum: 10/6822538b18aaba1ee596b7fed3465c31b3ed7b682e03f6870673cf9e83a85ca1279af34c49c8f366cce1d99a5d07cd36ca4dbac413ce23e36880fc0f0996e64f
+  languageName: node
+  linkType: hard
+
 "enquirer@npm:2.3.6":
   version: 2.3.6
   resolution: "enquirer@npm:2.3.6"
@@ -13435,6 +13485,31 @@ __metadata:
     eslint:
       optional: true
   checksum: 10/dd27791147eca17366afcb83f47d6825b6ce164abb256681e5de4ec1d7e87d8605641eb869298a0dbc70665e2446dbcc2f40d3e1631a9475dd64dd23d4ca5dee
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-better-tailwindcss@npm:^4.10.0":
+  version: 4.11.0
+  resolution: "eslint-plugin-better-tailwindcss@npm:4.11.0"
+  dependencies:
+    "@eslint/css-tree": "npm:^4.0.4"
+    "@valibot/to-json-schema": "npm:^1.7.1"
+    enhanced-resolve: "npm:^5.24.1"
+    jiti: "npm:^2.7.0"
+    synckit: "npm:^0.12.3"
+    tailwind-csstree: "npm:^0.3.3"
+    tsconfig-paths-webpack-plugin: "npm:^4.2.0"
+    valibot: "npm:^1.4.2"
+  peerDependencies:
+    eslint: ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
+    oxlint: ^1.35.0
+    tailwindcss: ^3.3.0 || ^4.1.17
+  peerDependenciesMeta:
+    eslint:
+      optional: true
+    oxlint:
+      optional: true
+  checksum: 10/a1b4d6b71018f48b2a91ffdfafb10487919aacae2a2f7aaeda655ee0115927ba362ff79ea6fda492f6a633563b8002f3b66186bef2d39a652a4e5acb6c8b15d6
   languageName: node
   linkType: hard
 
@@ -19241,6 +19316,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mdn-data@npm:2.37.2":
+  version: 2.37.2
+  resolution: "mdn-data@npm:2.37.2"
+  checksum: 10/ad971b6c03a816f82da1be4051e59cb4d6a454467777dbe6c031dfb81628baf74306c8f9d71af239ffa62f5cf3546bd580b799320965f8dff230fa3d234f0b6f
+  languageName: node
+  linkType: hard
+
 "media-typer@npm:0.3.0":
   version: 0.3.0
   resolution: "media-typer@npm:0.3.0"
@@ -24539,6 +24621,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"synckit@npm:^0.12.3":
+  version: 0.12.3
+  resolution: "synckit@npm:0.12.3"
+  dependencies:
+    "@dual-bundle/import-meta-resolve": "npm:^4.2.1"
+    "@pkgr/core": "npm:^0.3.6"
+  checksum: 10/0421a933e0dee17ab6c39520401343cda97c4bb1630a3bb6850fddc0a8339510fa647c58ba0049bfe2177b215b01b1f52441356e4a76643c24beadc2f4564ad9
+  languageName: node
+  linkType: hard
+
 "systeminformation@npm:^5.7":
   version: 5.25.11
   resolution: "systeminformation@npm:5.25.11"
@@ -24580,6 +24672,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tailwind-csstree@npm:^0.3.3":
+  version: 0.3.3
+  resolution: "tailwind-csstree@npm:0.3.3"
+  peerDependencies:
+    "@eslint/css": ">=1.0.0"
+  peerDependenciesMeta:
+    "@eslint/css":
+      optional: true
+  checksum: 10/211913cef8ea10fd68cee7ef90936edaab9aaee737a0da0c029268c6a0ae8a54d4c0e4bd782eef426ff59348ebf24d7afad14b5ce5cb994f127255400731053a
+  languageName: node
+  linkType: hard
+
 "tailwind-merge@npm:^3.0.2, tailwind-merge@npm:^3.6.0":
   version: 3.6.0
   resolution: "tailwind-merge@npm:3.6.0"
@@ -24607,6 +24711,13 @@ __metadata:
   version: 4.3.0
   resolution: "tailwindcss@npm:4.3.0"
   checksum: 10/3a7dde8a0ccd31ef02e6b45a1257e0040fd8372584a94e930445400f4e5c50a101022f99951cf5c0a12b3936e23489d9c55d342e7d597a806c7a0f139ba8c0dd
+  languageName: node
+  linkType: hard
+
+"tapable@npm:^2.2.1":
+  version: 2.3.4
+  resolution: "tapable@npm:2.3.4"
+  checksum: 10/31de6d1ad41fabcc91f2541b17e430cd3a8a56e2d430a7a44c971cc149a787ef39ec9bd9777df833ad75598beb337d1ec6140b7a81659a4a999718e06698034a
   languageName: node
   linkType: hard
 
@@ -25037,6 +25148,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tsconfig-paths-webpack-plugin@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "tsconfig-paths-webpack-plugin@npm:4.2.0"
+  dependencies:
+    chalk: "npm:^4.1.0"
+    enhanced-resolve: "npm:^5.7.0"
+    tapable: "npm:^2.2.1"
+    tsconfig-paths: "npm:^4.1.2"
+  checksum: 10/946f23a38a404bf2d3803b60b5af1d7a6cc85bed411c9feefa707656efd9007cdcee7eb0e860ca8690ba479810c7b94ce026f6ac70daa6c803e55aac809c86c4
+  languageName: node
+  linkType: hard
+
 "tsconfig-paths@npm:^3.15.0":
   version: 3.15.0
   resolution: "tsconfig-paths@npm:3.15.0"
@@ -25049,7 +25172,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsconfig-paths@npm:^4.2.0":
+"tsconfig-paths@npm:^4.1.2, tsconfig-paths@npm:^4.2.0":
   version: 4.2.0
   resolution: "tsconfig-paths@npm:4.2.0"
   dependencies:
@@ -25883,6 +26006,18 @@ __metadata:
     "@types/istanbul-lib-coverage": "npm:^2.0.1"
     convert-source-map: "npm:^2.0.0"
   checksum: 10/fb1d70f1176cb9dc46cabbb3fd5c52c8f3e8738b61877b6e7266029aed0870b04140e3f9f4550ac32aebcfe1d0f38b0bac57e1e8fb97d68fec82f2b416148166
+  languageName: node
+  linkType: hard
+
+"valibot@npm:^1.4.2":
+  version: 1.5.0
+  resolution: "valibot@npm:1.5.0"
+  peerDependencies:
+    typescript: ">=5"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10/87714d10c13d78202cbc01cdff3595921010a7e40a0b3cd1aa76ea78e5b394c901d5151db76be9d3233938ef26d50e3441c9733e876a497ee6b4cd932f41ab4c
   languageName: node
   linkType: hard
 

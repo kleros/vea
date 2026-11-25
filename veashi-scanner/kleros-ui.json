@@ -1,0 +1,258 @@
+{
+  "componentsDir": "components",
+  "cssEntry": "globals.css",
+  "theme": "theme.css",
+  "lintDirs": [
+    "."
+  ],
+  "components": [
+    {
+      "name": "routes",
+      "status": "existing",
+      "intent": [
+        "routes page parts",
+        "supported routes table",
+        "route details modal",
+        "route contracts"
+      ],
+      "importPath": "./components/routes"
+    },
+    {
+      "name": "vea",
+      "status": "existing",
+      "intent": [
+        "vea page parts",
+        "vea epochs table",
+        "vea epoch lifecycle",
+        "vea status badge",
+        "vea search",
+        "vea filter bar",
+        "vea messages table"
+      ],
+      "importPath": "./components/vea"
+    },
+    {
+      "name": "RouteDetailsModal",
+      "status": "existing",
+      "intent": [
+        "route details modal",
+        "route bridges dialog"
+      ],
+      "importPath": "./components/routes/RouteDetailsModal",
+      "file": "components/routes/RouteDetailsModal.tsx"
+    },
+    {
+      "name": "RoutesTable",
+      "status": "existing",
+      "intent": [
+        "routes table",
+        "supported routes list"
+      ],
+      "importPath": "./components/routes/RoutesTable",
+      "file": "components/routes/RoutesTable.tsx"
+    },
+    {
+      "name": "VeaEpochsTable",
+      "status": "existing",
+      "intent": [
+        "vea epochs table",
+        "epoch list"
+      ],
+      "importPath": "./components/vea/VeaEpochsTable",
+      "file": "components/vea/VeaEpochsTable.tsx"
+    },
+    {
+      "name": "VeaFilterBar",
+      "status": "existing",
+      "intent": [
+        "vea filter bar",
+        "vea from and to chain filter"
+      ],
+      "importPath": "./components/vea/VeaFilterBar",
+      "file": "components/vea/VeaFilterBar.tsx"
+    },
+    {
+      "name": "VeaMessagesList",
+      "status": "existing",
+      "intent": [
+        "vea messages table",
+        "messages in an epoch"
+      ],
+      "importPath": "./components/vea/VeaMessagesList",
+      "file": "components/vea/VeaMessagesList.tsx"
+    },
+    {
+      "name": "VeaSearchBar",
+      "status": "existing",
+      "intent": [
+        "vea search",
+        "epoch search"
+      ],
+      "importPath": "./components/vea/VeaSearchBar",
+      "file": "components/vea/VeaSearchBar.tsx"
+    },
+    {
+      "name": "VeaStatusBadge",
+      "status": "existing",
+      "intent": [
+        "vea status badge",
+        "epoch status chip"
+      ],
+      "importPath": "./components/vea/VeaStatusBadge",
+      "file": "components/vea/VeaStatusBadge.tsx"
+    },
+    {
+      "name": "VeaTimeline",
+      "status": "existing",
+      "intent": [
+        "vea lifecycle",
+        "epoch events table",
+        "claim challenge verify steps"
+      ],
+      "importPath": "./components/vea/VeaTimeline",
+      "file": "components/vea/VeaTimeline.tsx"
+    },
+    {
+      "name": "AppHeader",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "app header",
+        "site header",
+        "top navigation",
+        "nav bar",
+        "logo",
+        "current page link",
+        "dark mode switch",
+        "light mode switch"
+      ],
+      "importPath": "./components/AppHeader",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "RouteMap",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "route map",
+        "message route",
+        "bridge lanes",
+        "from to",
+        "threshold",
+        "connector lines"
+      ],
+      "importPath": "./components/RouteMap",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "HexValue",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "hash with copy",
+        "address with copy",
+        "explorer link",
+        "copy and view on explorer",
+        "short address link"
+      ],
+      "importPath": "./components/HexValue",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "NetworkSwitch",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "network switch",
+        "mainnet testnet devnet",
+        "segmented control",
+        "segments",
+        "one choice of a few"
+      ],
+      "importPath": "./components/NetworkSwitch",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "ChainRoute",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "chain route",
+        "source to destination",
+        "from chain to chain",
+        "route arrow"
+      ],
+      "importPath": "./components/ChainRoute",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "TimeAgo",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "time ago",
+        "age",
+        "relative time",
+        "how long ago",
+        "timestamp with utc title"
+      ],
+      "importPath": "./components/TimeAgo",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "BackBreadcrumb",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "breadcrumb",
+        "back link",
+        "back to list",
+        "current page crumb"
+      ],
+      "importPath": "./components/BackBreadcrumb",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "ChainFilterSelect",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "chain filter",
+        "from chain dropdown",
+        "to chain dropdown",
+        "all chains",
+        "labelled chain select"
+      ],
+      "importPath": "./components/ChainFilterSelect",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "SearchForm",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "search form",
+        "hash search",
+        "epoch search",
+        "searchbar with button",
+        "search with aside"
+      ],
+      "importPath": "./components/SearchForm",
+      "createdWith": "3.11.0-beta.1"
+    },
+    {
+      "name": "HeroPage",
+      "status": "local",
+      "kind": "ui",
+      "intent": [
+        "hero band",
+        "page hero",
+        "white title band",
+        "page frame",
+        "list band"
+      ],
+      "importPath": "./components/HeroPage",
+      "createdWith": "3.11.0-beta.1"
+    }
+  ]
+}

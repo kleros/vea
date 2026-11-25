@@ -1,13 +1,22 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { getAllSourceChains, getDestinationChains, getAvailableBridges } from "@kleros/veashi-sdk";
-import Header from "@/components/Header";
-import NetworkToggle from "@/components/NetworkToggle";
+import { Inline, Section, Stack } from "@kleros/ui-components-library/kit";
+import { HeroPage } from "@/components/HeroPage";
+import { NetworkSwitch } from "@/components/NetworkSwitch";
 import RoutesTable, { type RouteRow } from "@/components/routes/RoutesTable";
+import { useNetworkParam } from "@/hooks/useNetworkParam";
 import { matchesNetwork } from "@/lib/chains";
+import { plural } from "@/lib/format";
 import type { Network } from "@/lib/types";
 
+const NETWORKS = [
+  { value: "mainnet", label: "Mainnet" },
+  { value: "testnet", label: "Testnet" },
+] as const satisfies readonly { value: Network; label: string }[];
+
+/** `/routes`: every route Veashi supports on the network in the URL (`?network=testnet`), and its contracts. */
 export default function RoutesPage() {
-  const [network, setNetwork] = useState<Network>("mainnet");
+  const [network, setNetwork] = useNetworkParam();
 
   const routes = useMemo<RouteRow[]>(() => {
     const rows: RouteRow[] = [];
@@ -24,27 +33,32 @@ export default function RoutesPage() {
     return rows;
   }, [network]);
 
+  const networkName = network === "testnet" ? "Testnet" : "Mainnet";
+
   return (
-    <div className="min-h-screen">
-      <Header />
-
-      <main className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="animate-fade-in flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold bg-linear-to-r from-white to-(--text-secondary) bg-clip-text text-transparent">
-              Supported Routes
-            </h2>
-            <p className="text-sm text-(--text-muted) mt-1">
-              Every cross-chain route Veashi supports, and the bridges securing each one.
+    <HeroPage
+      titleId="routes-title"
+      hero={
+        <Inline gap={6} justify="between" align="end">
+          <Stack gap={2}>
+            <h1 id="routes-title" className="text-klerosUIComponentsPrimaryText text-2xl font-semibold">
+              Supported routes
+            </h1>
+            <p className="text-klerosUIComponentsSecondaryText text-sm">
+              Every cross-chain route Veashi supports, and the bridges that secure each one. Open a route for its
+              contracts.
             </p>
-          </div>
-          <NetworkToggle value={network} onChange={setNetwork} />
-        </div>
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <RoutesTable routes={routes} />
-        </div>
-      </main>
-    </div>
+          </Stack>
+          <NetworkSwitch label="Network" options={NETWORKS} value={network} onChange={setNetwork} />
+        </Inline>
+      }
+    >
+      <Section
+        title={`${networkName} routes`}
+        actions={<p className="text-klerosUIComponentsSecondaryText text-sm">{plural(routes.length, "route")}</p>}
+      >
+        <RoutesTable routes={routes} />
+      </Section>
+    </HeroPage>
   );
 }

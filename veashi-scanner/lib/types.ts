@@ -58,8 +58,6 @@ export interface MessageStats {
   pending: number;
 }
 
-export type IconType = "route" | "address" | "threshold" | "info" | "bridge";
-
 export const NO_CHAIN = "No Chain" as const;
 export type ChainFilter = number | typeof NO_CHAIN;
 

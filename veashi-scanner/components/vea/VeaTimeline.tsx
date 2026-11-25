@@ -1,7 +1,8 @@
-import { Copiable } from "@kleros/ui-components-library";
-import ChainBadge from "@/components/ChainBadge";
-import { getExplorerTxUrl } from "@/lib/explorer";
-import { formatRelativeTime } from "@/lib/utils";
+import { DataTable, QueryState, shortenAddress, type DataTableColumn } from "@kleros/ui-components-library/kit";
+import { HexValue } from "@/components/HexValue";
+import { TimeAgo } from "@/components/TimeAgo";
+import { getChainName } from "@/lib/chains";
+import { getExplorerName, getExplorerTxUrl } from "@/lib/explorer";
 import type { VeaEpochRow } from "@/lib/vea/types";
 
 interface TimelineEvent {
@@ -16,58 +17,71 @@ interface VeaTimelineProps {
   row: VeaEpochRow;
 }
 
+/**
+ * The epoch's on-chain events in order (snapshot saved, claimed, challenged, verification started, verified or
+ * resolved, fallback) as a kit DataTable: step, chain, transaction (explorer link + copy), caller and age.
+ */
 export default function VeaTimeline({ row }: Readonly<VeaTimelineProps>) {
   const events = buildEvents(row);
-
-  if (events.length === 0) {
-    return <p className="text-sm text-(--text-muted)">No on-chain events recorded for this epoch yet.</p>;
-  }
+  const columns: DataTableColumn<TimelineEvent>[] = [
+    {
+      key: "step",
+      header: "Step",
+      width: 200,
+      render: (e) => <span className="font-semibold whitespace-nowrap">{e.title}</span>,
+    },
+    {
+      key: "chain",
+      header: "Chain",
+      width: 200,
+      render: (e) => <span className="whitespace-nowrap">{getChainName(e.chainId)}</span>,
+    },
+    {
+      key: "tx",
+      header: "Transaction",
+      width: 260,
+      render: (e) => (
+        <HexValue
+          variant="link"
+          value={e.txHash}
+          display={shortenAddress(e.txHash, 8)}
+          copyLabel={`Copy the ${e.title} transaction hash`}
+          href={getExplorerTxUrl(e.chainId, e.txHash)}
+          explorerLabel={`View the ${e.title} transaction on ${getExplorerName(e.chainId)}`}
+          className="whitespace-nowrap"
+        />
+      ),
+    },
+    {
+      key: "by",
+      header: "By",
+      render: (e) =>
+        e.caller ? (
+          <span title={e.caller} className="font-mono whitespace-nowrap">
+            {shortenAddress(e.caller)}
+          </span>
+        ) : (
+          "—"
+        ),
+    },
+    { key: "age", header: "When", align: "right", width: 140, render: (e) => <TimeAgo unixSeconds={e.timestamp} /> },
+  ];
 
   return (
-    <ol className="space-y-4">
-      {events.map((event, index) => {
-        const explorerUrl = getExplorerTxUrl(event.chainId, event.txHash);
-        return (
-          <li
-            key={`${event.title}-${event.txHash}`}
-            className="flex items-start gap-4 animate-fade-in"
-            style={{ animationDelay: `${index * 0.05}s` }}
-          >
-            <div className="w-2.5 h-2.5 mt-1.5 rounded-full bg-purple-500 shrink-0" />
-            <div className="flex-1 min-w-0 pb-4 border-b border-(--border) last:border-none">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <span className="text-sm font-semibold">{event.title}</span>
-                <ChainBadge chainId={event.chainId} />
-              </div>
-              <div className="mt-1 flex items-center gap-3 flex-wrap text-xs text-(--text-muted)">
-                {explorerUrl ? (
-                  <a
-                    href={explorerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-purple-400 hover:text-purple-300"
-                  >
-                    {event.txHash.slice(0, 10)}…{event.txHash.slice(-8)}
-                  </a>
-                ) : (
-                  <Copiable copiableContent={event.txHash} info="Copy transaction hash">
-                    <span className="font-mono">
-                      {event.txHash.slice(0, 10)}…{event.txHash.slice(-8)}
-                    </span>
-                  </Copiable>
-                )}
-                {event.caller && (
-                  <span className="font-mono">
-                    {event.caller.slice(0, 6)}…{event.caller.slice(-4)}
-                  </span>
-                )}
-                <span>{formatRelativeTime(event.timestamp)}</span>
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+    <QueryState
+      isLoading={false}
+      data={events}
+      empty={{ title: "No events yet", description: "No on-chain events recorded for this epoch yet." }}
+    >
+      {(list) => (
+        <DataTable
+          columns={columns}
+          rows={list}
+          rowKey={(e) => `${e.title}-${e.txHash}`}
+          className="bg-klerosUIComponentsWhiteBackground"
+        />
+      )}
+    </QueryState>
   );
 }
 
@@ -77,7 +91,7 @@ function buildEvents(row: VeaEpochRow): TimelineEvent[] {
 
   if (snapshot?.txHash) {
     events.push({
-      title: "Snapshot Saved",
+      title: "Snapshot saved",
       chainId: route.sourceChainId,
       txHash: snapshot.txHash,
       timestamp: snapshot.timestamp,
@@ -106,7 +120,7 @@ function buildEvents(row: VeaEpochRow): TimelineEvent[] {
   const verification = claim?.verification[0];
   if (verification?.startTxHash) {
     events.push({
-      title: "Verification Started",
+      title: "Verification started",
       chainId: route.destinationChainId,
       txHash: verification.startTxHash,
       timestamp: verification.startTimestamp,
@@ -125,7 +139,7 @@ function buildEvents(row: VeaEpochRow): TimelineEvent[] {
   const fallback = snapshot?.fallback[0];
   if (fallback) {
     events.push({
-      title: "Fallback Executed",
+      title: "Fallback executed",
       chainId: route.sourceChainId,
       txHash: fallback.txHash,
       timestamp: fallback.timestamp,
